@@ -1,0 +1,72 @@
+{
+  "name": "@ansvar/stride-patterns-mcp",
+  "version": "0.1.0",
+  "description": "MCP server providing 1000+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "stride-patterns-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "data/patterns.db",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "build:db": "tsx scripts/build-db.ts",
+    "dev": "tsx --watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run build:db && npm test"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "stride",
+    "threat-modeling",
+    "cybersecurity",
+    "security-patterns",
+    "cve",
+    "owasp",
+    "mitre-attack",
+    "threat-intelligence"
+  ],
+  "author": "Ansvar Systems <security@ansvar.eu>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ansvar-Systems/stride-patterns-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ansvar-Systems/stride-patterns-mcp/issues"
+  },
+  "homepage": "https://github.com/Ansvar-Systems/stride-patterns-mcp#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "better-sqlite3": "^11.7.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.9",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  }
+}

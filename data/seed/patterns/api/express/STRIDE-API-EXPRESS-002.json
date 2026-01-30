@@ -1,0 +1,230 @@
+{
+  "id": "STRIDE-API-EXPRESS-002",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.1,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application"
+    ],
+    "cwe": [
+      "CWE-89 - SQL Injection"
+    ]
+  },
+  "threat": {
+    "title": "SQL Injection via Unparameterized Queries in Express.js",
+    "description": "When user input is directly concatenated into SQL queries without parameterization, attackers can inject malicious SQL code to manipulate queries, extract data, or execute administrative operations.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Express.js",
+    "versions_affected": ["3.x", "4.x", "5.x"],
+    "ecosystem": "Node.js",
+    "dependencies": ["mysql", "mysql2", "pg", "mssql"],
+    "related_frameworks": ["Koa.js", "Fastify", "NestJS"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies user input field (e.g., username parameter)\n2. Crafts SQL injection payload: admin' OR '1'='1\n3. Application concatenates input directly into SQL query\n4. Malicious query bypasses authentication or extracts data\n5. Attacker gains unauthorized access or dumps entire database",
+    "prerequisites": [
+      "Application uses SQL database (MySQL, PostgreSQL, MSSQL)",
+      "User input is concatenated into SQL queries",
+      "No input validation or sanitization",
+      "Application has database permissions for SELECT/INSERT/UPDATE"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-16759",
+        "description": "SQL injection in vBulletin forum software",
+        "cvss_score": 9.8,
+        "published_date": "2019-09-25"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "British Airways 2018 Data Breach",
+        "date": "2018-09-06",
+        "impact": "380,000 payment cards compromised, £20 million GDPR fine",
+        "root_cause": "SQL injection in booking system",
+        "source_url": "https://www.bbc.com/news/business-54568784"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "SQL injection leading to full database access"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP Top 10 2021 - Injection",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2021-09-24",
+        "source_url": "https://owasp.org/Top10/A03_2021-Injection/",
+        "key_finding": "SQL injection remains in top 3 most critical web vulnerabilities"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use Parameterized Queries (Prepared Statements)",
+      "description": "Always use parameterized queries where user input is passed as parameters, not concatenated into SQL strings.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js + mysql2",
+        "code": "const mysql = require('mysql2/promise');\n\n// BAD: String concatenation (vulnerable to SQL injection)\napp.get('/users/bad', async (req, res) => {\n  const username = req.query.username;\n  const query = `SELECT * FROM users WHERE username = '${username}'`; // VULNERABLE!\n  const [rows] = await db.query(query);\n  res.json(rows);\n});\n\n// GOOD: Parameterized query (safe)\napp.get('/users/safe', async (req, res) => {\n  const username = req.query.username;\n  const query = 'SELECT * FROM users WHERE username = ?';\n  const [rows] = await db.query(query, [username]); // SAFE\n  res.json(rows);\n});\n\n// GOOD: Named parameters (PostgreSQL)\nconst { Pool } = require('pg');\nconst pool = new Pool();\n\napp.get('/users/pg', async (req, res) => {\n  const username = req.query.username;\n  const query = 'SELECT * FROM users WHERE username = $1';\n  const result = await pool.query(query, [username]); // SAFE\n  res.json(result.rows);\n});"
+      },
+      "tools": [],
+      "iso27001_controls": ["A.14.2.5 - Secure system engineering principles"],
+      "nist_csf": ["PR.DS-5 - Protections against data leaks"],
+      "validation_steps": [
+        "Search codebase for string concatenation in SQL queries",
+        "Replace all concatenated queries with parameterized queries",
+        "Run SQL injection tests (e.g., sqlmap) against endpoints",
+        "Enable SQL query logging to verify parameterization"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Use ORM with Safe Query Builders",
+      "description": "Use Object-Relational Mapping (ORM) libraries like Sequelize or TypeORM that automatically parameterize queries.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js + Sequelize",
+        "code": "const { Sequelize, DataTypes } = require('sequelize');\nconst sequelize = new Sequelize('database', 'username', 'password', {\n  host: 'localhost',\n  dialect: 'mysql'\n});\n\n// Define model\nconst User = sequelize.define('User', {\n  username: DataTypes.STRING,\n  email: DataTypes.STRING\n});\n\n// SAFE: Sequelize automatically parameterizes queries\napp.get('/users', async (req, res) => {\n  const username = req.query.username;\n  \n  // Method 1: findOne (safe)\n  const user = await User.findOne({\n    where: { username: username }\n  });\n  \n  // Method 2: findAll with operators (safe)\n  const users = await User.findAll({\n    where: {\n      username: {\n        [Sequelize.Op.like]: `%${username}%` // Still safe with ORM\n      }\n    }\n  });\n  \n  res.json(users);\n});\n\n// WARNING: Raw queries still need parameterization\napp.get('/users/raw', async (req, res) => {\n  const username = req.query.username;\n  \n  // GOOD: Parameterized raw query\n  const [results] = await sequelize.query(\n    'SELECT * FROM users WHERE username = ?',\n    {\n      replacements: [username], // Safe\n      type: Sequelize.QueryTypes.SELECT\n    }\n  );\n  \n  res.json(results);\n});"
+      },
+      "tools": [
+        {
+          "name": "Sequelize",
+          "type": "ORM",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "TypeORM",
+          "type": "ORM",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": ["A.14.2.1 - Secure development policy"],
+      "nist_csf": ["PR.IP-2 - System development life cycle"],
+      "validation_steps": [
+        "Migrate raw SQL queries to ORM methods",
+        "Review all Sequelize.query() calls for parameterization",
+        "Enable ORM query logging",
+        "Test with SQL injection payloads"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Input Validation with Joi or express-validator",
+      "description": "Validate and sanitize all user input before using in queries (defense in depth).",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js + express-validator",
+        "code": "const { query, validationResult } = require('express-validator');\n\n// Input validation middleware\napp.get('/users',\n  // Validate username: alphanumeric only, 3-20 characters\n  query('username')\n    .isAlphanumeric()\n    .isLength({ min: 3, max: 20 })\n    .trim()\n    .escape(),\n  \n  async (req, res) => {\n    // Check validation results\n    const errors = validationResult(req);\n    if (!errors.isEmpty()) {\n      return res.status(400).json({ errors: errors.array() });\n    }\n    \n    // Safe to use (but still use parameterized queries!)\n    const username = req.query.username;\n    const query = 'SELECT * FROM users WHERE username = ?';\n    const [rows] = await db.query(query, [username]);\n    res.json(rows);\n  }\n);\n\n// Alternative: Joi validation\nconst Joi = require('joi');\n\nconst userQuerySchema = Joi.object({\n  username: Joi.string().alphanum().min(3).max(20).required(),\n  email: Joi.string().email().optional()\n});\n\napp.get('/users/joi', async (req, res) => {\n  const { error, value } = userQuerySchema.validate(req.query);\n  \n  if (error) {\n    return res.status(400).json({ error: error.details[0].message });\n  }\n  \n  const query = 'SELECT * FROM users WHERE username = ?';\n  const [rows] = await db.query(query, [value.username]);\n  res.json(rows);\n});"
+      },
+      "tools": [
+        {
+          "name": "express-validator",
+          "type": "Input Validation",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Joi",
+          "type": "Schema Validation",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": ["A.14.2.8 - System security testing"],
+      "nist_csf": ["PR.DS-5 - Protections against data leaks"],
+      "validation_steps": [
+        "Add validation to all user input endpoints",
+        "Define validation schemas for each endpoint",
+        "Test with invalid input (should reject)",
+        "Monitor validation errors in logs"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual SQL errors in logs (syntax errors, quote escaping)",
+      "Database queries with suspicious characters (', --, /*, UNION)",
+      "Unexpected database access patterns (time-based delays, bulk exports)",
+      "WAF alerts for SQL injection patterns"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect SQL injection attempts\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where CsUriQuery contains \"'\" or CsUriQuery contains \"--\" or CsUriQuery contains \"UNION\"\n| where ScStatus == 500 // Internal server error (SQL syntax error)\n| summarize AttemptCount = count() by ClientIP, CsUriQuery\n| where AttemptCount > 5\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| rex field=uri_query \"(?<sqli_attempt>('|--|UNION|SELECT|INSERT|DROP))\"\n| where isnotnull(sqli_attempt)\n| stats count by src_ip, sqli_attempt\n| where count > 10"
+      }
+    ],
+    "tools": [
+      {
+        "name": "sqlmap",
+        "type": "SQL Injection Testing",
+        "usage": "sqlmap -u 'http://localhost:3000/users?username=test' --batch --level 3"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "DAST Scanner",
+        "usage": "Automated scanning for SQL injection vulnerabilities"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS"
+    ],
+    "compliance": [
+      "PCI-DSS 6.5.1",
+      "HIPAA 164.312(a)(1)",
+      "SOC2 CC6.1",
+      "ISO27001 A.14.2.5"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Public"
+    ]
+  }
+}

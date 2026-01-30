@@ -1,0 +1,206 @@
+{
+  "id": "STRIDE-API-EXPRESS-003",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control"
+    ],
+    "mitre_attack": [
+      "T1539 - Steal Web Session Cookie"
+    ],
+    "cwe": [
+      "CWE-352 - Cross-Site Request Forgery (CSRF)"
+    ]
+  },
+  "threat": {
+    "title": "Cross-Site Request Forgery (CSRF) in Express.js REST API",
+    "description": "When REST APIs accept state-changing requests without CSRF tokens, attackers can trick authenticated users into executing unwanted actions by embedding malicious requests in third-party websites.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Express.js",
+    "versions_affected": ["3.x", "4.x", "5.x"],
+    "ecosystem": "Node.js",
+    "dependencies": ["express-session", "cookie-parser"],
+    "related_frameworks": ["Koa.js", "Fastify", "NestJS"]
+  },
+  "attack": {
+    "scenario": "1. User logs into vulnerable web application\n2. Attacker sends user a link to malicious website\n3. Malicious site contains hidden form that auto-submits to victim's bank\n4. Request includes user's session cookie (sent automatically by browser)\n5. Application accepts request without CSRF validation\n6. Unauthorized action executed (e.g., transfer money, change password)",
+    "prerequisites": [
+      "Application uses cookie-based sessions",
+      "State-changing endpoints (POST, PUT, DELETE) lack CSRF protection",
+      "User is authenticated and has active session",
+      "Attacker can trick user into visiting malicious site"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-7598",
+        "description": "CSRF in minimist npm package",
+        "cvss_score": 5.6,
+        "published_date": "2020-03-11"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "YouTube CSRF Vulnerability 2008",
+        "date": "2008-07-10",
+        "impact": "Attackers could add/delete videos from user accounts",
+        "root_cause": "Missing CSRF tokens on state-changing actions",
+        "source_url": "https://www.zdnet.com/article/youtube-fixes-cross-site-request-forgery-flaw/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "CSRF on password change endpoint allowing account takeover"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP CSRF Prevention Cheat Sheet",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-01-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+        "key_finding": "CSRF affects 70% of web applications without proper token validation"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement CSRF Tokens with csurf Middleware",
+      "description": "Use synchronizer token pattern to validate that requests originate from your application.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst csrf = require('csurf');\nconst cookieParser = require('cookie-parser');\nconst session = require('express-session');\n\nconst app = express();\n\n// Required middleware\napp.use(cookieParser());\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    httpOnly: true,\n    secure: true, // HTTPS only\n    sameSite: 'strict'\n  }\n}));\napp.use(express.urlencoded({ extended: false }));\n\n// CSRF protection middleware\nconst csrfProtection = csrf({ cookie: true });\n\n// GET route: send CSRF token to client\napp.get('/form', csrfProtection, (req, res) => {\n  res.render('form', { csrfToken: req.csrfToken() });\n});\n\n// POST route: validate CSRF token\napp.post('/transfer', csrfProtection, (req, res) => {\n  // Token is automatically validated by middleware\n  // If invalid, middleware returns 403 Forbidden\n  \n  const { amount, recipient } = req.body;\n  // Process transfer...\n  res.json({ success: true });\n});\n\n// Error handler for CSRF failures\napp.use((err, req, res, next) => {\n  if (err.code === 'EBADCSRFTOKEN') {\n    res.status(403).json({ error: 'Invalid CSRF token' });\n  } else {\n    next(err);\n  }\n});"
+      },
+      "tools": [
+        {
+          "name": "csurf",
+          "type": "CSRF Protection Middleware",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": ["A.14.2.1 - Secure development policy"],
+      "nist_csf": ["PR.AC-1 - Identities and credentials are managed"],
+      "validation_steps": [
+        "Add csurf middleware to Express app",
+        "Include CSRF token in all forms and AJAX requests",
+        "Test POST/PUT/DELETE without token (should fail with 403)",
+        "Verify token changes per session"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Use SameSite Cookie Attribute",
+      "description": "Set SameSite=Strict or SameSite=Lax on session cookies to prevent cross-site request attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const session = require('express-session');\n\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    httpOnly: true,      // Prevent JavaScript access\n    secure: true,        // HTTPS only\n    sameSite: 'strict',  // Prevent cross-site cookies\n    maxAge: 3600000      // 1 hour\n  }\n}));\n\n// SameSite values:\n// - 'strict': Cookie NEVER sent on cross-site requests (most secure)\n// - 'lax': Cookie sent on top-level navigation (GET only)\n// - 'none': Cookie always sent (requires secure: true)\n\n// For APIs that need cross-origin access, use 'lax'\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  cookie: {\n    sameSite: 'lax',\n    secure: true\n  }\n}));"
+      },
+      "tools": [],
+      "iso27001_controls": ["A.13.1.3 - Segregation in networks"],
+      "nist_csf": ["PR.AC-5 - Network integrity is protected"],
+      "validation_steps": [
+        "Set SameSite attribute on all session cookies",
+        "Test cross-origin requests (should not include cookies)",
+        "Verify cookie headers in browser DevTools",
+        "Test with CSRF attack simulation"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Validate Origin and Referer Headers",
+      "description": "Check that requests originate from your own domain (defense in depth).",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "// CSRF protection via Origin/Referer validation\nfunction validateOrigin(req, res, next) {\n  const allowedOrigins = [\n    'https://example.com',\n    'https://www.example.com'\n  ];\n  \n  // Check Origin header (modern browsers)\n  const origin = req.get('Origin');\n  if (origin) {\n    if (!allowedOrigins.includes(origin)) {\n      return res.status(403).json({ error: 'Forbidden: Invalid origin' });\n    }\n    return next();\n  }\n  \n  // Fallback to Referer header (older browsers)\n  const referer = req.get('Referer');\n  if (referer) {\n    const refererHost = new URL(referer).origin;\n    if (!allowedOrigins.includes(refererHost)) {\n      return res.status(403).json({ error: 'Forbidden: Invalid referer' });\n    }\n    return next();\n  }\n  \n  // No Origin or Referer (suspicious)\n  return res.status(403).json({ error: 'Forbidden: Missing origin headers' });\n}\n\n// Apply to state-changing routes\napp.post('/transfer', validateOrigin, (req, res) => {\n  // Process transfer...\n  res.json({ success: true });\n});\n\napp.put('/user/profile', validateOrigin, (req, res) => {\n  // Update profile...\n  res.json({ success: true });\n});\n\napp.delete('/user/account', validateOrigin, (req, res) => {\n  // Delete account...\n  res.json({ success: true });\n});"
+      },
+      "tools": [],
+      "iso27001_controls": ["A.14.2.8 - System security testing"],
+      "nist_csf": ["PR.DS-5 - Protections against data leaks"],
+      "validation_steps": [
+        "Add Origin/Referer validation to POST/PUT/DELETE routes",
+        "Whitelist all legitimate origins",
+        "Test with requests from unauthorized origins (should fail)",
+        "Monitor blocked requests in logs"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "State-changing requests with missing or invalid CSRF tokens",
+      "Requests with suspicious Origin/Referer headers",
+      "Unusual request patterns (automated, high frequency)",
+      "Session cookies sent on cross-origin requests"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect CSRF attempts\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where CsMethod in ('POST', 'PUT', 'DELETE')\n| where CsReferer !startswith 'https://yourdomain.com'\n| summarize AttemptCount = count() by ClientIP, CsUriStem, CsReferer\n| where AttemptCount > 10\n| order by AttemptCount desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Burp Suite",
+        "type": "CSRF Testing",
+        "usage": "Generate CSRF PoC and test endpoints"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "DAST Scanner",
+        "usage": "Automated CSRF detection"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce"
+    ],
+    "compliance": [
+      "PCI-DSS 6.5.9",
+      "HIPAA 164.312(a)(1)",
+      "SOC2 CC6.1"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

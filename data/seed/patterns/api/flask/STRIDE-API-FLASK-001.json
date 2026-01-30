@@ -1,0 +1,204 @@
+{
+  "id": "STRIDE-API-FLASK-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.0,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1210 - Exploitation of Remote Services"
+    ],
+    "cwe": [
+      "CWE-1336 - Server-Side Template Injection (SSTI)"
+    ]
+  },
+  "threat": {
+    "title": "Server-Side Template Injection (SSTI) in Flask Jinja2 Templates",
+    "description": "When user input is directly embedded into Jinja2 templates without proper escaping, attackers can inject template directives to execute arbitrary Python code on the server, leading to remote code execution.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Flask",
+    "versions_affected": ["1.x", "2.x", "3.x"],
+    "ecosystem": "Python",
+    "dependencies": ["Jinja2"],
+    "related_frameworks": ["Django", "FastAPI", "Tornado"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies user input field that renders in template\n2. Injects Jinja2 template payload: {{config.__class__.__init__.__globals__['os'].popen('whoami').read()}}\n3. Flask renders template with malicious code\n4. Python code executes on server\n5. Attacker gains remote code execution, can read files, execute commands",
+    "prerequisites": [
+      "User input is rendered in Jinja2 template without escaping",
+      "Application uses render_template_string() with user input",
+      "Flask server has permissions to execute system commands"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-8341",
+        "description": "Jinja2 SSTI in template rendering",
+        "cvss_score": 8.6,
+        "published_date": "2019-02-05"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Uber 2017 SSTI Vulnerability",
+        "date": "2017-11-01",
+        "impact": "Potential RCE in internal tools",
+        "root_cause": "Template injection in Flask admin panel",
+        "source_url": "https://hackerone.com/reports/125980"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "125980",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "SSTI leading to remote code execution in Flask application"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Server-Side Template Injection: RCE for the Modern Web App",
+        "authors": ["James Kettle"],
+        "published_date": "2015-08-05",
+        "source_url": "https://portswigger.net/research/server-side-template-injection",
+        "key_finding": "SSTI affects majority of template engines including Jinja2, leading to RCE"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Never Use render_template_string() with User Input",
+      "description": "Avoid rendering templates from strings containing user input. Use predefined template files instead.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask 2.x",
+        "code": "from flask import Flask, render_template, render_template_string, request\n\napp = Flask(__name__)\n\n# BAD: render_template_string with user input (VULNERABLE!)\n@app.route('/greet/bad')\ndef greet_bad():\n    name = request.args.get('name', 'World')\n    template = f'<h1>Hello {name}!</h1>'  # VULNERABLE!\n    return render_template_string(template)\n\n# GOOD: Use predefined template file\n@app.route('/greet/safe')\ndef greet_safe():\n    name = request.args.get('name', 'World')\n    # templates/greet.html: <h1>Hello {{ name }}!</h1>\n    return render_template('greet.html', name=name)  # SAFE\n\n# GOOD: If you must use strings, escape user input\nfrom markupsafe import escape\n\n@app.route('/greet/escaped')\ndef greet_escaped():\n    name = request.args.get('name', 'World')\n    escaped_name = escape(name)  # Escape HTML/template syntax\n    template = f'<h1>Hello {escaped_name}!</h1>'\n    return render_template_string(template)  # SAFE (but not recommended)"
+      },
+      "tools": [],
+      "iso27001_controls": ["A.14.2.5 - Secure system engineering principles"],
+      "nist_csf": ["PR.IP-2 - System development life cycle"],
+      "validation_steps": [
+        "Search codebase for render_template_string() usage",
+        "Replace with render_template() and template files",
+        "Test with SSTI payloads (should not execute)",
+        "Enable template auto-escaping"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enable Jinja2 Autoescape for All Templates",
+      "description": "Configure Jinja2 to automatically escape all variables by default.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask 2.x",
+        "code": "from flask import Flask\nfrom jinja2 import Environment, select_autoescape\n\napp = Flask(__name__)\n\n# Enable autoescape for all templates\napp.jinja_env.autoescape = select_autoescape(\n    enabled_extensions=('html', 'xml', 'jinja2'),\n    default_for_string=True,\n    default=True\n)\n\n# Alternatively, set in Flask config\napp.config['TEMPLATES_AUTO_RELOAD'] = True\napp.jinja_env.auto_reload = True\n\n# Now all variables are auto-escaped\n@app.route('/safe')\ndef safe_route():\n    user_input = request.args.get('input', '')\n    # user_input is automatically escaped in template\n    return render_template('page.html', data=user_input)"
+      },
+      "tools": [],
+      "iso27001_controls": ["A.14.2.1 - Secure development policy"],
+      "nist_csf": ["PR.DS-5 - Protections against data leaks"],
+      "validation_steps": [
+        "Enable autoescape in Flask/Jinja2 config",
+        "Test with HTML/JavaScript injection (should be escaped)",
+        "Verify template output in browser DevTools",
+        "Use |safe filter ONLY when absolutely necessary"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Sandboxed Template Environment",
+      "description": "Use Jinja2's SandboxedEnvironment to restrict available functions and attributes.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask 2.x",
+        "code": "from flask import Flask\nfrom jinja2.sandbox import SandboxedEnvironment\n\napp = Flask(__name__)\n\n# Replace default environment with sandboxed version\nclass CustomSandboxedEnvironment(SandboxedEnvironment):\n    def __init__(self, **kwargs):\n        super().__init__(**kwargs)\n        # Whitelist allowed attributes\n        self.allowed_filters = ['upper', 'lower', 'title']\n    \n    def is_safe_attribute(self, obj, attr, value):\n        # Deny access to dangerous attributes\n        if attr.startswith('_'):\n            return False\n        if attr in ['__init__', '__globals__', '__class__']:\n            return False\n        return True\n\napp.jinja_env = CustomSandboxedEnvironment(\n    autoescape=True,\n    loader=app.jinja_loader\n)\n\n# Now template injection attempts will fail\n@app.route('/sandboxed')\ndef sandboxed_route():\n    user_input = request.args.get('input', '')\n    # Even if attacker injects {{config}}, sandbox blocks it\n    return render_template('page.html', data=user_input)"
+      },
+      "tools": [
+        {
+          "name": "Jinja2 SandboxedEnvironment",
+          "type": "Template Security",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": ["A.14.2.8 - System security testing"],
+      "nist_csf": ["PR.IP-2 - System development life cycle"],
+      "validation_steps": [
+        "Replace Jinja2 Environment with SandboxedEnvironment",
+        "Test SSTI payloads (should fail with SecurityError)",
+        "Whitelist only necessary filters and functions",
+        "Monitor for SecurityError exceptions"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP 500 errors with Jinja2 syntax errors",
+      "Unusual template rendering times (code execution)",
+      "Requests with template syntax in parameters ({{, {%, etc.)",
+      "Suspicious system commands in logs"
+    ],
+    "log_queries": [
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"web\" AND http.request.body.content: (\"{{\" OR \"{%\" OR \"__class__\" OR \"__init__\" OR \"popen\")"
+      }
+    ],
+    "tools": [
+      {
+        "name": "tplmap",
+        "type": "SSTI Detection Tool",
+        "usage": "tplmap -u 'http://localhost:5000/page?input=test'"
+      },
+      {
+        "name": "Burp Suite",
+        "type": "Manual SSTI Testing",
+        "usage": "Test with payloads: {{7*7}}, {{config}}, etc."
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "SaaS",
+      "E-commerce",
+      "Healthcare"
+    ],
+    "compliance": [
+      "OWASP Top 10",
+      "PCI-DSS 6.5.1",
+      "ISO27001 A.14.2.5"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise"
+    ],
+    "data_classification": [
+      "Confidential"
+    ]
+  }
+}

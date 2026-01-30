@@ -1,0 +1,257 @@
+{
+  "id": "STRIDE-API-EXPRESS-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.3,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A02:2021 - Cryptographic Failures"
+    ],
+    "mitre_attack": [
+      "T1550.001 - Application Access Token",
+      "T1552.001 - Credentials In Files"
+    ],
+    "cwe": [
+      "CWE-798 - Use of Hard-coded Credentials",
+      "CWE-312 - Cleartext Storage of Sensitive Information"
+    ]
+  },
+  "threat": {
+    "title": "JWT Secret Exposure via Environment Variables in Express.js",
+    "description": "When JWT signing secrets are stored in .env files committed to version control, attackers can forge authentication tokens and impersonate any user, including administrators. This is one of the most common authentication bypass vulnerabilities in Node.js applications.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Express.js",
+    "versions_affected": ["3.x", "4.x", "5.x"],
+    "ecosystem": "Node.js",
+    "dependencies": ["jsonwebtoken", "dotenv", "passport-jwt"],
+    "related_frameworks": ["Koa.js", "Fastify", "NestJS", "Hapi"]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers .env file in public GitHub repository or through directory traversal\n2. Extracts JWT_SECRET value (e.g., 'mysecretkey123')\n3. Uses the secret to sign malicious JWT tokens with admin claims\n4. Sends forged token in Authorization header\n5. Gains unrestricted admin access to the application\n6. Exfiltrates sensitive data or modifies critical resources",
+    "prerequisites": [
+      "JWT secret stored in .env file or environment variables",
+      "Repository is public OR attacker has access via leak/breach",
+      "Application uses HS256 (HMAC) symmetric signing algorithm",
+      "No additional token validation (e.g., IP binding, refresh tokens)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-1000531",
+        "description": "Hardcoded credentials in Uber's GitHub repositories led to AWS access",
+        "cvss_score": 9.8,
+        "published_date": "2018-06-26"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Uber 2016 Data Breach",
+        "date": "2016-10-01",
+        "impact": "57 million users and 600,000 drivers compromised; $148 million settlement",
+        "root_cause": "AWS credentials hardcoded in GitHub repository, leading to S3 bucket access",
+        "source_url": "https://www.ftc.gov/news-events/news/press-releases/2018/09/uber-agrees-pay-148-million-settle-claims-covering-massive-2016-data-breach"
+      },
+      {
+        "incident": "GitGuardian Secrets in Code Report",
+        "date": "2022-12-31",
+        "impact": "Over 10 million secrets detected in public GitHub commits in 2022",
+        "root_cause": "Developers accidentally committing .env files and API keys",
+        "source_url": "https://www.gitguardian.com/state-of-secrets-sprawl-2023"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 5000,
+        "severity": "Critical",
+        "summary": "JWT secret exposure in .env file allowing full account takeover"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "How to Secure Node.js Applications: JWT Secret Management",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-05-01",
+        "source_url": "https://owasp.org/www-project-nodejs-goat/",
+        "key_finding": "JWT secret exposure is among top 3 authentication vulnerabilities in Node.js apps"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use Azure Key Vault for Secret Management",
+      "description": "Store JWT secrets in Azure Key Vault and retrieve them at runtime using Managed Identity. This ensures secrets are never stored in code or configuration files.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const { SecretClient } = require('@azure/keyvault-secrets');\nconst { DefaultAzureCredential } = require('@azure/identity');\n\n// Initialize Key Vault client with Managed Identity\nconst credential = new DefaultAzureCredential();\nconst vaultUrl = process.env.AZURE_KEYVAULT_URL; // e.g., https://my-vault.vault.azure.net\nconst client = new SecretClient(vaultUrl, credential);\n\n// Retrieve JWT secret at application startup\nlet jwtSecret;\n\nasync function initializeApp() {\n  try {\n    const secret = await client.getSecret('jwt-secret');\n    jwtSecret = secret.value;\n    console.log('JWT secret loaded from Key Vault');\n  } catch (error) {\n    console.error('Failed to retrieve secret from Key Vault:', error);\n    process.exit(1); // Fail-fast if secret cannot be retrieved\n  }\n}\n\n// Use in JWT middleware\nconst jwt = require('jsonwebtoken');\n\nfunction generateToken(userId) {\n  return jwt.sign(\n    { userId, iat: Math.floor(Date.now() / 1000) },\n    jwtSecret,\n    { algorithm: 'HS256', expiresIn: '1h' }\n  );\n}\n\nfunction verifyToken(token) {\n  return jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });\n}\n\n// Start app after secrets are loaded\ninitializeApp().then(() => {\n  app.listen(3000, () => console.log('Server running on port 3000'));\n});"
+      },
+      "tools": [
+        {
+          "name": "Azure Key Vault",
+          "type": "Secret Management Service",
+          "cost": "$0.03 per 10,000 operations (first 10,000 free monthly)"
+        },
+        {
+          "name": "Azure Managed Identity",
+          "type": "Authentication",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.10.1.2 - Key management"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Verify .env file does not contain JWT_SECRET",
+        "Confirm Key Vault URL is set in environment",
+        "Test secret rotation without application restart",
+        "Verify Managed Identity has 'Get' permission on secrets"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Switch to Asymmetric RS256 JWT Signing",
+      "description": "Use RS256 (RSA public/private key pairs) instead of HS256 (shared secret). This allows public key distribution for verification while keeping the private signing key secure.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const jwt = require('jsonwebtoken');\nconst fs = require('fs');\n\n// Generate RSA key pair (do this ONCE, store private key in Key Vault)\n// const { generateKeyPairSync } = require('crypto');\n// const { publicKey, privateKey } = generateKeyPairSync('rsa', {\n//   modulusLength: 2048,\n//   publicKeyEncoding: { type: 'spki', format: 'pem' },\n//   privateKeyEncoding: { type: 'pkcs8', format: 'pem' }\n// });\n\n// In production: Load keys securely\nconst privateKey = fs.readFileSync('/var/secrets/jwt-private.pem', 'utf8');\nconst publicKey = fs.readFileSync('/var/secrets/jwt-public.pem', 'utf8');\n\n// Sign tokens with private key (auth service only)\nfunction generateToken(userId) {\n  return jwt.sign(\n    { userId, iat: Math.floor(Date.now() / 1000) },\n    privateKey,\n    { algorithm: 'RS256', expiresIn: '1h' }\n  );\n}\n\n// Verify tokens with public key (all services can do this)\nfunction verifyToken(token) {\n  return jwt.verify(token, publicKey, { algorithms: ['RS256'] });\n}\n\n// Middleware for protected routes\nfunction authenticateJWT(req, res, next) {\n  const token = req.headers.authorization?.split(' ')[1];\n  \n  if (!token) {\n    return res.status(401).json({ error: 'No token provided' });\n  }\n  \n  try {\n    const decoded = verifyToken(token);\n    req.user = decoded;\n    next();\n  } catch (error) {\n    return res.status(403).json({ error: 'Invalid token' });\n  }\n}"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Generate 2048-bit RSA key pair",
+        "Store private key in Azure Key Vault or secure file system",
+        "Distribute public key to all services needing token verification",
+        "Update JWT middleware to use RS256 algorithm",
+        "Test token generation and verification"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Pre-Commit Secret Scanning with Gitleaks",
+      "description": "Prevent secrets from being committed to version control using automated pre-commit hooks and CI/CD scanning.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "Git + GitHub Actions",
+        "code": "#!/bin/bash\n# Install Gitleaks\nbrew install gitleaks  # macOS\n# OR\ncurl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/scripts/install.sh | sh\n\n# Create pre-commit hook\ncat > .git/hooks/pre-commit << 'EOF'\n#!/bin/sh\necho \"Running Gitleaks secret scan...\"\ngitleaks protect --staged --verbose --redact\n\nif [ $? -ne 0 ]; then\n    echo \"❌ Secret detected! Commit blocked.\"\n    echo \"Remove the secret and try again.\"\n    exit 1\nfi\nEOF\n\nchmod +x .git/hooks/pre-commit\n\n# Configure .gitleaks.toml\ncat > .gitleaks.toml << 'EOF'\ntitle = \"Ansvar Gitleaks Configuration\"\n\n[extend]\npath = \"https://raw.githubusercontent.com/gitleaks/gitleaks/master/config/gitleaks.toml\"\n\n# Custom rule for JWT secrets\n[[rules]]\nid = \"jwt-secret\"\ndescription = \"Detected JWT secret in code\"\nregex = '''(?i)(jwt[_-]?secret|jwt[_-]?key|secret[_-]?key)\\s*[=:]\\s*['\"][a-zA-Z0-9-_\\.]{20,}['\"]'''\n\n[[rules]]\nid = \"env-file\"\ndescription = \"Detected .env file with secrets\"\npath = '''\\.env$'''\nEOF\n\n# Add GitHub Actions workflow\nmkdir -p .github/workflows\ncat > .github/workflows/gitleaks.yml << 'EOF'\nname: Gitleaks Secret Scanning\n\non:\n  push:\n    branches: [ main, develop ]\n  pull_request:\n    branches: [ main, develop ]\n\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          fetch-depth: 0\n      \n      - name: Run Gitleaks\n        uses: gitleaks/gitleaks-action@v2\n        env:\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # For enterprise features\nEOF"
+      },
+      "tools": [
+        {
+          "name": "Gitleaks",
+          "type": "Secret Detection",
+          "cost": "Free (OSS) / $50/month (Enterprise)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup",
+        "A.14.2.6 - Secure development environment"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Install Gitleaks locally and in CI/CD",
+        "Test by adding dummy secret (should block commit)",
+        "Verify GitHub Actions workflow runs on push",
+        "Check GitHub Security tab for findings"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unauthorized admin access from unexpected IP addresses",
+      "JWT tokens with user claims that don't match database records",
+      "Multiple concurrent sessions for a single user with different IPs",
+      "JWT tokens with unusually long expiration times",
+      "Tokens issued before user creation date"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect admin access from suspicious IPs\nSigninLogs\n| where ResultType == \"0\" // Success\n| where UserPrincipalName contains \"admin\"\n| where IPAddress !in (dynamic([\"trusted_ip_1\", \"trusted_ip_2\"]))\n| summarize LoginCount = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 1h)\n| where LoginCount > 5\n| order by LoginCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"authentication\" AND event.outcome: \"success\" AND user.roles: \"admin\" AND NOT source.ip: (10.0.0.0/8 OR 172.16.0.0/12)"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=express_access\n| where status=200 AND user_role=\"admin\" AND NOT cidrmatch(\"10.0.0.0/8\", client_ip)\n| stats count by user_id, client_ip, _time\n| where count > 10"
+      }
+    ],
+    "tools": [
+      {
+        "name": "TruffleHog",
+        "type": "Secret Scanning (Git History)",
+        "usage": "trufflehog git https://github.com/org/repo --since-commit HEAD~100 --only-verified"
+      },
+      {
+        "name": "GitGuardian",
+        "type": "Real-time Secret Detection",
+        "usage": "Monitors all commits in real-time for exposed secrets"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 8.2.1)",
+      "HIPAA (164.312(a)(2)(i))",
+      "SOC2 (CC6.1)",
+      "ISO27001 (A.9.4.1)",
+      "GDPR (Article 32)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}
