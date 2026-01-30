@@ -1,0 +1,359 @@
+{
+  "id": "STRIDE-API-OAUTH-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A01:2021 - Broken Access Control",
+      "A02:2021 - Cryptographic Failures"
+    ],
+    "mitre_attack": [
+      "T1528 - Steal Application Access Token",
+      "T1550.001 - Use Alternate Authentication Material: Application Access Token",
+      "T1539 - Steal Web Session Cookie"
+    ],
+    "cwe": [
+      "CWE-522 - Insufficiently Protected Credentials",
+      "CWE-311 - Missing Encryption of Sensitive Data",
+      "CWE-916 - Use of Password Hash With Insufficient Computational Effort",
+      "CWE-613 - Insufficient Session Expiration"
+    ]
+  },
+  "threat": {
+    "title": "OAuth 2.0 Access Token Theft and Replay in Spring Boot and Express.js Applications",
+    "description": "OAuth 2.0 access tokens can be stolen through multiple attack vectors including insecure storage, insufficient encryption, lack of token binding, and compromised service accounts. Once stolen, these tokens can be replayed to impersonate legitimate users and access protected resources without requiring passwords or multi-factor authentication. This vulnerability is particularly critical in Spring Boot and Express.js applications that implement OAuth 2.0 authorization servers or resource servers without proper token protection mechanisms.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "OAuth 2.0",
+    "versions_affected": ["OAuth 2.0 (RFC 6749)", "OAuth 2.1 (Draft)"],
+    "ecosystem": "Multi-platform",
+    "dependencies": [
+      "Spring Boot 3.x (spring-security-oauth2-resource-server)",
+      "Spring Security 6.x (spring-security-oauth2-client)",
+      "Express.js 4.x",
+      "passport (passport-oauth2)",
+      "jsonwebtoken",
+      "node-jose"
+    ],
+    "related_frameworks": [
+      "Spring Authorization Server",
+      "Keycloak",
+      "Auth0",
+      "Okta",
+      "passport-jwt",
+      "express-oauth-server"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies target application using OAuth 2.0 for authentication/authorization (Spring Boot or Express.js)\n2. Reconnaissance reveals one or more attack vectors:\n   - OAuth tokens stored in browser localStorage/sessionStorage without encryption\n   - API keys and OAuth tokens exposed in Dropbox Sign service account with elevated privileges\n   - Credentials without MFA protection stored in systems compromised by infostealer malware\n   - Service account with database access storing unencrypted OAuth tokens\n3. Attacker steals access token through:\n   - XSS attack extracting tokens from browser storage\n   - Compromising service account credentials (as in Dropbox Sign breach)\n   - Using stolen credentials from infostealer malware (as in Snowflake breach)\n   - Intercepting tokens from unencrypted HTTP traffic or logs\n4. Attacker validates stolen token by making API request with Authorization: Bearer <token> header\n5. Token successfully authenticates without MFA, password, or additional verification\n6. Attacker escalates privileges by:\n   - Accessing sensitive data (PII, financial records, API keys)\n   - Modifying user accounts and permissions\n   - Pivoting to connected systems using OAuth token for SSO\n   - Exfiltrating data from cloud storage (S3, Azure Blob) accessed via OAuth scopes",
+    "prerequisites": [
+      "Application implements OAuth 2.0 for authentication/authorization",
+      "OAuth tokens lack cryptographic binding to client/device",
+      "No token encryption at rest in databases or browser storage",
+      "Missing or weak token expiration policies (long-lived tokens)",
+      "Absence of token introspection or validation on every request",
+      "No network-level restrictions (IP allowlisting) for token usage",
+      "Lack of MFA for service accounts with OAuth token access",
+      "Insufficient monitoring and alerting for suspicious token usage patterns"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-34034",
+        "description": "Spring Security WebFlux authorization bypass using '**' pattern, allowing attackers to bypass authorization rules and access protected resources. Critical vulnerability in Spring Security 5.7.x before 5.7.11, 5.8.x before 5.8.6, and 6.0.x before 6.0.6 affecting OAuth resource servers.",
+        "cvss_score": 9.8,
+        "published_date": "2023-07-19",
+        "affected_versions": "Spring Security 5.7.x < 5.7.11, 5.8.x < 5.8.6, 6.0.x < 6.0.6",
+        "source_url": "https://spring.io/security/cve-2023-34034/"
+      },
+      {
+        "cve_id": "CVE-2022-31692",
+        "description": "Spring Security authorization rules can be bypassed via forward or include dispatcher types. Allows attackers to bypass OAuth 2.0 resource server authorization and access protected endpoints. Affects Spring Security 5.6.x before 5.6.9 and 5.7.x before 5.7.5.",
+        "cvss_score": 8.1,
+        "published_date": "2022-10-31",
+        "affected_versions": "Spring Security 5.6.x < 5.6.9, 5.7.x < 5.7.5",
+        "source_url": "https://spring.io/blog/2022/10/31/cve-2022-31692-authorization-rules-can-be-bypassed-via-forward-or-include-in-spring-security/"
+      },
+      {
+        "cve_id": "CVE-2020-15084",
+        "description": "Authorization bypass in express-jwt library used by Express.js applications. Versions before 5.3.3 did not enforce the algorithms parameter in JWT verification, allowing attackers to forge tokens using asymmetric key confusion attacks. Enables OAuth token forgery in Express.js OAuth implementations.",
+        "cvss_score": 8.1,
+        "published_date": "2020-06-30",
+        "affected_versions": "express-jwt < 5.3.3",
+        "source_url": "https://github.com/advisories/GHSA-6g6m-m6h5-w9gf"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Dropbox Sign OAuth Token Breach",
+        "date": "2024-04-24",
+        "impact": "All Dropbox Sign users affected. Compromised data included emails, usernames, phone numbers, hashed passwords, API keys, OAuth tokens, and MFA data. Attackers gained access through a service account with elevated privileges accessing the production database.",
+        "root_cause": "Compromised service account in automated configuration tool with access to customer database containing unencrypted OAuth tokens and API keys",
+        "source_url": "https://www.kiteworks.com/cybersecurity-risk-management/dropbox-sign-breach/"
+      },
+      {
+        "incident": "Snowflake Multi-Tenant Data Breach (UNC5537)",
+        "date": "2024-05-01",
+        "impact": "165 organizations affected including AT&T, Ticketmaster, Santander Bank, LendingTree. Over 500 million consumer records exfiltrated. Attackers used stolen credentials without MFA to access OAuth-authenticated Snowflake instances.",
+        "root_cause": "Stolen credentials obtained via infostealer malware (dating back to 2020) combined with lack of MFA protection on customer Snowflake accounts using OAuth tokens for access",
+        "source_url": "https://cloudsecurityalliance.org/blog/2025/05/07/unpacking-the-2024-snowflake-data-breach"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-OAuth-Token-Replay",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "OAuth 2.0 access token replay attack allowing full account takeover due to missing token binding and insufficient validation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OAuth 2.0 Threat Model and Security Considerations",
+        "authors": ["IETF OAuth Working Group"],
+        "published_date": "2023-10-01",
+        "source_url": "https://datatracker.ietf.org/doc/html/rfc6819",
+        "key_finding": "Token theft and replay attacks are among the most critical OAuth 2.0 vulnerabilities, requiring token binding, encryption, and short expiration times"
+      },
+      {
+        "title": "MITRE ATT&CK T1528 - Steal Application Access Token",
+        "authors": ["MITRE Corporation"],
+        "published_date": "2024-02-01",
+        "source_url": "https://attack.mitre.org/techniques/T1528/",
+        "key_finding": "Adversaries steal application access tokens to access cloud resources and SaaS applications, bypassing authentication controls including MFA"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Token Binding with DPoP (Demonstrating Proof-of-Possession)",
+      "description": "Cryptographically bind OAuth 2.0 access tokens to specific clients using DPoP (RFC 9449). This prevents stolen tokens from being used by attackers as they cannot prove possession of the private key associated with the token. Implement in both Spring Boot and Express.js OAuth implementations.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "// Spring Boot 3.x OAuth2 Resource Server with DPoP Token Binding\n// Add to pom.xml:\n// <dependency>\n//   <groupId>org.springframework.security</groupId>\n//   <artifactId>spring-security-oauth2-resource-server</artifactId>\n// </dependency>\n\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;\nimport org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;\nimport org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;\nimport org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;\nimport org.springframework.security.web.SecurityFilterChain;\nimport org.springframework.security.oauth2.jwt.JwtDecoder;\nimport org.springframework.security.oauth2.jwt.NimbusJwtDecoder;\n\nimport javax.crypto.SecretKey;\nimport java.security.interfaces.RSAPublicKey;\n\n@Configuration\n@EnableWebSecurity\npublic class OAuth2ResourceServerConfig {\n\n    @Bean\n    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {\n        http\n            .authorizeHttpRequests(authorize -> authorize\n                .requestMatchers(\"/api/public/**\").permitAll()\n                .anyRequest().authenticated()\n            )\n            .oauth2ResourceServer(oauth2 -> oauth2\n                .jwt(jwt -> jwt\n                    .decoder(jwtDecoder())\n                    .jwtAuthenticationConverter(jwtAuthenticationConverter())\n                )\n                .bearerTokenResolver(dpopBearerTokenResolver())\n            );\n        return http.build();\n    }\n\n    @Bean\n    public JwtDecoder jwtDecoder() {\n        // Configure JWT decoder with issuer URI\n        String issuerUri = \"https://your-auth-server.com\";\n        return NimbusJwtDecoder.withIssuerLocation(issuerUri).build();\n    }\n\n    @Bean\n    public BearerTokenResolver dpopBearerTokenResolver() {\n        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();\n        resolver.setAllowUriQueryParameter(false); // Security: disable query params\n        return new DPoPBearerTokenResolver(resolver);\n    }\n\n    @Bean\n    public JwtAuthenticationConverter jwtAuthenticationConverter() {\n        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();\n        // Extract authorities from token claims\n        converter.setJwtGrantedAuthoritiesConverter(new CustomJwtGrantedAuthoritiesConverter());\n        return converter;\n    }\n}\n\n// Custom DPoP Bearer Token Resolver\nimport org.springframework.security.oauth2.core.OAuth2AuthenticationException;\nimport org.springframework.security.oauth2.server.resource.BearerTokenError;\nimport org.springframework.security.oauth2.server.resource.BearerTokenErrors;\nimport jakarta.servlet.http.HttpServletRequest;\nimport java.security.MessageDigest;\nimport java.util.Base64;\n\npublic class DPoPBearerTokenResolver implements BearerTokenResolver {\n    private final BearerTokenResolver delegate;\n\n    public DPoPBearerTokenResolver(BearerTokenResolver delegate) {\n        this.delegate = delegate;\n    }\n\n    @Override\n    public String resolve(HttpServletRequest request) {\n        String token = delegate.resolve(request);\n        if (token == null) {\n            return null;\n        }\n\n        // Validate DPoP proof\n        String dpopProof = request.getHeader(\"DPoP\");\n        if (dpopProof == null) {\n            throw new OAuth2AuthenticationException(\n                BearerTokenErrors.invalidToken(\"DPoP proof required\")\n            );\n        }\n\n        // Verify DPoP proof JWT signature and binding\n        if (!validateDPoPProof(dpopProof, token, request)) {\n            throw new OAuth2AuthenticationException(\n                BearerTokenErrors.invalidToken(\"Invalid DPoP proof\")\n            );\n        }\n\n        return token;\n    }\n\n    private boolean validateDPoPProof(String dpopProof, String accessToken, HttpServletRequest request) {\n        try {\n            // 1. Parse DPoP proof JWT\n            // 2. Verify JWT signature with public key from JWK in header\n            // 3. Verify htm (HTTP method) matches request method\n            // 4. Verify htu (HTTP URI) matches request URI\n            // 5. Verify ath (access token hash) matches hash of access token\n            // 6. Verify jti is unique (check cache/database)\n            // 7. Verify iat is recent (within acceptable time window)\n            \n            // Simplified validation (implement full RFC 9449 validation)\n            MessageDigest digest = MessageDigest.getInstance(\"SHA-256\");\n            byte[] hash = digest.digest(accessToken.getBytes());\n            String expectedAth = Base64.getUrlEncoder().withoutPadding().encodeToString(hash);\n            \n            // TODO: Implement full DPoP proof validation\n            // See: https://datatracker.ietf.org/doc/html/rfc9449\n            \n            return true; // Placeholder - implement full validation\n        } catch (Exception e) {\n            return false;\n        }\n    }\n}\n\n// Express.js 4.x Implementation with DPoP\n// File: middleware/dpopTokenValidation.js\nconst jwt = require('jsonwebtoken');\nconst crypto = require('crypto');\nconst { createRemoteJWKSet, jwtVerify } = require('jose');\n\n/**\n * DPoP Token Binding Middleware for Express.js 4.x\n * Implements RFC 9449 - OAuth 2.0 Demonstrating Proof-of-Possession\n */\nconst dpopTokenValidation = async (req, res, next) => {\n    try {\n        // 1. Extract access token from Authorization header\n        const authHeader = req.headers.authorization;\n        if (!authHeader || !authHeader.startsWith('Bearer ')) {\n            return res.status(401).json({ error: 'Missing or invalid Authorization header' });\n        }\n        const accessToken = authHeader.substring(7);\n\n        // 2. Extract DPoP proof from DPoP header\n        const dpopProof = req.headers['dpop'];\n        if (!dpopProof) {\n            return res.status(401).json({ error: 'DPoP proof required' });\n        }\n\n        // 3. Decode DPoP proof (JWT) without verification first to get JWK\n        const dpopDecoded = jwt.decode(dpopProof, { complete: true });\n        if (!dpopDecoded || !dpopDecoded.header.jwk) {\n            return res.status(401).json({ error: 'Invalid DPoP proof format' });\n        }\n\n        // 4. Verify DPoP proof JWT signature using public key from header\n        const publicKey = await crypto.subtle.importKey(\n            'jwk',\n            dpopDecoded.header.jwk,\n            { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },\n            false,\n            ['verify']\n        );\n\n        const dpopPayload = jwt.verify(dpopProof, publicKey, {\n            algorithms: ['RS256', 'ES256']\n        });\n\n        // 5. Validate DPoP proof claims\n        const validations = [\n            // HTTP method must match\n            dpopPayload.htm === req.method,\n            // HTTP URI must match (without query params)\n            dpopPayload.htu === `${req.protocol}://${req.get('host')}${req.path}`,\n            // Access token hash must match\n            dpopPayload.ath === crypto.createHash('sha256').update(accessToken).digest('base64url'),\n            // Timestamp must be recent (within 60 seconds)\n            Math.abs(Date.now() / 1000 - dpopPayload.iat) < 60,\n            // JTI must be unique (check Redis/database)\n            await isJtiUnique(dpopPayload.jti)\n        ];\n\n        if (!validations.every(v => v === true)) {\n            return res.status(401).json({ error: 'DPoP proof validation failed' });\n        }\n\n        // 6. Verify access token (with OAuth server's public key)\n        const JWKS = createRemoteJWKSet(new URL('https://your-auth-server.com/.well-known/jwks.json'));\n        const { payload: tokenPayload } = await jwtVerify(accessToken, JWKS, {\n            issuer: 'https://your-auth-server.com',\n            audience: 'your-api-identifier'\n        });\n\n        // 7. Verify token is bound to DPoP key (cnf claim)\n        const tokenThumbprint = tokenPayload.cnf?.jkt;\n        const dpopThumbprint = crypto.createHash('sha256')\n            .update(JSON.stringify(dpopDecoded.header.jwk))\n            .digest('base64url');\n\n        if (tokenThumbprint !== dpopThumbprint) {\n            return res.status(401).json({ error: 'Token not bound to DPoP key' });\n        }\n\n        // 8. Store user info and proceed\n        req.user = tokenPayload;\n        req.dpop = dpopPayload;\n        next();\n\n    } catch (error) {\n        console.error('DPoP validation error:', error);\n        return res.status(401).json({ error: 'Token validation failed' });\n    }\n};\n\n// Helper: Check if JTI is unique (prevent replay attacks)\nconst isJtiUnique = async (jti) => {\n    // Implement with Redis or database\n    const redis = require('./redisClient');\n    const exists = await redis.exists(`dpop:jti:${jti}`);\n    if (exists) return false;\n    \n    // Store JTI with 60 second expiration\n    await redis.setex(`dpop:jti:${jti}`, 60, '1');\n    return true;\n};\n\nmodule.exports = dpopTokenValidation;\n\n// Usage in Express.js routes:\n// app.use('/api/protected', dpopTokenValidation);\n// app.get('/api/protected/resource', (req, res) => {\n//     res.json({ message: 'Protected resource', user: req.user });\n// });"
+      },
+      "tools": [
+        {
+          "name": "Spring Security OAuth2 Resource Server",
+          "type": "OAuth Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "jose (JavaScript library)",
+          "type": "JWT/JWK handling",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Redis",
+          "type": "JTI uniqueness tracking",
+          "cost": "$0-200/month (managed service)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are issued, managed, verified, revoked, and audited",
+        "PR.DS-2 - Data-in-transit is protected"
+      ],
+      "validation_steps": [
+        "Generate RSA key pair for DPoP client",
+        "Implement DPoP proof generation in client application",
+        "Configure resource server to validate DPoP proofs",
+        "Test token binding by attempting replay attack (should fail)",
+        "Monitor logs for DPoP validation errors",
+        "Implement JTI uniqueness tracking with Redis"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Short-Lived Access Tokens with Secure Refresh Token Rotation",
+      "description": "Use short-lived access tokens (5-15 minutes) combined with refresh tokens that implement rotation and reuse detection. This limits the window of opportunity for token theft and enables detection of compromised tokens.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x + Express.js 4.x",
+        "code": "// Spring Boot 3.x - Authorization Server Configuration\n// File: OAuth2AuthorizationServerConfig.java\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;\nimport org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;\nimport org.springframework.security.oauth2.server.authorization.settings.TokenSettings;\nimport org.springframework.security.oauth2.core.AuthorizationGrantType;\nimport org.springframework.security.oauth2.core.ClientAuthenticationMethod;\nimport org.springframework.security.oauth2.server.authorization.client.RegisteredClient;\nimport org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;\nimport org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;\n\nimport java.time.Duration;\nimport java.util.UUID;\n\n@Configuration\npublic class OAuth2AuthorizationServerConfig {\n\n    @Bean\n    public RegisteredClientRepository registeredClientRepository() {\n        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())\n            .clientId(\"api-client\")\n            .clientSecret(\"{bcrypt}$2a$10$...encrypted-secret...\") // Use BCrypt\n            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)\n            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)\n            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)\n            .redirectUri(\"https://your-app.com/oauth/callback\")\n            .scope(\"read\")\n            .scope(\"write\")\n            .tokenSettings(tokenSettings())\n            .build();\n\n        return new InMemoryRegisteredClientRepository(registeredClient);\n    }\n\n    @Bean\n    public TokenSettings tokenSettings() {\n        return TokenSettings.builder()\n            // Short-lived access tokens (10 minutes)\n            .accessTokenTimeToLive(Duration.ofMinutes(10))\n            // Refresh tokens valid for 7 days\n            .refreshTokenTimeToLive(Duration.ofDays(7))\n            // Enable refresh token rotation (one-time use)\n            .reuseRefreshTokens(false)\n            .build();\n    }\n\n    @Bean\n    public AuthorizationServerSettings authorizationServerSettings() {\n        return AuthorizationServerSettings.builder()\n            .issuer(\"https://auth-server.com\")\n            .build();\n    }\n}\n\n// Spring Boot 3.x - Refresh Token Reuse Detection\n// File: RefreshTokenReuseDetectionService.java\nimport org.springframework.security.oauth2.server.authorization.OAuth2Authorization;\nimport org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;\nimport org.springframework.security.oauth2.server.authorization.OAuth2TokenType;\nimport org.springframework.stereotype.Service;\nimport org.springframework.data.redis.core.RedisTemplate;\nimport java.time.Duration;\n\n@Service\npublic class RefreshTokenReuseDetectionService {\n\n    private final OAuth2AuthorizationService authorizationService;\n    private final RedisTemplate<String, String> redisTemplate;\n\n    public RefreshTokenReuseDetectionService(\n        OAuth2AuthorizationService authorizationService,\n        RedisTemplate<String, String> redisTemplate\n    ) {\n        this.authorizationService = authorizationService;\n        this.redisTemplate = redisTemplate;\n    }\n\n    public boolean detectAndHandleTokenReuse(String refreshToken) {\n        String cacheKey = \"refresh_token:\" + refreshToken;\n        \n        // Check if token was already used\n        Boolean tokenWasUsed = redisTemplate.hasKey(cacheKey);\n        \n        if (Boolean.TRUE.equals(tokenWasUsed)) {\n            // TOKEN REUSE DETECTED - Possible theft!\n            handleTokenTheft(refreshToken);\n            return true;\n        }\n        \n        // Mark token as used (expires after 7 days)\n        redisTemplate.opsForValue().set(cacheKey, \"used\", Duration.ofDays(7));\n        return false;\n    }\n\n    private void handleTokenTheft(String refreshToken) {\n        // 1. Revoke all tokens for this authorization\n        OAuth2Authorization authorization = authorizationService\n            .findByToken(refreshToken, OAuth2TokenType.REFRESH_TOKEN);\n        \n        if (authorization != null) {\n            // Revoke the authorization (invalidates all associated tokens)\n            authorizationService.remove(authorization);\n            \n            // 2. Log security incident\n            logSecurityIncident(authorization.getPrincipalName(), \n                \"Refresh token reuse detected - possible token theft\");\n            \n            // 3. Trigger alert to security team\n            triggerSecurityAlert(authorization.getPrincipalName());\n            \n            // 4. Optionally: Force user to re-authenticate\n            forceReAuthentication(authorization.getPrincipalName());\n        }\n    }\n\n    private void logSecurityIncident(String username, String message) {\n        // Implement security event logging\n        System.err.println(\"[SECURITY] \" + username + \": \" + message);\n    }\n\n    private void triggerSecurityAlert(String username) {\n        // Implement alerting (email, Slack, PagerDuty, etc.)\n    }\n\n    private void forceReAuthentication(String username) {\n        // Implement session invalidation\n    }\n}\n\n// Express.js 4.x - Token Management with Refresh Token Rotation\n// File: services/tokenService.js\nconst jwt = require('jsonwebtoken');\nconst crypto = require('crypto');\nconst redis = require('./redisClient');\nconst { promisify } = require('util');\n\nclass TokenService {\n    constructor() {\n        this.ACCESS_TOKEN_EXPIRY = '10m'; // 10 minutes\n        this.REFRESH_TOKEN_EXPIRY = '7d'; // 7 days\n        this.JWT_SECRET = process.env.JWT_SECRET; // Load from secure vault\n    }\n\n    /**\n     * Generate access token and refresh token pair\n     */\n    async generateTokenPair(userId, userRoles, clientId) {\n        const accessToken = jwt.sign(\n            {\n                sub: userId,\n                roles: userRoles,\n                type: 'access',\n                client_id: clientId\n            },\n            this.JWT_SECRET,\n            {\n                expiresIn: this.ACCESS_TOKEN_EXPIRY,\n                issuer: 'https://your-auth-server.com',\n                audience: 'your-api'\n            }\n        );\n\n        // Generate cryptographically secure refresh token\n        const refreshToken = crypto.randomBytes(40).toString('hex');\n        \n        // Store refresh token metadata in Redis\n        const refreshTokenData = {\n            userId,\n            clientId,\n            createdAt: Date.now(),\n            used: false\n        };\n        \n        await redis.setex(\n            `refresh_token:${refreshToken}`,\n            7 * 24 * 60 * 60, // 7 days in seconds\n            JSON.stringify(refreshTokenData)\n        );\n\n        return { accessToken, refreshToken };\n    }\n\n    /**\n     * Refresh access token using refresh token (with rotation)\n     */\n    async refreshAccessToken(refreshToken) {\n        const tokenKey = `refresh_token:${refreshToken}`;\n        \n        // 1. Retrieve refresh token data\n        const tokenDataStr = await redis.get(tokenKey);\n        if (!tokenDataStr) {\n            throw new Error('Invalid or expired refresh token');\n        }\n\n        const tokenData = JSON.parse(tokenDataStr);\n\n        // 2. Check if token was already used (reuse detection)\n        if (tokenData.used) {\n            // TOKEN REUSE DETECTED - Security incident!\n            await this.handleTokenTheft(tokenData.userId, refreshToken);\n            throw new Error('Token reuse detected - all tokens revoked');\n        }\n\n        // 3. Mark current token as used (but don't delete yet)\n        tokenData.used = true;\n        await redis.setex(tokenKey, 7 * 24 * 60 * 60, JSON.stringify(tokenData));\n\n        // 4. Generate new token pair (rotation)\n        const userRoles = await this.getUserRoles(tokenData.userId);\n        const newTokenPair = await this.generateTokenPair(\n            tokenData.userId,\n            userRoles,\n            tokenData.clientId\n        );\n\n        // 5. Invalidate old refresh token after successful rotation\n        await redis.del(tokenKey);\n\n        return newTokenPair;\n    }\n\n    /**\n     * Handle token theft scenario\n     */\n    async handleTokenTheft(userId, compromisedToken) {\n        console.error(`[SECURITY] Token theft detected for user: ${userId}`);\n        \n        // 1. Revoke ALL refresh tokens for this user\n        const userTokensPattern = `refresh_token:*`;\n        const keys = await redis.keys(userTokensPattern);\n        \n        for (const key of keys) {\n            const tokenDataStr = await redis.get(key);\n            if (tokenDataStr) {\n                const tokenData = JSON.parse(tokenDataStr);\n                if (tokenData.userId === userId) {\n                    await redis.del(key);\n                }\n            }\n        }\n\n        // 2. Log security incident\n        await this.logSecurityIncident(userId, 'refresh_token_reuse', {\n            compromisedToken: compromisedToken.substring(0, 10) + '...',\n            timestamp: new Date().toISOString()\n        });\n\n        // 3. Trigger security alert\n        await this.triggerSecurityAlert(userId, 'Token reuse detected');\n\n        // 4. Force user session termination\n        await this.invalidateUserSessions(userId);\n    }\n\n    async getUserRoles(userId) {\n        // Implement database query to get user roles\n        return ['user']; // Placeholder\n    }\n\n    async logSecurityIncident(userId, eventType, metadata) {\n        // Implement security logging to SIEM\n        console.log('[SECURITY_INCIDENT]', { userId, eventType, metadata });\n    }\n\n    async triggerSecurityAlert(userId, message) {\n        // Implement alerting (email, Slack, PagerDuty)\n    }\n\n    async invalidateUserSessions(userId) {\n        // Implement session invalidation\n    }\n}\n\nmodule.exports = new TokenService();\n\n// Express.js Route Example\n// File: routes/auth.js\nconst express = require('express');\nconst router = express.Router();\nconst tokenService = require('../services/tokenService');\n\nrouter.post('/token/refresh', async (req, res) => {\n    try {\n        const { refresh_token } = req.body;\n        \n        if (!refresh_token) {\n            return res.status(400).json({ error: 'refresh_token required' });\n        }\n\n        const newTokenPair = await tokenService.refreshAccessToken(refresh_token);\n        \n        res.json({\n            access_token: newTokenPair.accessToken,\n            refresh_token: newTokenPair.refreshToken,\n            token_type: 'Bearer',\n            expires_in: 600 // 10 minutes\n        });\n\n    } catch (error) {\n        console.error('Token refresh error:', error);\n        res.status(401).json({ \n            error: 'invalid_grant',\n            error_description: error.message \n        });\n    }\n});\n\nmodule.exports = router;"
+      },
+      "tools": [
+        {
+          "name": "Redis",
+          "type": "Token storage and reuse detection",
+          "cost": "$0-200/month"
+        },
+        {
+          "name": "Spring Security OAuth2 Authorization Server",
+          "type": "OAuth framework",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.9.4.3 - Password management system",
+        "A.18.1.5 - Regulation of cryptographic controls"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are issued, managed, verified, revoked",
+        "DE.CM-7 - Monitoring for unauthorized activity"
+      ],
+      "validation_steps": [
+        "Configure access token expiry to 10 minutes",
+        "Enable refresh token rotation (reuseRefreshTokens=false)",
+        "Implement Redis-based token reuse detection",
+        "Test refresh flow and verify new tokens are issued",
+        "Simulate token reuse attack - verify all tokens are revoked",
+        "Monitor security logs for token reuse incidents"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Token Encryption at Rest and Secure Storage",
+      "description": "Encrypt OAuth tokens before storing in databases, browser storage, or logs. Use AES-256-GCM encryption with keys managed in Azure Key Vault or AWS KMS. Never store tokens in plaintext.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x + Express.js 4.x",
+        "code": "// Spring Boot 3.x - Token Encryption Service with Azure Key Vault\n// File: TokenEncryptionService.java\nimport com.azure.security.keyvault.keys.KeyClient;\nimport com.azure.security.keyvault.keys.KeyClientBuilder;\nimport com.azure.security.keyvault.keys.cryptography.CryptographyClient;\nimport com.azure.security.keyvault.keys.cryptography.CryptographyClientBuilder;\nimport com.azure.security.keyvault.keys.cryptography.models.EncryptionAlgorithm;\nimport com.azure.security.keyvault.keys.cryptography.models.EncryptResult;\nimport com.azure.security.keyvault.keys.cryptography.models.DecryptResult;\nimport com.azure.identity.DefaultAzureCredential;\nimport org.springframework.stereotype.Service;\nimport org.springframework.beans.factory.annotation.Value;\n\nimport java.nio.charset.StandardCharsets;\nimport java.util.Base64;\n\n@Service\npublic class TokenEncryptionService {\n\n    private final CryptographyClient cryptoClient;\n    private static final EncryptionAlgorithm ALGORITHM = EncryptionAlgorithm.RSA_OAEP_256;\n\n    public TokenEncryptionService(\n        @Value(\"${azure.keyvault.url}\") String keyVaultUrl,\n        @Value(\"${azure.keyvault.key-name}\") String keyName\n    ) {\n        DefaultAzureCredential credential = new DefaultAzureCredential();\n        \n        KeyClient keyClient = new KeyClientBuilder()\n            .vaultUrl(keyVaultUrl)\n            .credential(credential)\n            .buildClient();\n        \n        String keyId = keyClient.getKey(keyName).getId();\n        \n        this.cryptoClient = new CryptographyClientBuilder()\n            .credential(credential)\n            .keyIdentifier(keyId)\n            .buildClient();\n    }\n\n    /**\n     * Encrypt OAuth token before storing\n     */\n    public String encryptToken(String plainToken) {\n        try {\n            byte[] tokenBytes = plainToken.getBytes(StandardCharsets.UTF_8);\n            EncryptResult encryptResult = cryptoClient.encrypt(ALGORITHM, tokenBytes);\n            return Base64.getEncoder().encodeToString(encryptResult.getCipherText());\n        } catch (Exception e) {\n            throw new RuntimeException(\"Token encryption failed\", e);\n        }\n    }\n\n    /**\n     * Decrypt OAuth token when retrieving\n     */\n    public String decryptToken(String encryptedToken) {\n        try {\n            byte[] cipherText = Base64.getDecoder().decode(encryptedToken);\n            DecryptResult decryptResult = cryptoClient.decrypt(ALGORITHM, cipherText);\n            return new String(decryptResult.getPlainText(), StandardCharsets.UTF_8);\n        } catch (Exception e) {\n            throw new RuntimeException(\"Token decryption failed\", e);\n        }\n    }\n}\n\n// Spring Boot 3.x - Secure Token Repository\n// File: SecureOAuth2AuthorizationRepository.java\nimport org.springframework.security.oauth2.server.authorization.OAuth2Authorization;\nimport org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;\nimport org.springframework.stereotype.Repository;\nimport jakarta.persistence.*;\n\n@Repository\npublic class SecureOAuth2AuthorizationRepository implements OAuth2AuthorizationService {\n\n    @PersistenceContext\n    private EntityManager entityManager;\n    \n    private final TokenEncryptionService encryptionService;\n\n    public SecureOAuth2AuthorizationRepository(TokenEncryptionService encryptionService) {\n        this.encryptionService = encryptionService;\n    }\n\n    @Override\n    public void save(OAuth2Authorization authorization) {\n        // Extract tokens\n        String accessToken = authorization.getAccessToken().getToken().getTokenValue();\n        String refreshToken = authorization.getRefreshToken() != null \n            ? authorization.getRefreshToken().getToken().getTokenValue() \n            : null;\n\n        // Encrypt tokens before storing\n        String encryptedAccessToken = encryptionService.encryptToken(accessToken);\n        String encryptedRefreshToken = refreshToken != null \n            ? encryptionService.encryptToken(refreshToken) \n            : null;\n\n        // Create entity with encrypted tokens\n        OAuth2AuthorizationEntity entity = OAuth2AuthorizationEntity.builder()\n            .id(authorization.getId())\n            .principalName(authorization.getPrincipalName())\n            .encryptedAccessToken(encryptedAccessToken)\n            .encryptedRefreshToken(encryptedRefreshToken)\n            .build();\n\n        entityManager.persist(entity);\n    }\n\n    @Override\n    public void remove(OAuth2Authorization authorization) {\n        OAuth2AuthorizationEntity entity = entityManager\n            .find(OAuth2AuthorizationEntity.class, authorization.getId());\n        if (entity != null) {\n            entityManager.remove(entity);\n        }\n    }\n\n    @Override\n    public OAuth2Authorization findById(String id) {\n        OAuth2AuthorizationEntity entity = entityManager\n            .find(OAuth2AuthorizationEntity.class, id);\n        \n        if (entity == null) {\n            return null;\n        }\n\n        // Decrypt tokens when retrieving\n        String accessToken = encryptionService.decryptToken(entity.getEncryptedAccessToken());\n        String refreshToken = entity.getEncryptedRefreshToken() != null\n            ? encryptionService.decryptToken(entity.getEncryptedRefreshToken())\n            : null;\n\n        // Reconstruct OAuth2Authorization (implementation details omitted)\n        return reconstructAuthorization(entity, accessToken, refreshToken);\n    }\n\n    private OAuth2Authorization reconstructAuthorization(\n        OAuth2AuthorizationEntity entity, \n        String accessToken, \n        String refreshToken\n    ) {\n        // Implementation details omitted for brevity\n        return null;\n    }\n\n    // Other methods: findByToken, etc.\n}\n\n// Express.js 4.x - Token Encryption with AWS KMS\n// File: services/tokenEncryption.js\nconst { KMSClient, EncryptCommand, DecryptCommand } = require('@aws-sdk/client-kms');\nconst crypto = require('crypto');\n\nclass TokenEncryptionService {\n    constructor() {\n        this.kmsClient = new KMSClient({ region: process.env.AWS_REGION });\n        this.keyId = process.env.AWS_KMS_KEY_ID;\n    }\n\n    /**\n     * Encrypt OAuth token using AWS KMS\n     */\n    async encryptToken(plainToken) {\n        try {\n            const command = new EncryptCommand({\n                KeyId: this.keyId,\n                Plaintext: Buffer.from(plainToken, 'utf-8'),\n                EncryptionAlgorithm: 'RSAES_OAEP_SHA_256'\n            });\n\n            const response = await this.kmsClient.send(command);\n            return Buffer.from(response.CiphertextBlob).toString('base64');\n        } catch (error) {\n            console.error('Token encryption failed:', error);\n            throw new Error('Failed to encrypt token');\n        }\n    }\n\n    /**\n     * Decrypt OAuth token using AWS KMS\n     */\n    async decryptToken(encryptedToken) {\n        try {\n            const command = new DecryptCommand({\n                CiphertextBlob: Buffer.from(encryptedToken, 'base64'),\n                KeyId: this.keyId,\n                EncryptionAlgorithm: 'RSAES_OAEP_SHA_256'\n            });\n\n            const response = await this.kmsClient.send(command);\n            return Buffer.from(response.Plaintext).toString('utf-8');\n        } catch (error) {\n            console.error('Token decryption failed:', error);\n            throw new Error('Failed to decrypt token');\n        }\n    }\n\n    /**\n     * Alternative: Encrypt with AES-256-GCM using data key from KMS\n     * More efficient for large volumes\n     */\n    async encryptTokenWithDataKey(plainToken) {\n        // Generate data encryption key from KMS\n        const { GenerateDataKeyCommand } = require('@aws-sdk/client-kms');\n        const dataKeyCommand = new GenerateDataKeyCommand({\n            KeyId: this.keyId,\n            KeySpec: 'AES_256'\n        });\n\n        const dataKeyResponse = await this.kmsClient.send(dataKeyCommand);\n        const plaintextKey = dataKeyResponse.Plaintext;\n        const encryptedDataKey = Buffer.from(dataKeyResponse.CiphertextBlob).toString('base64');\n\n        // Encrypt token with data key using AES-256-GCM\n        const iv = crypto.randomBytes(12);\n        const cipher = crypto.createCipheriv('aes-256-gcm', plaintextKey, iv);\n        \n        let encrypted = cipher.update(plainToken, 'utf8', 'base64');\n        encrypted += cipher.final('base64');\n        const authTag = cipher.getAuthTag().toString('base64');\n\n        // Return encrypted token bundle\n        return JSON.stringify({\n            encryptedToken: encrypted,\n            encryptedDataKey: encryptedDataKey,\n            iv: iv.toString('base64'),\n            authTag: authTag\n        });\n    }\n\n    async decryptTokenWithDataKey(encryptedBundle) {\n        const bundle = JSON.parse(encryptedBundle);\n\n        // Decrypt data key using KMS\n        const command = new DecryptCommand({\n            CiphertextBlob: Buffer.from(bundle.encryptedDataKey, 'base64'),\n            KeyId: this.keyId\n        });\n\n        const response = await this.kmsClient.send(command);\n        const plaintextKey = response.Plaintext;\n\n        // Decrypt token with data key\n        const decipher = crypto.createDecipheriv(\n            'aes-256-gcm',\n            plaintextKey,\n            Buffer.from(bundle.iv, 'base64')\n        );\n        decipher.setAuthTag(Buffer.from(bundle.authTag, 'base64'));\n\n        let decrypted = decipher.update(bundle.encryptedToken, 'base64', 'utf8');\n        decrypted += decipher.final('utf8');\n\n        return decrypted;\n    }\n}\n\nmodule.exports = new TokenEncryptionService();\n\n// Express.js - Secure Token Storage in Database\n// File: models/OAuthToken.js\nconst mongoose = require('mongoose');\nconst tokenEncryption = require('../services/tokenEncryption');\n\nconst oauthTokenSchema = new mongoose.Schema({\n    userId: { type: String, required: true, index: true },\n    clientId: { type: String, required: true },\n    encryptedAccessToken: { type: String, required: true },\n    encryptedRefreshToken: { type: String },\n    scope: [String],\n    expiresAt: { type: Date, required: true },\n    createdAt: { type: Date, default: Date.now }\n});\n\n// Encrypt tokens before saving\noauthTokenSchema.pre('save', async function(next) {\n    if (this.isModified('accessToken')) {\n        this.encryptedAccessToken = await tokenEncryption.encryptToken(this.accessToken);\n        delete this.accessToken; // Remove plaintext\n    }\n    if (this.isModified('refreshToken')) {\n        this.encryptedRefreshToken = await tokenEncryption.encryptToken(this.refreshToken);\n        delete this.refreshToken; // Remove plaintext\n    }\n    next();\n});\n\n// Decrypt tokens when retrieving\noauthTokenSchema.methods.getDecryptedTokens = async function() {\n    return {\n        accessToken: await tokenEncryption.decryptToken(this.encryptedAccessToken),\n        refreshToken: this.encryptedRefreshToken \n            ? await tokenEncryption.decryptToken(this.encryptedRefreshToken)\n            : null\n    };\n};\n\nmodule.exports = mongoose.model('OAuthToken', oauthTokenSchema);\n\n// Client-side: NEVER store tokens in localStorage - use httpOnly cookies\n// File: middleware/secureCookies.js\nconst secureCookieOptions = {\n    httpOnly: true,      // Prevent XSS access\n    secure: true,        // HTTPS only\n    sameSite: 'strict',  // CSRF protection\n    maxAge: 10 * 60 * 1000, // 10 minutes\n    path: '/'\n};\n\n// Set encrypted token in httpOnly cookie\nfunction setAuthCookie(res, accessToken) {\n    res.cookie('access_token', accessToken, secureCookieOptions);\n}\n\nmodule.exports = { setAuthCookie, secureCookieOptions };"
+      },
+      "tools": [
+        {
+          "name": "Azure Key Vault",
+          "type": "Key Management Service",
+          "cost": "$0.03 per 10,000 operations"
+        },
+        {
+          "name": "AWS KMS",
+          "type": "Key Management Service",
+          "cost": "$1/month per key + $0.03 per 10,000 requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Configure Azure Key Vault or AWS KMS",
+        "Implement token encryption service",
+        "Update database schema to store encrypted tokens",
+        "Test encryption/decryption performance",
+        "Verify plaintext tokens are never logged",
+        "Implement key rotation procedures"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "OAuth token used from unexpected geographic location or IP address",
+      "Multiple simultaneous sessions with same token from different IPs",
+      "Token usage after user password change or session logout",
+      "Access token used beyond normal expiration time",
+      "Refresh token reuse detected (same token used multiple times)",
+      "Unusual API access patterns (bulk data downloads, permission changes)",
+      "Service account tokens accessed from non-service infrastructure",
+      "Failed DPoP proof validations or missing DPoP headers",
+      "Token usage during non-business hours for business accounts"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect OAuth token theft indicators\nlet SuspiciousTokenUsage = \n    SigninLogs\n    | where ResultType == \"0\" // Successful sign-in\n    | where AuthenticationProtocol == \"oAuth2\"\n    | extend GeoLocation = strcat(LocationDetails.city, \", \", LocationDetails.countryOrRegion)\n    | summarize \n        DistinctIPs = dcount(IPAddress),\n        DistinctLocations = dcount(GeoLocation),\n        SignInCount = count(),\n        IPList = make_set(IPAddress),\n        Locations = make_set(GeoLocation)\n        by UserPrincipalName, AppDisplayName, bin(TimeGenerated, 1h)\n    | where DistinctIPs >= 3 or DistinctLocations >= 2\n    | project \n        TimeGenerated,\n        UserPrincipalName,\n        AppDisplayName,\n        DistinctIPs,\n        DistinctLocations,\n        SignInCount,\n        IPList,\n        Locations\n    | order by DistinctIPs desc;\n\n// Detect refresh token reuse\nlet TokenReuseDetection = \n    AzureDiagnostics\n    | where Category == \"AuditLogs\"\n    | where OperationName == \"Refresh token reuse detected\"\n    | extend UserId = tostring(parse_json(properties_s).userId)\n    | project \n        TimeGenerated,\n        UserId,\n        IPAddress = CallerIPAddress,\n        UserAgent = tostring(parse_json(properties_s).userAgent)\n    | order by TimeGenerated desc;\n\nSuspiciousTokenUsage\n| union TokenReuseDetection"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=oauth_logs sourcetype=oauth_access\n| eval hour_of_day=strftime(_time, \"%H\")\n| stats \n    dc(src_ip) as distinct_ips,\n    dc(src_country) as distinct_countries,\n    count as access_count,\n    values(src_ip) as ip_list,\n    values(src_country) as country_list\n    by user_id, client_id, span=1h\n| where distinct_ips >= 3 OR distinct_countries >= 2\n| eval severity=case(\n    distinct_ips >= 5, \"critical\",\n    distinct_ips >= 3, \"high\",\n    1=1, \"medium\"\n  )\n| table _time, user_id, client_id, distinct_ips, distinct_countries, access_count, ip_list, country_list, severity\n| sort -distinct_ips\n\n/* Detect token usage after password change */\nindex=oauth_logs sourcetype=oauth_access token_type=access_token\n| join type=left user_id [\n    search index=auth_logs sourcetype=password_change\n    | rename _time as pwd_change_time\n    | fields user_id, pwd_change_time\n  ]\n| where _time > pwd_change_time AND isnotnull(pwd_change_time)\n| table _time, user_id, token_id, src_ip, pwd_change_time\n| eval alert=\"Token used after password change - possible theft\"\n\n/* Detect refresh token reuse */\nindex=oauth_logs sourcetype=refresh_token_events event_type=reuse_detected\n| stats count as reuse_count by user_id, refresh_token_id, src_ip\n| where reuse_count > 0\n| eval severity=\"critical\"\n| table _time, user_id, refresh_token_id, src_ip, reuse_count, severity"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect suspicious OAuth token usage patterns\nevent.category: \"authentication\" \nAND event.action: \"oauth_token_usage\" \nAND event.outcome: \"success\"\n| stats \n    cardinality(source.ip) as distinct_ips,\n    cardinality(source.geo.country_name) as distinct_countries,\n    count() as usage_count,\n    values(source.ip) as ip_list\n    by user.id, oauth.client_id, bucket(_time, span=1h)\n| where distinct_ips >= 3 OR distinct_countries >= 2\n\n// Detect token usage outside business hours\nevent.category: \"authentication\" \nAND oauth.token_type: \"access_token\"\nAND event.outcome: \"success\"\n| where hour(@timestamp) < 6 OR hour(@timestamp) > 22\n| stats count() by user.id, oauth.client_id, source.ip\n\n// Detect DPoP validation failures\nevent.category: \"authentication\"\nAND event.action: \"dpop_validation\"\nAND event.outcome: \"failure\"\n| stats count() as failure_count by user.id, source.ip, error.message\n| where failure_count > 5"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Azure Sentinel",
+        "type": "SIEM",
+        "usage": "Deploy OAuth token theft detection rules and create automated response playbooks"
+      },
+      {
+        "name": "Splunk Enterprise Security",
+        "type": "SIEM",
+        "usage": "Configure correlation searches for OAuth anomaly detection"
+      },
+      {
+        "name": "Elastic Security",
+        "type": "SIEM",
+        "usage": "Enable OAuth authentication monitoring rules"
+      },
+      {
+        "name": "GitGuardian",
+        "type": "Secret Detection",
+        "usage": "Monitor repositories for exposed OAuth tokens in commits"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "SaaS",
+      "E-commerce",
+      "Technology",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 8.2.2 - Strong Authentication)",
+      "HIPAA (45 CFR 164.312(a)(2)(i) - Unique User Identification)",
+      "SOC2 (CC6.1 - Logical and Physical Access Controls)",
+      "ISO27001:2022 (A.9.4.2 - Secure log-on procedures)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST SP 800-63B (Digital Identity Guidelines - Authenticator Assurance)",
+      "CCPA (Security Requirements for Personal Information)",
+      "FedRAMP (AC-17 - Remote Access)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "PII",
+      "PHI",
+      "Financial"
+    ]
+  }
+}

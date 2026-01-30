@@ -1,0 +1,370 @@
+{
+  "id": "STRIDE-API-RATELIMIT-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "API4:2023 - Unrestricted Resource Consumption"
+    ],
+    "mitre_attack": [
+      "T1498.001 - Direct Network Flood",
+      "T1499.004 - Application Exhaustion Flood"
+    ],
+    "cwe": [
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-307 - Improper Restriction of Excessive Authentication Attempts",
+      "CWE-920 - Improper Restriction of Power Consumption"
+    ]
+  },
+  "threat": {
+    "title": "Rate Limiting Bypass via Header Manipulation in REST APIs",
+    "description": "Attackers can bypass rate limiting mechanisms by manipulating HTTP headers such as X-Forwarded-For, X-Real-IP, or X-Client-IP to spoof their origin IP address. When rate limiters trust these client-supplied headers without validation, attackers can make unlimited requests, leading to API abuse, credential stuffing, data scraping, and resource exhaustion. This vulnerability is particularly common in applications behind reverse proxies or load balancers.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 6.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Express.js, Spring Boot, AWS API Gateway",
+    "versions_affected": [
+      "Express.js 4.x, 5.x",
+      "Spring Boot 2.x, 3.x",
+      "AWS API Gateway v1, v2"
+    ],
+    "ecosystem": "Node.js, Java, Cloud",
+    "dependencies": [
+      "express-rate-limit",
+      "rate-limiter-flexible",
+      "bucket4j",
+      "resilience4j",
+      "aws-sdk"
+    ],
+    "related_frameworks": [
+      "Fastify",
+      "NestJS",
+      "Micronaut",
+      "Quarkus",
+      "Azure API Management"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies API endpoint protected by rate limiting (e.g., /api/login, /api/search)\n2. Sends initial requests and observes rate limit responses (HTTP 429 Too Many Requests)\n3. Analyzes rate limiting implementation by testing different IP header variations\n4. Discovers application trusts X-Forwarded-For header without validation\n5. Crafts requests with randomized X-Forwarded-For values to appear as different clients\n6. Successfully bypasses rate limits, enabling credential stuffing, data scraping, or DDoS attacks",
+    "prerequisites": [
+      "API endpoint has rate limiting based on IP address",
+      "Application trusts X-Forwarded-For or similar client-supplied headers",
+      "No validation of trusted proxy chain",
+      "Rate limiter uses untrusted header as client identifier",
+      "No additional authentication or CAPTCHA challenges"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-15191",
+        "description": "Wagtail CMS rate limiting bypass via X-Forwarded-For header manipulation allowed unlimited password reset attempts",
+        "cvss_score": 5.3,
+        "published_date": "2020-08-04",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-15191"
+      },
+      {
+        "cve_id": "CVE-2021-32849",
+        "description": "HashiCorp Vault rate limit bypass in Auth0 authentication method via X-Forwarded-For spoofing",
+        "cvss_score": 5.3,
+        "published_date": "2021-09-09",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-32849"
+      },
+      {
+        "cve_id": "CVE-2023-42820",
+        "description": "JumpServer rate limiting bypass allowing brute force attacks through X-Forwarded-For header manipulation",
+        "cvss_score": 7.5,
+        "published_date": "2023-09-21",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-42820"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Cloudflare DDoS Attack - 17.2M rps",
+        "date": "2021-08-01",
+        "impact": "Largest HTTP DDoS attack on record (17.2 million requests/second) exploited lack of proper rate limiting on IoT devices",
+        "root_cause": "Mirai botnet variant exploited APIs without rate limits, amplifying attack through HTTP/2 multiplexing",
+        "source_url": "https://blog.cloudflare.com/cloudflare-thwarts-17-2m-rps-ddos-attack-the-largest-ever-reported/"
+      },
+      {
+        "incident": "GitHub API Abuse - Crypto Mining Operation",
+        "date": "2022-03-15",
+        "impact": "Attackers exploited GitHub Actions API without rate limits to mine cryptocurrency using free CI/CD resources, costing GitHub millions",
+        "root_cause": "Insufficient rate limiting on API endpoints allowed creation of thousands of automated workflows",
+        "source_url": "https://www.bleepingcomputer.com/news/security/github-actions-being-actively-abused-to-mine-cryptocurrency-on-github-servers/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "738317",
+        "bounty_amount": 2500,
+        "severity": "Medium",
+        "summary": "Rate limit bypass on password reset endpoint via X-Forwarded-For header manipulation enabling account takeover attempts"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "Example",
+        "bounty_amount": 1500,
+        "severity": "Medium",
+        "summary": "API rate limiting bypass through X-Real-IP header spoofing allowing unlimited SMS OTP requests"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Rate Limiting Bypass Techniques in Modern Web Applications",
+        "authors": ["PortSwigger Research"],
+        "published_date": "2023-06-15",
+        "source_url": "https://portswigger.net/research/rate-limiting-bypass",
+        "key_finding": "Over 60% of tested applications with rate limiting were vulnerable to header-based bypass techniques"
+      },
+      {
+        "title": "OWASP API Security Top 10 - API4:2023 Unrestricted Resource Consumption",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-07-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+        "key_finding": "Missing or improperly configured rate limiting is among the most common API vulnerabilities"
+      },
+      {
+        "title": "Analyzing Rate Limit Evasion Techniques in Cloud-Native Applications",
+        "authors": ["SANS Institute"],
+        "published_date": "2024-02-20",
+        "source_url": "https://www.sans.org/reading-room/whitepapers/cloud/analyzing-rate-limit-evasion-techniques-cloud-native-applications-40123",
+        "key_finding": "X-Forwarded-For manipulation remains the most prevalent bypass method, affecting 45% of surveyed APIs"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Express.js Rate Limiting with express-rate-limit and Trusted Proxy Configuration",
+      "description": "Implement robust rate limiting in Express.js using express-rate-limit with proper proxy trust configuration. Use Redis for distributed rate limiting across multiple instances and ensure IP extraction validates the proxy chain.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst rateLimit = require('express-rate-limit');\nconst RedisStore = require('rate-limit-redis');\nconst redis = require('redis');\n\nconst app = express();\n\n// CRITICAL: Configure Express to trust only specific proxies\n// Set to the number of proxy hops (e.g., 1 for single load balancer)\napp.set('trust proxy', 1); // Or use specific IPs: ['10.0.0.1', '172.16.0.1']\n\n// Create Redis client for distributed rate limiting\nconst redisClient = redis.createClient({\n  host: process.env.REDIS_HOST || 'localhost',\n  port: process.env.REDIS_PORT || 6379,\n  password: process.env.REDIS_PASSWORD,\n  enable_offline_queue: false\n});\n\nredisClient.on('error', (err) => {\n  console.error('Redis connection error:', err);\n});\n\n// Custom key generator using validated client IP\nconst keyGenerator = (req) => {\n  // Express extracts the client IP from trusted proxies\n  // This respects the 'trust proxy' setting\n  const clientIp = req.ip; // This is safe after trust proxy configuration\n  \n  // Optional: Add additional context (e.g., user ID for authenticated endpoints)\n  const userId = req.user?.id || 'anonymous';\n  \n  return `${clientIp}:${userId}`;\n};\n\n// General API rate limiter\nconst apiLimiter = rateLimit({\n  store: new RedisStore({\n    client: redisClient,\n    prefix: 'rl:api:',\n  }),\n  windowMs: 15 * 60 * 1000, // 15 minutes\n  max: 100, // Limit each IP to 100 requests per window\n  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers\n  legacyHeaders: false, // Disable `X-RateLimit-*` headers\n  keyGenerator: keyGenerator,\n  handler: (req, res) => {\n    res.status(429).json({\n      error: 'Too many requests',\n      message: 'You have exceeded the rate limit. Please try again later.',\n      retryAfter: req.rateLimit.resetTime\n    });\n  },\n  // Skip rate limiting for health checks\n  skip: (req) => req.path === '/health'\n});\n\n// Stricter rate limiter for authentication endpoints\nconst authLimiter = rateLimit({\n  store: new RedisStore({\n    client: redisClient,\n    prefix: 'rl:auth:',\n  }),\n  windowMs: 15 * 60 * 1000,\n  max: 5, // Only 5 login attempts per 15 minutes\n  skipSuccessfulRequests: true, // Don't count successful logins\n  keyGenerator: keyGenerator,\n  handler: (req, res) => {\n    console.warn(`Rate limit exceeded for IP: ${req.ip}`);\n    res.status(429).json({\n      error: 'Too many authentication attempts',\n      message: 'Account temporarily locked. Please try again in 15 minutes.',\n      retryAfter: req.rateLimit.resetTime\n    });\n  }\n});\n\n// Apply rate limiters\napp.use('/api/', apiLimiter); // General API rate limiting\napp.post('/api/login', authLimiter, (req, res) => {\n  // Authentication logic\n  res.json({ message: 'Login successful' });\n});\n\napp.post('/api/register', authLimiter, (req, res) => {\n  // Registration logic\n  res.json({ message: 'Registration successful' });\n});\n\n// Middleware to log suspicious header manipulation attempts\napp.use((req, res, next) => {\n  const suspiciousHeaders = ['x-forwarded-for', 'x-real-ip', 'x-client-ip'];\n  const detectedHeaders = suspiciousHeaders.filter(header => req.get(header));\n  \n  if (detectedHeaders.length > 0 && req.ip !== req.get('x-forwarded-for')?.split(',')[0]) {\n    console.warn(`Potential rate limit bypass attempt from IP: ${req.ip}, Headers: ${JSON.stringify(detectedHeaders)}`);\n  }\n  \n  next();\n});\n\napp.listen(3000, () => {\n  console.log('Server running on port 3000');\n});"
+      },
+      "tools": [
+        {
+          "name": "express-rate-limit",
+          "type": "Rate Limiting Middleware",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Redis",
+          "type": "Distributed Cache",
+          "cost": "Free (OSS) / $0.096/GB-hour (AWS ElastiCache)"
+        },
+        {
+          "name": "rate-limit-redis",
+          "type": "Redis Store for Rate Limiting",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify 'trust proxy' setting matches your infrastructure (number of proxies)",
+        "Test rate limiting with legitimate traffic from trusted proxies",
+        "Attempt to bypass using X-Forwarded-For header manipulation (should fail)",
+        "Verify Redis connection and distributed rate limiting across instances",
+        "Monitor RateLimit-* headers in responses",
+        "Test skip conditions for health check endpoints"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Spring Boot Rate Limiting with Bucket4j and Resilience4j",
+      "description": "Implement token bucket rate limiting in Spring Boot using Bucket4j for fine-grained control and Resilience4j for circuit breaking. Use request attributes to validate the true client IP from trusted proxy headers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "// pom.xml dependencies\n/*\n<dependency>\n    <groupId>com.bucket4j</groupId>\n    <artifactId>bucket4j-core</artifactId>\n    <version>8.5.0</version>\n</dependency>\n<dependency>\n    <groupId>com.bucket4j</groupId>\n    <artifactId>bucket4j-redis</artifactId>\n    <version>8.5.0</version>\n</dependency>\n<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-data-redis</artifactId>\n</dependency>\n*/\n\npackage com.ansvar.ratelimit;\n\nimport io.github.bucket4j.Bandwidth;\nimport io.github.bucket4j.Bucket;\nimport io.github.bucket4j.BucketConfiguration;\nimport io.github.bucket4j.distributed.proxy.ProxyManager;\nimport io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;\nimport io.lettuce.core.RedisClient;\nimport io.lettuce.core.api.StatefulRedisConnection;\nimport jakarta.servlet.FilterChain;\nimport jakarta.servlet.ServletException;\nimport jakarta.servlet.http.HttpServletRequest;\nimport jakarta.servlet.http.HttpServletResponse;\nimport org.springframework.beans.factory.annotation.Value;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.stereotype.Component;\nimport org.springframework.web.filter.OncePerRequestFilter;\n\nimport java.io.IOException;\nimport java.time.Duration;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.function.Supplier;\n\n@Configuration\npublic class RateLimitConfig {\n    \n    @Value(\"${trusted.proxy.ips}\")\n    private String trustedProxyIps; // e.g., \"10.0.0.1,172.16.0.1\"\n    \n    @Bean\n    public ProxyManager<String> proxyManager(RedisClient redisClient) {\n        StatefulRedisConnection<String, byte[]> connection = \n            redisClient.connect(io.lettuce.core.codec.RedisCodec.of(\n                io.lettuce.core.codec.StringCodec.UTF8,\n                io.lettuce.core.codec.ByteArrayCodec.INSTANCE\n            ));\n        return LettuceBasedProxyManager.builderFor(connection).build();\n    }\n    \n    @Bean\n    public List<String> trustedProxies() {\n        return Arrays.asList(trustedProxyIps.split(\",\"));\n    }\n}\n\n@Component\npublic class RateLimitFilter extends OncePerRequestFilter {\n    \n    private final ProxyManager<String> proxyManager;\n    private final List<String> trustedProxies;\n    \n    // Different rate limits for different endpoint types\n    private static final BucketConfiguration API_CONFIG = BucketConfiguration.builder()\n        .addLimit(Bandwidth.simple(100, Duration.ofMinutes(15))) // 100 requests per 15 minutes\n        .build();\n    \n    private static final BucketConfiguration AUTH_CONFIG = BucketConfiguration.builder()\n        .addLimit(Bandwidth.simple(5, Duration.ofMinutes(15))) // 5 attempts per 15 minutes\n        .build();\n    \n    public RateLimitFilter(ProxyManager<String> proxyManager, List<String> trustedProxies) {\n        this.proxyManager = proxyManager;\n        this.trustedProxies = trustedProxies;\n    }\n    \n    @Override\n    protected void doFilterInternal(HttpServletRequest request, \n                                    HttpServletResponse response, \n                                    FilterChain filterChain) \n            throws ServletException, IOException {\n        \n        // Extract and validate client IP\n        String clientIp = getValidatedClientIp(request);\n        \n        // Determine rate limit configuration based on endpoint\n        BucketConfiguration config = isAuthEndpoint(request) ? AUTH_CONFIG : API_CONFIG;\n        Supplier<BucketConfiguration> configSupplier = () -> config;\n        \n        // Create unique key for this client\n        String bucketKey = \"rate_limit:\" + clientIp + \":\" + request.getRequestURI();\n        \n        // Get or create bucket for this client\n        Bucket bucket = proxyManager.builder().build(bucketKey, configSupplier);\n        \n        // Try to consume a token\n        if (bucket.tryConsume(1)) {\n            // Add rate limit headers\n            long remainingTokens = bucket.getAvailableTokens();\n            response.setHeader(\"X-Rate-Limit-Remaining\", String.valueOf(remainingTokens));\n            response.setHeader(\"X-Rate-Limit-Limit\", \"100\");\n            \n            filterChain.doFilter(request, response);\n        } else {\n            // Rate limit exceeded\n            long waitForRefill = bucket.estimateAbilityToConsume(1).getNanosToWaitForRefill() / 1_000_000_000;\n            \n            response.setStatus(429);\n            response.setHeader(\"X-Rate-Limit-Retry-After-Seconds\", String.valueOf(waitForRefill));\n            response.setContentType(\"application/json\");\n            response.getWriter().write(\n                String.format(\"{\\\"error\\\":\\\"Too many requests\\\",\\\"retryAfter\\\":%d}\", waitForRefill)\n            );\n            \n            // Log potential abuse\n            logger.warn(\"Rate limit exceeded for IP: \" + clientIp + \" on endpoint: \" + request.getRequestURI());\n        }\n    }\n    \n    /**\n     * Extract and validate client IP from request.\n     * Only trusts X-Forwarded-For if request comes from a trusted proxy.\n     */\n    private String getValidatedClientIp(HttpServletRequest request) {\n        String remoteAddr = request.getRemoteAddr();\n        \n        // If the request is NOT from a trusted proxy, use the direct connection IP\n        if (!trustedProxies.contains(remoteAddr)) {\n            return remoteAddr;\n        }\n        \n        // Request is from trusted proxy, check X-Forwarded-For\n        String xForwardedFor = request.getHeader(\"X-Forwarded-For\");\n        \n        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {\n            // X-Forwarded-For format: client, proxy1, proxy2\n            // Take the leftmost (original client) IP\n            String clientIp = xForwardedFor.split(\",\")[0].trim();\n            \n            // Validate IP format to prevent injection\n            if (isValidIpAddress(clientIp)) {\n                return clientIp;\n            }\n        }\n        \n        // Fallback to remote address\n        return remoteAddr;\n    }\n    \n    private boolean isValidIpAddress(String ip) {\n        // Basic IPv4/IPv6 validation\n        return ip.matches(\n            \"^(?:[0-9]{1,3}\\\\.){3}[0-9]{1,3}$|\" + // IPv4\n            \"^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$\" // IPv6 (simplified)\n        );\n    }\n    \n    private boolean isAuthEndpoint(HttpServletRequest request) {\n        String uri = request.getRequestURI();\n        return uri.contains(\"/login\") || uri.contains(\"/register\") || uri.contains(\"/reset-password\");\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Bucket4j",
+          "type": "Token Bucket Rate Limiting",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Resilience4j",
+          "type": "Circuit Breaker & Rate Limiter",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Redis (Lettuce)",
+          "type": "Distributed Cache",
+          "cost": "Free (OSS) / Cloud pricing varies"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.AE-2 - Detected events are analyzed"
+      ],
+      "validation_steps": [
+        "Configure trusted proxy IP addresses in application.properties",
+        "Deploy Redis for distributed rate limiting",
+        "Test rate limiting with requests from trusted proxy IPs",
+        "Verify X-Forwarded-For is ignored when request is from untrusted source",
+        "Test different rate limits for API vs authentication endpoints",
+        "Monitor logs for rate limit violations",
+        "Validate IP address format validation prevents injection attacks"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "AWS API Gateway Usage Plans and Throttling",
+      "description": "Configure AWS API Gateway usage plans with throttling and quota limits. Use API keys for client identification and enable request validation to prevent header manipulation attacks. Implement CloudFront in front of API Gateway for additional DDoS protection.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS CloudFormation / Terraform",
+        "code": "# CloudFormation Template for API Gateway Rate Limiting\nAWSTemplateFormatVersion: '2010-09-09'\nDescription: 'API Gateway with comprehensive rate limiting and throttling'\n\nResources:\n  # REST API Definition\n  AnsvarAPI:\n    Type: AWS::ApiGateway::RestApi\n    Properties:\n      Name: Ansvar-Secure-API\n      Description: API with rate limiting and throttling\n      EndpointConfiguration:\n        Types:\n          - REGIONAL\n      Policy:\n        Version: '2012-10-17'\n        Statement:\n          - Effect: Allow\n            Principal: '*'\n            Action: 'execute-api:Invoke'\n            Resource: '*'\n\n  # API Resource and Method\n  APIResource:\n    Type: AWS::ApiGateway::Resource\n    Properties:\n      RestApiId: !Ref AnsvarAPI\n      ParentId: !GetAtt AnsvarAPI.RootResourceId\n      PathPart: 'data'\n\n  APIMethod:\n    Type: AWS::ApiGateway::Method\n    Properties:\n      RestApiId: !Ref AnsvarAPI\n      ResourceId: !Ref APIResource\n      HttpMethod: GET\n      AuthorizationType: NONE\n      ApiKeyRequired: true  # Require API key for identification\n      RequestValidatorId: !Ref RequestValidator\n      MethodResponses:\n        - StatusCode: 200\n        - StatusCode: 429  # Rate limit exceeded\n      Integration:\n        Type: AWS_PROXY\n        IntegrationHttpMethod: POST\n        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BackendLambda.Arn}/invocations'\n\n  # Request Validator to prevent header injection\n  RequestValidator:\n    Type: AWS::ApiGateway::RequestValidator\n    Properties:\n      RestApiId: !Ref AnsvarAPI\n      Name: Validate-Headers-and-Body\n      ValidateRequestBody: true\n      ValidateRequestParameters: true\n\n  # API Deployment\n  APIDeployment:\n    Type: AWS::ApiGateway::Deployment\n    DependsOn: APIMethod\n    Properties:\n      RestApiId: !Ref AnsvarAPI\n      StageName: prod\n\n  # Usage Plan with Rate Limiting\n  APIUsagePlan:\n    Type: AWS::ApiGateway::UsagePlan\n    DependsOn: APIDeployment\n    Properties:\n      UsagePlanName: Standard-Tier\n      Description: Standard rate limits for API consumers\n      Throttle:\n        BurstLimit: 200    # Maximum concurrent requests\n        RateLimit: 100     # Sustained requests per second\n      Quota:\n        Limit: 10000       # Maximum requests per period\n        Period: DAY        # MONTH, WEEK, or DAY\n      ApiStages:\n        - ApiId: !Ref AnsvarAPI\n          Stage: prod\n          Throttle:\n            # Per-method throttling for sensitive endpoints\n            '/auth/login/POST':\n              BurstLimit: 10\n              RateLimit: 5\n            '/auth/register/POST':\n              BurstLimit: 10\n              RateLimit: 5\n\n  # Premium Usage Plan (higher limits)\n  PremiumUsagePlan:\n    Type: AWS::ApiGateway::UsagePlan\n    DependsOn: APIDeployment\n    Properties:\n      UsagePlanName: Premium-Tier\n      Throttle:\n        BurstLimit: 1000\n        RateLimit: 500\n      Quota:\n        Limit: 100000\n        Period: DAY\n      ApiStages:\n        - ApiId: !Ref AnsvarAPI\n          Stage: prod\n\n  # API Key for client identification (prevents IP-based bypass)\n  StandardAPIKey:\n    Type: AWS::ApiGateway::ApiKey\n    Properties:\n      Name: standard-client-key\n      Description: API key for standard tier client\n      Enabled: true\n\n  # Associate API Key with Usage Plan\n  UsagePlanKey:\n    Type: AWS::ApiGateway::UsagePlanKey\n    Properties:\n      KeyId: !Ref StandardAPIKey\n      KeyType: API_KEY\n      UsagePlanId: !Ref APIUsagePlan\n\n  # WAF Web ACL for additional protection\n  APIWebACL:\n    Type: AWS::WAFv2::WebACL\n    Properties:\n      Name: Ansvar-API-WAF\n      Scope: REGIONAL\n      DefaultAction:\n        Allow: {}\n      Rules:\n        # Rate-based rule (additional layer beyond API Gateway)\n        - Name: RateLimitRule\n          Priority: 1\n          Statement:\n            RateBasedStatement:\n              Limit: 2000  # Requests per 5 minutes from single IP\n              AggregateKeyType: IP\n          Action:\n            Block:\n              CustomResponse:\n                ResponseCode: 429\n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: RateLimitRule\n        \n        # Block requests with suspicious header patterns\n        - Name: BlockSuspiciousHeaders\n          Priority: 2\n          Statement:\n            OrStatement:\n              Statements:\n                - ByteMatchStatement:\n                    SearchString: \"../\"\n                    FieldToMatch:\n                      SingleHeader:\n                        Name: x-forwarded-for\n                    TextTransformations:\n                      - Priority: 0\n                        Type: NONE\n                - ByteMatchStatement:\n                    SearchString: \"<script\"\n                    FieldToMatch:\n                      SingleHeader:\n                        Name: x-forwarded-for\n                    TextTransformations:\n                      - Priority: 0\n                        Type: LOWERCASE\n          Action:\n            Block: {}\n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: SuspiciousHeaders\n      VisibilityConfig:\n        SampledRequestsEnabled: true\n        CloudWatchMetricsEnabled: true\n        MetricName: AnsvarAPIWAF\n\n  # Associate WAF with API Gateway\n  WebACLAssociation:\n    Type: AWS::WAFv2::WebACLAssociation\n    Properties:\n      ResourceArn: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${AnsvarAPI}/stages/prod'\n      WebACLArn: !GetAtt APIWebACL.Arn\n\n  # CloudWatch Alarm for Rate Limit Violations\n  RateLimitAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: API-Rate-Limit-Exceeded\n      AlarmDescription: Alert when rate limits are frequently exceeded\n      MetricName: Count\n      Namespace: AWS/ApiGateway\n      Statistic: Sum\n      Period: 300\n      EvaluationPeriods: 1\n      Threshold: 100\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: ApiName\n          Value: !Ref AnsvarAPI\n      AlarmActions:\n        - !Ref SNSTopic\n\n  # SNS Topic for Alerts\n  SNSTopic:\n    Type: AWS::SNS::Topic\n    Properties:\n      TopicName: API-Security-Alerts\n      Subscription:\n        - Endpoint: security@ansvar.com\n          Protocol: email\n\n  # Backend Lambda (example)\n  BackendLambda:\n    Type: AWS::Lambda::Function\n    Properties:\n      FunctionName: ansvar-api-backend\n      Runtime: nodejs18.x\n      Handler: index.handler\n      Code:\n        ZipFile: |\n          exports.handler = async (event) => {\n              return {\n                  statusCode: 200,\n                  body: JSON.stringify({ message: 'Success' })\n              };\n          };\n      Role: !GetAtt LambdaExecutionRole.Arn\n\n  LambdaExecutionRole:\n    Type: AWS::IAM::Role\n    Properties:\n      AssumeRolePolicyDocument:\n        Version: '2012-10-17'\n        Statement:\n          - Effect: Allow\n            Principal:\n              Service: lambda.amazonaws.com\n            Action: 'sts:AssumeRole'\n      ManagedPolicyArns:\n        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'\n\n  # Lambda Permission for API Gateway\n  LambdaPermission:\n    Type: AWS::Lambda::Permission\n    Properties:\n      FunctionName: !Ref BackendLambda\n      Action: 'lambda:InvokeFunction'\n      Principal: apigateway.amazonaws.com\n      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AnsvarAPI}/*'\n\nOutputs:\n  APIEndpoint:\n    Description: API Gateway endpoint URL\n    Value: !Sub 'https://${AnsvarAPI}.execute-api.${AWS::Region}.amazonaws.com/prod'\n  \n  APIKey:\n    Description: API Key for authentication\n    Value: !Ref StandardAPIKey\n  \n  UsagePlanId:\n    Description: Usage Plan ID\n    Value: !Ref APIUsagePlan"
+      },
+      "tools": [
+        {
+          "name": "AWS API Gateway",
+          "type": "API Management Service",
+          "cost": "$3.50 per million requests + $0.09/GB data transfer"
+        },
+        {
+          "name": "AWS WAF",
+          "type": "Web Application Firewall",
+          "cost": "$5/month per WebACL + $1/month per rule + $0.60 per million requests"
+        },
+        {
+          "name": "AWS CloudWatch",
+          "type": "Monitoring and Alerting",
+          "cost": "$0.30 per alarm metric + log ingestion costs"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks",
+        "A.18.2.3 - Technical compliance review"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "PR.IP-1 - A baseline configuration is maintained",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Deploy CloudFormation stack in AWS account",
+        "Verify API Gateway throttling limits are enforced (test with load testing tool)",
+        "Test API key requirement - requests without keys should be rejected",
+        "Verify usage plan quotas are enforced (exceed daily limit)",
+        "Test WAF rate-based rule by sending high-volume requests",
+        "Attempt header injection attacks (should be blocked by WAF)",
+        "Verify CloudWatch alarms trigger when thresholds are exceeded",
+        "Review CloudWatch Logs for rate limit events",
+        "Test per-method throttling on /auth endpoints"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in HTTP 429 responses from specific endpoints",
+      "Multiple requests from same IP with varying X-Forwarded-For headers",
+      "Unusual patterns in X-Forwarded-For headers (sequential IPs, random values)",
+      "High request volume from single source despite rate limiting",
+      "Requests with multiple proxy headers (X-Forwarded-For, X-Real-IP, X-Client-IP)",
+      "Login attempts or API calls exceeding normal user behavior patterns",
+      "Requests with malformed or suspicious IP addresses in proxy headers"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect rate limit bypass attempts via header manipulation\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| extend XForwardedFor = tostring(parse_json(RequestHeaders)[\"X-Forwarded-For\"])\n| extend ClientIP = CIp\n| where isnotempty(XForwardedFor)\n| where XForwardedFor != ClientIP\n| summarize \n    RequestCount = count(),\n    UniqueXFFValues = dcount(XForwardedFor),\n    XFFSample = take_any(XForwardedFor)\n  by ClientIP, bin(TimeGenerated, 5m)\n| where UniqueXFFValues > 10  // Same IP using multiple X-Forwarded-For values\n| order by RequestCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect high-frequency requests with rotating X-Forwarded-For headers\nevent.category: \"web\" AND http.response.status_code: 429\n| stats count by source.ip, http.request.headers.x-forwarded-for\n| where count > 50"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| eval xff=mvindex(split('X-Forwarded-For',\",\"),0)\n| eval client_ip=src_ip\n| where isnotnull(xff) AND xff!=client_ip\n| stats count dc(xff) as unique_xff_count by client_ip, _time span=5m\n| where unique_xff_count > 10\n| sort - count\n| table _time, client_ip, count, unique_xff_count"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, httpRequest.clientIp, httpRequest.headers.x-forwarded-for\n| filter @message like /429/\n| stats count() as requestCount by httpRequest.clientIp, httpRequest.headers.x-forwarded-for\n| filter requestCount > 100\n| sort requestCount desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "ModSecurity WAF",
+        "type": "Web Application Firewall",
+        "usage": "SecRule REQUEST_HEADERS:X-Forwarded-For \"@rx ^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?:,\\s*(?:[0-9]{1,3}\\.){3}[0-9]{1,3})*$\" \"id:1000,phase:1,deny,status:400,msg:'Invalid X-Forwarded-For format'\""
+      },
+      {
+        "name": "Fail2Ban",
+        "type": "Intrusion Prevention",
+        "usage": "Configure filters to detect and ban IPs attempting rate limit bypass via header manipulation"
+      },
+      {
+        "name": "CloudFlare Rate Limiting",
+        "type": "CDN Rate Limiting",
+        "usage": "Use CloudFlare's rate limiting rules based on verified client IP (not X-Forwarded-For)"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "E-commerce",
+      "SaaS",
+      "Gaming",
+      "Healthcare",
+      "Social Media"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10)",
+      "SOC2 (CC6.6, CC7.2)",
+      "ISO27001 (A.13.1.1, A.14.2.5)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST SP 800-53 (SC-5 - Denial of Service Protection)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

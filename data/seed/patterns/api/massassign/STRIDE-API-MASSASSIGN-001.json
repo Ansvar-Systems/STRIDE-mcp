@@ -1,0 +1,354 @@
+{
+  "id": "STRIDE-API-MASSASSIGN-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.3,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A04:2021 - Insecure Design"
+    ],
+    "owasp_api_security": [
+      "API3:2023 - Broken Object Property Level Authorization",
+      "API1:2023 - Broken Object Level Authorization"
+    ],
+    "mitre_attack": [
+      "T1078 - Valid Accounts",
+      "T1098 - Account Manipulation"
+    ],
+    "cwe": [
+      "CWE-915 - Improperly Controlled Modification of Dynamically-Determined Object Attributes",
+      "CWE-269 - Improper Privilege Management",
+      "CWE-502 - Deserialization of Untrusted Data"
+    ]
+  },
+  "threat": {
+    "title": "Mass Assignment Vulnerability Leading to Privilege Escalation in Spring Boot and Django APIs",
+    "description": "Mass assignment (also known as over-posting or auto-binding) occurs when APIs automatically bind HTTP request parameters to internal object properties without proper filtering. Attackers can modify sensitive fields like user roles, permissions, account balances, or administrative flags that should never be user-controllable. This vulnerability is particularly dangerous in Spring Boot's @ModelAttribute/@RequestBody binding and Django's ModelForm processing, where framework conveniences can inadvertently expose critical attributes to manipulation.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Spring Boot / Django",
+    "versions_affected": ["Spring Boot 2.x-3.x", "Django 3.x-5.x"],
+    "ecosystem": "Java / Python",
+    "dependencies": [
+      "spring-web",
+      "spring-boot-starter-web",
+      "jackson-databind",
+      "django.forms",
+      "djangorestframework"
+    ],
+    "related_frameworks": [
+      "Ruby on Rails (Strong Parameters)",
+      "Express.js",
+      "ASP.NET Core",
+      "Laravel (Eloquent)"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers API endpoint accepting user profile updates (e.g., PUT /api/users/123)\n2. Inspects legitimate request body and identifies modifiable fields: {\"name\":\"John\",\"email\":\"john@example.com\"}\n3. Reviews application source code, database schema, or uses parameter fuzzing to discover hidden fields (e.g., isAdmin, role, accountBalance, permissions)\n4. Crafts malicious request adding unauthorized fields: {\"name\":\"John\",\"email\":\"john@example.com\",\"isAdmin\":true,\"role\":\"ADMIN\"}\n5. Framework automatically binds all provided parameters to the User object without validation\n6. Database persists the modified values, granting attacker administrative privileges or manipulating sensitive data\n7. Attacker exploits elevated privileges to access restricted resources, exfiltrate data, or modify critical system settings",
+    "prerequisites": [
+      "API endpoint accepts object binding via @ModelAttribute, @RequestBody (Spring) or ModelForm, Serializer (Django)",
+      "No explicit field allowlist/denylist configured",
+      "Sensitive object properties lack @JsonIgnore, exclude, or read_only protection",
+      "Application relies on framework auto-binding without manual validation",
+      "Attacker has authenticated access (low-privilege account sufficient)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2012-1098",
+        "description": "Mass assignment vulnerability in Ruby on Rails that led to GitHub breach where attacker added SSH key to Rails organization",
+        "cvss_score": 7.5,
+        "published_date": "2012-03-06",
+        "framework": "Ruby on Rails (similar pattern applies to Spring/Django)"
+      },
+      {
+        "cve_id": "CVE-2022-22968",
+        "description": "Spring Framework Data Binding Rules vulnerability - case-sensitive disallowedFields patterns failed to protect fields, enabling privilege escalation",
+        "cvss_score": 5.3,
+        "published_date": "2022-04-13",
+        "framework": "Spring Framework 5.2.x, 5.3.x"
+      },
+      {
+        "cve_id": "CVE-2022-22965",
+        "description": "Spring4Shell RCE via data binding on JDK 9+ - demonstrates risks of unrestricted parameter binding to internal objects",
+        "cvss_score": 9.8,
+        "published_date": "2022-04-01",
+        "framework": "Spring Framework 5.2.x-5.3.17"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "GitHub Mass Assignment Breach (2012)",
+        "date": "2012-03-04",
+        "impact": "Security researcher Egor Homakov exploited mass assignment in Ruby on Rails to add his SSH public key to the Rails organization repository, gaining unauthorized commit access. Incident led to Rails implementing Strong Parameters.",
+        "root_cause": "Unprotected mass assignment in public key update form allowed modification of organization membership via public_key[user_id] parameter",
+        "source_url": "https://www.infoq.com/news/2012/03/GitHub-Compromised/"
+      },
+      {
+        "incident": "Spring Framework Data Binding Exploitation",
+        "date": "2022-04-13",
+        "impact": "CVE-2022-22968 discovered where case-sensitive field filtering in DataBinder allowed attackers to bypass protection by changing case of first character, potentially escalating privileges",
+        "root_cause": "Spring's DataBinder disallowedFields patterns were case-sensitive, requiring both 'isAdmin' and 'IsAdmin' to be blocked",
+        "source_url": "https://spring.io/blog/2022/04/13/spring-framework-data-binding-rules-vulnerability-cve-2022-22968/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Various",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "Mass assignment vulnerabilities consistently rank in top API security findings on bug bounty platforms, with privilege escalation via role/permission modification being most common"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP API Security Top 10 2023 - API3:2023 Broken Object Property Level Authorization",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-07-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/",
+        "key_finding": "Mass Assignment and Excessive Data Exposure merged into API3:2023, emphasizing that allowing clients to modify or read object properties without proper authorization is a critical API vulnerability"
+      },
+      {
+        "title": "Hunting For Mass Assignment Vulnerabilities Using GitHub CodeSearch",
+        "authors": ["Include Security Research"],
+        "published_date": "2022-07-01",
+        "source_url": "https://blog.includesecurity.com/2022/07/hunting-for-mass-assignment-vulnerabilities-using-github-codesearch-and-grep-app/",
+        "key_finding": "Systematic analysis of public repositories reveals mass assignment vulnerabilities remain prevalent in modern applications despite being well-documented for over a decade"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Spring Boot 3.x: Use DTOs with Explicit Field Mapping and @JsonIgnore",
+      "description": "Implement Data Transfer Objects (DTOs) that expose only user-modifiable fields. Use @JsonIgnore, @JsonIgnoreProperties, or custom deserialization to protect sensitive properties. This approach provides compile-time safety and explicit control over API surface.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "// Domain Entity - Contains sensitive fields\n@Entity\n@Table(name = \"users\")\npublic class User {\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long id;\n    \n    private String username;\n    private String email;\n    \n    // SENSITIVE: Should never be modified via API\n    @JsonIgnore  // Prevents inclusion in JSON serialization/deserialization\n    private String role;  // e.g., \"USER\", \"ADMIN\"\n    \n    @JsonIgnore\n    private Boolean isActive;\n    \n    @JsonIgnore\n    private Double accountBalance;\n    \n    @JsonIgnore\n    @Column(name = \"created_at\")\n    private LocalDateTime createdAt;\n    \n    // Getters and setters...\n}\n\n// Safe DTO - Only exposes user-controllable fields\npublic class UserUpdateDTO {\n    @NotBlank(message = \"Username is required\")\n    @Size(min = 3, max = 50)\n    private String username;\n    \n    @Email(message = \"Invalid email format\")\n    @NotBlank(message = \"Email is required\")\n    private String email;\n    \n    @Size(max = 200)\n    private String bio;\n    \n    // NO sensitive fields exposed!\n    // Getters and setters...\n}\n\n// Controller using DTO\n@RestController\n@RequestMapping(\"/api/users\")\npublic class UserController {\n    \n    @Autowired\n    private UserService userService;\n    \n    @PutMapping(\"/{id}\")\n    public ResponseEntity<User> updateUser(\n            @PathVariable Long id,\n            @Valid @RequestBody UserUpdateDTO updateDTO,\n            @AuthenticationPrincipal UserDetails currentUser) {\n        \n        // Verify user can only modify their own profile\n        if (!currentUser.getUsername().equals(\n                userService.findById(id).getUsername())) {\n            throw new AccessDeniedException(\"Cannot modify other user's profile\");\n        }\n        \n        User updatedUser = userService.updateUser(id, updateDTO);\n        return ResponseEntity.ok(updatedUser);\n    }\n}\n\n// Service layer - Manual field mapping\n@Service\npublic class UserService {\n    \n    @Autowired\n    private UserRepository userRepository;\n    \n    @Transactional\n    public User updateUser(Long id, UserUpdateDTO dto) {\n        User user = userRepository.findById(id)\n            .orElseThrow(() -> new ResourceNotFoundException(\"User not found\"));\n        \n        // EXPLICIT field mapping - only safe fields\n        user.setUsername(dto.getUsername());\n        user.setEmail(dto.getEmail());\n        user.setBio(dto.getBio());\n        // role, isActive, accountBalance remain unchanged!\n        \n        return userRepository.save(user);\n    }\n}\n\n// Additional protection: WebDataBinder configuration\n@RestControllerAdvice\npublic class GlobalControllerAdvice {\n    \n    @InitBinder\n    public void initBinder(WebDataBinder binder) {\n        // Blacklist sensitive fields from binding\n        binder.setDisallowedFields(\n            \"id\", \"role\", \"isActive\", \"accountBalance\", \n            \"createdAt\", \"password\", \"isAdmin\", \"permissions\"\n        );\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "MapStruct",
+          "type": "DTO Mapping Library",
+          "cost": "Free (Open Source)",
+          "usage": "Compile-time safe bean mapping for DTO <-> Entity conversion"
+        },
+        {
+          "name": "ModelMapper",
+          "type": "Object Mapping",
+          "cost": "Free (Open Source)",
+          "usage": "Runtime object mapping with field exclusion support"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Create unit tests attempting to modify sensitive fields via API",
+        "Verify @JsonIgnore prevents field inclusion in JSON responses",
+        "Test WebDataBinder.setDisallowedFields blocks parameter binding",
+        "Code review: Ensure no @Entity classes used directly as @RequestBody",
+        "Fuzz test API with unexpected parameters (isAdmin, role, etc.)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Django: Use ModelForm with Explicit fields and read_only_fields",
+      "description": "Configure Django ModelForms and Django REST Framework Serializers with explicit 'fields' allowlists instead of '__all__' or 'exclude'. Mark sensitive fields as read_only to prevent modification via API requests.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Django 4.x / Django REST Framework 3.x",
+        "code": "# models.py - Domain Model\nfrom django.db import models\nfrom django.contrib.auth.models import AbstractUser\n\nclass User(AbstractUser):\n    email = models.EmailField(unique=True)\n    bio = models.TextField(max_length=500, blank=True)\n    \n    # SENSITIVE FIELDS - Should not be modifiable via API\n    is_admin = models.BooleanField(default=False)\n    account_balance = models.DecimalField(\n        max_digits=10, decimal_places=2, default=0.00\n    )\n    role = models.CharField(\n        max_length=20,\n        choices=[('user', 'User'), ('moderator', 'Moderator'), ('admin', 'Admin')],\n        default='user'\n    )\n    created_at = models.DateTimeField(auto_now_add=True)\n    \n    class Meta:\n        db_table = 'users'\n\n# VULNERABLE: Using ModelForm with '__all__' or 'exclude'\nclass VulnerableUserForm(forms.ModelForm):\n    class Meta:\n        model = User\n        fields = '__all__'  # ❌ DANGEROUS: Exposes ALL fields including is_admin, role\n        # OR\n        exclude = ['password']  # ❌ DANGEROUS: Blocklist approach misses new fields\n\n# SECURE: Explicit allowlist with ModelForm\nclass SafeUserForm(forms.ModelForm):\n    class Meta:\n        model = User\n        fields = ['username', 'email', 'bio']  # ✅ Only safe fields\n        # Sensitive fields (is_admin, role, account_balance) are NOT included\n\n# views.py - Function-based view\nfrom django.contrib.auth.decorators import login_required\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_http_methods\nimport json\n\n@login_required\n@require_http_methods([\"PUT\", \"PATCH\"])\ndef update_user_profile(request, user_id):\n    # Verify user can only update their own profile\n    if request.user.id != int(user_id):\n        return JsonResponse({'error': 'Permission denied'}, status=403)\n    \n    user = User.objects.get(id=user_id)\n    form = SafeUserForm(json.loads(request.body), instance=user)\n    \n    if form.is_valid():\n        form.save()  # Only updates whitelisted fields\n        return JsonResponse({\n            'username': user.username,\n            'email': user.email,\n            'bio': user.bio\n        })\n    else:\n        return JsonResponse({'errors': form.errors}, status=400)\n\n# serializers.py - Django REST Framework Serializer\nfrom rest_framework import serializers\n\nclass UserSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = User\n        fields = ['id', 'username', 'email', 'bio', 'is_admin', 'role', 'created_at']\n        read_only_fields = [\n            'id', 'is_admin', 'role', 'account_balance', 'created_at'\n        ]  # ✅ Prevents modification of sensitive fields\n        extra_kwargs = {\n            'email': {'required': True, 'allow_blank': False},\n            'username': {'required': True, 'min_length': 3, 'max_length': 50}\n        }\n    \n    def validate_email(self, value):\n        # Custom validation\n        if User.objects.filter(email=value).exclude(id=self.instance.id).exists():\n            raise serializers.ValidationError(\"Email already in use\")\n        return value\n\n# views.py - DRF ViewSet\nfrom rest_framework import viewsets, permissions\nfrom rest_framework.decorators import action\nfrom rest_framework.response import Response\n\nclass UserViewSet(viewsets.ModelViewSet):\n    queryset = User.objects.all()\n    serializer_class = UserSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    \n    def get_permissions(self):\n        if self.action in ['update', 'partial_update']:\n            # Users can only update their own profiles\n            return [permissions.IsAuthenticated(), IsOwnerOrAdmin()]\n        return super().get_permissions()\n    \n    def update(self, request, *args, **kwargs):\n        # Additional validation: prevent privilege escalation attempts\n        if 'is_admin' in request.data or 'role' in request.data:\n            return Response(\n                {'error': 'Cannot modify admin status or role'},\n                status=400\n            )\n        return super().update(request, *args, **kwargs)\n\n# Custom permission class\nclass IsOwnerOrAdmin(permissions.BasePermission):\n    def has_object_permission(self, request, view, obj):\n        return obj.id == request.user.id or request.user.is_admin"
+      },
+      "tools": [
+        {
+          "name": "Django REST Framework",
+          "type": "API Framework",
+          "cost": "Free (Open Source)",
+          "usage": "Built-in Serializer with read_only_fields support"
+        },
+        {
+          "name": "django-guardian",
+          "type": "Object-level Permissions",
+          "cost": "Free (Open Source)",
+          "usage": "Fine-grained permission control for object attributes"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Test API with {'is_admin': True} in request body - should be ignored",
+        "Verify read_only_fields cannot be modified via POST/PUT/PATCH",
+        "Check serializer.validated_data excludes read-only fields",
+        "Unit test: Attempt role escalation via API should fail",
+        "Review all ModelForms/Serializers: No fields='__all__' or exclude patterns"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "General API Design: Implement Field-Level Authorization and Input Validation",
+      "description": "Apply defense-in-depth with explicit authorization checks, input validation schemas (JSON Schema, OpenAPI), and monitoring for unexpected parameters. Use API gateways to enforce request validation before reaching application logic.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "OpenAPI 3.0 / Azure API Management",
+        "code": "# OpenAPI 3.0 Schema - Strict Request Validation\nopenapi: 3.0.0\ninfo:\n  title: User Management API\n  version: 1.0.0\n\npaths:\n  /api/users/{userId}:\n    put:\n      summary: Update user profile\n      parameters:\n        - name: userId\n          in: path\n          required: true\n          schema:\n            type: integer\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              $ref: '#/components/schemas/UserUpdateRequest'\n      responses:\n        '200':\n          description: User updated successfully\n        '400':\n          description: Invalid request - unexpected fields provided\n        '403':\n          description: Forbidden - cannot modify other user's profile\n\ncomponents:\n  schemas:\n    UserUpdateRequest:\n      type: object\n      required:\n        - username\n        - email\n      properties:\n        username:\n          type: string\n          minLength: 3\n          maxLength: 50\n          pattern: '^[a-zA-Z0-9_-]+$'\n        email:\n          type: string\n          format: email\n        bio:\n          type: string\n          maxLength: 500\n      additionalProperties: false  # ✅ CRITICAL: Reject requests with unexpected fields\n\n---\n# Azure API Management Policy - Request Validation\n<policies>\n    <inbound>\n        <base />\n        <!-- Validate request against OpenAPI schema -->\n        <validate-content unspecified-content-type-action=\"prevent\" \n                          max-size=\"102400\" \n                          size-exceeded-action=\"detect\" \n                          errors-variable-name=\"requestBodyValidation\">\n            <content type=\"application/json\" \n                     validate-as=\"json\" \n                     action=\"prevent\" \n                     allow-additional-properties=\"false\" />\n        </validate-content>\n        \n        <!-- Block requests containing sensitive fields -->\n        <choose>\n            <when condition=\"@(context.Request.Body.As<JObject>(preserveContent: true).Properties().Any(p => \n                new[] {\"isAdmin\", \"role\", \"accountBalance\", \"is_admin\", \"permissions\", \"created_at\"}.Contains(p.Name)))\">\n                <return-response>\n                    <set-status code=\"400\" reason=\"Bad Request\" />\n                    <set-body>{\n                        \"error\": \"Request contains forbidden fields\",\n                        \"message\": \"Cannot modify admin, role, or system fields\"\n                    }</set-body>\n                </return-response>\n            </when>\n        </choose>\n        \n        <!-- Rate limiting to prevent mass assignment fuzzing attacks -->\n        <rate-limit calls=\"20\" renewal-period=\"60\" \n                    remaining-calls-variable-name=\"remainingCallsPerSubscription\" />\n    </inbound>\n    <backend>\n        <base />\n    </backend>\n    <outbound>\n        <base />\n        <!-- Remove sensitive fields from responses -->\n        <set-body>@{\n            var response = context.Response.Body.As<JObject>(preserveContent: true);\n            response.Remove(\"accountBalance\");\n            response.Remove(\"isAdmin\");\n            response.Remove(\"role\");\n            return response.ToString();\n        }</set-body>\n    </outbound>\n    <on-error>\n        <base />\n    </on-error>\n</policies>\n\n---\n# Python: JSON Schema Validation Middleware (Framework-agnostic)\nimport jsonschema\nfrom jsonschema import validate, ValidationError\nfrom functools import wraps\n\nUSER_UPDATE_SCHEMA = {\n    \"type\": \"object\",\n    \"properties\": {\n        \"username\": {\"type\": \"string\", \"minLength\": 3, \"maxLength\": 50},\n        \"email\": {\"type\": \"string\", \"format\": \"email\"},\n        \"bio\": {\"type\": \"string\", \"maxLength\": 500}\n    },\n    \"required\": [\"username\", \"email\"],\n    \"additionalProperties\": False  # Reject unexpected fields\n}\n\ndef validate_request_schema(schema):\n    \"\"\"Decorator to validate request body against JSON schema\"\"\"\n    def decorator(f):\n        @wraps(f)\n        def wrapper(*args, **kwargs):\n            request_body = request.get_json()\n            try:\n                validate(instance=request_body, schema=schema)\n            except ValidationError as e:\n                return jsonify({\n                    'error': 'Invalid request',\n                    'message': str(e.message),\n                    'path': list(e.path)\n                }), 400\n            return f(*args, **kwargs)\n        return wrapper\n    return decorator\n\n# Usage\n@app.route('/api/users/<int:user_id>', methods=['PUT'])\n@login_required\n@validate_request_schema(USER_UPDATE_SCHEMA)\ndef update_user(user_id):\n    # Request already validated - proceed with update\n    pass"
+      },
+      "tools": [
+        {
+          "name": "Azure API Management",
+          "type": "API Gateway",
+          "cost": "$0.00-$2.70 per hour (Consumption tier)",
+          "usage": "Request validation, field filtering, rate limiting"
+        },
+        {
+          "name": "Amazon API Gateway",
+          "type": "API Gateway",
+          "cost": "$3.50 per million requests",
+          "usage": "OpenAPI schema validation with request validators"
+        },
+        {
+          "name": "jsonschema (Python)",
+          "type": "Validation Library",
+          "cost": "Free (Open Source)",
+          "usage": "Runtime JSON schema validation"
+        },
+        {
+          "name": "hibernate-validator (Java)",
+          "type": "Validation Library",
+          "cost": "Free (Open Source)",
+          "usage": "Bean validation with custom constraints"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-1 - Network monitored for anomalous activity"
+      ],
+      "validation_steps": [
+        "Deploy OpenAPI schema with additionalProperties: false",
+        "Test API with unexpected fields - should return 400 Bad Request",
+        "Verify API gateway blocks requests with sensitive fields",
+        "Monitor logs for mass assignment attempt patterns",
+        "Penetration test: Fuzz API with common sensitive field names"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP 200 responses for requests containing unexpected field names (isAdmin, role, permissions)",
+      "Sudden privilege escalation events (user role changed from USER to ADMIN)",
+      "Account balance modifications without corresponding transaction records",
+      "User objects with recently modified sensitive fields (created_at, is_active, role)",
+      "Multiple failed authorization checks followed by successful access with elevated privileges",
+      "API requests with large JSON payloads containing 10+ unusual parameter names"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect mass assignment attempts with sensitive fields\nAzureDiagnostics\n| where Category == \"ApplicationGatewayAccessLog\" or Category == \"FunctionAppLogs\"\n| where requestUri_s contains \"/api/users/\"\n| where httpMethod_s in (\"PUT\", \"PATCH\", \"POST\")\n| extend requestBody = parse_json(requestBody_s)\n| where requestBody has_any (\"isAdmin\", \"role\", \"is_admin\", \"permissions\", \"accountBalance\", \"account_balance\", \"is_active\")\n| summarize AttemptCount = count(), \n            DistinctIPs = dcount(clientIP_s),\n            SuspiciousFields = make_set(dynamic_to_json(bag_keys(requestBody)))\n          by userIdentity_s, bin(TimeGenerated, 5m)\n| where AttemptCount > 3\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect privilege escalation via mass assignment\nevent.category: \"web\" AND http.request.method: (PUT OR PATCH OR POST) \nAND url.path: /api/users/* \nAND http.request.body.content: (*isAdmin* OR *role* OR *permissions* OR *accountBalance* OR *is_active*)\nAND NOT user.roles: \"admin\"\n| stats count by user.id, source.ip, event.outcome, span(5m)\n| where count > 2"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=api_access \n(uri_path=\"/api/users/*\" OR uri_path=\"/api/profiles/*\") \nhttp_method IN (\"PUT\", \"PATCH\", \"POST\")\n| rex field=request_body \"(?<suspicious_field>isAdmin|role|permissions|accountBalance|is_active|is_admin|account_balance)\" \n| search suspicious_field=*\n| stats count as attempts, \n        values(suspicious_field) as fields_attempted, \n        dc(client_ip) as unique_ips,\n        values(response_status) as status_codes\n  by user_id, _time span=5m\n| where attempts > 3 OR unique_ips > 2\n| eval severity=case(\n    status_codes=\"200\", \"CRITICAL\",\n    attempts > 5, \"HIGH\",\n    1=1, \"MEDIUM\"\n  )\n| table _time, user_id, attempts, fields_attempted, unique_ips, status_codes, severity\n| sort -_time"
+      },
+      {
+        "siem": "Azure Application Insights (KQL)",
+        "query": "// Detect successful privilege escalation\nrequests\n| where url contains \"/api/users/\"\n| where success == true\n| where customDimensions has_any (\"isAdmin\", \"role\", \"permissions\")\n| join kind=inner (\n    traces\n    | where message contains \"User role updated\" or message contains \"Privilege escalation\"\n  ) on operation_Id\n| project timestamp, user_AuthenticatedId, url, \n          resultCode, customDimensions, message\n| order by timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Burp Suite Professional",
+        "type": "Security Testing",
+        "usage": "Use Intruder to fuzz API endpoints with common sensitive field names (isAdmin, role, admin, superuser, permissions, is_staff)"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "DAST Scanner",
+        "usage": "Configure 'Parameter Mass Assignment' active scanner to detect over-posting vulnerabilities"
+      },
+      {
+        "name": "Postman Newman",
+        "type": "API Testing",
+        "usage": "Create negative test collection attempting to modify read-only fields; include in CI/CD pipeline"
+      },
+      {
+        "name": "Azure Sentinel Workbook",
+        "type": "SIEM Dashboard",
+        "usage": "Real-time monitoring of suspicious parameter patterns in API requests"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.5.10 - Broken Access Control)",
+      "HIPAA (164.312(a)(1) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access)",
+      "ISO27001 (A.9.4.1 - Information Access Restriction)",
+      "GDPR (Article 25 - Data Protection by Design)",
+      "NIST 800-53 (AC-3 - Access Enforcement)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Container (Kubernetes)"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Personally Identifiable Information (PII)"
+    ]
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "id": "STRIDE-CLOUD-LAMBDA-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1496 - Resource Hijacking",
+      "T1498.001 - Direct Network Flood",
+      "T1578.002 - Create Cloud Instance"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-920 - Improper Restriction of Power Consumption"
+    ]
+  },
+  "threat": {
+    "title": "AWS Lambda Function Timeout Abuse and Concurrent Execution Exhaustion",
+    "description": "Attackers exploit AWS Lambda functions by triggering computationally expensive operations or deploying cryptocurrency mining malware, causing extended execution times and concurrent execution exhaustion. This results in account-level throttling, service degradation, and massive cost overruns (denial of wallet). Vulnerable functions without reserved concurrency limits or proper timeout configurations can scale to thousands of concurrent executions, consuming the account's entire concurrency pool.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 6.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "AWS Lambda",
+    "versions_affected": ["All Lambda runtimes"],
+    "ecosystem": "AWS Cloud",
+    "dependencies": ["CloudWatch", "IAM", "API Gateway", "EventBridge"],
+    "related_frameworks": ["Node.js", "Python", "Go", "Java", "Ruby", ".NET", "Custom Runtime"]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers exposed Lambda function URL or API Gateway endpoint through reconnaissance or leaked IAM credentials\n2. Identifies function with long timeout (e.g., 15 minutes) and no reserved concurrency limits\n3. Deploys cryptocurrency mining malware (e.g., Denonia with XMRig) or triggers expensive operations (large file processing, database queries, external API calls)\n4. Floods function with concurrent invocations to reach account-level concurrency limit (default 1,000)\n5. Legitimate functions across the AWS account get throttled with 'TooManyRequestsException' errors\n6. Attack continues for hours or days, resulting in service outages and bills ranging from thousands to hundreds of thousands of dollars\n7. Attacker may use DNS-over-HTTPS (DoH) to hide command-and-control traffic within normal AWS network patterns",
+    "prerequisites": [
+      "Lambda function exposed via Function URL, API Gateway, or event source without authentication",
+      "Missing or inadequate reserved concurrency configuration",
+      "Long timeout values (5-15 minutes) enabling sustained attacks",
+      "Compromised IAM credentials with lambda:InvokeFunction permissions",
+      "No CloudWatch alarms for concurrent executions or cost anomalies",
+      "Function performs CPU-intensive operations or makes slow external API calls"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "N/A",
+        "description": "No specific CVE assigned - architectural exploitation pattern",
+        "cvss_score": 0,
+        "published_date": "N/A"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Denonia - First AWS Lambda Crypto Mining Malware",
+        "date": "2022-02-01",
+        "impact": "First malware specifically designed for AWS Lambda environments; XMRig-based Monero miner using DNS-over-HTTPS for C2 communication; potential for unlimited concurrent execution abuse",
+        "root_cause": "Compromised AWS Access Keys allowing manual deployment of Go-based 64-bit ELF malware into Lambda environments without concurrency controls",
+        "source_url": "https://therecord.media/researcher-finds-cryptomining-malware-targeting-aws-lambda"
+      },
+      {
+        "incident": "Large-Scale AWS Crypto Mining Campaign via Compromised IAM",
+        "date": "2025-11-02",
+        "impact": "GuardDuty detected campaign targeting EC2, ECS, and Lambda; miners operational within 10 minutes of initial access; massive compute resource consumption and cost overruns",
+        "root_cause": "Stolen IAM credentials with broad permissions; lack of cost anomaly detection and concurrent execution monitoring",
+        "source_url": "https://aws.amazon.com/blogs/security/cryptomining-campaign-targeting-amazon-ec2-and-amazon-ecs/"
+      },
+      {
+        "incident": "Stealth Lambda Crypto Mining Operation (2025)",
+        "date": "2025-05-01",
+        "impact": "Multi-week crypto mining operation leveraging serverless auto-scaling; functions cloned to thousands of concurrent executions; cost escalation into tens of thousands of dollars",
+        "root_cause": "Missing reserved concurrency limits; inadequate CloudWatch monitoring; delayed billing anomaly detection",
+        "source_url": "https://medium.com/infosec-ninja/aws-security-incident-response-part-3-the-stealth-lambda-crypto-mining-operation-f628cd9a8414"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 3000,
+        "severity": "Medium",
+        "summary": "Lambda function DoS via concurrent execution exhaustion affecting all account functions"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Gaining Persistency on Vulnerable Lambdas",
+        "authors": ["Unit 42 (Palo Alto Networks)"],
+        "published_date": "2023-08-15",
+        "source_url": "https://unit42.paloaltonetworks.com/gaining-persistency-vulnerable-lambdas/",
+        "key_finding": "Lambda auto-scaling enables attackers to turn one vulnerable function into thousands of compute instances; serverless functions present easy targets due to lack of concurrency controls"
+      },
+      {
+        "title": "Lambda Threat - Best Practices for Lambda Security (MITRE ATT&CK)",
+        "authors": ["Sysdig Threat Research Team"],
+        "published_date": "2024-03-10",
+        "source_url": "https://www.sysdig.com/blog/exploit-mitigate-aws-lambdas-mitre",
+        "key_finding": "Resource hijacking (T1496) is primary threat vector; functions can be exploited for crypto mining with auto-scaling multiplying mining capacity exponentially"
+      },
+      {
+        "title": "AWS Lambda Risks: Concurrency and Timeout Exploitation",
+        "authors": ["Rami McCarthy"],
+        "published_date": "2024-06-20",
+        "source_url": "https://ramimac.github.io/wiki/lambda-risks/",
+        "key_finding": "Default 1,000 concurrent execution limit can be exhausted by single vulnerable function; reserved concurrency is critical defense mechanism"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Reserved Concurrency Limits",
+      "description": "Configure reserved concurrency at the function level to limit maximum concurrent executions and prevent account-wide throttling. This isolates blast radius and ensures one compromised function cannot exhaust the entire account's concurrency pool.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "typescript",
+        "framework": "AWS CDK (TypeScript)",
+        "code": "import * as lambda from 'aws-cdk-lib/aws-lambda';\nimport * as cdk from 'aws-cdk-lib';\n\nexport class LambdaSecurityStack extends cdk.Stack {\n  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {\n    super(scope, id, props);\n\n    // High-risk function with strict concurrency limit\n    const dataProcessingFunction = new lambda.Function(this, 'DataProcessor', {\n      runtime: lambda.Runtime.NODEJS_20_X,\n      handler: 'index.handler',\n      code: lambda.Code.fromAsset('lambda'),\n      timeout: cdk.Duration.seconds(30), // Reduced from default 3 minutes\n      memorySize: 512,\n      // CRITICAL: Reserve concurrency to prevent account-wide exhaustion\n      reservedConcurrentExecutions: 10, // Max 10 concurrent executions\n      environment: {\n        MAX_PROCESSING_TIME_MS: '25000' // Internal timeout guard\n      }\n    });\n\n    // Public-facing function with even stricter limits\n    const publicApiFunction = new lambda.Function(this, 'PublicAPI', {\n      runtime: lambda.Runtime.PYTHON_3_12,\n      handler: 'app.lambda_handler',\n      code: lambda.Code.fromAsset('api'),\n      timeout: cdk.Duration.seconds(10), // Short timeout for API responses\n      memorySize: 256,\n      reservedConcurrentExecutions: 5, // Very restrictive for public endpoints\n      layers: [\n        // Include AWS Lambda Powertools for structured logging\n        lambda.LayerVersion.fromLayerVersionArn(\n          this,\n          'PowertoolsLayer',\n          'arn:aws:lambda:us-east-1:017000801446:layer:AWSLambdaPowertoolsPythonV2:59'\n        )\n      ]\n    });\n\n    // Add CloudWatch alarms for throttling\n    const throttleAlarm = publicApiFunction.metricThrottles().createAlarm(this, 'ThrottleAlarm', {\n      threshold: 5,\n      evaluationPeriods: 1,\n      datapointsToAlarm: 1,\n      treatMissingData: cdk.aws_cloudwatch.TreatMissingData.NOT_BREACHING\n    });\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS Lambda Console",
+          "type": "Configuration Management",
+          "cost": "Free (part of Lambda service)"
+        },
+        {
+          "name": "AWS CDK / CloudFormation",
+          "type": "Infrastructure as Code",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.DS-4 - Adequate capacity to ensure availability",
+        "DE.AE-1 - Baseline of network operations established"
+      ],
+      "validation_steps": [
+        "Set reserved concurrency to appropriate value based on function criticality (5-50 for most functions)",
+        "Verify account-level concurrency is not fully allocated (keep 200+ unreserved)",
+        "Test function behavior under throttling conditions (should return 429 TooManyRequestsException)",
+        "Monitor ConcurrentExecutions metric in CloudWatch",
+        "Validate other functions remain operational when one is throttled"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Optimize Timeout Configuration and Add Internal Circuit Breakers",
+      "description": "Reduce function timeout values to minimum required duration and implement application-level timeout guards. Most API functions should complete in under 30 seconds; batch processing functions should have explicit retry logic with exponential backoff.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "AWS Lambda (Python 3.12)",
+        "code": "import time\nimport signal\nimport json\nfrom typing import Dict, Any\nfrom contextlib import contextmanager\n\n# Lambda Powertools for structured logging\nfrom aws_lambda_powertools import Logger, Tracer\nfrom aws_lambda_powertools.utilities.typing import LambdaContext\n\nlogger = Logger()\ntracer = Tracer()\n\n# Timeout exception for circuit breaker\nclass TimeoutError(Exception):\n    pass\n\ndef timeout_handler(signum, frame):\n    raise TimeoutError(\"Function execution exceeded internal timeout\")\n\n@contextmanager\ndef timeout_guard(seconds: int):\n    \"\"\"Internal timeout guard - triggers before Lambda timeout\"\"\"\n    signal.signal(signal.SIGALRM, timeout_handler)\n    signal.alarm(seconds)\n    try:\n        yield\n    finally:\n        signal.alarm(0)\n\n@logger.inject_lambda_context(log_event=True)\n@tracer.capture_lambda_handler\ndef lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, Any]:\n    \"\"\"\n    Lambda handler with internal timeout protection\n    Lambda timeout: 30 seconds (configured in infrastructure)\n    Internal timeout: 25 seconds (leaves 5s buffer for cleanup)\n    \"\"\"\n    \n    # Calculate internal timeout (90% of Lambda timeout)\n    lambda_timeout_ms = context.get_remaining_time_in_millis()\n    internal_timeout_sec = int((lambda_timeout_ms / 1000) * 0.9)\n    \n    logger.info({\n        \"message\": \"Function invocation started\",\n        \"request_id\": context.request_id,\n        \"timeout_config\": {\n            \"lambda_timeout_ms\": lambda_timeout_ms,\n            \"internal_timeout_sec\": internal_timeout_sec\n        }\n    })\n    \n    try:\n        with timeout_guard(internal_timeout_sec):\n            # Perform processing\n            result = process_request(event, context)\n            \n            logger.info({\n                \"message\": \"Processing completed successfully\",\n                \"execution_time_ms\": lambda_timeout_ms - context.get_remaining_time_in_millis()\n            })\n            \n            return {\n                \"statusCode\": 200,\n                \"body\": json.dumps(result)\n            }\n            \n    except TimeoutError:\n        logger.error({\n            \"message\": \"Internal timeout exceeded - graceful shutdown\",\n            \"timeout_sec\": internal_timeout_sec\n        })\n        \n        # Return partial results or retry instruction\n        return {\n            \"statusCode\": 503,\n            \"body\": json.dumps({\n                \"error\": \"Request timeout - please retry\",\n                \"retry_after\": 60\n            })\n        }\n        \n    except Exception as e:\n        logger.exception(\"Unexpected error during processing\")\n        return {\n            \"statusCode\": 500,\n            \"body\": json.dumps({\"error\": \"Internal server error\"})\n        }\n\ndef process_request(event: Dict[str, Any], context: LambdaContext) -> Dict[str, Any]:\n    \"\"\"Business logic with periodic timeout checks\"\"\"\n    start_time = time.time()\n    results = []\n    \n    for item in event.get('items', []):\n        # Check remaining time before each iteration\n        if context.get_remaining_time_in_millis() < 5000:  # 5 second buffer\n            logger.warning({\n                \"message\": \"Approaching timeout - stopping processing\",\n                \"items_processed\": len(results),\n                \"items_remaining\": len(event['items']) - len(results)\n            })\n            break\n            \n        # Process item (simulate work)\n        processed = process_item(item)\n        results.append(processed)\n    \n    return {\n        \"processed_count\": len(results),\n        \"execution_time\": time.time() - start_time\n    }\n\ndef process_item(item: Any) -> Any:\n    \"\"\"Process individual item - add your business logic here\"\"\"\n    # Simulate processing\n    time.sleep(0.1)\n    return {\"id\": item.get('id'), \"status\": \"processed\"}"
+      },
+      "tools": [
+        {
+          "name": "AWS Lambda Powertools",
+          "type": "Observability Library",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "AWS X-Ray",
+          "type": "Distributed Tracing",
+          "cost": "$5.00 per 1 million traces recorded"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.DS-4 - Adequate capacity to ensure availability",
+        "DE.CM-1 - Network monitored to detect anomalies"
+      ],
+      "validation_steps": [
+        "Set Lambda timeout to realistic minimum (API: 10-30s, Batch: 1-5min)",
+        "Implement internal timeout guard at 85-90% of Lambda timeout",
+        "Add periodic checks for context.get_remaining_time_in_millis()",
+        "Test function behavior when timeout is reached (graceful degradation)",
+        "Monitor Duration and Timeout CloudWatch metrics",
+        "Validate error responses include retry guidance"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Cost Anomaly Detection and GuardDuty Lambda Protection",
+      "description": "Enable AWS Cost Anomaly Detection with machine learning-based thresholds and Amazon GuardDuty Lambda Protection to detect cryptocurrency mining, unusual network activity, and concurrent execution spikes. Configure real-time alerting via SNS and EventBridge.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "typescript",
+        "framework": "AWS CDK (TypeScript)",
+        "code": "import * as cdk from 'aws-cdk-lib';\nimport * as sns from 'aws-cdk-lib/aws-sns';\nimport * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';\nimport * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';\nimport * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';\nimport * as events from 'aws-cdk-lib/aws-events';\nimport * as targets from 'aws-cdk-lib/aws-events-targets';\nimport * as lambda from 'aws-cdk-lib/aws-lambda';\nimport * as iam from 'aws-cdk-lib/aws-iam';\n\nexport class LambdaSecurityMonitoringStack extends cdk.Stack {\n  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {\n    super(scope, id, props);\n\n    // SNS topic for security alerts\n    const securityAlertTopic = new sns.Topic(this, 'LambdaSecurityAlerts', {\n      displayName: 'Lambda Security Alerts',\n      topicName: 'lambda-security-alerts'\n    });\n\n    // Email subscription for alerts\n    securityAlertTopic.addSubscription(\n      new subscriptions.EmailSubscription('security-team@example.com')\n    );\n\n    // Slack/PagerDuty webhook (optional)\n    securityAlertTopic.addSubscription(\n      new subscriptions.UrlSubscription('https://hooks.slack.com/services/YOUR/WEBHOOK/URL')\n    );\n\n    // CloudWatch Alarm: Account-level concurrent execution threshold\n    const accountConcurrencyAlarm = new cloudwatch.Alarm(this, 'AccountConcurrencyAlarm', {\n      alarmName: 'lambda-account-concurrency-high',\n      alarmDescription: 'Alert when account concurrency exceeds 80% of limit',\n      metric: new cloudwatch.Metric({\n        namespace: 'AWS/Lambda',\n        metricName: 'ConcurrentExecutions',\n        statistic: 'Maximum',\n        period: cdk.Duration.minutes(1)\n      }),\n      threshold: 800, // 80% of default 1,000 limit\n      evaluationPeriods: 2,\n      datapointsToAlarm: 2,\n      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,\n      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD\n    });\n\n    accountConcurrencyAlarm.addAlarmAction(new actions.SnsAction(securityAlertTopic));\n\n    // CloudWatch Alarm: Throttle spike detection\n    const throttleAlarm = new cloudwatch.Alarm(this, 'ThrottleAlarm', {\n      alarmName: 'lambda-throttle-spike',\n      alarmDescription: 'Alert on Lambda throttling events',\n      metric: new cloudwatch.Metric({\n        namespace: 'AWS/Lambda',\n        metricName: 'Throttles',\n        statistic: 'Sum',\n        period: cdk.Duration.minutes(5)\n      }),\n      threshold: 10,\n      evaluationPeriods: 1,\n      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,\n      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD\n    });\n\n    throttleAlarm.addAlarmAction(new actions.SnsAction(securityAlertTopic));\n\n    // CloudWatch Alarm: Duration anomaly (functions running close to timeout)\n    const durationAlarm = new cloudwatch.Alarm(this, 'DurationAlarm', {\n      alarmName: 'lambda-duration-anomaly',\n      alarmDescription: 'Alert when function duration exceeds 90% of timeout',\n      metric: new cloudwatch.Metric({\n        namespace: 'AWS/Lambda',\n        metricName: 'Duration',\n        statistic: 'Maximum',\n        period: cdk.Duration.minutes(5)\n      }),\n      threshold: 27000, // 27 seconds (90% of 30s timeout)\n      evaluationPeriods: 2,\n      datapointsToAlarm: 2,\n      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,\n      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD\n    });\n\n    durationAlarm.addAlarmAction(new actions.SnsAction(securityAlertTopic));\n\n    // Lambda function to process GuardDuty findings\n    const guardDutyProcessor = new lambda.Function(this, 'GuardDutyProcessor', {\n      runtime: lambda.Runtime.PYTHON_3_12,\n      handler: 'guardduty_handler.lambda_handler',\n      code: lambda.Code.fromInline(`\nimport json\nimport boto3\nimport os\n\nsns = boto3.client('sns')\nlambda_client = boto3.client('lambda')\n\ndef lambda_handler(event, context):\n    finding = event['detail']\n    finding_type = finding.get('type', '')\n    severity = finding.get('severity', 0)\n    \n    # Check for crypto mining findings\n    crypto_findings = [\n        'CryptoCurrency:Runtime/BitcoinTool.B!DNS',\n        'CryptoCurrency:Runtime/BitcoinTool.B',\n        'Impact:Runtime/CryptoMinerExecuted'\n    ]\n    \n    if any(f in finding_type for f in crypto_findings):\n        # Extract affected Lambda function\n        resource = finding.get('resource', {})\n        function_name = resource.get('lambdaDetails', {}).get('functionName')\n        \n        message = f\"\"\"\n🚨 CRITICAL: Crypto Mining Detected in Lambda Function\n\nFunction: {function_name}\nFinding Type: {finding_type}\nSeverity: {severity}\nAccount: {finding.get('accountId')}\nRegion: {finding.get('region')}\nTime: {finding.get('time')}\n\nDescription: {finding.get('description')}\n\nIMDIATE ACTIONS REQUIRED:\n1. Update function's reserved concurrency to 0 (disable invocations)\n2. Review function code and dependencies\n3. Rotate IAM credentials\n4. Check CloudTrail for unauthorized deployments\n5. Review AWS Cost Explorer for anomalies\n        \"\"\"\n        \n        # Send SNS alert\n        sns.publish(\n            TopicArn=os.environ['ALERT_TOPIC_ARN'],\n            Subject=f'🚨 CRITICAL: Lambda Crypto Mining - {function_name}',\n            Message=message\n        )\n        \n        # OPTIONAL: Auto-disable function by setting concurrency to 0\n        # Uncomment if auto-remediation is desired\n        # try:\n        #     lambda_client.put_function_concurrency(\n        #         FunctionName=function_name,\n        #         ReservedConcurrentExecutions=0\n        #     )\n        #     print(f'Auto-disabled function: {function_name}')\n        # except Exception as e:\n        #     print(f'Failed to disable function: {e}')\n    \n    return {'statusCode': 200}\n      `),\n      environment: {\n        ALERT_TOPIC_ARN: securityAlertTopic.topicArn\n      },\n      timeout: cdk.Duration.seconds(30)\n    });\n\n    // Grant permissions\n    securityAlertTopic.grantPublish(guardDutyProcessor);\n    guardDutyProcessor.addToRolePolicy(new iam.PolicyStatement({\n      actions: ['lambda:PutFunctionConcurrency', 'lambda:GetFunction'],\n      resources: ['*']\n    }));\n\n    // EventBridge rule for GuardDuty findings\n    const guardDutyRule = new events.Rule(this, 'GuardDutyLambdaFindings', {\n      ruleName: 'guardduty-lambda-crypto-mining',\n      description: 'Trigger on GuardDuty Lambda crypto mining findings',\n      eventPattern: {\n        source: ['aws.guardduty'],\n        detailType: ['GuardDuty Finding'],\n        detail: {\n          type: [{\n            prefix: 'CryptoCurrency:Runtime'\n          }, {\n            prefix: 'Impact:Runtime/CryptoMinerExecuted'\n          }],\n          resource: {\n            resourceType: ['Lambda']\n          }\n        }\n      }\n    });\n\n    guardDutyRule.addTarget(new targets.LambdaFunction(guardDutyProcessor));\n\n    // Cost Anomaly Detection (configured via AWS Console/CLI)\n    // Note: Cost Anomaly Detection doesn't have CDK L2 constructs yet\n    // Must be configured manually or via AWS CLI\n    new cdk.CfnOutput(this, 'CostAnomalyInstructions', {\n      value: 'Configure Cost Anomaly Detection in AWS Cost Management console',\n      description: 'Enable ML-based cost anomaly detection for Lambda service'\n    });\n  }\n}\n\n// Deploy GuardDuty Lambda Protection (AWS CLI command)\n// aws guardduty create-detector --enable --features '[{\"Name\":\"LAMBDA_NETWORK_LOGS\",\"Status\":\"ENABLED\"}]'"
+      },
+      "tools": [
+        {
+          "name": "Amazon GuardDuty Lambda Protection",
+          "type": "Threat Detection",
+          "cost": "$0.50 per million requests analyzed"
+        },
+        {
+          "name": "AWS Cost Anomaly Detection",
+          "type": "Cost Monitoring",
+          "cost": "Free (ML-based anomaly detection)"
+        },
+        {
+          "name": "CloudWatch Alarms",
+          "type": "Metrics Monitoring",
+          "cost": "$0.10 per alarm per month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events",
+        "A.16.1.4 - Assessment of information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are aggregated and correlated",
+        "DE.CM-7 - Monitoring for unauthorized activity",
+        "RS.AN-1 - Notifications are investigated"
+      ],
+      "validation_steps": [
+        "Enable GuardDuty Lambda Protection in all regions",
+        "Configure Cost Anomaly Detection with Lambda service filter",
+        "Set SNS alerts to Lambda cost > $100/day threshold",
+        "Create EventBridge rule for GuardDuty crypto mining findings",
+        "Test alerts by simulating high concurrency (load testing)",
+        "Verify alert delivery to security team within 5 minutes",
+        "Document incident response procedures for Lambda abuse"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Concurrent executions consistently near account limit (800-1000)",
+      "Functions running at or near maximum timeout duration (e.g., 14m 59s)",
+      "Unexpected spike in Lambda invocation count (10x-100x baseline)",
+      "GuardDuty findings: CryptoCurrency:Runtime/BitcoinTool.B!DNS",
+      "CloudWatch logs showing DNS-over-HTTPS connections to crypto mining pools",
+      "High throttle rate (TooManyRequestsException) across multiple functions",
+      "AWS bill anomalies: Lambda compute charges 5x-50x higher than baseline",
+      "Network traffic to known mining pool IPs or domains (e.g., xmr-pool.com)",
+      "Function code modifications not matching approved deployments"
+    ],
+    "log_queries": [
+      {
+        "siem": "CloudWatch Logs Insights",
+        "query": "# Detect timeout patterns and long-running executions\nfields @timestamp, @message, @duration, @requestId\n| filter @type = \"REPORT\"\n| filter @duration > 25000  # Functions running > 25 seconds\n| stats count() as execution_count, \n        avg(@duration) as avg_duration,\n        max(@duration) as max_duration,\n        max(@maxMemoryUsed) as peak_memory \n  by @functionName\n| filter execution_count > 50  # High frequency pattern\n| sort execution_count desc"
+      },
+      {
+        "siem": "CloudWatch Logs Insights",
+        "query": "# Detect concurrent execution spikes and throttling\nfields @timestamp, @message\n| filter @message like /TooManyRequestsException/\n  or @message like /Rate exceeded/\n  or @message like /ReservedConcurrentExecutions/\n| stats count() as throttle_count by bin(5m) as time_window\n| filter throttle_count > 10\n| sort time_window desc"
+      },
+      {
+        "siem": "AWS Athena (CloudTrail)",
+        "query": "-- Detect suspicious Lambda function updates and concurrency changes\nSELECT \n  eventtime,\n  useridentity.principalid,\n  requestparameters.functionname,\n  requestparameters.code,\n  requestparameters.environment,\n  requestparameters.timeout,\n  sourceipaddress,\n  useragent\nFROM cloudtrail_logs\nWHERE eventsource = 'lambda.amazonaws.com'\n  AND eventname IN (\n    'UpdateFunctionCode20150331v2',\n    'UpdateFunctionConfiguration20150331v2',\n    'PutFunctionConcurrency20170405v2',\n    'CreateFunction20150331'\n  )\n  AND year = '2026' AND month = '01'\n  AND (\n    requestparameters.timeout > 300  -- Timeout > 5 minutes\n    OR requestparameters.reservedconcurrentexecutions > 100\n  )\nORDER BY eventtime DESC\nLIMIT 100;"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=aws_cloudwatch sourcetype=\"aws:cloudwatch:log\" \n| spath output=duration path=duration\n| spath output=memory path=maxMemoryUsed  \n| spath output=billed_duration path=billedDuration\n| where duration > 25000\n| stats count as execution_count, \n        avg(duration) as avg_duration,\n        max(duration) as max_duration,\n        sum(billed_duration) as total_billed_ms\n  by functionName\n| where execution_count > 100\n| eval total_billed_hours = total_billed_ms / (1000 * 60 * 60)\n| eval estimated_cost_usd = total_billed_hours * 0.0000166667  \n| where estimated_cost_usd > 50\n| sort -estimated_cost_usd"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.provider: \"lambda.amazonaws.com\" \nAND (event.action: \"UpdateFunctionCode\" OR event.action: \"UpdateFunctionConfiguration\")\nAND aws.cloudtrail.request_parameters.timeout: > 300\n| stats count() by aws.cloudtrail.user_identity.principal_id, \n                  aws.cloudtrail.request_parameters.function_name,\n                  source.ip"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS CloudWatch ServiceLens",
+        "type": "Distributed Tracing & Metrics",
+        "usage": "Visualize Lambda performance, timeouts, and concurrent execution patterns"
+      },
+      {
+        "name": "AWS Cost Explorer",
+        "type": "Cost Analysis",
+        "usage": "Daily Lambda cost monitoring; set alerts for costs > $100/day anomaly threshold"
+      },
+      {
+        "name": "Amazon GuardDuty",
+        "type": "Threat Detection",
+        "usage": "Real-time detection of crypto mining and malicious network activity"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Technology"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.9 - Improper Resource Management)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.1.3 - Capacity Management)",
+      "NIST CSF (PR.DS-4 - Adequate Capacity)",
+      "CIS AWS Foundations Benchmark (v1.5.0 - Section 2.3)",
+      "AWS Well-Architected Framework (Reliability Pillar)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Serverless",
+      "Multi-Region"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

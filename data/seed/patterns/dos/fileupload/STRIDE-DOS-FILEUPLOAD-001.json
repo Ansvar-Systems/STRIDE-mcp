@@ -1,0 +1,316 @@
+{
+  "id": "STRIDE-DOS-FILEUPLOAD-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1499.001 - OS Exhaustion Flood",
+      "T1499.004 - Application or System Exploitation"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-434 - Unrestricted Upload of File with Dangerous Type"
+    ]
+  },
+  "threat": {
+    "title": "Large File Upload Denial of Service in Express.js and Flask",
+    "description": "Web applications that accept file uploads without proper size limits, streaming controls, or resource throttling are vulnerable to denial of service attacks. Attackers can upload extremely large files (multiple gigabytes) that exhaust server memory, disk space, or network bandwidth, causing the application to crash or become unresponsive for legitimate users. This is particularly critical in multi-tenant environments where one attacker can impact all users.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Express.js, Flask",
+    "versions_affected": [
+      "Express.js 3.x-4.x",
+      "Flask 2.x-3.x"
+    ],
+    "ecosystem": "Node.js, Python",
+    "dependencies": [
+      "multer",
+      "express-fileupload",
+      "werkzeug",
+      "flask-uploads"
+    ],
+    "related_frameworks": [
+      "Koa.js",
+      "Fastify",
+      "Django",
+      "FastAPI"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies a file upload endpoint without size restrictions (e.g., /api/upload or /upload)\n2. Crafts a malicious multipart/form-data request with a 10GB file or empty field names\n3. Initiates multiple parallel uploads from distributed IPs to bypass rate limiting\n4. Server attempts to buffer entire file in memory before validation, consuming 30-80GB RAM\n5. Application runs out of memory and crashes with OOM error, or disk fills completely\n6. Legitimate users experience 503 errors and service downtime for 15-60 minutes",
+    "prerequisites": [
+      "File upload endpoint without size limits or with only client-side validation",
+      "No streaming upload implementation (entire file loaded into memory)",
+      "Insufficient rate limiting or resource quotas per user/IP",
+      "No disk space monitoring or alerts configured"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2025-7338",
+        "description": "Multer DoS vulnerability where malformed multipart/form-data requests with empty field names crash Node.js applications",
+        "cvss_score": 7.5,
+        "published_date": "2025-01-15"
+      },
+      {
+        "cve_id": "CVE-2025-47944",
+        "description": "Multer unhandled exception during parsing of maliciously crafted multipart/form-data requests causing immediate server termination",
+        "cvss_score": 7.5,
+        "published_date": "2025-01-10"
+      },
+      {
+        "cve_id": "CVE-2024-49767",
+        "description": "Werkzeug resource exhaustion in multipart form parsing where a single 1Gbit/s upload can exhaust 32GB RAM in under 60 seconds",
+        "cvss_score": 7.5,
+        "published_date": "2024-10-25"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "PocketBase Server Crash",
+        "date": "2023-08-15",
+        "impact": "Production server crashed with 'Out of memory: Killed process' error due to large file uploads being loaded entirely into memory for validation",
+        "root_cause": "PocketBase reads entire file content into memory before validation, not optimal for large files",
+        "source_url": "https://github.com/pocketbase/pocketbase/discussions/835"
+      },
+      {
+        "incident": "PicoShare Memory Exhaustion",
+        "date": "2023-06-20",
+        "impact": "Golang web application consistently died with OOM error when uploading two 618MB files in parallel",
+        "root_cause": "Memory leak in ParseMultipartForm caused by loading entire file into memory instead of streaming",
+        "source_url": "https://mtlynch.io/notes/picoshare-perf/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 2500,
+        "severity": "Medium",
+        "summary": "File upload endpoint allows 10GB uploads causing memory exhaustion and service crash"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Multer DoS Vulnerability: How a Single Malformed Upload Can Crash Your Node.js App",
+        "authors": [
+          "ZeroPath Security"
+        ],
+        "published_date": "2025-01-15",
+        "source_url": "https://zeropath.com/blog/cve-2025-7338-multer-dos-vulnerability",
+        "key_finding": "Malformed multipart requests with empty field names trigger unhandled exceptions in Multer, causing immediate process termination"
+      },
+      {
+        "title": "Analyzing CVE-2024-49767: Werkzeug Resource Exhaustion",
+        "authors": [
+          "Ogma Security"
+        ],
+        "published_date": "2024-10-26",
+        "source_url": "https://ogma.in/analyzing-and-mitigating-cve-2024-49767-werkzeug-resource-exhaustion-vulnerability",
+        "key_finding": "Werkzeug can allocate 3-8x the upload size in memory, bypassing max_form_memory_size settings"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement File Size Limits with Multer and Werkzeug",
+      "description": "Configure strict file size limits at the application level to reject oversized uploads before they consume resources. For Express.js, use Multer's limits configuration. For Flask, use Werkzeug's MAX_CONTENT_LENGTH setting.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x with Multer",
+        "code": "const express = require('express');\nconst multer = require('multer');\nconst path = require('path');\n\nconst app = express();\n\n// Configure multer with strict limits\nconst upload = multer({\n  storage: multer.diskStorage({\n    destination: (req, file, cb) => {\n      cb(null, '/tmp/uploads/');\n    },\n    filename: (req, file, cb) => {\n      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);\n      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));\n    }\n  }),\n  limits: {\n    fileSize: 10 * 1024 * 1024, // 10MB max file size\n    files: 5, // Maximum 5 files per request\n    fields: 10, // Maximum 10 non-file fields\n    parts: 15 // Maximum 15 parts (files + fields)\n  },\n  fileFilter: (req, file, cb) => {\n    // Whitelist allowed file types\n    const allowedTypes = /jpeg|jpg|png|pdf|docx/;\n    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());\n    const mimetype = allowedTypes.test(file.mimetype);\n    \n    if (mimetype && extname) {\n      return cb(null, true);\n    } else {\n      cb(new Error('Invalid file type. Only JPEG, PNG, PDF, and DOCX allowed.'));\n    }\n  }\n});\n\n// Apply limits to all requests\napp.use(express.json({ limit: '10mb' }));\napp.use(express.urlencoded({ limit: '10mb', extended: true }));\n\n// File upload endpoint with error handling\napp.post('/api/upload', upload.single('file'), (req, res) => {\n  if (!req.file) {\n    return res.status(400).json({ error: 'No file uploaded' });\n  }\n  \n  res.json({\n    message: 'File uploaded successfully',\n    filename: req.file.filename,\n    size: req.file.size\n  });\n});\n\n// Error handling middleware for multer errors\napp.use((err, req, res, next) => {\n  if (err instanceof multer.MulterError) {\n    if (err.code === 'LIMIT_FILE_SIZE') {\n      return res.status(413).json({ error: 'File too large. Maximum size is 10MB' });\n    }\n    if (err.code === 'LIMIT_FILE_COUNT') {\n      return res.status(400).json({ error: 'Too many files. Maximum is 5 files' });\n    }\n    if (err.code === 'LIMIT_UNEXPECTED_FILE') {\n      return res.status(400).json({ error: 'Unexpected field name' });\n    }\n  }\n  res.status(500).json({ error: err.message });\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));"
+      },
+      "tools": [
+        {
+          "name": "Multer",
+          "type": "File Upload Middleware",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Test uploading file larger than 10MB (should return 413 error)",
+        "Test uploading 6 files simultaneously (should reject)",
+        "Test uploading disallowed file types (should reject)",
+        "Monitor memory usage during large file upload attempts"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Stream Large Files Directly to Cloud Storage (Azure Blob/S3)",
+      "description": "Instead of buffering uploads in server memory or disk, stream files directly to cloud object storage. This prevents memory exhaustion and provides scalable, durable storage. Use Azure Blob Storage for Azure environments or AWS S3 for AWS.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x with Azure Blob Storage",
+        "code": "const express = require('express');\nconst multer = require('multer');\nconst { BlobServiceClient } = require('@azure/storage-blob');\nconst { v4: uuidv4 } = require('uuid');\nconst stream = require('stream');\n\nconst app = express();\n\n// Initialize Azure Blob Storage client\nconst connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;\nconst containerName = 'uploads';\nconst blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);\nconst containerClient = blobServiceClient.getContainerClient(containerName);\n\n// Custom storage engine that streams to Azure Blob\nclass AzureBlobStorage {\n  constructor(options) {\n    this.containerClient = options.containerClient;\n  }\n  \n  _handleFile(req, file, cb) {\n    const blobName = `${uuidv4()}-${file.originalname}`;\n    const blockBlobClient = this.containerClient.getBlockBlobClient(blobName);\n    \n    // Create passthrough stream to count bytes\n    let uploadedBytes = 0;\n    const maxSize = 100 * 1024 * 1024; // 100MB limit\n    \n    const transformStream = new stream.Transform({\n      transform(chunk, encoding, callback) {\n        uploadedBytes += chunk.length;\n        if (uploadedBytes > maxSize) {\n          return callback(new Error('File size exceeds 100MB limit'));\n        }\n        callback(null, chunk);\n      }\n    });\n    \n    // Pipe file stream through size checker to Azure\n    file.stream.pipe(transformStream);\n    \n    blockBlobClient.uploadStream(transformStream, 4 * 1024 * 1024, 20, {\n      blobHTTPHeaders: { blobContentType: file.mimetype }\n    })\n      .then(uploadResult => {\n        cb(null, {\n          blobName: blobName,\n          containerName: containerName,\n          url: blockBlobClient.url,\n          size: uploadedBytes\n        });\n      })\n      .catch(err => {\n        cb(err);\n      });\n  }\n  \n  _removeFile(req, file, cb) {\n    const blockBlobClient = this.containerClient.getBlockBlobClient(file.blobName);\n    blockBlobClient.delete()\n      .then(() => cb(null))\n      .catch(err => cb(err));\n  }\n}\n\nconst upload = multer({\n  storage: new AzureBlobStorage({\n    containerClient: containerClient\n  }),\n  limits: {\n    fileSize: 100 * 1024 * 1024, // 100MB\n    files: 1\n  }\n});\n\napp.post('/api/upload', upload.single('file'), async (req, res) => {\n  if (!req.file) {\n    return res.status(400).json({ error: 'No file uploaded' });\n  }\n  \n  res.json({\n    message: 'File uploaded to Azure Blob Storage',\n    blobName: req.file.blobName,\n    url: req.file.url,\n    size: req.file.size\n  });\n});\n\napp.use((err, req, res, next) => {\n  console.error('Upload error:', err);\n  res.status(500).json({ error: err.message });\n});\n\napp.listen(3000);"
+      },
+      "tools": [
+        {
+          "name": "Azure Blob Storage",
+          "type": "Object Storage",
+          "cost": "$0.018 per GB/month (Hot tier)"
+        },
+        {
+          "name": "AWS S3",
+          "type": "Object Storage",
+          "cost": "$0.023 per GB/month (Standard)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Create Azure Blob Storage container or S3 bucket",
+        "Configure connection string in environment variables",
+        "Test uploading 50MB file and verify it appears in blob storage",
+        "Monitor server memory usage (should remain low)",
+        "Verify blob URL is accessible and file is intact"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Configure Request Size Limits and Rate Limiting for Flask",
+      "description": "Implement strict request size limits and rate limiting in Flask applications to prevent resource exhaustion. Use Werkzeug's MAX_CONTENT_LENGTH and Flask-Limiter for comprehensive protection.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask 2.x with Werkzeug",
+        "code": "from flask import Flask, request, jsonify\nfrom werkzeug.utils import secure_filename\nfrom flask_limiter import Limiter\nfrom flask_limiter.util import get_remote_address\nimport os\nfrom pathlib import Path\n\napp = Flask(__name__)\n\n# Configure maximum content length (10MB)\napp.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB\napp.config['UPLOAD_FOLDER'] = '/tmp/uploads'\napp.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'pdf', 'docx'}\n\n# Initialize rate limiter\nlimiter = Limiter(\n    app=app,\n    key_func=get_remote_address,\n    default_limits=[\"200 per day\", \"50 per hour\"],\n    storage_uri=\"redis://localhost:6379\"\n)\n\n# Ensure upload directory exists\nPath(app.config['UPLOAD_FOLDER']).mkdir(parents=True, exist_ok=True)\n\ndef allowed_file(filename):\n    return '.' in filename and \\\n           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']\n\ndef get_file_size(file):\n    \"\"\"Get file size without loading entire file into memory\"\"\"\n    file.seek(0, os.SEEK_END)\n    size = file.tell()\n    file.seek(0)\n    return size\n\n@app.errorhandler(413)\ndef request_entity_too_large(error):\n    return jsonify({\n        'error': 'File too large',\n        'message': 'Maximum file size is 10MB'\n    }), 413\n\n@app.route('/api/upload', methods=['POST'])\n@limiter.limit(\"10 per hour\")  # Limit to 10 uploads per hour per IP\ndef upload_file():\n    # Check if file is present in request\n    if 'file' not in request.files:\n        return jsonify({'error': 'No file part in request'}), 400\n    \n    file = request.files['file']\n    \n    if file.filename == '':\n        return jsonify({'error': 'No file selected'}), 400\n    \n    if not allowed_file(file.filename):\n        return jsonify({\n            'error': 'Invalid file type',\n            'allowed_types': list(app.config['ALLOWED_EXTENSIONS'])\n        }), 400\n    \n    # Additional size check (Werkzeug already enforces MAX_CONTENT_LENGTH)\n    file_size = get_file_size(file)\n    if file_size > app.config['MAX_CONTENT_LENGTH']:\n        return jsonify({\n            'error': 'File size exceeds limit',\n            'max_size_mb': app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)\n        }), 413\n    \n    # Save file securely\n    filename = secure_filename(file.filename)\n    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)\n    \n    # Stream file to disk in chunks to avoid memory issues\n    try:\n        file.save(filepath)\n        return jsonify({\n            'message': 'File uploaded successfully',\n            'filename': filename,\n            'size_bytes': file_size\n        }), 201\n    except Exception as e:\n        return jsonify({'error': f'Upload failed: {str(e)}'}), 500\n\n@app.route('/api/upload/streaming', methods=['POST'])\n@limiter.limit(\"5 per hour\")\ndef upload_file_streaming():\n    \"\"\"Stream large files to disk without loading into memory\"\"\"\n    if 'file' not in request.files:\n        return jsonify({'error': 'No file part'}), 400\n    \n    file = request.files['file']\n    filename = secure_filename(file.filename)\n    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)\n    \n    # Stream file in chunks\n    chunk_size = 4096  # 4KB chunks\n    total_size = 0\n    max_size = app.config['MAX_CONTENT_LENGTH']\n    \n    try:\n        with open(filepath, 'wb') as f:\n            while True:\n                chunk = file.stream.read(chunk_size)\n                if not chunk:\n                    break\n                total_size += len(chunk)\n                if total_size > max_size:\n                    # Clean up partial file\n                    f.close()\n                    os.remove(filepath)\n                    return jsonify({'error': 'File too large'}), 413\n                f.write(chunk)\n        \n        return jsonify({\n            'message': 'File streamed successfully',\n            'filename': filename,\n            'size_bytes': total_size\n        }), 201\n    except Exception as e:\n        if os.path.exists(filepath):\n            os.remove(filepath)\n        return jsonify({'error': f'Upload failed: {str(e)}'}), 500\n\nif __name__ == '__main__':\n    app.run(debug=False, host='0.0.0.0', port=5000)"
+      },
+      "tools": [
+        {
+          "name": "Flask-Limiter",
+          "type": "Rate Limiting",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Redis",
+          "type": "Rate Limit Storage",
+          "cost": "$0.013/hour (Azure Cache for Redis Basic C0)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Install Flask-Limiter: pip install Flask-Limiter",
+        "Configure Redis for rate limit storage",
+        "Test uploading file larger than 10MB (should return 413)",
+        "Test exceeding rate limit (should return 429 Too Many Requests)",
+        "Verify streaming upload handles large files without memory spike"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in upload endpoint requests from single IP or ASN",
+      "Multiple requests with Content-Length headers exceeding normal thresholds",
+      "Server memory utilization jumping to 90%+ during upload requests",
+      "Disk space consumption increasing rapidly (>1GB per minute)",
+      "HTTP 413 (Payload Too Large) errors clustered within short time window",
+      "Process crashes with OutOfMemoryError or SIGKILL signals",
+      "Upload requests with suspiciously large Content-Length values (>1GB)"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect large file upload abuse patterns\nlet uploadThreshold = 100000000; // 100MB in bytes\nlet timeWindow = 1h;\nAppServiceHTTPLogs\n| where TimeGenerated > ago(timeWindow)\n| where CsUriStem contains \"/upload\" or CsUriStem contains \"/api/upload\"\n| extend ContentLength = toint(CsBytes)\n| where ContentLength > uploadThreshold or ScStatus == 413\n| summarize \n    TotalUploads = count(),\n    TotalBytes = sum(ContentLength),\n    AvgFileSize = avg(ContentLength),\n    MaxFileSize = max(ContentLength),\n    UniqueUserAgents = dcount(CsUserAgent)\n  by ClientIP, bin(TimeGenerated, 5m)\n| where TotalUploads > 10 or TotalBytes > 1000000000 // 1GB\n| order by TotalBytes desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect file upload DoS attempts\nevent.category: \"web\" AND http.request.method: \"POST\" AND url.path: (*upload* OR *file*)\nAND (\n  http.request.bytes > 100000000 OR\n  http.response.status_code: 413 OR\n  http.response.status_code: 500\n)\n| stats count() as upload_count, sum(http.request.bytes) as total_bytes by source.ip\n| where upload_count > 5 OR total_bytes > 500000000"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined (uri_path=\"*/upload*\" OR uri_path=\"*/api/upload*\")\n| eval content_length_mb=content_length/(1024*1024)\n| where content_length_mb > 100 OR status=413 OR status=500\n| stats count as upload_attempts, sum(content_length_mb) as total_mb, max(content_length_mb) as max_file_mb by src_ip, _time\n| where upload_attempts > 5 OR total_mb > 500\n| sort - total_mb"
+      },
+      {
+        "siem": "CloudWatch Logs Insights (AWS)",
+        "query": "fields @timestamp, @message, httpRequest.clientIp, httpRequest.uri, httpRequest.requestSize\n| filter httpRequest.uri like /\\/upload/\n| filter httpRequest.requestSize > 104857600 or httpRequest.status = 413\n| stats count() as requests, sum(httpRequest.requestSize) / 1048576 as totalMB by httpRequest.clientIp\n| filter requests > 10 or totalMB > 1000\n| sort totalMB desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Prometheus + Grafana",
+        "type": "Metrics Monitoring",
+        "usage": "Monitor http_request_size_bytes and process_resident_memory_bytes metrics with alerts for abnormal upload patterns"
+      },
+      {
+        "name": "Azure Application Insights",
+        "type": "APM",
+        "usage": "Track request duration, dependency failures, and custom events for upload operations"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "SaaS",
+      "E-commerce",
+      "Healthcare",
+      "Education",
+      "Media & Entertainment"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.5)",
+      "HIPAA (164.308(a)(7))",
+      "SOC2 (CC7.2)",
+      "ISO27001 (A.14.1.2)",
+      "GDPR (Article 32)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal"
+    ]
+  }
+}

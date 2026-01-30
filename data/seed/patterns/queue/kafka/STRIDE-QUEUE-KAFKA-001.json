@@ -1,0 +1,349 @@
+{
+  "id": "STRIDE-QUEUE-KAFKA-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1499 - Endpoint Denial of Service",
+      "T1498.001 - Direct Network Flood",
+      "T1496 - Resource Hijacking"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-920 - Improper Restriction of Power Consumption"
+    ]
+  },
+  "threat": {
+    "title": "Kafka Consumer Group Starvation Attack",
+    "description": "Attackers exploit Kafka's consumer group coordination mechanism to trigger cascading rebalance storms, partition flooding, and offset commit exhaustion, leading to message processing halts and complete denial of service. By manipulating consumer group joins/leaves, flooding partition keys, or exploiting fetch.max.bytes limits, malicious actors can starve legitimate consumers and cause critical data processing pipelines to fail.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Apache Kafka",
+    "versions_affected": ["2.8.0+", "3.0.x", "3.1.x", "3.2.x", "3.3.x", "3.4.x", "3.5.x", "3.6.x", "3.7.x"],
+    "ecosystem": "Event Streaming Platform",
+    "dependencies": ["ZooKeeper", "KRaft", "Kafka Connect", "Kafka Streams"],
+    "related_frameworks": ["Confluent Platform", "Amazon MSK", "Azure Event Hubs for Kafka", "Red Hat AMQ Streams"]
+  },
+  "attack": {
+    "scenario": "1. Attacker establishes connection to Kafka cluster without authentication or using compromised credentials\n2. Creates malicious consumer group with high session.timeout.ms (300000ms) and low heartbeat.interval.ms (1000ms)\n3. Rapidly joins and leaves consumer group (50+ times/minute) triggering continuous rebalance storms across all partitions\n4. Floods specific partition keys with requests causing partition leader exhaustion and hot partition issues\n5. Exploits fetch.max.bytes by requesting maximum message sizes (52428800 bytes) causing broker memory pressure\n6. Legitimate consumers enter permanent rebalance state, consumer lag grows exponentially, message processing halts completely",
+    "prerequisites": [
+      "Kafka cluster lacks network-level authentication (no SASL/SSL) OR attacker has valid credentials",
+      "No consumer group quotas configured (consumer_byte_rate, request_percentage unlimited)",
+      "Missing or inadequate broker-level quotas (producer_byte_rate, consumer_byte_rate, request_percentage)",
+      "ZooKeeper or KRaft coordination service accessible to attacker",
+      "No rate limiting on consumer group join/leave operations"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2022-34917",
+        "description": "Memory exhaustion in Apache Kafka allows malicious unauthenticated clients to allocate large amounts of memory on brokers, leading to OutOfMemoryException and denial of service",
+        "cvss_score": 7.5,
+        "published_date": "2022-09-19"
+      },
+      {
+        "cve_id": "CVE-2023-25194",
+        "description": "SASL JAAS JndiLoginModule configuration vulnerability enabling RCE/DoS attacks via Kafka Connect API and brokers",
+        "cvss_score": 8.1,
+        "published_date": "2023-02-07"
+      },
+      {
+        "cve_id": "CVE-2025-27819",
+        "description": "JNDI Configuration RCE/DoS extending CVE-2023-25194 to Apache Kafka brokers requiring AlterConfigs permission",
+        "cvss_score": 7.2,
+        "published_date": "2025-01-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "PagerDuty Kafka Outage",
+        "date": "2025-08-28",
+        "impact": "Cascading failure in Kafka system disrupted event processing for customers in US Service Regions. Root cause: logical error creating new Kafka producer per API request instead of singleton pattern",
+        "root_cause": "Kafka producer instantiation storm causing consumer group instability and processing delays",
+        "source_url": "https://www.pagerduty.com/eng/august-28-kafka-outages-what-happened-and-how-were-improving/"
+      },
+      {
+        "incident": "Cloudflare Analytics Outage",
+        "date": "2023-11-02",
+        "impact": "Critical Kafka and ClickHouse services processing logs and analytics failed during data center outage due to single-region deployment",
+        "root_cause": "Kafka cluster unavailability causing analytics pipeline complete shutdown",
+        "source_url": "https://blog.cloudflare.com/post-mortem-on-cloudflare-control-plane-and-analytics-outage/"
+      },
+      {
+        "incident": "Confluent Platform CVE-2022-34917 Exploitation",
+        "date": "2022-09-19",
+        "impact": "Affected all Kafka releases since 2.8.0, allowing unauthenticated memory exhaustion attacks on brokers",
+        "root_cause": "Lack of validation on client request sizes enabling arbitrarily large memory allocations (CWE-400)",
+        "source_url": "https://support.confluent.io/hc/en-us/articles/9738869220756"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-Kafka-DoS",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "Consumer group rebalance storm causing complete message processing halt via rapid join/leave cycles"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Kafka Rebalance Storm: Production Incident Analysis",
+        "authors": ["Emre Akın"],
+        "published_date": "2024-03-15",
+        "source_url": "https://medium.com/@cobch7/kafka-rebalance-storm-0dac87ea7e59",
+        "key_finding": "In production, dozens of consumer groups can trigger rebalancing storms requiring urgent intervention. Development environments mask this issue with minimal coordination overhead."
+      },
+      {
+        "title": "Apache Kafka Issues in Production: How to Diagnose and Prevent Failures",
+        "authors": ["Confluent"],
+        "published_date": "2024-06-01",
+        "source_url": "https://www.confluent.io/learn/kafka-issues-production/",
+        "key_finding": "Consumer lag amplification and rebalance failures are among top causes of Kafka production outages"
+      },
+      {
+        "title": "Disaster Recovery for Multi-Region Kafka at Uber",
+        "authors": ["Uber Engineering"],
+        "published_date": "2023-09-12",
+        "source_url": "https://www.uber.com/blog/kafka/",
+        "key_finding": "Uber processes trillions of Kafka messages and petabytes of data daily, requiring sophisticated multi-region disaster recovery to prevent consumer group failures"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Kafka Broker and Consumer Group Quotas",
+      "description": "Configure comprehensive quota controls at broker and consumer group levels to prevent resource exhaustion attacks. Use producer_byte_rate, consumer_byte_rate, request_percentage, and controller_mutation_rate quotas to throttle malicious clients.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Apache Kafka 3.x",
+        "code": "#!/bin/bash\n# Kafka Broker Quota Configuration (server.properties)\n\n# === BROKER-LEVEL QUOTAS ===\n# Default quota for all clients (10 MB/s producer, 50 MB/s consumer)\nquota.producer.default=10485760\nquota.consumer.default=52428800\n\n# Request rate limiting (percentage of request handler threads)\nquota.producer.request.percentage.default=50\nquota.consumer.request.percentage.default=50\n\n# Controller mutation rate (protect ZooKeeper/KRaft from storms)\nquota.controller.mutation.rate=100\n\n# Connection creation rate (prevent connection flooding)\nmax.connections.per.ip=100\nmax.connections.per.ip.overrides=127.0.0.1:200\n\n# === CONSUMER GROUP SPECIFIC QUOTAS ===\n# Using kafka-configs.sh to set quotas for specific consumer groups\n\n# Limit high-risk consumer group to 5 MB/s\nbin/kafka-configs.sh --bootstrap-server localhost:9092 \\\n  --alter \\\n  --add-config 'consumer_byte_rate=5242880,request_percentage=30' \\\n  --entity-type users \\\n  --entity-name high-risk-consumer\n\n# Set quota for critical production consumer group (higher limits)\nbin/kafka-configs.sh --bootstrap-server localhost:9092 \\\n  --alter \\\n  --add-config 'consumer_byte_rate=104857600,request_percentage=80' \\\n  --entity-type users \\\n  --entity-name production-consumer\n\n# Prevent partition key flooding - set partition-level limits\nbin/kafka-configs.sh --bootstrap-server localhost:9092 \\\n  --alter \\\n  --add-config 'max.message.bytes=1048576' \\\n  --entity-type topics \\\n  --entity-name critical-topic\n\n# === CONSUMER GROUP HARDENING ===\n# Consumer configuration (consumer.properties)\n\n# Prevent rebalance storms\nsession.timeout.ms=30000\nheartbeat.interval.ms=3000\nmax.poll.interval.ms=300000\nmax.poll.records=500\n\n# Limit fetch sizes to prevent memory exhaustion\nfetch.max.bytes=52428800\nmax.partition.fetch.bytes=1048576\n\n# Enable consumer group isolation\ngroup.instance.id=consumer-instance-001\nisolation.level=read_committed\n\n# === KRAFT MODE HARDENING (Kafka 3.3+) ===\n# Replace ZooKeeper coordination with KRaft for better DoS resistance\nprocess.roles=broker,controller\nnode.id=1\ncontroller.quorum.voters=1@localhost:9093\n\n# Controller request quotas\ncontroller.quota.window.num=11\ncontroller.quota.window.size.seconds=1\n\n# === MONITORING QUOTA VIOLATIONS ===\n# Query JMX metrics for quota throttle events\nbin/kafka-run-class.sh kafka.tools.JmxTool \\\n  --object-name kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent \\\n  --reporting-interval 1000\n\n# View consumer group lag and throttle status\nbin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \\\n  --describe \\\n  --group my-consumer-group \\\n  --state\n\n# === DYNAMIC QUOTA UPDATES (No Restart Required) ===\n# Temporarily throttle suspected malicious consumer\nbin/kafka-configs.sh --bootstrap-server localhost:9092 \\\n  --alter \\\n  --add-config 'consumer_byte_rate=1048576' \\\n  --entity-type users \\\n  --entity-name suspected-attacker\n\n# Verify quota configuration\nbin/kafka-configs.sh --bootstrap-server localhost:9092 \\\n  --describe \\\n  --entity-type users \\\n  --entity-name suspected-attacker"
+      },
+      "tools": [
+        {
+          "name": "Kafka Quotas Manager",
+          "type": "Built-in Kafka Tool",
+          "cost": "Free (included in Kafka)"
+        },
+        {
+          "name": "Confluent Control Center",
+          "type": "Monitoring & Management",
+          "cost": "$0.11/GB ingress (Confluent Cloud pricing)"
+        },
+        {
+          "name": "Burrow",
+          "type": "Consumer Lag Monitoring (LinkedIn OSS)",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.2.1 - Controls against malware",
+        "A.13.1.1 - Network controls",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify quota configuration in server.properties and via kafka-configs.sh --describe",
+        "Simulate high-volume consumer and confirm throttling occurs (monitor kafka.server:type=Fetch metrics)",
+        "Test consumer group rebalance behavior under quota constraints",
+        "Validate JMX metrics show ThrottleTimeMs > 0 for quota-limited clients",
+        "Confirm consumer lag monitoring alerts trigger when quotas cause backpressure"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enable SASL/SSL Authentication and ACLs",
+      "description": "Implement strong authentication using SASL_SSL with SCRAM-SHA-512 and configure fine-grained ACLs to prevent unauthorized consumer group access and operations.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "bash",
+        "framework": "Apache Kafka 3.x with SASL/SSL",
+        "code": "#!/bin/bash\n# Kafka SASL/SSL Configuration for DoS Prevention\n\n# === BROKER CONFIGURATION (server.properties) ===\n\n# Enable SASL_SSL listener\nlisteners=SASL_SSL://0.0.0.0:9093\nadvertised.listeners=SASL_SSL://kafka-broker-1.example.com:9093\n\n# SSL Configuration\nssl.keystore.location=/var/private/ssl/kafka.broker.keystore.jks\nssl.keystore.password=${SSL_KEYSTORE_PASSWORD}\nssl.key.password=${SSL_KEY_PASSWORD}\nssl.truststore.location=/var/private/ssl/kafka.broker.truststore.jks\nssl.truststore.password=${SSL_TRUSTSTORE_PASSWORD}\n\n# Client authentication required\nssl.client.auth=required\nssl.endpoint.identification.algorithm=https\n\n# SASL Configuration (SCRAM-SHA-512)\nsasl.enabled.mechanisms=SCRAM-SHA-512\nsasl.mechanism.inter.broker.protocol=SCRAM-SHA-512\ninter.broker.listener.name=SASL_SSL\n\n# Security protocol\nsecurity.inter.broker.protocol=SASL_SSL\n\n# Enable ACL authorizer\nauthorizer.class.name=kafka.security.authorizer.AclAuthorizer\nsuper.users=User:admin;User:kafka-broker\nallow.everyone.if.no.acl.found=false\n\n# === CREATE SASL USERS ===\nbin/kafka-configs.sh --bootstrap-server localhost:9093 \\\n  --alter \\\n  --add-config 'SCRAM-SHA-512=[password=strongpassword123!]' \\\n  --entity-type users \\\n  --entity-name legitimate-consumer\n\nbin/kafka-configs.sh --bootstrap-server localhost:9093 \\\n  --alter \\\n  --add-config 'SCRAM-SHA-512=[password=admin_secure_pass456!]' \\\n  --entity-type users \\\n  --entity-name admin\n\n# === CONFIGURE FINE-GRAINED ACLS ===\n\n# Allow consumer group to read from specific topic only\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --add \\\n  --allow-principal User:legitimate-consumer \\\n  --operation Read \\\n  --topic production-events \\\n  --group production-consumer-group\n\n# Deny consumer group operations for untrusted users\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --add \\\n  --deny-principal User:untrusted-user \\\n  --operation All \\\n  --group '*'\n\n# Prevent unauthorized topic creation (DoS via topic flooding)\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --add \\\n  --deny-principal User:* \\\n  --allow-principal User:admin \\\n  --operation Create \\\n  --cluster\n\n# Limit AlterConfigs to admin only (CVE-2025-27819 mitigation)\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --add \\\n  --allow-principal User:admin \\\n  --operation AlterConfigs \\\n  --cluster\n\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --add \\\n  --deny-principal User:* \\\n  --operation AlterConfigs \\\n  --cluster\n\n# === CLIENT CONFIGURATION (consumer.properties) ===\nbootstrap.servers=kafka-broker-1.example.com:9093\nsecurity.protocol=SASL_SSL\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \\\n  username=\"legitimate-consumer\" \\\n  password=\"strongpassword123!\";\n\n# SSL trust store configuration\nssl.truststore.location=/var/private/ssl/kafka.client.truststore.jks\nssl.truststore.password=${SSL_TRUSTSTORE_PASSWORD}\nssl.endpoint.identification.algorithm=https\n\n# === DISABLE JNDI LOGIN MODULE (CVE-2025-27819/CVE-2023-25194) ===\n# Add to JVM startup options\n-Dorg.apache.kafka.disallowed.login.modules=com.sun.security.auth.module.JndiLoginModule,com.sun.security.auth.module.LdapLoginModule\n\n# === LIST AND VERIFY ACLS ===\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --list \\\n  --topic production-events\n\nbin/kafka-acls.sh --bootstrap-server localhost:9093 \\\n  --command-config admin.properties \\\n  --list \\\n  --group production-consumer-group"
+      },
+      "tools": [
+        {
+          "name": "OpenSSL",
+          "type": "Certificate Generation",
+          "cost": "Free"
+        },
+        {
+          "name": "HashiCorp Vault",
+          "type": "Secrets Management for SASL Credentials",
+          "cost": "Free (OSS) / Enterprise pricing varies"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.2.2 - User access provisioning",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are issued, managed, verified, revoked, and audited",
+        "PR.AC-3 - Remote access is managed",
+        "PR.DS-2 - Data-in-transit is protected"
+      ],
+      "validation_steps": [
+        "Generate SSL certificates and configure truststore/keystore",
+        "Create SASL/SCRAM users with strong passwords",
+        "Test connection with valid credentials succeeds",
+        "Verify connection without credentials is denied (expect authentication failure)",
+        "Confirm ACLs block unauthorized consumer group operations",
+        "Validate JVM flag disables JNDI login modules (CVE mitigation)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Consumer Lag Monitoring and Rebalance Detection",
+      "description": "Implement real-time monitoring for consumer lag amplification, rebalance storms, and partition assignment anomalies using Burrow, Prometheus JMX Exporter, and custom alerting.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Prometheus + Grafana + Burrow",
+        "code": "# docker-compose.yml for Kafka Monitoring Stack\nversion: '3.8'\n\nservices:\n  # Burrow - Consumer Lag Monitoring (LinkedIn OSS)\n  burrow:\n    image: linkedin/burrow:latest\n    ports:\n      - \"8000:8000\"\n    volumes:\n      - ./burrow.toml:/etc/burrow/burrow.toml\n    environment:\n      - BURROW_CONFIG=/etc/burrow/burrow.toml\n\n  # Prometheus JMX Exporter for Kafka Metrics\n  kafka-exporter:\n    image: danielqsj/kafka-exporter:latest\n    ports:\n      - \"9308:9308\"\n    command:\n      - '--kafka.server=kafka-broker-1:9092'\n      - '--kafka.server=kafka-broker-2:9092'\n      - '--kafka.server=kafka-broker-3:9092'\n\n  # Prometheus Server\n  prometheus:\n    image: prom/prometheus:latest\n    ports:\n      - \"9090:9090\"\n    volumes:\n      - ./prometheus.yml:/etc/prometheus/prometheus.yml\n      - prometheus-data:/prometheus\n    command:\n      - '--config.file=/etc/prometheus/prometheus.yml'\n      - '--storage.tsdb.retention.time=30d'\n\n  # Grafana for Visualization\n  grafana:\n    image: grafana/grafana:latest\n    ports:\n      - \"3000:3000\"\n    environment:\n      - GF_SECURITY_ADMIN_PASSWORD=admin\n    volumes:\n      - grafana-data:/var/lib/grafana\n      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards\n\nvolumes:\n  prometheus-data:\n  grafana-data:\n\n---\n# burrow.toml - Consumer Lag Monitoring Configuration\n[general]\nlogdir = \"/var/log/burrow\"\nloglevel = \"info\"\n\n[zookeeper]\nservers = [\"zookeeper-1:2181\", \"zookeeper-2:2181\", \"zookeeper-3:2181\"]\ntimeout = 6\nroot-path = \"/burrow\"\n\n[kafka \"local\"]\nbrokers = [\"kafka-broker-1:9092\", \"kafka-broker-2:9092\", \"kafka-broker-3:9092\"]\ntopic-refresh = 60\noffset-refresh = 30\n\n[consumer \"local\"]\nclass-name = \"kafka\"\ncluster = \"local\"\nservers = [\"kafka-broker-1:9092\", \"kafka-broker-2:9092\"]\ngroup-whitelist = \".*\"\n\n[httpserver.default]\naddress = \":8000\"\n\n# Evaluation rules for consumer lag alerts\n[evaluator.default]\nclass-name = \"caching\"\nexpire-cache = 10\n\n[evaluator.default.threshold]\nwarning = 1000\nerror = 5000\n\n---\n# prometheus.yml - Metrics Scraping Configuration\nglobal:\n  scrape_interval: 15s\n  evaluation_interval: 15s\n\nscrape_configs:\n  - job_name: 'kafka-exporter'\n    static_configs:\n      - targets: ['kafka-exporter:9308']\n\n  - job_name: 'burrow'\n    static_configs:\n      - targets: ['burrow:8000']\n    metrics_path: '/v3/kafka'\n\n  - job_name: 'kafka-jmx'\n    static_configs:\n      - targets: \n        - 'kafka-broker-1:9999'\n        - 'kafka-broker-2:9999'\n        - 'kafka-broker-3:9999'\n\n# Alert Rules for Consumer Group DoS Detection\nrule_files:\n  - '/etc/prometheus/alerts/kafka-alerts.yml'\n\n---\n# alerts/kafka-alerts.yml - Prometheus Alert Rules\ngroups:\n  - name: kafka_consumer_dos\n    interval: 30s\n    rules:\n      # Consumer lag amplification attack\n      - alert: ConsumerLagExplosion\n        expr: |\n          kafka_consumergroup_lag > 10000\n          and\n          rate(kafka_consumergroup_lag[5m]) > 1000\n        for: 2m\n        labels:\n          severity: critical\n        annotations:\n          summary: \"Consumer group {{ $labels.consumergroup }} lag exploding\"\n          description: \"Lag is {{ $value }} and growing at >1000 msgs/sec - potential DoS attack\"\n\n      # Rebalance storm detection\n      - alert: ConsumerRebalanceStorm\n        expr: |\n          rate(kafka_consumer_group_rebalance_total[5m]) > 10\n        for: 5m\n        labels:\n          severity: warning\n        annotations:\n          summary: \"Consumer group {{ $labels.consumergroup }} rebalancing {{ $value }} times/min\"\n          description: \"Possible rebalance storm attack - investigate consumer join/leave patterns\"\n\n      # Partition fetch size exploitation\n      - alert: SuspiciousFetchSize\n        expr: |\n          kafka_server_brokertopicmetrics_bytesinpersec{topic=~\".*\"} > 100000000\n        for: 1m\n        labels:\n          severity: warning\n        annotations:\n          summary: \"Abnormal fetch size on topic {{ $labels.topic }}\"\n          description: \"Fetch rate {{ $value }} bytes/sec may indicate fetch.max.bytes exploitation\"\n\n      # Offset commit flooding\n      - alert: OffsetCommitFlooding\n        expr: |\n          rate(kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent[5m]) < 0.2\n        for: 3m\n        labels:\n          severity: critical\n        annotations:\n          summary: \"Kafka request handlers saturated ({{ $value }} idle %)\"\n          description: \"Possible offset commit flooding attack - handlers <20% idle\"\n\n      # Consumer group member churn\n      - alert: ConsumerGroupChurn\n        expr: |\n          kafka_consumergroup_members < 1\n          or\n          rate(kafka_consumergroup_members[2m]) > 5\n        for: 5m\n        labels:\n          severity: warning\n        annotations:\n          summary: \"Consumer group {{ $labels.consumergroup }} unstable membership\"\n          description: \"Group has {{ $value }} members or high churn - check for join/leave attacks\"\n\n---\n# Python script for custom Burrow lag alerting\n# monitor_consumer_lag.py\nimport requests\nimport time\nimport json\nfrom datetime import datetime\n\nBURROW_API = \"http://localhost:8000/v3/kafka\"\nCLUSTER = \"local\"\nALERT_THRESHOLD = 10000\nALERT_WEBHOOK = \"https://hooks.slack.com/services/YOUR/WEBHOOK/URL\"\n\ndef check_consumer_groups():\n    \"\"\"Monitor all consumer groups for DoS indicators\"\"\"\n    response = requests.get(f\"{BURROW_API}/{CLUSTER}/consumer\")\n    consumer_groups = response.json()['consumers']\n    \n    for group in consumer_groups:\n        lag_response = requests.get(f\"{BURROW_API}/{CLUSTER}/consumer/{group}/lag\")\n        lag_data = lag_response.json()\n        \n        if lag_data['status']['status'] == 'ERR':\n            total_lag = lag_data['status']['total_lag']\n            \n            if total_lag > ALERT_THRESHOLD:\n                alert_msg = {\n                    \"text\": f\"🚨 KAFKA DOS ALERT: Consumer group {group} lag: {total_lag} messages\",\n                    \"timestamp\": datetime.now().isoformat(),\n                    \"severity\": \"critical\"\n                }\n                requests.post(ALERT_WEBHOOK, json=alert_msg)\n                print(f\"[ALERT] {group}: {total_lag} messages behind\")\n\nif __name__ == \"__main__\":\n    while True:\n        check_consumer_groups()\n        time.sleep(30)  # Check every 30 seconds"
+      },
+      "tools": [
+        {
+          "name": "Burrow",
+          "type": "Consumer Lag Monitoring",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Prometheus + Grafana",
+          "type": "Metrics and Alerting",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Kafka Exporter",
+          "type": "JMX Metrics Exporter",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events",
+        "A.16.1.4 - Assessment of and decision on information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated from multiple sources and sensors",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Deploy Burrow and verify it discovers all consumer groups",
+        "Configure Prometheus to scrape Kafka JMX metrics and Burrow API",
+        "Import Grafana dashboard for Kafka consumer monitoring",
+        "Simulate consumer lag by stopping consumer and verify alert fires",
+        "Test rebalance detection by rapidly joining/leaving consumer group",
+        "Validate Slack/PagerDuty webhook integration for critical alerts"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Consumer lag growing exponentially (>10000 messages and increasing >1000 msgs/sec)",
+      "Consumer group rebalancing more than 10 times per 5 minutes",
+      "Abnormally large fetch.max.bytes requests (>50MB per request)",
+      "High offset commit rate with low message consumption rate",
+      "Consumer group member count oscillating rapidly (join/leave storm)",
+      "Broker request handler pool saturation (<20% idle)",
+      "ZooKeeper/KRaft connection spike from single IP address",
+      "Partition leader imbalance with hot partition issues",
+      "Sudden increase in UnderReplicatedPartitions metric",
+      "Consumer group coordinator failover events increasing"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect Kafka consumer group rebalance storms\nKafkaLogs\n| where TimeGenerated > ago(10m)\n| where LogLevel == \"WARN\" or LogLevel == \"ERROR\"\n| where Message contains \"Rebalance\" or Message contains \"consumer group\"\n| summarize RebalanceCount = count() by ConsumerGroup, bin(TimeGenerated, 1m)\n| where RebalanceCount > 10\n| project TimeGenerated, ConsumerGroup, RebalanceCount, Severity = \"High\"\n| order by RebalanceCount desc\n\n// Detect partition fetch size exploitation\n| KafkaMetrics\n| where MetricName == \"kafka.server.BrokerTopicMetrics.BytesInPerSec\"\n| where MetricValue > 100000000  // >100MB/sec\n| summarize AvgFetchSize = avg(MetricValue), MaxFetchSize = max(MetricValue) by TopicName, bin(TimeGenerated, 1m)\n| where MaxFetchSize > 52428800  // Exceeds default fetch.max.bytes\n| project TimeGenerated, TopicName, AvgFetchSize, MaxFetchSize, ThreatIndicator = \"fetch.max.bytes exploitation\""
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"kafka.log\" AND event.severity: (\"error\" OR \"warn\") AND message: (*rebalance* OR *consumer*group*)\n| stats count() by kafka.consumer.group, bucket(timestamp, 1m)\n| where count > 10\n\nevent.dataset: \"kafka.metrics\" AND kafka.server.topic.bytes_in_per_sec > 100000000\n| stats avg(kafka.server.topic.bytes_in_per_sec) as avg_bytes, max(kafka.server.topic.bytes_in_per_sec) as max_bytes by kafka.topic\n| where max_bytes > 52428800"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=kafka sourcetype=kafka:server:log (log_level=WARN OR log_level=ERROR) (\"rebalance\" OR \"consumer group\")\n| bin _time span=1m\n| stats count as rebalance_count by consumer_group, _time\n| where rebalance_count > 10\n| eval severity=\"HIGH\", threat=\"Rebalance Storm Attack\"\n| table _time, consumer_group, rebalance_count, severity, threat\n\nindex=kafka sourcetype=kafka:metrics:jmx metric_name=\"kafka.server.BrokerTopicMetrics.BytesInPerSec\"\n| where metric_value > 100000000\n| bin _time span=1m\n| stats avg(metric_value) as avg_bytes, max(metric_value) as max_bytes by topic_name, _time\n| where max_bytes > 52428800\n| eval threat=\"fetch.max.bytes Exploitation\"\n| table _time, topic_name, avg_bytes, max_bytes, threat"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Consumer lag explosion detection\nfields @timestamp, consumerGroup, lag, lagGrowthRate\n| filter @message like /consumer.*lag/\n| stats avg(lag) as avgLag, max(lag) as maxLag, (max(lag) - min(lag)) / 300 as lagGrowthRate by consumerGroup, bin(5m)\n| filter maxLag > 10000 and lagGrowthRate > 1000\n| sort lagGrowthRate desc\n\n# Request handler saturation (offset commit flooding)\nfields @timestamp, requestHandlerIdlePercent\n| filter metricName = \"RequestHandlerAvgIdlePercent\"\n| stats avg(requestHandlerIdlePercent) as avgIdle by bin(1m)\n| filter avgIdle < 0.20\n| sort @timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Kafka Consumer Groups CLI",
+        "type": "Built-in Diagnostic Tool",
+        "usage": "kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --all-groups --state"
+      },
+      {
+        "name": "JMX Monitoring",
+        "type": "Metrics Collection",
+        "usage": "Monitor kafka.consumer:type=consumer-fetch-manager-metrics,partition=*,topic=* and kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions"
+      },
+      {
+        "name": "Kafka Lag Exporter",
+        "type": "Prometheus Integration",
+        "usage": "Real-time consumer lag export to Prometheus for alerting"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "E-commerce",
+      "IoT",
+      "Real-time Analytics",
+      "Event-Driven Architecture"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.8 - Improper Access Control)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.17.2.1 - Availability)",
+      "NIST CSF (DE.CM-1, PR.PT-4)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential",
+      "Restricted"
+    ]
+  }
+}

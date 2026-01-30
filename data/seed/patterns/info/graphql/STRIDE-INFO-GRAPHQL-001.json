@@ -1,0 +1,350 @@
+{
+  "id": "STRIDE-INFO-GRAPHQL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1590.001 - Gather Victim Network Information: Domain Properties",
+      "T1592.004 - Gather Victim Host Information: Client Configurations"
+    ],
+    "cwe": [
+      "CWE-200 - Exposure of Sensitive Information to an Unauthorized Actor",
+      "CWE-16 - Configuration"
+    ]
+  },
+  "threat": {
+    "title": "GraphQL Introspection Enabled in Production",
+    "description": "GraphQL introspection queries allow attackers to enumerate the entire API schema, discovering all types, fields, mutations, queries, and arguments. This enables attackers to map out the complete attack surface, identify sensitive operations, discover deprecated or internal fields, and craft targeted exploitation attempts. In production environments, introspection should be disabled to prevent unauthorized schema discovery.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 5.3,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "GraphQL",
+    "versions_affected": [
+      "All versions with introspection enabled"
+    ],
+    "ecosystem": "JavaScript/Node.js",
+    "dependencies": [
+      "apollo-server",
+      "graphql",
+      "express-graphql"
+    ],
+    "related_frameworks": [
+      "Apollo Server",
+      "GraphQL.js",
+      "Yoga",
+      "Mercurius",
+      "Hasura"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers GraphQL endpoint at /graphql or /api/graphql through reconnaissance\n2. Sends introspection query (__schema, __type) without authentication to enumerate complete schema\n3. Discovers sensitive types like 'AdminUser', 'InternalConfig', or 'PrivateDocument' in schema response\n4. Identifies hidden fields such as 'ssn', 'creditCard', 'internalNotes' not exposed in public documentation\n5. Crafts targeted queries to access sensitive data or discovers deprecated mutations still accessible\n6. Exploits discovered fields to extract confidential information or execute unauthorized operations",
+    "prerequisites": [
+      "GraphQL introspection queries enabled in production",
+      "GraphQL endpoint accessible without authentication or with weak authentication",
+      "Schema contains sensitive types, fields, or operations",
+      "No query filtering or allowlisting implemented"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-50312",
+        "description": "Information Disclosure in OpenShift Console via GraphQL introspection allowing attackers to discover API structure and craft targeted attacks",
+        "cvss_score": 5.3,
+        "published_date": "2024-11-15"
+      },
+      {
+        "cve_id": "CVE-2023-34047",
+        "description": "Spring for GraphQL batch loader function exposed security context from different session",
+        "cvss_score": 6.5,
+        "published_date": "2023-06-23"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Third-Party E-commerce Integration - HackerOne AWC 2023",
+        "date": "2023-08-15",
+        "impact": "Complete schema enumeration revealing all endpoints and capabilities of promotion banner management system",
+        "root_cause": "GraphQL endpoint from third-party integration had introspection enabled, allowing full enumeration",
+        "source_url": "https://www.hackerone.com/blog/how-graphql-bug-resulted-authentication-bypass"
+      },
+      {
+        "incident": "GraphQL API Attack Study - Imperva Research",
+        "date": "2024-03-01",
+        "impact": "50% of GraphQL endpoints targeted with introspection attacks; majority used __schema field for API discovery",
+        "root_cause": "Default configurations leaving introspection enabled in production environments",
+        "source_url": "https://www.imperva.com/blog/graphql-vulnerabilities-and-common-attacks-seen-in-the-wild/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "291531",
+        "bounty_amount": 500,
+        "severity": "Medium",
+        "summary": "Introspection query leaked sensitive GraphQL system information including internal types and fields"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "1132803",
+        "bounty_amount": 750,
+        "severity": "Medium",
+        "summary": "GraphQL introspection enabled allowing attackers to fetch schemas, types, fields, and available operations without authentication"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "862835",
+        "bounty_amount": 1000,
+        "severity": "High",
+        "summary": "GraphQL introspection query executable through unauthenticated WebSocket connection, revealing complete API schema"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "GraphQL Cheat Sheet - Introspection Security",
+        "authors": [
+          "OWASP Foundation"
+        ],
+        "published_date": "2024-01-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html",
+        "key_finding": "OWASP recommends disabling introspection system-wide in production. For internal APIs, disable entirely; for public APIs, restrict to authenticated users only"
+      },
+      {
+        "title": "Testing GraphQL - OWASP Web Security Testing Guide v4.2",
+        "authors": [
+          "OWASP Testing Guide Team"
+        ],
+        "published_date": "2023-09-20",
+        "source_url": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/12-API_Testing/01-Testing_GraphQL",
+        "key_finding": "Introspection should be disabled on production environments as it allows data extraction and gathering. Access control alone is insufficient protection"
+      },
+      {
+        "title": "Graph Security - Apollo GraphQL Technical Notes",
+        "authors": [
+          "Apollo GraphQL Security Team"
+        ],
+        "published_date": "2024-02-10",
+        "source_url": "https://www.apollographql.com/docs/technotes/TN0021-graph-security",
+        "key_finding": "Introspection is the fastest way for bad actors to learn about schema. Disable in production and limit access to staging environments where enabled"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Disable Introspection in Production (Apollo Server 4.x)",
+      "description": "Completely disable GraphQL introspection queries in production environments by setting introspection: false in Apollo Server configuration. This prevents attackers from discovering the schema structure while maintaining introspection in development for developer tooling.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Apollo Server 4.x",
+        "code": "const { ApolloServer } = require('@apollo/server');\nconst { startStandaloneServer } = require('@apollo/server/standalone');\nconst { ApolloServerPluginLandingPageDisabled } = require('@apollo/server/plugin/disabled');\nconst { typeDefs } = require('./schema');\nconst { resolvers } = require('./resolvers');\n\n// Disable introspection in production\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  // Disable introspection based on environment\n  introspection: process.env.NODE_ENV !== 'production',\n  \n  // Disable GraphQL Playground in production\n  plugins: [\n    process.env.NODE_ENV === 'production'\n      ? ApolloServerPluginLandingPageDisabled()\n      : ApolloServerPluginLandingPageLocalDefault({ embed: true })\n  ],\n  \n  // Additional security: Include validation rules\n  validationRules: [\n    // Add depth limiting to prevent deep queries\n    depthLimit(10),\n    // Add query complexity analysis\n    createComplexityLimitRule(1000)\n  ],\n  \n  // Format errors to avoid leaking stack traces\n  formatError: (formattedError, error) => {\n    // Don't expose internal server errors in production\n    if (process.env.NODE_ENV === 'production') {\n      // Log the full error server-side\n      console.error('GraphQL Error:', error);\n      \n      // Return generic message to client\n      if (formattedError.extensions?.code === 'INTERNAL_SERVER_ERROR') {\n        return {\n          message: 'An internal error occurred',\n          extensions: {\n            code: formattedError.extensions.code\n          }\n        };\n      }\n    }\n    return formattedError;\n  }\n});\n\n// Start the server\nconst { url } = await startStandaloneServer(server, {\n  listen: { port: 4000 }\n});\n\nconsole.log(`🚀 Server ready at ${url}`);\n\n// Example: Verify introspection is disabled\n// Send this query - it should fail in production:\n// query IntrospectionQuery {\n//   __schema {\n//     queryType { name }\n//   }\n// }"
+      },
+      "tools": [
+        {
+          "name": "Apollo Server",
+          "type": "GraphQL Server Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "graphql-depth-limit",
+          "type": "Query Depth Limiting",
+          "cost": "Free (npm package)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Access to systems is controlled"
+      ],
+      "validation_steps": [
+        "Set introspection: false in Apollo Server config for production",
+        "Deploy to production environment",
+        "Attempt introspection query: { __schema { queryType { name } } }",
+        "Verify query returns error: 'GraphQL introspection is not allowed'",
+        "Confirm development environment still has introspection enabled",
+        "Test that legitimate queries still function correctly"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Query Allowlisting (Persisted Queries)",
+      "description": "Use persisted queries to create an allowlist of approved GraphQL operations. Only pre-registered query hashes are executed, preventing arbitrary queries including introspection attempts. This approach provides defense-in-depth even if introspection blocking fails.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Apollo Server 4.x with Automatic Persisted Queries",
+        "code": "const { ApolloServer } = require('@apollo/server');\nconst { startStandaloneServer } = require('@apollo/server/standalone');\nconst { ApolloServerPluginUsageReporting } = require('@apollo/server/plugin/usageReporting');\nconst { typeDefs } = require('./schema');\nconst { resolvers } = require('./resolvers');\n\n// Store for persisted queries (in production, use Redis or database)\nconst persistedQueries = new Map();\n\n// Example: Pre-register allowed queries\npersistedQueries.set(\n  'getUserProfile',\n  'query GetUserProfile($id: ID!) { user(id: $id) { id name email } }'\n);\npersistedQueries.set(\n  'listProducts',\n  'query ListProducts { products { id name price } }'\n);\n\n// Custom plugin to enforce persisted queries only\nconst persistedQueryOnlyPlugin = {\n  async requestDidStart() {\n    return {\n      async didResolveOperation(requestContext) {\n        const { request, operation } = requestContext;\n        \n        // Allow introspection in development only\n        if (process.env.NODE_ENV !== 'production') {\n          return;\n        }\n        \n        // Check if query is persisted\n        const queryId = request.extensions?.persistedQuery?.sha256Hash;\n        \n        if (!queryId) {\n          throw new Error(\n            'Only persisted queries are allowed in production. ' +\n            'Please use Apollo Client with automatic persisted queries.'\n          );\n        }\n        \n        // Verify the query hash exists in our allowlist\n        const allowedQuery = persistedQueries.get(queryId);\n        if (!allowedQuery) {\n          console.warn(`Rejected unknown persisted query: ${queryId}`);\n          throw new Error('Unknown persisted query');\n        }\n      }\n    };\n  }\n};\n\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  introspection: false,\n  plugins: [\n    persistedQueryOnlyPlugin,\n    // Optional: Send metrics to Apollo Studio\n    ApolloServerPluginUsageReporting({\n      sendVariableValues: { none: true },\n      sendHeaders: { none: true }\n    })\n  ]\n});\n\n// Client-side setup (React with Apollo Client)\n// import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';\n// import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries';\n// import { sha256 } from 'crypto-hash';\n//\n// const httpLink = createHttpLink({ uri: '/graphql' });\n//\n// const persistedQueryLink = createPersistedQueryLink({\n//   sha256,\n//   useGETForHashedQueries: true\n// });\n//\n// const client = new ApolloClient({\n//   link: persistedQueryLink.concat(httpLink),\n//   cache: new InMemoryCache()\n// });\n\nconst { url } = await startStandaloneServer(server, {\n  listen: { port: 4000 }\n});\n\nconsole.log(`🚀 Server ready at ${url}`);"
+      },
+      "tools": [
+        {
+          "name": "Apollo Client - Persisted Queries",
+          "type": "Query Allowlisting",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "GraphQL Code Generator",
+          "type": "Query Hash Generation",
+          "cost": "Free (npm package)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.PT-3 - Access to systems and assets is controlled",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Install @apollo/client/link/persisted-queries package",
+        "Generate and register allowed query hashes",
+        "Deploy server with persisted query enforcement",
+        "Test legitimate queries with valid hashes - should succeed",
+        "Attempt arbitrary query without hash - should fail",
+        "Attempt introspection query - should fail",
+        "Monitor logs for rejected query attempts"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Require Authentication for Introspection Queries",
+      "description": "Implement custom validation rules to allow introspection only for authenticated admin users. This provides granular control for internal tools while blocking public access.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "GraphQL.js with Custom Validation",
+        "code": "const { GraphQLError } = require('graphql');\nconst { ApolloServer } = require('@apollo/server');\nconst { startStandaloneServer } = require('@apollo/server/standalone');\nconst jwt = require('jsonwebtoken');\n\n// Custom validation rule to block introspection for non-admin users\nfunction NoIntrospectionForPublic(context) {\n  return {\n    Field(node) {\n      // Check if field is an introspection field (__schema, __type)\n      if (node.name.value === '__schema' || node.name.value === '__type') {\n        const { user } = context;\n        \n        // Allow if user is authenticated admin\n        if (user && user.roles && user.roles.includes('admin')) {\n          return; // Allow introspection for admins\n        }\n        \n        // Block for everyone else\n        throw new GraphQLError(\n          'GraphQL introspection is not allowed for public access. ' +\n          'Please authenticate with admin credentials.',\n          {\n            extensions: {\n              code: 'FORBIDDEN',\n              http: { status: 403 }\n            }\n          }\n        );\n      }\n    }\n  };\n}\n\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  \n  // Keep introspection enabled at server level\n  introspection: true,\n  \n  // Add custom validation rule\n  validationRules: [NoIntrospectionForPublic]\n});\n\nconst { url } = await startStandaloneServer(server, {\n  listen: { port: 4000 },\n  \n  // Extract user from JWT in Authorization header\n  context: async ({ req }) => {\n    const token = req.headers.authorization?.replace('Bearer ', '');\n    \n    if (!token) {\n      return { user: null };\n    }\n    \n    try {\n      const decoded = jwt.verify(token, process.env.JWT_SECRET);\n      return { user: decoded };\n    } catch (error) {\n      console.error('JWT verification failed:', error);\n      return { user: null };\n    }\n  }\n});\n\nconsole.log(`🚀 Server ready at ${url}`);\n\n// Alternative: GraphQL Shield for field-level security\n// const { shield, rule } = require('graphql-shield');\n//\n// const isAdmin = rule()(async (parent, args, ctx) => {\n//   return ctx.user?.roles?.includes('admin') || false;\n// });\n//\n// const permissions = shield({\n//   Query: {\n//     __schema: isAdmin,\n//     __type: isAdmin\n//   }\n// }, {\n//   allowExternalErrors: true,\n//   fallbackError: 'Not authorized to access introspection'\n// });\n//\n// const server = new ApolloServer({\n//   schema: applyMiddleware(schema, permissions)\n// });"
+      },
+      "tools": [
+        {
+          "name": "graphql-shield",
+          "type": "GraphQL Permissions Layer",
+          "cost": "Free (npm package)"
+        },
+        {
+          "name": "jsonwebtoken",
+          "type": "JWT Authentication",
+          "cost": "Free (npm package)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.AC-4 - Access permissions are managed"
+      ],
+      "validation_steps": [
+        "Implement custom validation rule for introspection fields",
+        "Configure JWT authentication middleware",
+        "Test introspection without auth - should fail with 403",
+        "Test introspection with regular user token - should fail",
+        "Test introspection with admin token - should succeed",
+        "Verify error messages don't leak sensitive information",
+        "Monitor authentication failures in SIEM"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP POST requests to /graphql endpoint containing '__schema' or '__type' keywords",
+      "Large response payloads (>50KB) from GraphQL endpoint indicating schema dump",
+      "Sequential queries testing different field names (brute force enumeration)",
+      "GraphQL queries with unusually deep nesting or field selection",
+      "Requests to GraphQL endpoint from reconnaissance tools (Burp Suite, Postman)",
+      "Multiple 403/error responses followed by successful schema queries",
+      "GraphQL queries from unauthenticated or low-privilege users"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect GraphQL introspection attempts\nAppServiceHTTPLogs\n| where CsMethod == \"POST\" and CsUriStem contains \"/graphql\"\n| extend RequestBody = parse_json(CsRequestBody)\n| where RequestBody.query contains \"__schema\" or RequestBody.query contains \"__type\"\n| extend IntrospectionType = case(\n    RequestBody.query contains \"__schema\", \"Full Schema Query\",\n    RequestBody.query contains \"__type\", \"Type Introspection\",\n    \"Unknown\"\n  )\n| summarize \n    AttemptCount = count(),\n    UniqueIPs = dcount(CIp),\n    StatusCodes = make_set(ScStatus),\n    AvgResponseSize = avg(ScBytes)\n  by bin(TimeGenerated, 5m), CIp, CsUserAgent, IntrospectionType\n| where AttemptCount > 3 or AvgResponseSize > 50000\n| project TimeGenerated, CIp, CsUserAgent, IntrospectionType, AttemptCount, AvgResponseSize, StatusCodes\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// GraphQL introspection query detection\nevent.category: \"web\" AND http.request.method: \"POST\" \nAND url.path: \"/graphql\" \nAND (http.request.body.content: \"*__schema*\" OR http.request.body.content: \"*__type*\")\n| stats count() by source.ip, user_agent.original, http.response.status_code, bin(@timestamp, 5m)\n| where count > 3 OR http.response.bytes > 50000"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=graphql_access\n| rex field=request_body \"(?<introspection_field>__schema|__type)\"\n| where isnotnull(introspection_field)\n| eval response_size_kb=response_bytes/1024\n| stats \n    count as attempt_count,\n    dc(client_ip) as unique_ips,\n    avg(response_size_kb) as avg_response_kb,\n    values(status_code) as status_codes,\n    values(introspection_field) as fields_queried\n  by _time, client_ip, user_agent\n| where attempt_count > 3 OR avg_response_kb > 50\n| eval severity=case(\n    avg_response_kb > 100, \"Critical\",\n    avg_response_kb > 50, \"High\",\n    attempt_count > 10, \"High\",\n    1=1, \"Medium\"\n  )\n| table _time, client_ip, user_agent, attempt_count, avg_response_kb, fields_queried, status_codes, severity\n| sort -_time"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights",
+        "query": "# GraphQL introspection monitoring for API Gateway/ALB\nfields @timestamp, @message, requestParameters.sourceIPAddress as clientIP\n| filter @message like /\\\"__schema\\\"/ or @message like /\\\"__type\\\"/\n| parse @message /\"query\":\"(?<graphql_query>.*?)\"/\n| stats count(*) as requests, \n        sum(responseElements.contentLength) as total_bytes,\n        avg(responseElements.contentLength) as avg_response_size\n  by bin(5m) as time_window, clientIP\n| filter requests > 3 or avg_response_size > 51200\n| sort @timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "GraphQL Voyager",
+        "type": "Schema Visualization (for testing introspection controls)",
+        "usage": "Point at GraphQL endpoint to visualize schema - should fail if introspection disabled"
+      },
+      {
+        "name": "InQL Scanner (Burp Suite)",
+        "type": "GraphQL Security Testing",
+        "usage": "Automated introspection testing and vulnerability scanning for GraphQL endpoints"
+      },
+      {
+        "name": "graphql-cop",
+        "type": "GraphQL Security Auditing",
+        "usage": "python3 graphql-cop.py -t https://api.example.com/graphql -o report.json"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Social Media",
+      "Fintech"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.5.10)",
+      "HIPAA (164.308(a)(4)(i))",
+      "SOC2 (CC6.6)",
+      "ISO27001 (A.14.1.2)",
+      "GDPR (Article 32)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

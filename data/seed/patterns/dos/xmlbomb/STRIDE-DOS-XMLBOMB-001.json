@@ -1,0 +1,313 @@
+{
+  "id": "STRIDE-DOS-XMLBOMB-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1499.004 - Application or System Exploitation",
+      "T1498.001 - Direct Network Flood"
+    ],
+    "cwe": [
+      "CWE-776 - Improper Restriction of Recursive Entity References in DTDs ('XML Entity Expansion')",
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-502 - Deserialization of Untrusted Data"
+    ]
+  },
+  "threat": {
+    "title": "XML Bomb (Billion Laughs) Denial of Service Attack",
+    "description": "The XML Bomb attack, also known as Billion Laughs, exploits XML parsers' handling of entity expansion to cause exponential memory consumption. Attackers send specially crafted XML documents containing recursive entity references that expand to billions of characters, exhausting server memory and CPU resources, rendering the application unavailable.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "XML Parsers",
+    "versions_affected": ["All unconfigured XML parsers"],
+    "ecosystem": "Multi-platform",
+    "dependencies": [
+      "javax.xml.parsers (Java)",
+      "System.Xml (C#/.NET)",
+      "lxml (Python)",
+      "libxml2",
+      "Xerces"
+    ],
+    "related_frameworks": [
+      "Spring Boot",
+      "ASP.NET Core",
+      "Apache Camel",
+      "JAX-WS",
+      "SOAP services"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies XML input endpoint (REST API, SOAP service, file upload)\n2. Crafts malicious XML with nested entity definitions (e.g., lol0-lol9)\n3. Each entity references previous entities multiple times (exponential expansion)\n4. Sends XML bomb payload to vulnerable endpoint\n5. XML parser begins expanding entities recursively\n6. Server memory exhausted (gigabytes consumed from kilobyte payload)\n7. Application crashes or becomes unresponsive, denying service to legitimate users",
+    "prerequisites": [
+      "Application accepts XML input without entity expansion limits",
+      "XML parser has DTD processing enabled",
+      "No resource limits configured on parser",
+      "External entity processing enabled (XXE protection not implemented)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-1311",
+        "description": "Apache Xerces-C++ XML Parser vulnerable to XML entity expansion (Billion Laughs) attack causing DoS",
+        "cvss_score": 7.5,
+        "published_date": "2018-12-20"
+      },
+      {
+        "cve_id": "CVE-2022-40151",
+        "description": "XStream library vulnerable to Denial of Service via XML entity expansion when processing untrusted XML",
+        "cvss_score": 7.5,
+        "published_date": "2022-09-28"
+      },
+      {
+        "cve_id": "CVE-2023-34034",
+        "description": "Spring Framework vulnerable to DoS via maliciously crafted XML with deeply nested entities causing stack overflow",
+        "cvss_score": 7.5,
+        "published_date": "2023-11-28"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "OWASP XML Security Cheat Sheet",
+        "date": "2023-06-15",
+        "impact": "Industry-wide guidance on XML bomb attacks affecting SOAP/REST APIs across financial and healthcare sectors",
+        "root_cause": "Default XML parser configurations allow unlimited entity expansion and external entity processing",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html"
+      },
+      {
+        "incident": "NIST Special Publication 800-95",
+        "date": "2007-02-01",
+        "impact": "Federal guidance documenting XML parsing vulnerabilities including entity expansion attacks in web services",
+        "root_cause": "Lack of standardized secure XML parsing configurations across enterprise applications",
+        "source_url": "https://csrc.nist.gov/publications/detail/sp/800-95/final"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "XML bomb DoS via SOAP endpoint causing complete service outage"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Attacking XML Security: The Quadratic Blowup and Billion Laughs Attacks",
+        "authors": ["Bryan Sullivan", "Microsoft"],
+        "published_date": "2009-01-01",
+        "source_url": "https://msdn.microsoft.com/en-us/magazine/ee335713.aspx",
+        "key_finding": "XML bombs can expand a 1KB payload to 3GB of memory consumption with just 10 entity definitions"
+      },
+      {
+        "title": "OWASP Testing Guide: XML Entity Expansion",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-09-01",
+        "source_url": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection",
+        "key_finding": "XML bomb attacks remain prevalent in SOAP-based financial and healthcare APIs despite being well-documented since 2002"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Configure Entity Expansion Limits in Spring Boot XML Parsers",
+      "description": "Set strict limits on entity expansion depth, count, and total size in DocumentBuilderFactory and SAXParserFactory to prevent exponential memory consumption. This prevents both recursive entity expansion (Billion Laughs) and excessive entity replacement.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "import javax.xml.parsers.DocumentBuilderFactory;\nimport javax.xml.parsers.DocumentBuilder;\nimport javax.xml.parsers.ParserConfigurationException;\nimport org.xml.sax.SAXException;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport java.io.ByteArrayInputStream;\nimport java.io.InputStream;\n\n@Configuration\npublic class SecureXmlConfiguration {\n\n    @Bean\n    public DocumentBuilderFactory secureDocumentBuilderFactory() throws ParserConfigurationException {\n        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();\n        \n        // Disable DTDs (Document Type Definitions) completely\n        factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n        \n        // Disable external entities\n        factory.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n        factory.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n        \n        // Disable external DTDs\n        factory.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\n        \n        // Enable secure processing\n        factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);\n        \n        // Set entity expansion limits (JDK 7u45+, 8+)\n        factory.setAttribute(\"http://www.oracle.com/xml/jaxp/properties/entityExpansionLimit\", \"0\");\n        factory.setAttribute(\"http://www.oracle.com/xml/jaxp/properties/elementAttributeLimit\", \"10000\");\n        factory.setAttribute(\"http://www.oracle.com/xml/jaxp/properties/maxOccurLimit\", \"5000\");\n        factory.setAttribute(\"http://www.oracle.com/xml/jaxp/properties/totalEntitySizeLimit\", \"50000000\"); // 50MB\n        \n        // Disable XInclude processing\n        factory.setXIncludeAware(false);\n        factory.setExpandEntityReferences(false);\n        \n        return factory;\n    }\n    \n    /**\n     * Secure XML parsing method for REST controllers\n     */\n    public org.w3c.dom.Document parseXmlSecurely(String xmlContent) throws Exception {\n        DocumentBuilder builder = secureDocumentBuilderFactory().newDocumentBuilder();\n        \n        // Set custom EntityResolver to prevent external entity resolution\n        builder.setEntityResolver((publicId, systemId) -> {\n            throw new SAXException(\"External entities are not allowed\");\n        });\n        \n        InputStream is = new ByteArrayInputStream(xmlContent.getBytes(\"UTF-8\"));\n        return builder.parse(is);\n    }\n}\n\n// Example REST Controller usage\nimport org.springframework.web.bind.annotation.*;\nimport org.w3c.dom.Document;\n\n@RestController\n@RequestMapping(\"/api/xml\")\npublic class XmlProcessingController {\n    \n    private final SecureXmlConfiguration xmlConfig;\n    \n    public XmlProcessingController(SecureXmlConfiguration xmlConfig) {\n        this.xmlConfig = xmlConfig;\n    }\n    \n    @PostMapping(\"/process\")\n    public ResponseEntity<String> processXml(@RequestBody String xmlPayload) {\n        try {\n            // Parse XML with security controls\n            Document doc = xmlConfig.parseXmlSecurely(xmlPayload);\n            \n            // Process document safely\n            String result = processDocument(doc);\n            return ResponseEntity.ok(result);\n            \n        } catch (SAXException e) {\n            // Log potential attack attempt\n            log.warn(\"Blocked malicious XML: {}\", e.getMessage());\n            return ResponseEntity.badRequest().body(\"Invalid XML: External entities not allowed\");\n        } catch (Exception e) {\n            log.error(\"XML processing error\", e);\n            return ResponseEntity.status(500).body(\"XML processing failed\");\n        }\n    }\n    \n    private String processDocument(Document doc) {\n        // Your business logic here\n        return doc.getDocumentElement().getNodeName();\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "OWASP Dependency-Check",
+          "type": "Vulnerability Scanner",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.PT-5 - Mechanisms are implemented to achieve resilience"
+      ],
+      "validation_steps": [
+        "Test with billion laughs payload (should reject with SAXException)",
+        "Verify DTD processing is disabled",
+        "Monitor memory usage during XML processing (should remain constant)",
+        "Confirm entity expansion limit is set to 0",
+        "Test with legitimate XML documents (should parse successfully)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Disable DTD Processing in ASP.NET Core XML Parsers",
+      "description": "Configure XmlReader and XmlDocument to completely disable DTD processing and entity expansion. Set DtdProcessing to Prohibit and MaxCharactersFromEntities to prevent XML bomb attacks in .NET applications.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "csharp",
+        "framework": "ASP.NET Core 6.0+",
+        "code": "using System.Xml;\nusing Microsoft.AspNetCore.Mvc;\nusing System.Text;\n\nnamespace SecureXmlApi.Controllers\n{\n    [ApiController]\n    [Route(\"api/[controller]\")]\n    public class XmlProcessingController : ControllerBase\n    {\n        private readonly ILogger<XmlProcessingController> _logger;\n\n        public XmlProcessingController(ILogger<XmlProcessingController> logger)\n        {\n            _logger = logger;\n        }\n\n        /// <summary>\n        /// Secure XML parsing using XmlReader with DTD protection\n        /// </summary>\n        [HttpPost(\"process\")]\n        public IActionResult ProcessXml([FromBody] string xmlContent)\n        {\n            try\n            {\n                var xmlDocument = ParseXmlSecurely(xmlContent);\n                \n                // Process the XML document\n                var rootElement = xmlDocument.DocumentElement?.Name;\n                return Ok(new { RootElement = rootElement, Status = \"Success\" });\n            }\n            catch (XmlException ex)\n            {\n                _logger.LogWarning(\"Blocked malicious XML: {Message}\", ex.Message);\n                return BadRequest(new { Error = \"Invalid XML format\", Details = \"DTD processing is not allowed\" });\n            }\n            catch (Exception ex)\n            {\n                _logger.LogError(ex, \"XML processing error\");\n                return StatusCode(500, new { Error = \"XML processing failed\" });\n            }\n        }\n\n        /// <summary>\n        /// Secure XML parsing method with comprehensive protections\n        /// </summary>\n        private XmlDocument ParseXmlSecurely(string xmlContent)\n        {\n            // Create secure XmlReaderSettings\n            var settings = new XmlReaderSettings\n            {\n                // CRITICAL: Prohibit DTD processing completely\n                DtdProcessing = DtdProcessing.Prohibit,\n                \n                // Limit entity expansion to prevent billion laughs\n                MaxCharactersFromEntities = 1024, // 1KB limit\n                \n                // Disable external resources\n                XmlResolver = null,\n                \n                // Validation settings\n                ValidationType = ValidationType.None,\n                \n                // Performance limits\n                MaxCharactersInDocument = 10485760, // 10MB max document size\n                \n                // Additional security settings\n                IgnoreComments = true,\n                IgnoreProcessingInstructions = true,\n                IgnoreWhitespace = true,\n                \n                // Prevent DoS via deeply nested elements\n                Async = false\n            };\n\n            using var stringReader = new StringReader(xmlContent);\n            using var xmlReader = XmlReader.Create(stringReader, settings);\n            \n            var doc = new XmlDocument()\n            {\n                // Disable XmlResolver to prevent XXE\n                XmlResolver = null\n            };\n            \n            doc.Load(xmlReader);\n            return doc;\n        }\n\n        /// <summary>\n        /// Alternative: Using XDocument (LINQ to XML) with secure settings\n        /// </summary>\n        private XDocument ParseWithXDocument(string xmlContent)\n        {\n            var settings = new XmlReaderSettings\n            {\n                DtdProcessing = DtdProcessing.Prohibit,\n                MaxCharactersFromEntities = 1024,\n                XmlResolver = null\n            };\n\n            using var stringReader = new StringReader(xmlContent);\n            using var xmlReader = XmlReader.Create(stringReader, settings);\n            \n            return XDocument.Load(xmlReader, LoadOptions.None);\n        }\n    }\n\n    /// <summary>\n    /// Configuration for dependency injection\n    /// </summary>\n    public static class XmlSecurityConfiguration\n    {\n        public static void ConfigureXmlSecurity(this IServiceCollection services)\n        {\n            // Register secure XML settings as singleton\n            services.AddSingleton<XmlReaderSettings>(provider =>\n            {\n                return new XmlReaderSettings\n                {\n                    DtdProcessing = DtdProcessing.Prohibit,\n                    MaxCharactersFromEntities = 1024,\n                    XmlResolver = null,\n                    ValidationType = ValidationType.None,\n                    MaxCharactersInDocument = 10485760\n                };\n            });\n        }\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "SonarQube",
+          "type": "Static Code Analysis",
+          "cost": "Free (Community) / $150/month (Developer)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Create unit test with billion laughs XML (should throw XmlException)",
+        "Verify DtdProcessing is set to Prohibit",
+        "Test MaxCharactersFromEntities limit (reject documents exceeding 1KB entity expansion)",
+        "Confirm XmlResolver is null (prevents XXE)",
+        "Monitor memory consumption with large XML files (should remain bounded)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement XML Input Validation and Rate Limiting",
+      "description": "Add application-layer validation to check XML size, structure depth, and entity count before parsing. Combine with API rate limiting to prevent sustained DoS attempts. This defense-in-depth approach provides protection even if parser configuration is missed.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "import org.springframework.stereotype.Service;\nimport org.springframework.web.filter.OncePerRequestFilter;\nimport io.github.bucket4j.Bandwidth;\nimport io.github.bucket4j.Bucket;\nimport io.github.bucket4j.Refill;\nimport javax.servlet.FilterChain;\nimport javax.servlet.http.HttpServletRequest;\nimport javax.servlet.http.HttpServletResponse;\nimport java.time.Duration;\nimport java.util.regex.Pattern;\n\n/**\n * Pre-parsing XML validation service\n */\n@Service\npublic class XmlValidationService {\n    \n    private static final int MAX_XML_SIZE_BYTES = 1_048_576; // 1MB\n    private static final int MAX_NESTING_DEPTH = 50;\n    private static final int MAX_ENTITY_DECLARATIONS = 0; // Reject any entity declarations\n    private static final Pattern ENTITY_PATTERN = Pattern.compile(\"<!ENTITY\\\\s+\", Pattern.CASE_INSENSITIVE);\n    private static final Pattern DOCTYPE_PATTERN = Pattern.compile(\"<!DOCTYPE\\\\s+\", Pattern.CASE_INSENSITIVE);\n    \n    /**\n     * Validates XML before parsing to prevent DoS attacks\n     */\n    public ValidationResult validateXmlInput(String xmlContent) {\n        \n        // 1. Size check\n        if (xmlContent.length() > MAX_XML_SIZE_BYTES) {\n            return ValidationResult.reject(\"XML exceeds maximum size of 1MB\");\n        }\n        \n        // 2. Check for DOCTYPE declarations (indicator of DTD usage)\n        if (DOCTYPE_PATTERN.matcher(xmlContent).find()) {\n            return ValidationResult.reject(\"DOCTYPE declarations are not allowed\");\n        }\n        \n        // 3. Check for entity declarations (red flag for XML bombs)\n        int entityCount = countMatches(ENTITY_PATTERN, xmlContent);\n        if (entityCount > MAX_ENTITY_DECLARATIONS) {\n            return ValidationResult.reject(\n                String.format(\"XML contains %d entity declarations (max: %d)\", \n                    entityCount, MAX_ENTITY_DECLARATIONS)\n            );\n        }\n        \n        // 4. Check nesting depth (prevent stack overflow)\n        int nestingDepth = calculateNestingDepth(xmlContent);\n        if (nestingDepth > MAX_NESTING_DEPTH) {\n            return ValidationResult.reject(\n                String.format(\"XML nesting depth %d exceeds maximum %d\", \n                    nestingDepth, MAX_NESTING_DEPTH)\n            );\n        }\n        \n        // 5. Check for suspicious patterns (exponential entity references)\n        if (xmlContent.contains(\"&lol\") || xmlContent.contains(\"&bomb\")) {\n            return ValidationResult.reject(\"Suspicious entity references detected\");\n        }\n        \n        return ValidationResult.accept();\n    }\n    \n    private int countMatches(Pattern pattern, String text) {\n        int count = 0;\n        var matcher = pattern.matcher(text);\n        while (matcher.find()) count++;\n        return count;\n    }\n    \n    private int calculateNestingDepth(String xml) {\n        int depth = 0;\n        int maxDepth = 0;\n        boolean inTag = false;\n        \n        for (int i = 0; i < xml.length(); i++) {\n            char c = xml.charAt(i);\n            if (c == '<') {\n                inTag = true;\n                if (i + 1 < xml.length() && xml.charAt(i + 1) != '/') {\n                    depth++;\n                    maxDepth = Math.max(maxDepth, depth);\n                }\n            } else if (c == '>' && inTag) {\n                inTag = false;\n                if (i > 0 && xml.charAt(i - 1) == '/') {\n                    depth--;\n                }\n            } else if (c == '/' && inTag && i + 1 < xml.length() && xml.charAt(i + 1) == '>') {\n                depth--;\n            }\n        }\n        return maxDepth;\n    }\n    \n    public static class ValidationResult {\n        private final boolean valid;\n        private final String errorMessage;\n        \n        private ValidationResult(boolean valid, String errorMessage) {\n            this.valid = valid;\n            this.errorMessage = errorMessage;\n        }\n        \n        public static ValidationResult accept() {\n            return new ValidationResult(true, null);\n        }\n        \n        public static ValidationResult reject(String message) {\n            return new ValidationResult(false, message);\n        }\n        \n        public boolean isValid() { return valid; }\n        public String getErrorMessage() { return errorMessage; }\n    }\n}\n\n/**\n * Rate limiting filter using token bucket algorithm\n */\n@Component\npublic class XmlRateLimitFilter extends OncePerRequestFilter {\n    \n    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();\n    \n    @Override\n    protected void doFilterInternal(HttpServletRequest request, \n                                    HttpServletResponse response,\n                                    FilterChain filterChain) throws ServletException, IOException {\n        \n        // Only apply to XML endpoints\n        if (!request.getRequestURI().contains(\"/xml\")) {\n            filterChain.doFilter(request, response);\n            return;\n        }\n        \n        String clientId = getClientIdentifier(request);\n        Bucket bucket = getBucket(clientId);\n        \n        if (bucket.tryConsume(1)) {\n            filterChain.doFilter(request, response);\n        } else {\n            response.setStatus(429); // Too Many Requests\n            response.setContentType(\"application/json\");\n            response.getWriter().write(\n                \"{\\\"error\\\":\\\"Rate limit exceeded\\\",\\\"retry_after\\\":60}\"\n            );\n        }\n    }\n    \n    private Bucket getBucket(String clientId) {\n        return buckets.computeIfAbsent(clientId, k -> createBucket());\n    }\n    \n    private Bucket createBucket() {\n        // Allow 10 requests per minute per client\n        Bandwidth limit = Bandwidth.classic(\n            10, \n            Refill.intervally(10, Duration.ofMinutes(1))\n        );\n        return Bucket.builder().addLimit(limit).build();\n    }\n    \n    private String getClientIdentifier(HttpServletRequest request) {\n        // Combine IP and API key for rate limiting\n        String apiKey = request.getHeader(\"X-API-Key\");\n        String ip = request.getRemoteAddr();\n        return apiKey != null ? apiKey : ip;\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Bucket4j",
+          "type": "Rate Limiting Library",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Spring Boot Actuator",
+          "type": "Metrics & Monitoring",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.2.1 - Controls against malware",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created",
+        "DE.AE-2 - Detected events are analyzed"
+      ],
+      "validation_steps": [
+        "Test with XML containing <!ENTITY> declarations (should reject)",
+        "Send XML larger than 1MB (should reject)",
+        "Test deeply nested XML (51+ levels, should reject)",
+        "Verify rate limiting: send 11 requests in 1 minute (11th should return 429)",
+        "Monitor metrics in Spring Actuator for blocked requests"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in memory consumption during XML processing",
+      "CPU usage at 100% on application servers",
+      "Slow response times or timeouts on XML endpoints",
+      "OutOfMemoryError or StackOverflowError exceptions",
+      "Unusually small request sizes (KB) causing large memory allocations (GB)",
+      "Multiple requests to XML endpoints from same IP in short timeframe",
+      "Log entries showing entity expansion warnings or DTD parsing errors"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect XML bomb attack patterns\nAppServiceHTTPLogs\n| where UriStem contains \"/xml\" or ContentType contains \"xml\"\n| where TimeGenerated > ago(5m)\n| extend RequestSizeKB = todouble(BytesReceived) / 1024\n| extend ResponseTime = todouble(TimeTaken)\n| where RequestSizeKB < 10 and ResponseTime > 30000 // Small request, long processing\n| summarize \n    RequestCount = count(),\n    AvgResponseTime = avg(ResponseTime),\n    TotalMemoryMB = sum(RequestSizeKB) \n    by ClientIp, bin(TimeGenerated, 1m)\n| where RequestCount > 5 or AvgResponseTime > 60000\n| project TimeGenerated, ClientIp, RequestCount, AvgResponseTime, Alert = \"Potential XML Bomb Attack\"\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=spring_boot\n(\"OutOfMemoryError\" OR \"entity expansion\" OR \"DOCTYPE\" OR \"SAXException\")\n| eval alert_severity=case(\n    like(_raw, \"%OutOfMemoryError%\"), \"critical\",\n    like(_raw, \"%entity expansion%\"), \"high\",\n    like(_raw, \"%DOCTYPE%\"), \"medium\",\n    1=1, \"low\"\n  )\n| stats count as incident_count, values(source_ip) as attacker_ips by alert_severity, _time\n| where incident_count > 3\n| eval description=\"Possible XML bomb DoS attack detected\"\n| table _time, alert_severity, incident_count, attacker_ips, description"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect memory exhaustion from XML processing\nmetricbeat-* AND (system.memory.actual.used.pct > 0.90 OR process.memory.rss.bytes > 2147483648)\n| WHERE event.module: \"system\" \n| WHERE process.name: (\"java\" OR \"dotnet\" OR \"spring\")\n| STATS \n    max_memory = MAX(process.memory.rss.bytes), \n    avg_cpu = AVG(system.cpu.user.pct),\n    spike_count = COUNT(*)\n  BY host.name, process.name, 5m\n| WHERE max_memory > 2147483648 OR avg_cpu > 0.80\n| EVAL alert_message = CONCAT(\"High memory/CPU on \", host.name, \" - possible XML DoS\")"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights",
+        "query": "fields @timestamp, @message, requestId, status, duration\n| filter @message like /xml|XML|entity|DOCTYPE/\n| filter status >= 500 or duration > 30000\n| stats count() as error_count, avg(duration) as avg_duration by bin(5m) as time_window\n| filter error_count > 10 or avg_duration > 60000\n| sort @timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Prometheus + Grafana",
+        "type": "Metrics & Alerting",
+        "usage": "Monitor JVM heap usage, GC frequency, and request latency for XML endpoints"
+      },
+      {
+        "name": "ELK Stack",
+        "type": "Log Aggregation",
+        "usage": "Centralize application logs and create alerts for OutOfMemoryError and entity expansion warnings"
+      },
+      {
+        "name": "AppDynamics / New Relic",
+        "type": "APM",
+        "usage": "Track transaction traces and identify slow XML parsing operations"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "E-commerce",
+      "SOAP/REST APIs"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.6 - Input Validation)",
+      "HIPAA (164.308(a)(1)(ii)(B) - Risk Management)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.6.1 - Technical Vulnerability Management)",
+      "NIST SP 800-95 (Web Services Security)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

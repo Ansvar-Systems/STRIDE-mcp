@@ -1,0 +1,329 @@
+{
+  "id": "STRIDE-API-CORS-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration",
+      "API8:2023 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1552.001 - Unsecured Credentials",
+      "T1213.003 - Code Repositories"
+    ],
+    "cwe": [
+      "CWE-942 - Overly Permissive Cross-domain Whitelist",
+      "CWE-346 - Origin Validation Error",
+      "CWE-639 - Authorization Bypass Through User-Controlled Key"
+    ]
+  },
+  "threat": {
+    "title": "CORS Misconfiguration Enabling Cross-Origin Data Theft in Express.js and Spring Boot APIs",
+    "description": "When APIs are configured with wildcard CORS policies (Access-Control-Allow-Origin: *) or dynamically reflect untrusted origins with credentials enabled, attackers can craft malicious web pages that steal sensitive user data, authentication tokens, and private information through cross-origin requests. This vulnerability is particularly prevalent in modern JavaScript and Java backend frameworks.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 6.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Express.js",
+    "versions_affected": ["4.x", "5.x"],
+    "ecosystem": "Node.js / Java",
+    "dependencies": ["cors", "express", "spring-web", "spring-boot-starter-web"],
+    "related_frameworks": ["Koa.js", "Fastify", "NestJS", "Spring Framework", "Quarkus", "Micronaut"]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers API endpoint (e.g., https://api.example.com/user/profile) with sensitive data\n2. Attacker sends request with custom Origin header (e.g., Origin: https://evil.com)\n3. Server responds with Access-Control-Allow-Origin: * or dynamically reflects origin\n4. Attacker creates malicious webpage hosted at evil.com with JavaScript fetch() request\n5. Victim visits attacker's page while authenticated to legitimate API\n6. Browser sends credentials (cookies, auth tokens) in cross-origin request\n7. Attacker's JavaScript reads response containing user's private data (email, PII, API keys)\n8. Stolen data is exfiltrated to attacker-controlled server",
+    "prerequisites": [
+      "API configured with Access-Control-Allow-Origin: * or dynamic origin reflection",
+      "Access-Control-Allow-Credentials: true enabled alongside permissive origins",
+      "Victim is authenticated to the API (valid session or JWT token in cookies)",
+      "Attacker can host malicious webpage accessible to victim",
+      "API returns sensitive information without additional origin validation"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-8183",
+        "description": "CORS misconfiguration in Prefect prior to 3.0.3 allows unauthorized domains to access sensitive data due to allow_origins=['*'] with credentials",
+        "cvss_score": 6.5,
+        "published_date": "2024-08-28"
+      },
+      {
+        "cve_id": "CVE-2024-41659",
+        "description": "Memos 0.20.1 CORS misconfiguration reflects arbitrary origin with Access-Control-Allow-Credentials: true, enabling cross-origin data theft",
+        "cvss_score": 6.5,
+        "published_date": "2024-07-22"
+      },
+      {
+        "cve_id": "CVE-2025-24360",
+        "description": "Nuxt dev server CORS data leak - default CORS settings allow any website to send requests and read responses (Access-Control-Allow-Origin: *)",
+        "cvss_score": 7.5,
+        "published_date": "2025-01-28"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "U.S. Department of Defense CORS Misconfiguration",
+        "date": "2024-06-15",
+        "impact": "CORS misconfiguration disclosed on HackerOne allowing unauthorized access to sensitive military data endpoints",
+        "root_cause": "Dynamic origin reflection without proper validation allowed arbitrary domains to read authenticated responses",
+        "source_url": "https://hackerone.com/reports/1530581"
+      },
+      {
+        "incident": "Casdoor Authentication Service CORS Bypass",
+        "date": "2024-07-08",
+        "impact": "CVE-2024-41657 - Logic vulnerability in beego filter allowed any website to make cross-domain requests as logged-in user",
+        "root_cause": "Flawed subdomain validation logic accepted malicious subdomains like localhost.example.com",
+        "source_url": "https://vulert.com/vuln-db/CVE-2024-41657"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "€400 CORS Misconfiguration",
+        "bounty_amount": 400,
+        "severity": "High",
+        "summary": "CORS misconfiguration with dynamic origin reflection returned access_token and refresh_token in one click via malicious webpage"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "1527555",
+        "bounty_amount": 500,
+        "severity": "Medium",
+        "summary": "Vanilla Forums CORS misconfiguration allowing cross-origin data access with credentials"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP API Security Top 10 - API8:2023 Security Misconfiguration",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-07-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/",
+        "key_finding": "APIs expecting browser-based clients must implement proper CORS policy. Wildcard origins with credentials is a critical misconfiguration."
+      },
+      {
+        "title": "Testing Cross Origin Resource Sharing (CORS) - OWASP WSTG",
+        "authors": ["OWASP Testing Guide Team"],
+        "published_date": "2024-09-15",
+        "source_url": "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/07-Testing_Cross_Origin_Resource_Sharing",
+        "key_finding": "Wildcard * as Access-Control-Allow-Origin is insecure except for public APIs. Dynamic origin reflection without validation is readily exploitable."
+      },
+      {
+        "title": "PortSwigger Web Security Academy - CORS Vulnerabilities",
+        "authors": ["James Kettle", "PortSwigger Research"],
+        "published_date": "2024-11-01",
+        "source_url": "https://portswigger.net/web-security/cors",
+        "key_finding": "Server-generated ACAO header from client-specified Origin value is a common pattern enabling credential-based data theft."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Strict Origin Whitelist with Express.js CORS Middleware",
+      "description": "Configure the cors npm package with a strict allowlist of trusted origins. Never use wildcard (*) with credentials enabled. Validate origins against a predefined list of approved domains.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst cors = require('cors');\nconst app = express();\n\n// ❌ INSECURE: Wildcard with credentials\n// app.use(cors({ origin: '*', credentials: true }));\n\n// ❌ INSECURE: Dynamic origin reflection without validation\n// app.use(cors({ origin: true, credentials: true }));\n\n// ✅ SECURE: Strict origin whitelist\nconst allowedOrigins = [\n  'https://app.example.com',\n  'https://admin.example.com',\n  'https://mobile.example.com'\n];\n\nconst corsOptions = {\n  origin: (origin, callback) => {\n    // Allow requests with no origin (e.g., mobile apps, Postman)\n    if (!origin) {\n      return callback(null, true);\n    }\n    \n    if (allowedOrigins.includes(origin)) {\n      callback(null, true);\n    } else {\n      console.warn(`CORS blocked request from unauthorized origin: ${origin}`);\n      callback(new Error('Not allowed by CORS policy'));\n    }\n  },\n  credentials: true, // Allow cookies/auth headers\n  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Restrict HTTP methods\n  allowedHeaders: ['Content-Type', 'Authorization'], // Restrict headers\n  exposedHeaders: ['X-Total-Count'], // Expose only necessary headers\n  maxAge: 600 // Cache preflight for 10 minutes\n};\n\napp.use(cors(corsOptions));\n\n// Protected API endpoint\napp.get('/api/user/profile', authenticateUser, (req, res) => {\n  res.json({\n    userId: req.user.id,\n    email: req.user.email,\n    profile: req.user.profile\n  });\n});\n\n// Middleware to verify JWT token\nfunction authenticateUser(req, res, next) {\n  const token = req.cookies.authToken || req.headers.authorization?.split(' ')[1];\n  if (!token) return res.status(401).json({ error: 'Unauthorized' });\n  \n  // Verify token and attach user to request\n  try {\n    req.user = verifyJWT(token);\n    next();\n  } catch (err) {\n    res.status(403).json({ error: 'Invalid token' });\n  }\n}\n\napp.listen(3000, () => console.log('Server running with secure CORS'));"
+      },
+      "tools": [
+        {
+          "name": "cors (npm package)",
+          "type": "CORS Middleware",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "helmet (npm package)",
+          "type": "Security Headers",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Test with curl -H \"Origin: https://evil.com\" https://api.example.com/api/user/profile",
+        "Verify response does NOT include Access-Control-Allow-Origin: https://evil.com",
+        "Test with allowed origin: curl -H \"Origin: https://app.example.com\" https://api.example.com/api/user/profile",
+        "Verify response includes Access-Control-Allow-Origin: https://app.example.com",
+        "Confirm Access-Control-Allow-Credentials: true is only sent for whitelisted origins",
+        "Use browser DevTools Network tab to inspect CORS headers"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Configure @CrossOrigin Annotation with Strict Origins in Spring Boot",
+      "description": "Use Spring's @CrossOrigin annotation or WebMvcConfigurer to define allowed origins. Avoid using origins = \"*\" with allowCredentials = \"true\" as Spring will reject this configuration.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "package com.example.api.config;\n\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.web.cors.CorsConfiguration;\nimport org.springframework.web.cors.CorsConfigurationSource;\nimport org.springframework.web.cors.UrlBasedCorsConfigurationSource;\nimport org.springframework.web.filter.CorsFilter;\nimport java.util.Arrays;\n\n@Configuration\npublic class SecurityConfig {\n\n    // ❌ INSECURE: Never do this\n    // @CrossOrigin(origins = \"*\", allowCredentials = \"true\")\n    \n    // ✅ SECURE: Global CORS configuration with strict origins\n    @Bean\n    public CorsFilter corsFilter() {\n        CorsConfiguration config = new CorsConfiguration();\n        \n        // Strict origin whitelist\n        config.setAllowedOrigins(Arrays.asList(\n            \"https://app.example.com\",\n            \"https://admin.example.com\",\n            \"https://mobile.example.com\"\n        ));\n        \n        // Allow credentials (cookies, auth headers)\n        config.setAllowCredentials(true);\n        \n        // Restrict HTTP methods\n        config.setAllowedMethods(Arrays.asList(\"GET\", \"POST\", \"PUT\", \"DELETE\", \"OPTIONS\"));\n        \n        // Restrict headers\n        config.setAllowedHeaders(Arrays.asList(\n            \"Authorization\",\n            \"Content-Type\",\n            \"X-Requested-With\"\n        ));\n        \n        // Expose only necessary headers\n        config.setExposedHeaders(Arrays.asList(\"X-Total-Count\", \"X-Page-Number\"));\n        \n        // Cache preflight requests for 1 hour\n        config.setMaxAge(3600L);\n        \n        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();\n        source.registerCorsConfiguration(\"/**\", config);\n        \n        return new CorsFilter(source);\n    }\n}\n\n// Alternative: Controller-level configuration\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.security.core.Authentication;\n\n@RestController\n@RequestMapping(\"/api\")\n@CrossOrigin(\n    origins = {\"https://app.example.com\", \"https://admin.example.com\"},\n    allowCredentials = \"true\",\n    methods = {RequestMethod.GET, RequestMethod.POST},\n    maxAge = 3600\n)\npublic class UserController {\n\n    @GetMapping(\"/user/profile\")\n    public UserProfile getUserProfile(Authentication auth) {\n        String userId = auth.getName();\n        return userService.getProfile(userId);\n    }\n    \n    @PostMapping(\"/user/update\")\n    public UserProfile updateProfile(@RequestBody UserProfile profile, Authentication auth) {\n        String userId = auth.getName();\n        return userService.updateProfile(userId, profile);\n    }\n}\n\n// application.properties configuration\n// spring.web.cors.allowed-origins=https://app.example.com,https://admin.example.com\n// spring.web.cors.allowed-methods=GET,POST,PUT,DELETE\n// spring.web.cors.allow-credentials=true\n// spring.web.cors.max-age=3600"
+      },
+      "tools": [
+        {
+          "name": "Spring Security",
+          "type": "Security Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Spring Boot Actuator",
+          "type": "Monitoring",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.IP-1 - A baseline configuration is created and maintained"
+      ],
+      "validation_steps": [
+        "Add @CrossOrigin with strict origins to controller methods",
+        "Test unauthorized origin: curl -H \"Origin: https://attacker.com\" -H \"Cookie: SESSION=abc\" https://api.example.com/api/user/profile",
+        "Verify 403 Forbidden or no CORS headers in response",
+        "Test authorized origin: curl -H \"Origin: https://app.example.com\" https://api.example.com/api/user/profile",
+        "Confirm Access-Control-Allow-Origin: https://app.example.com in response",
+        "Run Spring Boot actuator endpoint /actuator/mappings to verify CORS config"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Environment-Based Origin Whitelisting with Validation",
+      "description": "Store allowed origins in environment variables or configuration management systems. Implement runtime validation to prevent misconfiguration. Use regex patterns for subdomain validation when necessary.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Environment Config",
+        "code": "// config/cors.config.js\nrequire('dotenv').config();\n\nclass CorsConfig {\n  constructor() {\n    this.allowedOrigins = this.parseAllowedOrigins();\n    this.validateConfiguration();\n  }\n\n  parseAllowedOrigins() {\n    const originsEnv = process.env.CORS_ALLOWED_ORIGINS;\n    \n    if (!originsEnv) {\n      throw new Error('CORS_ALLOWED_ORIGINS environment variable is required');\n    }\n    \n    return originsEnv.split(',').map(origin => origin.trim());\n  }\n\n  validateConfiguration() {\n    // Ensure no wildcard with credentials\n    if (this.allowedOrigins.includes('*') && process.env.CORS_ALLOW_CREDENTIALS === 'true') {\n      throw new Error('SECURITY ERROR: Cannot use wildcard origin (*) with credentials enabled');\n    }\n    \n    // Validate all origins use HTTPS in production\n    if (process.env.NODE_ENV === 'production') {\n      this.allowedOrigins.forEach(origin => {\n        if (origin !== 'null' && !origin.startsWith('https://')) {\n          throw new Error(`SECURITY ERROR: Production origin must use HTTPS: ${origin}`);\n        }\n      });\n    }\n    \n    console.log('✅ CORS configuration validated successfully');\n    console.log('Allowed origins:', this.allowedOrigins);\n  }\n\n  isOriginAllowed(origin) {\n    if (!origin) {\n      return process.env.CORS_ALLOW_NO_ORIGIN === 'true';\n    }\n    \n    // Exact match\n    if (this.allowedOrigins.includes(origin)) {\n      return true;\n    }\n    \n    // Pattern-based matching for subdomains (e.g., *.example.com)\n    return this.allowedOrigins.some(pattern => {\n      if (pattern.startsWith('*.')) {\n        const domain = pattern.substring(2);\n        const regex = new RegExp(`^https://[a-z0-9-]+\\\\.${domain.replace('.', '\\\\.')}$`, 'i');\n        return regex.test(origin);\n      }\n      return false;\n    });\n  }\n\n  getCorsOptions() {\n    return {\n      origin: (origin, callback) => {\n        if (this.isOriginAllowed(origin)) {\n          callback(null, true);\n        } else {\n          console.warn(`🚫 CORS blocked: ${origin || 'no-origin'}`);\n          // Log to SIEM for security monitoring\n          this.logSecurityEvent('cors_blocked', { origin, timestamp: new Date() });\n          callback(new Error('Not allowed by CORS'));\n        }\n      },\n      credentials: process.env.CORS_ALLOW_CREDENTIALS === 'true',\n      methods: (process.env.CORS_ALLOWED_METHODS || 'GET,POST,PUT,DELETE').split(','),\n      allowedHeaders: (process.env.CORS_ALLOWED_HEADERS || 'Content-Type,Authorization').split(','),\n      exposedHeaders: (process.env.CORS_EXPOSED_HEADERS || '').split(',').filter(Boolean),\n      maxAge: parseInt(process.env.CORS_MAX_AGE || '600', 10)\n    };\n  }\n\n  logSecurityEvent(eventType, details) {\n    // Send to SIEM or logging service\n    console.log(JSON.stringify({\n      event_type: eventType,\n      severity: 'warning',\n      ...details\n    }));\n  }\n}\n\nmodule.exports = new CorsConfig();\n\n// .env.production\n// CORS_ALLOWED_ORIGINS=https://app.example.com,https://admin.example.com,*.example.com\n// CORS_ALLOW_CREDENTIALS=true\n// CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE\n// CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-API-Key\n// CORS_EXPOSED_HEADERS=X-Total-Count\n// CORS_MAX_AGE=3600\n// CORS_ALLOW_NO_ORIGIN=false\n\n// app.js\nconst express = require('express');\nconst cors = require('cors');\nconst corsConfig = require('./config/cors.config');\n\nconst app = express();\napp.use(cors(corsConfig.getCorsOptions()));\n\n// Test endpoint\napp.get('/api/status', (req, res) => {\n  res.json({ status: 'ok', corsEnabled: true });\n});\n\napp.listen(3000);"
+      },
+      "tools": [
+        {
+          "name": "dotenv",
+          "type": "Environment Variable Management",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Azure App Configuration",
+          "type": "Configuration Management",
+          "cost": "$1.20/day for standard tier"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.4 - Separation of development, testing and operational environments",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "DE.CM-1 - The network is monitored to detect anomalous behavior"
+      ],
+      "validation_steps": [
+        "Set CORS_ALLOWED_ORIGINS in .env file with comma-separated list",
+        "Verify app fails to start if wildcard used with credentials",
+        "Test subdomain pattern matching with *.example.com configuration",
+        "Monitor logs for CORS blocked events",
+        "Verify HTTPS-only enforcement in production environment",
+        "Run automated tests with different origin configurations"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual cross-origin requests from unexpected domains in access logs",
+      "Spike in OPTIONS (preflight) requests from non-whitelisted origins",
+      "API responses with Access-Control-Allow-Origin header matching untrusted domains",
+      "Authentication tokens or session cookies being sent in CORS requests",
+      "Increased 403 errors for blocked CORS requests indicating probing attempts",
+      "User sessions accessed from multiple origins simultaneously"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect CORS exploitation attempts\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| extend Origin = tostring(parse_json(RequestHeaders)[\"Origin\"])\n| where isnotempty(Origin)\n| where Origin !in (\"https://app.example.com\", \"https://admin.example.com\") // Whitelist\n| where CsUriStem contains \"/api/\"\n| where ScStatus in (200, 201) // Successful requests from unauthorized origins\n| summarize RequestCount = count(), UniqueIPs = dcount(CIp) by Origin, CsUriStem, bin(TimeGenerated, 5m)\n| where RequestCount > 10\n| order by RequestCount desc\n| project TimeGenerated, Origin, CsUriStem, RequestCount, UniqueIPs"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.request.method: \"OPTIONS\" \nAND http.request.headers.origin: * \nAND NOT http.request.headers.origin: (\"https://app.example.com\" OR \"https://admin.example.com\")\nAND http.response.status_code: 200\nAND url.path: /api/*"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| rex field=_raw \"Origin: (?<origin>[^\\s]+)\"\n| where isnotnull(origin)\n| where origin NOT IN (\"https://app.example.com\", \"https://admin.example.com\")\n| where status=200 AND uri_path=\"/api/*\"\n| stats count by origin, uri_path, client_ip\n| where count > 20\n| sort -count"
+      },
+      {
+        "siem": "Datadog Logs",
+        "query": "@http.method:OPTIONS @http.request_headers.origin:* -@http.request_headers.origin:(https://app.example.com OR https://admin.example.com) @http.status_code:200"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Burp Suite Pro - CORS Scanner",
+        "type": "Vulnerability Scanner",
+        "usage": "Automatically detects CORS misconfigurations by testing various origin headers"
+      },
+      {
+        "name": "OWASP ZAP - CORS Scan Rule",
+        "type": "Dynamic Application Security Testing",
+        "usage": "Active scan rule that tests for permissive CORS policies"
+      },
+      {
+        "name": "CORScanner (Nuclei Template)",
+        "type": "Automated Scanner",
+        "usage": "nuclei -t cors-misconfig.yaml -u https://api.example.com"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "FinTech"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.9)",
+      "HIPAA (164.312(e)(1))",
+      "SOC2 (CC6.6)",
+      "ISO27001 (A.14.1.2)",
+      "GDPR (Article 32)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Personal Identifiable Information (PII)"
+    ]
+  }
+}

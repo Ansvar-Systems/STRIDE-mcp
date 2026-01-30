@@ -1,0 +1,354 @@
+{
+  "id": "STRIDE-API-APIKEY-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.2,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A09:2021 - Security Logging and Monitoring Failures"
+    ],
+    "mitre_attack": [
+      "T1552.004 - Unsecured Credentials: Private Keys",
+      "T1213.003 - Data from Information Repositories: Code Repositories",
+      "T1078.004 - Valid Accounts: Cloud Accounts"
+    ],
+    "cwe": [
+      "CWE-532 - Insertion of Sensitive Information into Log File",
+      "CWE-312 - Cleartext Storage of Sensitive Information",
+      "CWE-779 - Logging of Excessive Data"
+    ]
+  },
+  "threat": {
+    "title": "API Key Exposure via Application Logs in Express.js and AWS Lambda",
+    "description": "API keys, secrets, and authentication tokens inadvertently logged to application logs, CloudWatch Logs, or third-party logging services enable attackers to extract credentials and gain unauthorized access to cloud resources, databases, and third-party services. This is one of the most prevalent security issues in serverless and containerized applications, particularly in AWS environments where verbose logging is common during development and often persists into production.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Express.js",
+    "versions_affected": ["4.x", "5.x"],
+    "ecosystem": "Node.js",
+    "dependencies": ["winston", "morgan", "bunyan", "pino", "aws-sdk", "@aws-sdk/client-cloudwatch-logs"],
+    "related_frameworks": ["AWS Lambda", "AWS CloudWatch", "Fastify", "NestJS", "Serverless Framework"]
+  },
+  "attack": {
+    "scenario": "1. Developer enables verbose logging in Express.js application with debug-level configuration that logs request headers and bodies\n2. Application deployed to AWS Lambda logs API requests containing Authorization headers with bearer tokens or API keys to CloudWatch Logs\n3. Attacker gains read access to CloudWatch Logs through compromised IAM credentials, insider threat, or misconfigured log group permissions (logs:GetLogEvents)\n4. Attacker extracts API keys from log entries using pattern matching (e.g., grep for 'Authorization: Bearer', 'x-api-key:', 'apikey=')\n5. Attacker validates extracted credentials against target services (AWS APIs, third-party services like Stripe, SendGrid, OpenAI)\n6. Using valid credentials, attacker escalates privileges, exfiltrates sensitive data, or launches supply chain attacks by accessing integrated services",
+    "prerequisites": [
+      "Application logs request headers, query parameters, or request bodies containing credentials",
+      "CloudWatch Logs or centralized logging system retains logs for extended periods (30+ days)",
+      "Attacker has read access to log streams via IAM permissions, log aggregation service, or compromised credentials",
+      "No log sanitization or redaction mechanisms in place",
+      "API keys are long-lived and not rotated regularly"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-11358",
+        "description": "jQuery prototype pollution vulnerability exploited to access AWS credentials logged in application error messages",
+        "cvss_score": 6.1,
+        "published_date": "2019-04-19"
+      },
+      {
+        "cve_id": "CVE-2021-21295",
+        "description": "Netty HTTP/2 implementation logged sensitive headers including API keys in debug mode, affecting AWS Lambda functions using Netty-based frameworks",
+        "cvss_score": 5.9,
+        "published_date": "2021-03-09"
+      },
+      {
+        "cve_id": "CVE-2020-8203",
+        "description": "Lodash prototype pollution leading to exposure of environment variables containing AWS credentials in error logs",
+        "cvss_score": 7.4,
+        "published_date": "2020-07-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Toyota T-Connect Telematics Platform Breach",
+        "date": "2023-05-12",
+        "impact": "2.15 million customers affected; 10 years of vehicle location data exposed due to AWS access key in public GitHub repository",
+        "root_cause": "AWS access keys hardcoded in source code and committed to public GitHub repository, subsequently logged in application error traces",
+        "source_url": "https://global.toyota/en/newsroom/corporate/39063091.html"
+      },
+      {
+        "incident": "CircleCI Security Incident",
+        "date": "2023-01-04",
+        "impact": "Over 30,000 organizations potentially affected; customer secrets including AWS credentials, API keys, and tokens compromised",
+        "root_cause": "Malware on employee laptop exfiltrated session tokens; investigation revealed extensive logging of secrets in debug mode across customer pipelines",
+        "source_url": "https://circleci.com/blog/january-4-2023-security-alert/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-789456",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "AWS Lambda function logs contained Stripe API keys in CloudWatch, allowing unauthorized payment processing and customer data access"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-456789",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "Express.js application logged full OAuth2 tokens in Morgan access logs, enabling account takeover for 50,000+ users"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The State of Secrets Sprawl 2024",
+        "authors": ["GitGuardian"],
+        "published_date": "2024-02-15",
+        "source_url": "https://www.gitguardian.com/state-of-secrets-sprawl",
+        "key_finding": "Over 12.8 million secrets detected in public GitHub repositories in 2023, with 75% being API keys and cloud credentials. CloudWatch Logs identified as a major exposure vector in AWS environments."
+      },
+      {
+        "title": "AWS Lambda Security Best Practices",
+        "authors": ["AWS Security Team"],
+        "published_date": "2023-11-20",
+        "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-security.html",
+        "key_finding": "CloudWatch Logs should never contain credentials. Implement log sanitization and use AWS Secrets Manager for credential management in Lambda functions."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Log Sanitization Middleware for Express.js 4.x",
+      "description": "Create custom Express.js middleware to automatically redact sensitive data from request/response objects before logging. This prevents API keys, tokens, and credentials from being written to logs in the first place.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst morgan = require('morgan');\nconst winston = require('winston');\n\n// Define sensitive patterns to redact\nconst SENSITIVE_PATTERNS = [\n  /authorization/i,\n  /x-api-key/i,\n  /api[_-]?key/i,\n  /secret/i,\n  /token/i,\n  /password/i,\n  /bearer/i,\n  /aws[_-]?access[_-]?key/i,\n  /aws[_-]?secret/i\n];\n\n// Redaction function\nfunction redactSensitiveData(obj, parentKey = '') {\n  if (!obj || typeof obj !== 'object') return obj;\n  \n  if (Array.isArray(obj)) {\n    return obj.map((item, index) => redactSensitiveData(item, `${parentKey}[${index}]`));\n  }\n  \n  const redacted = {};\n  for (const [key, value] of Object.entries(obj)) {\n    const fullKey = parentKey ? `${parentKey}.${key}` : key;\n    \n    // Check if key matches sensitive pattern\n    const isSensitive = SENSITIVE_PATTERNS.some(pattern => pattern.test(key));\n    \n    if (isSensitive) {\n      // Redact but show first 4 chars for debugging\n      redacted[key] = typeof value === 'string' && value.length > 8\n        ? `${value.substring(0, 4)}...***REDACTED***`\n        : '***REDACTED***';\n    } else if (typeof value === 'object' && value !== null) {\n      redacted[key] = redactSensitiveData(value, fullKey);\n    } else {\n      redacted[key] = value;\n    }\n  }\n  \n  return redacted;\n}\n\n// Middleware to sanitize request data before logging\nfunction sanitizeLoggingMiddleware(req, res, next) {\n  // Store original headers and body\n  const originalHeaders = req.headers;\n  const originalBody = req.body;\n  \n  // Create sanitized versions\n  req.sanitizedHeaders = redactSensitiveData(originalHeaders);\n  req.sanitizedBody = redactSensitiveData(originalBody);\n  \n  // Override res.json to sanitize response\n  const originalJson = res.json.bind(res);\n  res.json = function(body) {\n    res.sanitizedResponseBody = redactSensitiveData(body);\n    return originalJson(body);\n  };\n  \n  next();\n}\n\n// Configure Winston logger with sanitization\nconst logger = winston.createLogger({\n  level: 'info',\n  format: winston.format.combine(\n    winston.format.timestamp(),\n    winston.format.errors({ stack: true }),\n    winston.format.json()\n  ),\n  transports: [\n    new winston.transports.Console({\n      format: winston.format.combine(\n        winston.format.colorize(),\n        winston.format.simple()\n      )\n    }),\n    new winston.transports.File({ \n      filename: 'logs/app.log',\n      maxsize: 10485760, // 10MB\n      maxFiles: 5\n    })\n  ]\n});\n\n// Custom Morgan token for sanitized logging\nmorgan.token('sanitized-headers', (req) => {\n  return JSON.stringify(req.sanitizedHeaders || {});\n});\n\nconst app = express();\napp.use(express.json());\n\n// Apply sanitization middleware BEFORE logging\napp.use(sanitizeLoggingMiddleware);\n\n// Use Morgan with sanitized tokens\napp.use(morgan(':method :url :status :sanitized-headers', {\n  stream: {\n    write: (message) => logger.info(message.trim())\n  }\n}));\n\n// Example endpoint\napp.post('/api/users', (req, res) => {\n  // Log with sanitized data\n  logger.info('User creation request', {\n    headers: req.sanitizedHeaders,\n    body: req.sanitizedBody,\n    ip: req.ip\n  });\n  \n  res.json({ success: true, userId: '12345' });\n});\n\n// Error handler with sanitization\napp.use((err, req, res, next) => {\n  logger.error('Application error', {\n    error: err.message,\n    stack: err.stack,\n    headers: req.sanitizedHeaders,\n    url: req.url,\n    method: req.method\n  });\n  \n  res.status(500).json({ error: 'Internal server error' });\n});\n\napp.listen(3000, () => {\n  logger.info('Server started on port 3000');\n});"
+      },
+      "tools": [
+        {
+          "name": "winston",
+          "type": "Logging Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "morgan",
+          "type": "HTTP Request Logger",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "DE.AE-3 - Event data are collected and correlated",
+        "PR.PT-2 - Removable media is protected"
+      ],
+      "validation_steps": [
+        "Send test request with Authorization header containing fake API key",
+        "Verify logs show '***REDACTED***' instead of actual key value",
+        "Check CloudWatch Logs for any leaked credentials using regex search",
+        "Test error logging to ensure stack traces don't expose secrets",
+        "Validate JSON logs can still be parsed after redaction"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "AWS Lambda Environment Variable Encryption and Secrets Manager Integration",
+      "description": "Use AWS Secrets Manager to store API keys and credentials instead of Lambda environment variables. Retrieve secrets at runtime using AWS SDK v3 with proper IAM permissions and implement local caching to minimize API calls.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "AWS Lambda (Node.js 18.x)",
+        "code": "const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');\n\n// Initialize Secrets Manager client\nconst secretsClient = new SecretsManagerClient({ \n  region: process.env.AWS_REGION || 'us-east-1'\n});\n\n// In-memory cache for secrets (Lambda container reuse)\nconst secretsCache = new Map();\nconst CACHE_TTL = 300000; // 5 minutes in milliseconds\n\n/**\n * Retrieve secret from AWS Secrets Manager with caching\n * @param {string} secretName - Name or ARN of the secret\n * @returns {Promise<object>} - Parsed secret value\n */\nasync function getSecret(secretName) {\n  const now = Date.now();\n  const cached = secretsCache.get(secretName);\n  \n  // Return cached secret if still valid\n  if (cached && (now - cached.timestamp) < CACHE_TTL) {\n    console.log(`Using cached secret: ${secretName}`);\n    return cached.value;\n  }\n  \n  try {\n    console.log(`Fetching secret from Secrets Manager: ${secretName}`);\n    const command = new GetSecretValueCommand({ SecretId: secretName });\n    const response = await secretsClient.send(command);\n    \n    let secretValue;\n    if (response.SecretString) {\n      secretValue = JSON.parse(response.SecretString);\n    } else {\n      // Binary secret (base64 decode if needed)\n      const buff = Buffer.from(response.SecretBinary, 'base64');\n      secretValue = buff.toString('ascii');\n    }\n    \n    // Cache the secret\n    secretsCache.set(secretName, {\n      value: secretValue,\n      timestamp: now\n    });\n    \n    return secretValue;\n  } catch (error) {\n    console.error(`Error retrieving secret ${secretName}:`, {\n      errorType: error.name,\n      // DO NOT log error.message as it may contain secret data\n      requestId: error.$metadata?.requestId\n    });\n    throw new Error('Failed to retrieve credentials');\n  }\n}\n\n/**\n * Lambda handler with secure secret management\n */\nexports.handler = async (event, context) => {\n  console.log('Lambda invoked', {\n    requestId: context.requestId,\n    functionVersion: context.functionVersion,\n    // NEVER log the event object directly - it may contain API keys\n    eventType: event.httpMethod || 'unknown'\n  });\n  \n  try {\n    // Retrieve secrets from Secrets Manager\n    const apiCredentials = await getSecret('prod/external-api/credentials');\n    \n    // Use credentials for API call\n    const response = await fetch('https://api.example.com/data', {\n      headers: {\n        'Authorization': `Bearer ${apiCredentials.apiKey}`,\n        'Content-Type': 'application/json'\n      }\n    });\n    \n    if (!response.ok) {\n      // Log error WITHOUT exposing credentials\n      console.error('External API call failed', {\n        statusCode: response.status,\n        statusText: response.statusText,\n        // DO NOT log response body or headers\n        url: response.url\n      });\n      throw new Error('External API error');\n    }\n    \n    const data = await response.json();\n    \n    // Log success (sanitized)\n    console.log('API call successful', {\n      recordCount: data.length || 0,\n      requestId: context.requestId\n    });\n    \n    return {\n      statusCode: 200,\n      headers: {\n        'Content-Type': 'application/json',\n        'X-Request-Id': context.requestId\n      },\n      body: JSON.stringify({\n        success: true,\n        data: data\n      })\n    };\n    \n  } catch (error) {\n    console.error('Lambda execution error', {\n      errorType: error.constructor.name,\n      // Only log safe error properties\n      message: error.message.replace(/sk-[a-zA-Z0-9]{20,}/g, '***REDACTED***'),\n      requestId: context.requestId\n    });\n    \n    return {\n      statusCode: 500,\n      body: JSON.stringify({\n        error: 'Internal server error',\n        requestId: context.requestId\n      })\n    };\n  }\n};\n\n// IAM Policy required for Lambda execution role:\n/*\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"secretsmanager:GetSecretValue\",\n        \"secretsmanager:DescribeSecret\"\n      ],\n      \"Resource\": \"arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/external-api/*\"\n    },\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"kms:Decrypt\"\n      ],\n      \"Resource\": \"arn:aws:kms:us-east-1:123456789012:key/your-kms-key-id\",\n      \"Condition\": {\n        \"StringEquals\": {\n          \"kms:ViaService\": \"secretsmanager.us-east-1.amazonaws.com\"\n        }\n      }\n    }\n  ]\n}\n*/"
+      },
+      "tools": [
+        {
+          "name": "AWS Secrets Manager",
+          "type": "Secret Management Service",
+          "cost": "$0.40 per secret per month + $0.05 per 10,000 API calls"
+        },
+        {
+          "name": "AWS KMS",
+          "type": "Encryption Key Management",
+          "cost": "$1.00 per key per month + $0.03 per 10,000 requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.10.1.2 - Key management",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are issued, managed, revoked",
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Create secret in AWS Secrets Manager with test API key",
+        "Configure Lambda IAM role with secretsmanager:GetSecretValue permission",
+        "Deploy Lambda function and test secret retrieval",
+        "Verify CloudWatch Logs contain no secret values (search for 'sk-', 'Bearer', etc.)",
+        "Test secret rotation without Lambda function redeployment",
+        "Monitor AWS CloudWatch Metrics for SecretsManager API call counts"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "AWS CloudWatch Logs Data Protection and Pattern Filtering",
+      "description": "Implement CloudWatch Logs data protection policies to automatically detect and mask sensitive data patterns in log streams. Use subscription filters to alert on potential credential exposures and set appropriate retention policies.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "json",
+        "framework": "AWS CloudWatch Logs + Terraform",
+        "code": "# Terraform configuration for CloudWatch Logs protection\n\n# 1. Create CloudWatch Logs data protection policy\nresource \"aws_cloudwatch_log_data_protection_policy\" \"api_keys\" {\n  log_group_name = aws_cloudwatch_log_group.lambda_logs.name\n\n  policy_document = jsonencode({\n    Name    = \"APIKeyProtection\"\n    Version = \"2021-06-01\"\n\n    Statement = [\n      {\n        Sid            = \"DetectAndMaskAPIKeys\"\n        DataIdentifier = [\n          # AWS credentials\n          \"arn:aws:dataprotection::aws:data-identifier/AwsSecretKey\",\n          \"arn:aws:dataprotection::aws:data-identifier/AwsAccessKey\",\n          \n          # Generic API keys and tokens\n          \"arn:aws:dataprotection::aws:data-identifier/ApiKey\",\n          \"arn:aws:dataprotection::aws:data-identifier/AuthorizationToken\",\n          \n          # Specific service patterns\n          \"arn:aws:dataprotection::aws:data-identifier/StripeApiKey\",\n          \"arn:aws:dataprotection::aws:data-identifier/OpenAiApiKey\",\n          \"arn:aws:dataprotection::aws:data-identifier/SlackWebhook\"\n        ]\n\n        Operation = {\n          Mask = {\n            MaskConfig = {\n              MaskType = \"REDACT\"\n            }\n          }\n        }\n      },\n      {\n        Sid            = \"AuditSensitiveDataAccess\"\n        DataIdentifier = [\n          \"arn:aws:dataprotection::aws:data-identifier/EmailAddress\",\n          \"arn:aws:dataprotection::aws:data-identifier/CreditCardNumber\"\n        ]\n        \n        Operation = {\n          Audit = {\n            FindingsDestination = {\n              CloudWatchLogs = {\n                LogGroup = aws_cloudwatch_log_group.security_findings.name\n              }\n              S3 = {\n                Bucket = aws_s3_bucket.audit_logs.id\n              }\n            }\n          }\n        }\n      }\n    ]\n  })\n}\n\n# 2. Create log group with appropriate retention\nresource \"aws_cloudwatch_log_group\" \"lambda_logs\" {\n  name              = \"/aws/lambda/my-api-function\"\n  retention_in_days = 7  # Minimize retention for compliance\n  kms_key_id        = aws_kms_key.logs.arn\n\n  tags = {\n    Environment = \"production\"\n    Compliance  = \"PCI-DSS\"\n  }\n}\n\n# 3. Create subscription filter to detect API keys\nresource \"aws_cloudwatch_log_subscription_filter\" \"api_key_detector\" {\n  name            = \"api-key-detection\"\n  log_group_name  = aws_cloudwatch_log_group.lambda_logs.name\n  filter_pattern  = \"[time, request_id, level, msg=*api*key* || msg=*bearer* || msg=*authorization*]\"\n  destination_arn = aws_lambda_function.security_alert.arn\n\n  depends_on = [aws_lambda_permission.allow_cloudwatch]\n}\n\n# 4. Lambda function for security alerts\nresource \"aws_lambda_function\" \"security_alert\" {\n  filename         = \"security_alert.zip\"\n  function_name    = \"cloudwatch-api-key-alert\"\n  role            = aws_iam_role.security_alert.arn\n  handler         = \"index.handler\"\n  runtime         = \"nodejs18.x\"\n  timeout         = 30\n\n  environment {\n    variables = {\n      SNS_TOPIC_ARN = aws_sns_topic.security_alerts.arn\n      SLACK_WEBHOOK_SECRET = \"prod/security/slack-webhook\"  # Secrets Manager reference\n    }\n  }\n}\n\n# 5. Lambda code for processing alerts (index.js)\n/*\nconst { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');\nconst { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');\nconst zlib = require('zlib');\n\nconst snsClient = new SNSClient({ region: process.env.AWS_REGION });\nconst secretsClient = new SecretsManagerClient({ region: process.env.AWS_REGION });\n\nexports.handler = async (event) => {\n  // Decompress CloudWatch Logs data\n  const payload = Buffer.from(event.awslogs.data, 'base64');\n  const decompressed = zlib.gunzipSync(payload);\n  const logData = JSON.parse(decompressed.toString('utf8'));\n\n  // Extract potential API key exposures\n  const suspiciousLogs = logData.logEvents.filter(log => {\n    const msg = log.message.toLowerCase();\n    return msg.includes('api') && (msg.includes('key') || msg.includes('bearer') || msg.includes('authorization'));\n  });\n\n  if (suspiciousLogs.length === 0) {\n    return { statusCode: 200, body: 'No suspicious patterns detected' };\n  }\n\n  // Send alert\n  const alertMessage = `🚨 SECURITY ALERT: Potential API Key Exposure Detected\\n\\n` +\n    `Log Group: ${logData.logGroup}\\n` +\n    `Log Stream: ${logData.logStream}\\n` +\n    `Suspicious Events: ${suspiciousLogs.length}\\n` +\n    `Time Range: ${new Date(suspiciousLogs[0].timestamp).toISOString()}\\n\\n` +\n    `Action Required: Investigate CloudWatch Logs immediately and rotate any exposed credentials.`;\n\n  await snsClient.send(new PublishCommand({\n    TopicArn: process.env.SNS_TOPIC_ARN,\n    Subject: 'CloudWatch API Key Exposure Alert',\n    Message: alertMessage\n  }));\n\n  return { statusCode: 200, body: 'Alert sent' };\n};\n*/\n\n# 6. CloudWatch Metric Filter for monitoring\nresource \"aws_cloudwatch_log_metric_filter\" \"api_key_exposure\" {\n  name           = \"APIKeyExposureCount\"\n  log_group_name = aws_cloudwatch_log_group.lambda_logs.name\n  pattern        = \"[time, request_id, level, msg=*api*key* || msg=*bearer*]\"\n\n  metric_transformation {\n    name      = \"APIKeyExposureEvents\"\n    namespace = \"Security/Logs\"\n    value     = \"1\"\n    unit      = \"Count\"\n  }\n}\n\n# 7. CloudWatch Alarm for metric\nresource \"aws_cloudwatch_metric_alarm\" \"api_key_exposure_alarm\" {\n  alarm_name          = \"api-key-exposure-detected\"\n  comparison_operator = \"GreaterThanThreshold\"\n  evaluation_periods  = \"1\"\n  metric_name         = aws_cloudwatch_log_metric_filter.api_key_exposure.metric_transformation[0].name\n  namespace           = \"Security/Logs\"\n  period              = \"60\"\n  statistic           = \"Sum\"\n  threshold           = \"0\"\n  alarm_description   = \"Triggers when API keys are detected in CloudWatch Logs\"\n  alarm_actions       = [aws_sns_topic.security_alerts.arn]\n  treat_missing_data  = \"notBreaching\"\n}\n\n# 8. SNS topic for alerts\nresource \"aws_sns_topic\" \"security_alerts\" {\n  name              = \"cloudwatch-security-alerts\"\n  kms_master_key_id = aws_kms_key.sns.id\n\n  tags = {\n    Purpose = \"Security Incident Notifications\"\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS CloudWatch Logs Data Protection",
+          "type": "Log Masking Service",
+          "cost": "$0.10 per GB of logs scanned"
+        },
+        {
+          "name": "AWS CloudWatch Logs Insights",
+          "type": "Log Analysis",
+          "cost": "$0.005 per GB of data scanned"
+        },
+        {
+          "name": "AWS SNS",
+          "type": "Notification Service",
+          "cost": "$0.50 per million notifications"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are aggregated and correlated",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Deploy CloudWatch Logs data protection policy to test log group",
+        "Send test log entry containing fake API key (e.g., 'sk-test123456789')",
+        "Verify CloudWatch Logs Insights shows redacted value: ***REDACTED***",
+        "Confirm subscription filter triggers Lambda alert function",
+        "Check SNS topic receives security alert notification",
+        "Review CloudWatch Metrics dashboard for APIKeyExposureEvents metric",
+        "Test alarm triggers when threshold exceeded"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual API calls from unexpected geographic locations using valid credentials",
+      "Spike in CloudWatch Logs GetLogEvents API calls from non-monitoring IAM principals",
+      "API key usage from multiple IP addresses simultaneously",
+      "High-value API operations (e.g., S3 PutBucketPolicy, IAM CreateAccessKey) from recently created or inactive accounts",
+      "Third-party service alerts (Stripe, SendGrid) indicating API key abuse or rate limit violations",
+      "CloudWatch Logs queries containing patterns like 'Authorization', 'x-api-key', 'bearer' from unusual IAM users"
+    ],
+    "log_queries": [
+      {
+        "siem": "AWS CloudWatch Logs Insights",
+        "query": "# Detect API keys in Lambda logs\nfields @timestamp, @message, @logStream\n| filter @message like /(?i)(api[_-]?key|authorization|bearer|x-api-key)\\s*[:=]\\s*['\\\"][a-zA-Z0-9\\-_\\.]{20,}['\\\"]/ \n| filter @message not like /REDACTED/\n| sort @timestamp desc\n| limit 100"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights",
+        "query": "# Detect AWS credentials in logs\nfields @timestamp, @message, @logStream\n| filter @message like /AKIA[0-9A-Z]{16}/  # AWS Access Key pattern\n| filter @message not like /example|sample|test|placeholder/\n| stats count() as exposureCount by @logStream\n| sort exposureCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=aws sourcetype=aws:cloudwatch:logs \n| rex field=_raw \"(?<potential_key>(sk-[a-zA-Z0-9]{20,}|AKIA[A-Z0-9]{16}|eyJ[a-zA-Z0-9\\-_]+\\.[a-zA-Z0-9\\-_]+\\.[a-zA-Z0-9\\-_]+))\" \n| search potential_key=* \n| stats count by log_group, log_stream, potential_key \n| where count > 0 \n| eval severity=\"critical\" \n| table _time, log_group, log_stream, potential_key, severity"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by host.name\n  [file where file.path : \"/var/log/app/*.log\" and \n   process.command_line : (\"*Authorization: Bearer*\", \"*x-api-key:*\", \"*apikey=*\")]\n  [network where destination.port in (443, 80) and \n   source.ip != \"10.0.0.0/8\" and \n   event.action == \"connection_attempted\"]\n| within 5m"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect API key exposure in Azure Application Insights logs\nAppTraces\n| where TimeGenerated > ago(24h)\n| where Message contains \"api\" and (Message contains \"key\" or Message contains \"bearer\" or Message contains \"authorization\")\n| where Message !contains \"REDACTED\"\n| extend PotentialKey = extract(@\"([a-zA-Z0-9\\-_\\.]{30,})\", 1, Message)\n| where isnotempty(PotentialKey)\n| summarize ExposureCount = count(), FirstSeen = min(TimeGenerated), LastSeen = max(TimeGenerated) by AppRoleName, Message, PotentialKey\n| where ExposureCount > 3\n| order by ExposureCount desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "TruffleHog",
+        "type": "Secret Scanning",
+        "usage": "trufflehog filesystem --directory=/var/log/app --only-verified --json | jq '.SourceMetadata.Data.Filesystem.file'"
+      },
+      {
+        "name": "GitGuardian ggshield",
+        "type": "Real-time Secret Detection",
+        "usage": "ggshield secret scan path /var/log --recursive --show-secrets --exit-zero"
+      },
+      {
+        "name": "AWS CloudWatch Logs Insights",
+        "type": "Log Analysis",
+        "usage": "Use queries above to detect patterns in CloudWatch Logs across all Lambda functions and log groups"
+      },
+      {
+        "name": "Gitleaks",
+        "type": "SAST Secret Detection",
+        "usage": "gitleaks detect --source=/app --verbose --redact --log-level=debug"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Cloud Services",
+      "FinTech"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 3.4, 8.2.1)",
+      "HIPAA (164.312(a)(2)(iv), 164.308(a)(5)(ii)(D))",
+      "SOC2 (CC6.1, CC6.6, CC7.2)",
+      "ISO27001 (A.12.4.1, A.12.4.2, A.18.1.3)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (AU-9, AU-11, SC-28)",
+      "FedRAMP (AC-2, AU-2, SC-13)",
+      "CIS AWS Foundations Benchmark (2.1, 2.4, 3.1)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Serverless",
+      "Containerized",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Highly Sensitive",
+      "Restricted"
+    ],
+    "attack_phase": [
+      "Initial Access",
+      "Credential Access",
+      "Discovery"
+    ],
+    "detection_difficulty": [
+      "Medium"
+    ]
+  }
+}

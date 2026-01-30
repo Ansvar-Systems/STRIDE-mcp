@@ -1,0 +1,325 @@
+{
+  "id": "STRIDE-API-XXE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.8,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1212 - Exploitation for Credential Access",
+      "T1555 - Credentials from Password Stores"
+    ],
+    "cwe": [
+      "CWE-611 - Improper Restriction of XML External Entity Reference",
+      "CWE-827 - Improper Control of Document Type Definition"
+    ]
+  },
+  "threat": {
+    "title": "XML External Entity (XXE) Injection in Spring Boot and ASP.NET Core APIs",
+    "description": "XXE attacks exploit XML parsers configured to process external entities, allowing attackers to read arbitrary files from the server, perform Server-Side Request Forgery (SSRF), execute denial of service attacks, or exfiltrate sensitive data. This vulnerability commonly affects REST APIs that accept XML input without proper parser hardening.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.6,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Spring Boot / ASP.NET Core",
+    "versions_affected": [
+      "Spring Boot 2.x - 3.x (unconfigured XML parsers)",
+      "ASP.NET Core 3.1 - 8.x (legacy XML deserializers)"
+    ],
+    "ecosystem": "Java / .NET",
+    "dependencies": [
+      "javax.xml.parsers (Java)",
+      "org.springframework.http.converter.xml",
+      "System.Xml (C#)",
+      "XmlDocument",
+      "XmlReader",
+      "XmlSerializer"
+    ],
+    "related_frameworks": [
+      "JAX-RS",
+      "Apache CXF",
+      "WCF",
+      "SOAP/XML-RPC services"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies API endpoint accepting XML input (e.g., /api/v1/data with Content-Type: application/xml)\n2. Sends malicious XML payload with external entity declaration pointing to /etc/passwd\n3. Parser resolves external entity and includes file contents in response\n4. Attacker escalates attack using SSRF to access internal services (e.g., http://169.254.169.254/latest/meta-data/iam/security-credentials/)\n5. Retrieves cloud credentials or internal API keys from metadata service\n6. Uses stolen credentials to compromise cloud infrastructure or exfiltrate sensitive databases",
+    "prerequisites": [
+      "API endpoint accepts XML input (REST, SOAP, or file upload)",
+      "XML parser configured with external entity processing enabled (DTD processing)",
+      "No input validation or Content-Type restrictions",
+      "Server has network access to internal services or file system read permissions"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-1259",
+        "description": "Spring Data Commons XXE vulnerability when unmarshalling XML to Java objects using XMLBeam",
+        "cvss_score": 7.5,
+        "published_date": "2018-05-11",
+        "affected_versions": "Spring Data Commons 1.13 - 1.13.11, 2.0 - 2.0.6",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-1259"
+      },
+      {
+        "cve_id": "CVE-2013-4152",
+        "description": "Spring Framework OXM XXE vulnerability in Spring's XML-to-Object mapping with external entities enabled by default",
+        "cvss_score": 7.5,
+        "published_date": "2014-01-23",
+        "affected_versions": "Spring Framework 3.0.0 - 3.2.3",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2013-4152"
+      },
+      {
+        "cve_id": "CVE-2019-0604",
+        "description": "Microsoft SharePoint XXE vulnerability allowing remote code execution via crafted XML",
+        "cvss_score": 9.8,
+        "published_date": "2019-03-05",
+        "affected_versions": "SharePoint Server 2019, 2016, 2013, 2010",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2019-0604"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Facebook XXE Vulnerability Disclosure",
+        "date": "2014-06-01",
+        "impact": "XXE vulnerability in Facebook's careers portal allowed reading of internal files and SSRF attacks. Researcher awarded $33,500 bug bounty.",
+        "root_cause": "XML parser processing external entities in document upload feature without validation",
+        "source_url": "https://www.acunetix.com/blog/articles/xml-external-entity-xxe-limitations/"
+      },
+      {
+        "incident": "Google XXE in Google Toolbar",
+        "date": "2014-12-01",
+        "impact": "XXE vulnerability in Google Toolbar button editor allowed local file disclosure",
+        "root_cause": "Unconfigured XML parser processing user-supplied XML configurations",
+        "source_url": "https://blog.detectify.com/2014/12/18/the-state-of-xxe-vulnerabilities/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "248668",
+        "bounty_amount": 4000,
+        "severity": "High",
+        "summary": "XXE vulnerability in API endpoint allowing /etc/passwd file read and SSRF to AWS metadata"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP XXE Prevention Cheat Sheet",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-11-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
+        "key_finding": "XXE is still prevalent in 2024, affecting 13% of tested applications. Parser defaults remain insecure in many frameworks."
+      },
+      {
+        "title": "A Deep Dive into XXE Injection",
+        "authors": ["Portswigger Research"],
+        "published_date": "2023-08-12",
+        "source_url": "https://portswigger.net/web-security/xxe",
+        "key_finding": "XXE can be used for blind SSRF attacks even when direct output is not reflected in responses"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Disable External Entity Processing in Spring Boot XML Parsers",
+      "description": "Configure all XML parsers (DocumentBuilderFactory, SAXParserFactory, XMLInputFactory) to disable DTD processing and external entity resolution. This is the most effective defense against XXE attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "import org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;\nimport com.fasterxml.jackson.dataformat.xml.XmlMapper;\nimport com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;\n\nimport javax.xml.parsers.DocumentBuilderFactory;\nimport javax.xml.parsers.SAXParserFactory;\nimport javax.xml.stream.XMLInputFactory;\nimport org.xml.sax.SAXException;\nimport javax.xml.parsers.ParserConfigurationException;\n\n@Configuration\npublic class XmlSecurityConfig {\n\n    /**\n     * Secure XML parser configuration for Spring Boot REST controllers\n     * Prevents XXE attacks by disabling external entity processing\n     */\n    @Bean\n    public MappingJackson2XmlHttpMessageConverter mappingJackson2XmlHttpMessageConverter() {\n        // Create secure XmlMapper with XXE protections\n        XmlMapper xmlMapper = new XmlMapper();\n        xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true);\n        \n        return new MappingJackson2XmlHttpMessageConverter(xmlMapper);\n    }\n\n    /**\n     * Secure DocumentBuilderFactory configuration\n     * Use this when parsing XML with DOM\n     */\n    public static DocumentBuilderFactory createSecureDocumentBuilderFactory() \n            throws ParserConfigurationException {\n        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();\n        \n        // Disable DTD processing entirely\n        factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n        \n        // Disable external entities and DTDs\n        factory.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n        factory.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n        factory.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\n        \n        // Disable XInclude processing\n        factory.setXIncludeAware(false);\n        \n        // Disable entity expansion\n        factory.setExpandEntityReferences(false);\n        \n        return factory;\n    }\n\n    /**\n     * Secure SAXParserFactory configuration\n     * Use this when parsing XML with SAX\n     */\n    public static SAXParserFactory createSecureSAXParserFactory() \n            throws SAXException, ParserConfigurationException {\n        SAXParserFactory factory = SAXParserFactory.newInstance();\n        \n        // Disable DTD processing\n        factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n        factory.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n        factory.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n        factory.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\n        \n        return factory;\n    }\n\n    /**\n     * Secure XMLInputFactory configuration (StAX)\n     * Use this when parsing XML with StAX\n     */\n    public static XMLInputFactory createSecureXMLInputFactory() {\n        XMLInputFactory factory = XMLInputFactory.newInstance();\n        \n        // Disable external entities\n        factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);\n        factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);\n        \n        return factory;\n    }\n}\n\n// Example usage in a REST controller\nimport org.springframework.web.bind.annotation.*;\nimport org.w3c.dom.Document;\nimport javax.xml.parsers.DocumentBuilder;\nimport java.io.ByteArrayInputStream;\n\n@RestController\n@RequestMapping(\"/api/v1/data\")\npublic class SecureXmlController {\n\n    @PostMapping(consumes = \"application/xml\")\n    public ResponseEntity<String> processXml(@RequestBody String xmlInput) {\n        try {\n            // Use secure DocumentBuilderFactory\n            DocumentBuilderFactory factory = XmlSecurityConfig.createSecureDocumentBuilderFactory();\n            DocumentBuilder builder = factory.newDocumentBuilder();\n            \n            // Parse XML safely\n            Document doc = builder.parse(\n                new ByteArrayInputStream(xmlInput.getBytes(\"UTF-8\"))\n            );\n            \n            // Process document...\n            return ResponseEntity.ok(\"XML processed successfully\");\n            \n        } catch (Exception e) {\n            return ResponseEntity.badRequest().body(\"Invalid XML: \" + e.getMessage());\n        }\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "OWASP Dependency-Check",
+          "type": "Vulnerability Scanner",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle is implemented",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Test with malicious XXE payload - should reject or sanitize",
+        "Verify DocumentBuilderFactory.setFeature() calls in code",
+        "Run static analysis with FindSecBugs to detect insecure parsers",
+        "Check application.properties for spring.xml.* security settings"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Disable External Entity Processing in ASP.NET Core XML Parsers",
+      "description": "Configure XmlReader, XmlDocument, and XmlSerializer with secure settings to prevent XXE attacks. Use XmlReaderSettings with DtdProcessing.Prohibit and XmlResolver set to null.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "csharp",
+        "framework": "ASP.NET Core 8.x",
+        "code": "using Microsoft.AspNetCore.Mvc;\nusing System.Xml;\nusing System.Xml.Linq;\nusing System.IO;\n\nnamespace SecureApi.Controllers\n{\n    /// <summary>\n    /// Secure XML processing configuration for ASP.NET Core\n    /// Prevents XXE attacks by disabling external entity resolution\n    /// </summary>\n    [ApiController]\n    [Route(\"api/v1/[controller]\")]\n    public class SecureXmlController : ControllerBase\n    {\n        /// <summary>\n        /// Secure XmlReaderSettings factory method\n        /// Use this configuration for all XML parsing operations\n        /// </summary>\n        private static XmlReaderSettings GetSecureXmlReaderSettings()\n        {\n            return new XmlReaderSettings\n            {\n                // Prohibit DTD processing entirely (most secure)\n                DtdProcessing = DtdProcessing.Prohibit,\n                \n                // Disable external entity resolution\n                XmlResolver = null,\n                \n                // Limit document size to prevent billion laughs attack\n                MaxCharactersFromEntities = 1024,\n                MaxCharactersInDocument = 10485760, // 10 MB\n                \n                // Additional security settings\n                IgnoreProcessingInstructions = true,\n                IgnoreComments = true,\n                \n                // Enable validation for schema-based security\n                ValidationType = ValidationType.Schema,\n                ValidationFlags = System.Xml.Schema.XmlSchemaValidationFlags.ReportValidationWarnings\n            };\n        }\n\n        /// <summary>\n        /// Example: Secure XML processing with XmlReader\n        /// </summary>\n        [HttpPost(\"process\")]\n        [Consumes(\"application/xml\")]\n        public IActionResult ProcessXml([FromBody] string xmlContent)\n        {\n            try\n            {\n                using (var stringReader = new StringReader(xmlContent))\n                using (var xmlReader = XmlReader.Create(stringReader, GetSecureXmlReaderSettings()))\n                {\n                    while (xmlReader.Read())\n                    {\n                        // Safely process XML elements\n                        if (xmlReader.NodeType == XmlNodeType.Element)\n                        {\n                            Console.WriteLine($\"Element: {xmlReader.Name}\");\n                        }\n                    }\n                }\n                \n                return Ok(new { message = \"XML processed securely\" });\n            }\n            catch (XmlException ex)\n            {\n                return BadRequest(new { error = \"Invalid XML\", details = ex.Message });\n            }\n        }\n\n        /// <summary>\n        /// Secure XDocument loading (LINQ to XML)\n        /// </summary>\n        [HttpPost(\"process-linq\")]\n        public IActionResult ProcessXmlLinq([FromBody] string xmlContent)\n        {\n            try\n            {\n                // XDocument.Load with secure settings\n                using (var stringReader = new StringReader(xmlContent))\n                using (var xmlReader = XmlReader.Create(stringReader, GetSecureXmlReaderSettings()))\n                {\n                    XDocument doc = XDocument.Load(xmlReader);\n                    \n                    // Process document safely\n                    var rootElement = doc.Root?.Name.LocalName;\n                    \n                    return Ok(new { root = rootElement });\n                }\n            }\n            catch (Exception ex)\n            {\n                return BadRequest(new { error = ex.Message });\n            }\n        }\n\n        /// <summary>\n        /// Legacy XmlDocument processing (secure configuration)\n        /// Note: Prefer XmlReader or XDocument for new code\n        /// </summary>\n        [HttpPost(\"legacy\")]\n        public IActionResult ProcessLegacyXml([FromBody] string xmlContent)\n        {\n            var xmlDoc = new XmlDocument\n            {\n                // Critical: Set XmlResolver to null to prevent external entity resolution\n                XmlResolver = null\n            };\n\n            try\n            {\n                // Load XML with secure XmlReader\n                using (var stringReader = new StringReader(xmlContent))\n                using (var xmlReader = XmlReader.Create(stringReader, GetSecureXmlReaderSettings()))\n                {\n                    xmlDoc.Load(xmlReader);\n                }\n                \n                return Ok(new { nodes = xmlDoc.DocumentElement?.ChildNodes.Count });\n            }\n            catch (XmlException ex)\n            {\n                return BadRequest(new { error = ex.Message });\n            }\n        }\n    }\n\n    /// <summary>\n    /// Global XML security configuration (Startup.cs / Program.cs)\n    /// </summary>\n    public class XmlSecurityConfiguration\n    {\n        public static void ConfigureXmlSecurity(IServiceCollection services)\n        {\n            // Configure JSON as default instead of XML when possible\n            services.AddControllers(options =>\n            {\n                options.RespectBrowserAcceptHeader = true;\n                options.ReturnHttpNotAcceptable = true;\n            })\n            .AddXmlSerializerFormatters(options =>\n            {\n                // Secure XmlSerializer configuration\n                options.XmlReaderSettings = new XmlReaderSettings\n                {\n                    DtdProcessing = DtdProcessing.Prohibit,\n                    XmlResolver = null\n                };\n            });\n        }\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Security Code Scan",
+          "type": "Static Analysis for .NET",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "SonarQube for C#",
+          "type": "Code Quality & Security Scanner",
+          "cost": "Free (Community) / $150/year (Developer)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Verify XmlReaderSettings.DtdProcessing = DtdProcessing.Prohibit in all code",
+        "Check that XmlResolver is set to null",
+        "Test with XXE payload containing <!DOCTYPE> - should be rejected",
+        "Run Security Code Scan in CI/CD pipeline",
+        "Review all usages of XmlDocument, XmlReader, and XmlSerializer"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Input Validation and Content-Type Restrictions",
+      "description": "Apply defense-in-depth by validating XML structure against strict schemas, restricting Content-Type headers, and implementing request size limits. Use allowlists for acceptable XML elements and reject suspicious patterns.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "import org.springframework.context.annotation.Configuration;\nimport org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;\nimport org.springframework.web.servlet.config.annotation.WebMvcConfigurer;\nimport org.springframework.boot.web.servlet.FilterRegistrationBean;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.http.MediaType;\n\nimport javax.servlet.*;\nimport javax.servlet.http.HttpServletRequest;\nimport javax.servlet.http.HttpServletResponse;\nimport java.io.IOException;\nimport java.util.regex.Pattern;\nimport javax.xml.XMLConstants;\nimport javax.xml.validation.Schema;\nimport javax.xml.validation.SchemaFactory;\nimport javax.xml.validation.Validator;\nimport javax.xml.transform.stream.StreamSource;\nimport java.io.StringReader;\n\n@Configuration\npublic class XmlInputValidationConfig implements WebMvcConfigurer {\n\n    /**\n     * Restrict Content-Type negotiation - prefer JSON over XML\n     */\n    @Override\n    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {\n        configurer\n            .favorParameter(false)\n            .ignoreAcceptHeader(false)\n            .defaultContentType(MediaType.APPLICATION_JSON)\n            .mediaType(\"json\", MediaType.APPLICATION_JSON)\n            .mediaType(\"xml\", MediaType.APPLICATION_XML);\n    }\n\n    /**\n     * XML Security Filter - validates all XML requests\n     */\n    @Bean\n    public FilterRegistrationBean<XmlSecurityFilter> xmlSecurityFilter() {\n        FilterRegistrationBean<XmlSecurityFilter> registrationBean = new FilterRegistrationBean<>();\n        registrationBean.setFilter(new XmlSecurityFilter());\n        registrationBean.addUrlPatterns(\"/api/*\");\n        registrationBean.setOrder(1);\n        return registrationBean;\n    }\n\n    /**\n     * Custom filter to detect and block XXE payloads\n     */\n    public static class XmlSecurityFilter implements Filter {\n        \n        // Patterns indicating XXE attack attempts\n        private static final Pattern XXE_DOCTYPE_PATTERN = \n            Pattern.compile(\"<!DOCTYPE\\\\s+[^>]*>\", Pattern.CASE_INSENSITIVE);\n        \n        private static final Pattern XXE_ENTITY_PATTERN = \n            Pattern.compile(\"<!ENTITY\\\\s+[^>]*>\", Pattern.CASE_INSENSITIVE);\n        \n        private static final Pattern XXE_SYSTEM_PATTERN = \n            Pattern.compile(\"SYSTEM\\\\s+[\\\"'][^\\\"']*[\\\"']\", Pattern.CASE_INSENSITIVE);\n        \n        private static final Pattern XXE_PUBLIC_PATTERN = \n            Pattern.compile(\"PUBLIC\\\\s+[\\\"'][^\\\"']*[\\\"']\", Pattern.CASE_INSENSITIVE);\n\n        @Override\n        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)\n                throws IOException, ServletException {\n            \n            HttpServletRequest httpRequest = (HttpServletRequest) request;\n            HttpServletResponse httpResponse = (HttpServletResponse) response;\n            \n            String contentType = httpRequest.getContentType();\n            \n            // Only inspect XML requests\n            if (contentType != null && contentType.contains(\"xml\")) {\n                \n                // Read request body\n                String requestBody = httpRequest.getReader().lines()\n                    .reduce(\"\", (accumulator, actual) -> accumulator + actual);\n                \n                // Check request size (prevent billion laughs / entity expansion attacks)\n                if (requestBody.length() > 1_000_000) { // 1 MB limit\n                    httpResponse.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);\n                    httpResponse.getWriter().write(\"{\\\"error\\\": \\\"XML payload too large\\\"}\");\n                    return;\n                }\n                \n                // Detect suspicious XXE patterns\n                if (XXE_DOCTYPE_PATTERN.matcher(requestBody).find() ||\n                    XXE_ENTITY_PATTERN.matcher(requestBody).find() ||\n                    XXE_SYSTEM_PATTERN.matcher(requestBody).find() ||\n                    XXE_PUBLIC_PATTERN.matcher(requestBody).find()) {\n                    \n                    // Log the attack attempt\n                    System.err.println(\"XXE attack detected from: \" + httpRequest.getRemoteAddr());\n                    \n                    httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);\n                    httpResponse.setContentType(\"application/json\");\n                    httpResponse.getWriter().write(\n                        \"{\\\"error\\\": \\\"Invalid XML structure - external entities not allowed\\\"}\"\n                    );\n                    return;\n                }\n            }\n            \n            chain.doFilter(request, response);\n        }\n    }\n\n    /**\n     * XML Schema Validation - enforce strict structure\n     */\n    public static class XmlSchemaValidator {\n        \n        /**\n         * Validate XML against XSD schema\n         */\n        public static boolean validateAgainstSchema(String xmlContent, String xsdPath) {\n            try {\n                SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);\n                \n                // Load schema\n                Schema schema = factory.newSchema(new StreamSource(xsdPath));\n                Validator validator = schema.newValidator();\n                \n                // Validate XML\n                validator.validate(new StreamSource(new StringReader(xmlContent)));\n                \n                return true;\n            } catch (Exception e) {\n                System.err.println(\"XML validation failed: \" + e.getMessage());\n                return false;\n            }\n        }\n    }\n}\n\n// Example XSD schema for strict validation (data-schema.xsd)\n/*\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n  <xs:element name=\"dataRequest\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"userId\" type=\"xs:string\" minOccurs=\"1\" maxOccurs=\"1\"/>\n        <xs:element name=\"action\" type=\"xs:string\" minOccurs=\"1\" maxOccurs=\"1\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n*/\n\n// Example secure controller with validation\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.http.ResponseEntity;\n\n@RestController\n@RequestMapping(\"/api/v1/secure\")\npublic class ValidatedXmlController {\n    \n    @PostMapping(value = \"/data\", consumes = \"application/xml\")\n    public ResponseEntity<String> processValidatedXml(@RequestBody String xmlInput) {\n        \n        // Validate against schema\n        if (!XmlInputValidationConfig.XmlSchemaValidator\n                .validateAgainstSchema(xmlInput, \"schemas/data-schema.xsd\")) {\n            return ResponseEntity.badRequest()\n                .body(\"{\\\"error\\\": \\\"XML does not conform to schema\\\"}\");\n        }\n        \n        // Process with secure parser (from MIT-001)\n        // ...\n        \n        return ResponseEntity.ok(\"{\\\"status\\\": \\\"success\\\"}\");\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "OWASP ZAP",
+          "type": "Security Testing Proxy",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Burp Suite",
+          "type": "Web Vulnerability Scanner",
+          "cost": "$449/year (Professional)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Test with malformed XML - should reject",
+        "Test with DOCTYPE declaration - should block",
+        "Test with oversized XML (>1MB) - should reject",
+        "Verify Content-Type restrictions in API gateway",
+        "Test schema validation with invalid structure"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected file access to /etc/passwd, /etc/hosts, or sensitive configuration files",
+      "HTTP requests to internal IP ranges (169.254.169.254, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)",
+      "XML requests containing <!DOCTYPE>, <!ENTITY>, SYSTEM, or PUBLIC keywords",
+      "Large XML payloads (>100KB) indicating entity expansion attacks",
+      "Error messages revealing file system paths or internal service URLs",
+      "Slow response times during XML processing (billion laughs DoS)"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=spring_boot\n| search (\"<!DOCTYPE\" OR \"<!ENTITY\" OR \"SYSTEM\" OR \"file://\" OR \"/etc/passwd\")\n| rex field=request_body \"(?<xxe_pattern><!DOCTYPE[^>]*>|<!ENTITY[^>]*>)\"\n| stats count by src_ip, request_path, xxe_pattern, _time\n| where count > 1\n| table _time, src_ip, request_path, xxe_pattern, count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.request.body.content: (*DOCTYPE* OR *ENTITY* OR *SYSTEM* OR *file://*) \nAND http.request.mime_type: \"application/xml\"\n| stats count by source.ip, url.path, http.response.status_code"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect XXE attack patterns in application logs\nAppServiceHTTPLogs\n| where TimeGenerated > ago(24h)\n| where CsHost contains \"api\" and CsMethod == \"POST\"\n| where ScStatus in (200, 400, 500)\n| extend RequestBody = parse_json(tostring(CsBytes))\n| where RequestBody contains \"DOCTYPE\" or RequestBody contains \"ENTITY\" or RequestBody contains \"SYSTEM\"\n| summarize AttackCount = count() by CIp, CsUriStem, bin(TimeGenerated, 1h)\n| where AttackCount > 3\n| order by AttackCount desc"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, sourceIPAddress, userAgent\n| filter @message like /(?i)(<!DOCTYPE|<!ENTITY|SYSTEM|file:\\/\\/|etc\\/passwd)/\n| filter requestContext.httpMethod = \"POST\" and requestContext.path like /\\/api\\//\n| stats count() as xxe_attempts by sourceIPAddress, requestContext.path\n| filter xxe_attempts > 2\n| sort xxe_attempts desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "ModSecurity WAF",
+        "type": "Web Application Firewall",
+        "usage": "SecRule REQUEST_BODY \"@rx (?i)<!ENTITY|<!DOCTYPE|SYSTEM\\s|PUBLIC\\s\" \\\"id:100001,phase:2,deny,status:403,msg:'XXE Attack Detected'\\\"\""
+      },
+      {
+        "name": "Datadog Application Security",
+        "type": "Runtime Application Self-Protection (RASP)",
+        "usage": "Monitors XML parsing operations and blocks XXE attempts in real-time"
+      },
+      {
+        "name": "Falco (Kubernetes)",
+        "type": "Runtime Security Monitoring",
+        "usage": "Detects file reads of /etc/passwd or cloud metadata access from application pods"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "E-commerce",
+      "Enterprise SaaS"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.2.4)",
+      "HIPAA (164.308(a)(5))",
+      "SOC2 (CC7.1)",
+      "ISO27001 (A.14.2.1)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SI-10)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Regulated"
+    ]
+  }
+}

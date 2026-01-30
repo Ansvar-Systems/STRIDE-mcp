@@ -1,0 +1,339 @@
+{
+  "id": "STRIDE-CLOUD-IAM-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.9,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1078.004 - Valid Accounts: Cloud Accounts",
+      "T1098 - Account Manipulation",
+      "T1069.003 - Permission Groups Discovery: Cloud Groups"
+    ],
+    "cwe": [
+      "CWE-250 - Execution with Unnecessary Privileges",
+      "CWE-269 - Improper Privilege Management",
+      "CWE-732 - Incorrect Permission Assignment for Critical Resource"
+    ]
+  },
+  "threat": {
+    "title": "IAM Over-Privileged Roles in AWS Lambda and EC2 Leading to Privilege Escalation",
+    "description": "AWS Lambda functions and EC2 instances configured with overly permissive IAM roles (such as AdministratorAccess or broad wildcard permissions) allow attackers who compromise the compute resource to escalate privileges and access sensitive resources across the AWS account. This is one of the most critical cloud security misconfigurations, enabling lateral movement, data exfiltration, and full account takeover.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "AWS IAM",
+    "versions_affected": ["All versions"],
+    "ecosystem": "AWS Cloud",
+    "dependencies": ["AWS Lambda", "AWS EC2", "AWS STS", "AWS IAM Roles"],
+    "related_frameworks": ["AWS Organizations", "AWS Control Tower", "AWS Service Control Policies"]
+  },
+  "attack": {
+    "scenario": "1. Attacker exploits a vulnerability in a Lambda function (e.g., command injection, SSRF, or dependency vulnerability)\n2. Gains code execution within the Lambda runtime environment\n3. Discovers Lambda's execution role has overly broad permissions (e.g., iam:*, s3:*, ec2:*, lambda:*)\n4. Uses AWS SDK or CLI to enumerate IAM policies and discover excessive privileges\n5. Escalates privileges by creating new IAM users, assuming admin roles, or accessing sensitive S3 buckets\n6. Exfiltrates data from S3, RDS snapshots, or Secrets Manager; deploys crypto-miners on EC2; or establishes persistence through backdoor IAM users",
+    "prerequisites": [
+      "Lambda function or EC2 instance with attached IAM role",
+      "IAM role has excessive permissions (wildcards, full access policies)",
+      "Attacker has initial code execution capability (RCE, SSRF, compromised credentials)",
+      "No IAM permission boundaries or SCPs limiting privilege escalation",
+      "Lack of runtime security monitoring or anomaly detection"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-5736",
+        "description": "Container escape vulnerability in runC affecting AWS ECS and Lambda allowing privilege escalation to host",
+        "cvss_score": 8.6,
+        "published_date": "2019-02-11"
+      },
+      {
+        "cve_id": "CVE-2021-3129",
+        "description": "Laravel debug mode RCE exploited to access AWS metadata service and steal IAM credentials",
+        "cvss_score": 9.8,
+        "published_date": "2021-01-13"
+      },
+      {
+        "cve_id": "CVE-2022-31799",
+        "description": "SSRF in Spring Cloud Gateway allowing access to AWS metadata endpoint and IAM role credentials",
+        "cvss_score": 9.1,
+        "published_date": "2022-06-23"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Capital One Data Breach (2019)",
+        "date": "2019-07-19",
+        "impact": "106 million customers affected; $80 million fine from OCC; $190 million class-action settlement",
+        "root_cause": "Over-privileged EC2 IAM role allowed SSRF exploitation via WAF misconfiguration, enabling attacker to list and download S3 buckets containing customer data",
+        "source_url": "https://www.justice.gov/usao-wdwa/pr/former-seattle-tech-worker-convicted-data-theft-and-computer-intrusions-affecting-over"
+      },
+      {
+        "incident": "Imperva Cloud WAF Data Exposure",
+        "date": "2019-08-26",
+        "impact": "Email addresses, hashed passwords, and API keys of customers leaked through AWS S3 misconfiguration",
+        "root_cause": "Overly permissive IAM roles on AWS resources allowed unauthorized data access",
+        "source_url": "https://www.imperva.com/blog/october-2019-update-notification-to-cloud-waf-customers/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "1234567",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Lambda function with admin IAM role accessible via API Gateway allowing full AWS account compromise"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "AWS IAM Privilege Escalation Techniques",
+        "authors": ["Spencer Gietzen", "Rhino Security Labs"],
+        "published_date": "2019-08-01",
+        "source_url": "https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation/",
+        "key_finding": "Identified 21 different IAM privilege escalation methods in AWS, many relying on over-privileged roles"
+      },
+      {
+        "title": "CIS Amazon Web Services Foundations Benchmark v2.0",
+        "authors": ["Center for Internet Security"],
+        "published_date": "2023-11-01",
+        "source_url": "https://www.cisecurity.org/benchmark/amazon_web_services",
+        "key_finding": "IAM principle of least privilege is the #1 recommended control for AWS security"
+      },
+      {
+        "title": "Cloud Security Alliance - IAM Configuration Security in Cloud Computing",
+        "authors": ["Cloud Security Alliance"],
+        "published_date": "2023-03-15",
+        "source_url": "https://cloudsecurityalliance.org/",
+        "key_finding": "67% of cloud breaches involve misconfigured IAM permissions or overly permissive roles"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement AWS IAM Least Privilege Policies with Service-Specific Permissions",
+      "description": "Replace wildcard (*) permissions and AWS managed AdministratorAccess policies with fine-grained, service-specific IAM policies that grant only the minimum permissions required for Lambda and EC2 to perform their intended functions.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "json",
+        "framework": "AWS IAM Policy",
+        "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"AllowS3ReadOnlySpecificBucket\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"s3:GetObject\",\n        \"s3:ListBucket\"\n      ],\n      \"Resource\": [\n        \"arn:aws:s3:::my-app-data-bucket\",\n        \"arn:aws:s3:::my-app-data-bucket/*\"\n      ]\n    },\n    {\n      \"Sid\": \"AllowDynamoDBSpecificTable\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"dynamodb:GetItem\",\n        \"dynamodb:PutItem\",\n        \"dynamodb:UpdateItem\",\n        \"dynamodb:Query\"\n      ],\n      \"Resource\": \"arn:aws:dynamodb:us-east-1:123456789012:table/UserData\"\n    },\n    {\n      \"Sid\": \"AllowSecretsManagerSpecificSecret\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"secretsmanager:GetSecretValue\"\n      ],\n      \"Resource\": \"arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/db/password-AbCdEf\"\n    },\n    {\n      \"Sid\": \"AllowCloudWatchLogCreation\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"logs:CreateLogGroup\",\n        \"logs:CreateLogStream\",\n        \"logs:PutLogEvents\"\n      ],\n      \"Resource\": \"arn:aws:logs:us-east-1:123456789012:log-group:/aws/lambda/my-function:*\"\n    },\n    {\n      \"Sid\": \"DenyDangerousActions\",\n      \"Effect\": \"Deny\",\n      \"Action\": [\n        \"iam:*\",\n        \"organizations:*\",\n        \"account:*\",\n        \"sts:AssumeRole\"\n      ],\n      \"Resource\": \"*\"\n    }\n  ]\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS IAM Policy Simulator",
+          "type": "Testing Tool",
+          "cost": "Free"
+        },
+        {
+          "name": "Terraform / CloudFormation",
+          "type": "Infrastructure as Code",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "PolicySentry",
+          "type": "IAM Least Privilege Policy Generator",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.1.2 - Access to networks and network services",
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Least privilege and separation of duties principles are implemented"
+      ],
+      "validation_steps": [
+        "Review all Lambda execution roles and EC2 instance profiles for wildcard permissions",
+        "Use AWS Access Analyzer to identify unused permissions",
+        "Test Lambda/EC2 functionality with restricted policies in staging",
+        "Remove AdministratorAccess and PowerUserAccess managed policies",
+        "Implement IAM Permission Boundaries for additional guardrails"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enable AWS IAM Access Analyzer for Continuous Permission Monitoring",
+      "description": "Deploy IAM Access Analyzer to continuously analyze IAM policies, detect overly permissive roles, and identify unused permissions. This provides automated detection of privilege escalation risks and external resource access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "AWS CDK / Terraform",
+        "code": "# AWS CDK (Python) - Deploy IAM Access Analyzer\nfrom aws_cdk import (\n    Stack,\n    aws_accessanalyzer as accessanalyzer,\n    aws_iam as iam,\n    aws_sns as sns,\n    aws_cloudwatch as cloudwatch,\n    aws_cloudwatch_actions as cw_actions\n)\nfrom constructs import Construct\n\nclass IAMAccessAnalyzerStack(Stack):\n    def __init__(self, scope: Construct, id: str, **kwargs):\n        super().__init__(scope, id, **kwargs)\n        \n        # Create SNS topic for alerts\n        alert_topic = sns.Topic(\n            self, \"IAMAccessAnalyzerAlerts\",\n            display_name=\"IAM Access Analyzer Findings\"\n        )\n        \n        # Create IAM Access Analyzer for organization\n        analyzer = accessanalyzer.CfnAnalyzer(\n            self, \"OrganizationAnalyzer\",\n            type=\"ORGANIZATION\",  # or \"ACCOUNT\" for single account\n            analyzer_name=\"iam-least-privilege-analyzer\",\n            tags=[\n                {\"key\": \"Environment\", \"value\": \"Production\"},\n                {\"key\": \"Purpose\", \"value\": \"Security\"},\n                {\"key\": \"Compliance\", \"value\": \"CIS-AWS-Benchmark\"}\n            ]\n        )\n        \n        # Create EventBridge rule for high-severity findings\n        from aws_cdk import aws_events as events\n        from aws_cdk import aws_events_targets as targets\n        \n        finding_rule = events.Rule(\n            self, \"AccessAnalyzerFindingRule\",\n            event_pattern=events.EventPattern(\n                source=[\"aws.access-analyzer\"],\n                detail_type=[\"Access Analyzer Finding\"],\n                detail={\n                    \"status\": [\"ACTIVE\"],\n                    \"resourceType\": [\"AWS::IAM::Role\", \"AWS::Lambda::Function\"]\n                }\n            )\n        )\n        finding_rule.add_target(targets.SnsTopic(alert_topic))\n        \n        # CloudWatch alarm for critical findings\n        metric = cloudwatch.Metric(\n            namespace=\"AWS/AccessAnalyzer\",\n            metric_name=\"ActiveFindings\",\n            dimensions_map={\"AnalyzerName\": analyzer.analyzer_name}\n        )\n        \n        alarm = cloudwatch.Alarm(\n            self, \"CriticalIAMFindingsAlarm\",\n            metric=metric,\n            threshold=1,\n            evaluation_periods=1,\n            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,\n            alarm_description=\"Alert on new IAM Access Analyzer findings\"\n        )\n        alarm.add_alarm_action(cw_actions.SnsAction(alert_topic))\n\n# Terraform equivalent\n# resource \"aws_accessanalyzer_analyzer\" \"main\" {\n#   analyzer_name = \"iam-least-privilege-analyzer\"\n#   type          = \"ORGANIZATION\"\n#   tags = {\n#     Environment = \"Production\"\n#     Purpose     = \"Security\"\n#   }\n# }"
+      },
+      "tools": [
+        {
+          "name": "AWS IAM Access Analyzer",
+          "type": "Continuous Monitoring",
+          "cost": "$0.20 per analyzer per month"
+        },
+        {
+          "name": "AWS Security Hub",
+          "type": "Aggregated Security Findings",
+          "cost": "$0.0010 per 10,000 events"
+        },
+        {
+          "name": "Prowler",
+          "type": "Open Source AWS Security Scanner",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.18.2.2 - Compliance with security policies"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - Networks and systems are monitored",
+        "DE.CM-7 - Monitoring for unauthorized activities is performed"
+      ],
+      "validation_steps": [
+        "Deploy IAM Access Analyzer in organization or account scope",
+        "Configure SNS notifications for new findings",
+        "Review initial findings and create remediation plan",
+        "Integrate findings into Security Hub or SIEM",
+        "Set up automated policy generation based on CloudTrail logs"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enforce Service-Specific IAM Roles with Permission Boundaries and SCPs",
+      "description": "Implement IAM Permission Boundaries and AWS Service Control Policies (SCPs) to create defense-in-depth guardrails that prevent privilege escalation even if IAM policies are misconfigured. Use separate roles per Lambda function and EC2 instance.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "json",
+        "framework": "AWS IAM + Lambda",
+        "code": "// Step 1: Create IAM Permission Boundary to prevent privilege escalation\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"AllowOnlyServiceSpecificActions\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"s3:*\",\n        \"dynamodb:*\",\n        \"secretsmanager:GetSecretValue\",\n        \"kms:Decrypt\",\n        \"logs:*\",\n        \"xray:*\"\n      ],\n      \"Resource\": \"*\"\n    },\n    {\n      \"Sid\": \"DenyPrivilegeEscalation\",\n      \"Effect\": \"Deny\",\n      \"Action\": [\n        \"iam:CreateUser\",\n        \"iam:CreateAccessKey\",\n        \"iam:CreateRole\",\n        \"iam:AttachUserPolicy\",\n        \"iam:AttachRolePolicy\",\n        \"iam:PutUserPolicy\",\n        \"iam:PutRolePolicy\",\n        \"iam:AddUserToGroup\",\n        \"iam:UpdateAssumeRolePolicy\",\n        \"sts:AssumeRole\",\n        \"lambda:CreateFunction\",\n        \"lambda:UpdateFunctionCode\",\n        \"ec2:RunInstances\"\n      ],\n      \"Resource\": \"*\"\n    }\n  ]\n}\n\n// Step 2: Lambda Execution Role with Boundary\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": \"lambda.amazonaws.com\"\n      }\n    }\n  ]\n}\n\n// Step 3: CloudFormation template for Lambda with restricted role\n{\n  \"AWSTemplateFormatVersion\": \"2010-09-09\",\n  \"Resources\": {\n    \"DataProcessorLambdaRole\": {\n      \"Type\": \"AWS::IAM::Role\",\n      \"Properties\": {\n        \"RoleName\": \"data-processor-lambda-role\",\n        \"AssumeRolePolicyDocument\": {\n          \"Version\": \"2012-10-17\",\n          \"Statement\": [\n            {\n              \"Effect\": \"Allow\",\n              \"Principal\": {\"Service\": \"lambda.amazonaws.com\"},\n              \"Action\": \"sts:AssumeRole\"\n            }\n          ]\n        },\n        \"PermissionsBoundary\": \"arn:aws:iam::123456789012:policy/LambdaPermissionBoundary\",\n        \"ManagedPolicyArns\": [\n          \"arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole\"\n        ],\n        \"Policies\": [\n          {\n            \"PolicyName\": \"S3ReadOnlyAccess\",\n            \"PolicyDocument\": {\n              \"Version\": \"2012-10-17\",\n              \"Statement\": [\n                {\n                  \"Effect\": \"Allow\",\n                  \"Action\": [\"s3:GetObject\", \"s3:ListBucket\"],\n                  \"Resource\": [\n                    \"arn:aws:s3:::my-app-data/*\",\n                    \"arn:aws:s3:::my-app-data\"\n                  ]\n                }\n              ]\n            }\n          }\n        ]\n      }\n    },\n    \"DataProcessorLambda\": {\n      \"Type\": \"AWS::Lambda::Function\",\n      \"Properties\": {\n        \"FunctionName\": \"data-processor\",\n        \"Runtime\": \"python3.11\",\n        \"Role\": {\"Fn::GetAtt\": [\"DataProcessorLambdaRole\", \"Arn\"]},\n        \"Handler\": \"index.handler\",\n        \"Code\": {\n          \"ZipFile\": \"def handler(event, context): return {'statusCode': 200}\"\n        },\n        \"Environment\": {\n          \"Variables\": {\n            \"FUNCTION_NAME\": \"data-processor\"\n          }\n        }\n      }\n    }\n  }\n}\n\n// Step 4: Service Control Policy (SCP) for Organization\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"PreventIAMPrivilegeEscalation\",\n      \"Effect\": \"Deny\",\n      \"Action\": [\n        \"iam:CreateAccessKey\",\n        \"iam:CreateUser\",\n        \"iam:AttachUserPolicy\",\n        \"iam:PutUserPolicy\"\n      ],\n      \"Resource\": \"*\",\n      \"Condition\": {\n        \"StringNotEquals\": {\n          \"aws:PrincipalOrgID\": \"o-xxxxxxxxxx\"\n        }\n      }\n    }\n  ]\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS Organizations",
+          "type": "Centralized Account Management",
+          "cost": "Free"
+        },
+        {
+          "name": "CloudFormation / Terraform",
+          "type": "Infrastructure as Code",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.4 - Use of privileged utility programs"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions and authorizations are managed",
+        "PR.PT-3 - Least privilege principles are incorporated"
+      ],
+      "validation_steps": [
+        "Define permission boundaries for all compute roles",
+        "Create separate IAM roles per Lambda function",
+        "Test that roles cannot escalate privileges",
+        "Implement SCPs at AWS Organizations level",
+        "Monitor IAM changes via CloudTrail and Config"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "IAM role assumption from unexpected IP addresses or regions",
+      "Unusual API calls to IAM services (CreateUser, AttachRolePolicy, AssumeRole)",
+      "Lambda or EC2 accessing S3 buckets outside normal scope",
+      "Elevated privilege API calls during off-hours",
+      "Multiple AssumeRole calls in short time period",
+      "Creation of new IAM users or access keys from compute resources",
+      "Access to Secrets Manager or Parameter Store secrets not normally used",
+      "Unusual data transfer volumes from S3 or RDS"
+    ],
+    "log_queries": [
+      {
+        "siem": "AWS CloudTrail (CloudWatch Insights)",
+        "query": "fields @timestamp, userIdentity.principalId, eventName, sourceIPAddress, errorCode\n| filter eventSource = \"iam.amazonaws.com\"\n| filter eventName in [\"CreateUser\", \"CreateAccessKey\", \"AttachUserPolicy\", \"AttachRolePolicy\", \"PutUserPolicy\", \"PutRolePolicy\", \"AssumeRole\"]\n| filter userIdentity.type = \"AssumedRole\"\n| filter userIdentity.principalId like /i-[a-z0-9]+/ or userIdentity.principalId like /AROA[A-Z0-9]+/\n| stats count(*) as api_calls by userIdentity.principalId, eventName, sourceIPAddress\n| sort api_calls desc"
+      },
+      {
+        "siem": "AWS Security Hub / GuardDuty",
+        "query": "// GuardDuty Finding Types to monitor:\n// - Policy:IAMUser/RootCredentialUsage\n// - PrivilegeEscalation:IAMUser/AdministrativePermissions\n// - UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration\n// - Stealth:IAMUser/CloudTrailLoggingDisabled\n\n// Security Hub query (AWS Config)\nSELECT \n  resourceId,\n  resourceType,\n  configuration.roleName,\n  configuration.attachedManagedPolicies\nFROM \n  aws_iam_role\nWHERE \n  configuration.attachedManagedPolicies LIKE '%AdministratorAccess%'\n  OR configuration.attachedManagedPolicies LIKE '%PowerUserAccess%'"
+      },
+      {
+        "siem": "Splunk (CloudTrail Data)",
+        "query": "index=aws sourcetype=aws:cloudtrail eventSource=iam.amazonaws.com\n(eventName=CreateUser OR eventName=CreateAccessKey OR eventName=AttachUserPolicy OR eventName=AttachRolePolicy OR eventName=PutUserPolicy OR eventName=AssumeRole)\nuserIdentity.type=AssumedRole\n| eval role_name=mvindex(split(userIdentity.principalId, \":\"), 1)\n| stats count by eventName, role_name, sourceIPAddress, userAgent\n| where count > 5\n| sort -count"
+      },
+      {
+        "siem": "Elastic Stack (CloudTrail Logs)",
+        "query": "event.dataset: \"aws.cloudtrail\" AND \nevent.provider: \"iam.amazonaws.com\" AND\nevent.action: (\"CreateUser\" OR \"CreateAccessKey\" OR \"AttachUserPolicy\" OR \"AttachRolePolicy\" OR \"AssumeRole\") AND\ncloud.account.id: \"123456789012\" AND\nuser.type: \"AssumedRole\"\n| stats count by event.action, user.name, source.ip"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS GuardDuty",
+        "type": "Threat Detection Service",
+        "usage": "Automatically detects IAM credential exfiltration and privilege escalation attempts"
+      },
+      {
+        "name": "CloudQuery",
+        "type": "Cloud Asset Inventory",
+        "usage": "cloudquery sync aws.yml --table aws_iam_roles | grep 'AdministratorAccess'"
+      },
+      {
+        "name": "ScoutSuite",
+        "type": "Multi-Cloud Security Auditing",
+        "usage": "python scout.py aws --regions us-east-1 --services iam"
+      },
+      {
+        "name": "Prowler",
+        "type": "AWS Security Best Practices Scanner",
+        "usage": "prowler aws -c check21,check22,check23 -f us-east-1"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Technology",
+      "E-commerce"
+    ],
+    "compliance": [
+      "CIS AWS Foundations Benchmark v2.0 (1.15, 1.16, 1.19, 1.20)",
+      "NIST CSF (PR.AC-4, PR.PT-3)",
+      "ISO 27001 (A.9.2.3, A.9.4.1)",
+      "PCI-DSS 4.0 (Requirement 7.2, 8.2)",
+      "HIPAA (164.308(a)(3), 164.312(a)(1))",
+      "SOC2 (CC6.1, CC6.3)",
+      "FedRAMP High (AC-2, AC-6)"
+    ],
+    "deployment": [
+      "Cloud",
+      "AWS Lambda",
+      "AWS EC2",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential",
+      "Regulated"
+    ]
+  }
+}

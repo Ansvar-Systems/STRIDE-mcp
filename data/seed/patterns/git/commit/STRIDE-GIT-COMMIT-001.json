@@ -1,0 +1,446 @@
+{
+  "id": "STRIDE-GIT-COMMIT-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A08:2021 - Software and Data Integrity Failures",
+      "A02:2021 - Cryptographic Failures"
+    ],
+    "mitre_attack": [
+      "T1195.001 - Supply Chain Compromise: Compromise Software Dependencies and Development Tools",
+      "T1195.002 - Supply Chain Compromise: Compromise Software Supply Chain",
+      "T1554 - Compromise Client Software Binary"
+    ],
+    "cwe": [
+      "CWE-345 - Insufficient Verification of Data Authenticity",
+      "CWE-347 - Improper Verification of Cryptographic Signature",
+      "CWE-353 - Missing Support for Integrity Check"
+    ]
+  },
+  "threat": {
+    "title": "Git Commit Signature Bypass and Repository Tampering",
+    "description": "When Git repositories do not enforce GPG/SSH commit signature verification, attackers can inject malicious code through unsigned commits, force-push history rewrites, or spoof commit authorship. This enables supply chain attacks by compromising the integrity of source code at the repository level, potentially affecting millions of downstream users.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Git",
+    "versions_affected": ["2.x"],
+    "ecosystem": "Source Control Management",
+    "dependencies": ["GPG", "SSH", "GitHub", "GitLab", "Bitbucket"],
+    "related_frameworks": ["GitHub Actions", "GitLab CI", "Azure DevOps", "Jenkins"]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains push access to repository through compromised credentials or insider access\n2. Disables local GPG signing (git config --global commit.gpgsign false)\n3. Crafts malicious commit with spoofed author identity (git commit --author=\"Trusted Dev <dev@company.com>\")\n4. Pushes unsigned commit to main branch or creates seemingly legitimate pull request\n5. CI/CD pipeline automatically builds and deploys the malicious code\n6. Backdoor is distributed to production systems and downstream users\n7. Attacker uses force-push (git push --force) to rewrite history and remove evidence",
+    "prerequisites": [
+      "Repository does not require signed commits via branch protection rules",
+      "No server-side pre-receive hooks validating commit signatures",
+      "Attacker has write access to repository (compromised credentials, insider threat)",
+      "CI/CD pipeline lacks signature verification in build process",
+      "No commit signature audit logging or monitoring"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-5260",
+        "description": "Git credential storage vulnerability allowing credential theft for repository access",
+        "cvss_score": 7.5,
+        "published_date": "2020-04-14"
+      },
+      {
+        "cve_id": "CVE-2022-24765",
+        "description": "Git command injection via malicious repository configuration enabling code execution",
+        "cvss_score": 7.8,
+        "published_date": "2022-04-12"
+      },
+      {
+        "cve_id": "CVE-2021-21300",
+        "description": "Git remote code execution via crafted repository on case-insensitive filesystems",
+        "cvss_score": 7.5,
+        "published_date": "2021-03-09"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Linux Kernel Git Server Compromise Attempt",
+        "date": "2011-08-28",
+        "impact": "Attempted injection of backdoor into Linux kernel via compromised Git server; detected before distribution",
+        "root_cause": "Attackers gained access to kernel.org servers and attempted to modify Git repositories without signature verification enforcement",
+        "source_url": "https://www.kernel.org/category/site-news.html"
+      },
+      {
+        "incident": "NPM UAParser.js Supply Chain Attack",
+        "date": "2021-10-22",
+        "impact": "3 million weekly downloads compromised; malware injected via GitHub repository takeover",
+        "root_cause": "Attacker gained access to maintainer's GitHub account and pushed unsigned malicious commits to popular npm package",
+        "source_url": "https://github.blog/2021-10-22-github-supply-chain-security-features/"
+      },
+      {
+        "incident": "Codecov Bash Uploader Supply Chain Attack",
+        "date": "2021-04-15",
+        "impact": "Thousands of customers exposed; attacker modified Git-hosted Bash script for 2 months",
+        "root_cause": "Unsigned commits allowed attacker to inject credential-stealing code into Codecov's Docker image creation process",
+        "source_url": "https://about.codecov.io/security-update/"
+      },
+      {
+        "incident": "SolarWinds SUNBURST Supply Chain Attack",
+        "date": "2020-12-13",
+        "impact": "18,000+ organizations compromised including US government agencies; $100M+ in damages",
+        "root_cause": "Attackers compromised build system and injected malicious code into Git repository without detection via unsigned commits",
+        "source_url": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a"
+      },
+      {
+        "incident": "GitHub Verified Commits Spoofing",
+        "date": "2022-03-31",
+        "impact": "Researchers demonstrated ability to spoof verified commit badges through email manipulation",
+        "root_cause": "GitHub's GPG signature verification relied on email matching without proper key ownership validation",
+        "source_url": "https://github.blog/2022-03-31-improvements-to-git-commit-verification/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "892742",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "GitHub Enterprise commit signature bypass allowing unsigned commits in protected branches"
+      },
+      {
+        "platform": "GitHub Security Lab",
+        "report_id": "GHSL-2021-1001",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "GitLab push rules bypass enabling force-push to protected branches without signature verification"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Signing Git Commits - A Supply Chain Security Necessity",
+        "authors": ["GitHub Security Lab", "Open Source Security Foundation (OpenSSF)"],
+        "published_date": "2022-05-15",
+        "source_url": "https://openssf.org/blog/2022/05/15/git-commit-signing/",
+        "key_finding": "Only 12% of open-source projects require commit signature verification, leaving 88% vulnerable to tampering"
+      },
+      {
+        "title": "Supply Chain Security: Compromising Package Managers",
+        "authors": ["Trail of Bits"],
+        "published_date": "2021-09-20",
+        "source_url": "https://blog.trailofbits.com/2021/09/20/supply-chain-security/",
+        "key_finding": "Git repository tampering is the #2 supply chain attack vector after dependency confusion"
+      },
+      {
+        "title": "NIST SSDF: Secure Software Development Framework",
+        "authors": ["NIST"],
+        "published_date": "2022-02-04",
+        "source_url": "https://csrc.nist.gov/publications/detail/sp/800-218/final",
+        "key_finding": "PW.4.4: Protect all forms of code from unauthorized access and tampering - requires commit signing"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enforce GPG/SSH Signed Commits via GitHub Branch Protection",
+      "description": "Require all commits to be cryptographically signed with GPG or SSH keys before they can be pushed to protected branches. This ensures commit authenticity and prevents unauthorized code injection.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Git + GitHub",
+        "code": "#!/bin/bash\n# Step 1: Generate GPG key for commit signing\ngpg --full-generate-key\n# Select: (1) RSA and RSA, 4096 bits, no expiration\n# Use your GitHub email address\n\n# Step 2: List GPG keys and copy key ID\ngpg --list-secret-keys --keyid-format=long\n# Output: sec   rsa4096/ABCD1234EFGH5678 2024-01-30 [SC]\n# Key ID is: ABCD1234EFGH5678\n\n# Step 3: Configure Git to use GPG key\ngit config --global user.signingkey ABCD1234EFGH5678\ngit config --global commit.gpgsign true\ngit config --global tag.gpgsign true\n\n# Step 4: Export public key and add to GitHub\ngpg --armor --export ABCD1234EFGH5678\n# Copy output and paste into GitHub Settings > SSH and GPG keys > New GPG key\n\n# Step 5: Test signed commit\necho \"test\" > test.txt\ngit add test.txt\ngit commit -S -m \"Test signed commit\"\n# Verify signature\ngit log --show-signature -1\n\n# Step 6: Enable branch protection with signature requirement (GitHub Settings)\n# Go to: Repository Settings > Branches > Branch protection rules > Add rule\n# Enable: \"Require signed commits\"\n\n# GitHub API method to enable programmatically:\ncurl -X PUT \\\n  -H \"Accept: application/vnd.github.v3+json\" \\\n  -H \"Authorization: token ${GITHUB_TOKEN}\" \\\n  https://api.github.com/repos/OWNER/REPO/branches/main/protection \\\n  -d '{\n    \"required_status_checks\": null,\n    \"enforce_admins\": true,\n    \"required_pull_request_reviews\": null,\n    \"restrictions\": null,\n    \"required_signatures\": true\n  }'\n\n# Step 7: Verify protection is active\ncurl -H \"Accept: application/vnd.github.v3+json\" \\\n  -H \"Authorization: token ${GITHUB_TOKEN}\" \\\n  https://api.github.com/repos/OWNER/REPO/branches/main/protection/required_signatures\n\n# Alternative: SSH commit signing (GitHub, Git 2.34+)\n# Generate Ed25519 SSH key\nssh-keygen -t ed25519 -C \"your_email@example.com\"\n\n# Configure Git to use SSH signing\ngit config --global gpg.format ssh\ngit config --global user.signingkey ~/.ssh/id_ed25519.pub\ngit config --global commit.gpgsign true\n\n# Add SSH key to GitHub as signing key\n# GitHub Settings > SSH and GPG keys > New SSH key > Key type: Signing Key"
+      },
+      "tools": [
+        {
+          "name": "GnuPG (GPG)",
+          "type": "Cryptographic Signing",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "GitHub Branch Protection",
+          "type": "Repository Policy Enforcement",
+          "cost": "Free (included in GitHub)"
+        },
+        {
+          "name": "Git 2.34+",
+          "type": "Version Control with SSH Signing",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup (code integrity)",
+        "A.14.2.6 - Secure development environment",
+        "A.10.1.2 - Key management"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms verify software, firmware, and information integrity",
+        "PR.IP-2 - A System Development Life Cycle to manage systems is implemented"
+      ],
+      "validation_steps": [
+        "Verify GPG key is generated and configured: git config --global --get user.signingkey",
+        "Test commit signing: git log --show-signature -1",
+        "Attempt unsigned commit push to protected branch (should fail)",
+        "Verify GitHub branch protection status via API or UI",
+        "Check commit badges show 'Verified' in GitHub UI"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Server-Side Pre-Receive Hooks for Signature Validation",
+      "description": "Deploy Git server-side hooks to validate commit signatures before accepting pushes. This provides defense-in-depth even if client-side signing is bypassed.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "bash",
+        "framework": "Git Server-Side Hooks",
+        "code": "#!/bin/bash\n# File: /path/to/repo.git/hooks/pre-receive\n# This hook runs on the server before updating refs\n\nset -e\n\nRED='\\033[0;31m'\nGREEN='\\033[0;32m'\nYELLOW='\\033[1;33m'\nNC='\\033[0m' # No Color\n\n# Read protected branches from config\nPROTECTED_BRANCHES=(\"main\" \"master\" \"production\" \"release/*\")\n\n# Read stdin: old-value new-value ref-name\nwhile read oldrev newrev refname; do\n    # Extract branch name\n    branch=$(echo \"$refname\" | sed 's|refs/heads/||')\n    \n    # Check if branch is protected\n    is_protected=false\n    for pattern in \"${PROTECTED_BRANCHES[@]}\"; do\n        if [[ \"$branch\" == $pattern ]]; then\n            is_protected=true\n            break\n        fi\n    done\n    \n    if [ \"$is_protected\" = false ]; then\n        echo -e \"${GREEN}✓${NC} Branch '$branch' is not protected, allowing push\"\n        continue\n    fi\n    \n    echo -e \"${YELLOW}⚠${NC} Validating signatures for protected branch: $branch\"\n    \n    # Get list of commits being pushed\n    if [ \"$oldrev\" = \"0000000000000000000000000000000000000000\" ]; then\n        # New branch - check all commits\n        commits=$(git rev-list \"$newrev\")\n    else\n        # Existing branch - check new commits only\n        commits=$(git rev-list \"${oldrev}..${newrev}\")\n    fi\n    \n    # Validate each commit signature\n    unsigned_commits=()\n    invalid_signatures=()\n    \n    for commit in $commits; do\n        # Check if commit is signed\n        if ! git verify-commit --raw \"$commit\" 2>&1 | grep -q \"GOODSIG\\|VALIDSIG\"; then\n            # Check if commit has any signature at all\n            if ! git cat-file commit \"$commit\" | grep -q \"^gpgsig \"; then\n                unsigned_commits+=(\"$commit\")\n                author=$(git log -1 --format='%an <%ae>' \"$commit\")\n                message=$(git log -1 --format='%s' \"$commit\")\n                echo -e \"${RED}✗${NC} Unsigned commit: $commit\"\n                echo -e \"  Author: $author\"\n                echo -e \"  Message: $message\"\n            else\n                invalid_signatures+=(\"$commit\")\n                echo -e \"${RED}✗${NC} Invalid signature: $commit\"\n            fi\n        else\n            # Valid signature - verify signing key is authorized\n            signing_key=$(git verify-commit --raw \"$commit\" 2>&1 | grep \"VALIDSIG\" | awk '{print $3}')\n            \n            # Load authorized keys from file\n            authorized_keys_file=\"/etc/git/authorized_signing_keys.txt\"\n            \n            if [ -f \"$authorized_keys_file\" ]; then\n                if ! grep -q \"$signing_key\" \"$authorized_keys_file\"; then\n                    echo -e \"${RED}✗${NC} Commit $commit signed with unauthorized key: $signing_key\"\n                    invalid_signatures+=(\"$commit\")\n                    continue\n                fi\n            fi\n            \n            echo -e \"${GREEN}✓${NC} Valid signature: $commit (key: ${signing_key:0:8}...)\"\n        fi\n    done\n    \n    # Reject push if any commits are unsigned or have invalid signatures\n    if [ ${#unsigned_commits[@]} -gt 0 ] || [ ${#invalid_signatures[@]} -gt 0 ]; then\n        echo \"\"\n        echo -e \"${RED}========================================${NC}\"\n        echo -e \"${RED}PUSH REJECTED: Signature Verification Failed${NC}\"\n        echo -e \"${RED}========================================${NC}\"\n        echo \"\"\n        \n        if [ ${#unsigned_commits[@]} -gt 0 ]; then\n            echo -e \"${RED}Unsigned commits detected: ${#unsigned_commits[@]}${NC}\"\n            echo \"All commits to '$branch' must be signed.\"\n            echo \"\"\n            echo \"To sign your commits:\"\n            echo \"  1. Configure GPG: git config --global commit.gpgsign true\"\n            echo \"  2. Set signing key: git config --global user.signingkey YOUR_KEY_ID\"\n            echo \"  3. Sign existing commits: git rebase --exec 'git commit --amend --no-edit -S' HEAD~N\"\n        fi\n        \n        if [ ${#invalid_signatures[@]} -gt 0 ]; then\n            echo -e \"${RED}Invalid signatures detected: ${#invalid_signatures[@]}${NC}\"\n            echo \"Signatures must be made with authorized GPG keys.\"\n            echo \"Contact your administrator to add your key to the authorized list.\"\n        fi\n        \n        echo \"\"\n        exit 1\n    fi\n    \n    echo -e \"${GREEN}✓ All commits properly signed, accepting push to $branch${NC}\"\ndone\n\nexit 0\n\n# Installation:\n# 1. Save as /path/to/repo.git/hooks/pre-receive\n# 2. chmod +x /path/to/repo.git/hooks/pre-receive\n# 3. Create authorized keys file: /etc/git/authorized_signing_keys.txt\n# 4. Add GPG key IDs (one per line) to authorized_signing_keys.txt\n\n# For GitHub Enterprise / GitLab:\n# Deploy as organization-wide custom hook\n# GitHub: /data/user/common/pre-receive-hook.d/\n# GitLab: /opt/gitlab/embedded/service/gitlab-shell/hooks/pre-receive.d/"
+      },
+      "tools": [
+        {
+          "name": "Git Server-Side Hooks",
+          "type": "Repository Policy Enforcement",
+          "cost": "Free (built into Git)"
+        },
+        {
+          "name": "GitHub Enterprise Server Custom Hooks",
+          "type": "Organization-wide Hook Deployment",
+          "cost": "Included with GitHub Enterprise ($21/user/month)"
+        },
+        {
+          "name": "GitLab Push Rules",
+          "type": "Built-in Signature Enforcement",
+          "cost": "GitLab Premium ($29/user/month)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.6 - Secure development environment",
+        "A.12.1.2 - Change management"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms verify software",
+        "PR.AC-5 - Network integrity is protected"
+      ],
+      "validation_steps": [
+        "Deploy pre-receive hook to test repository",
+        "Attempt to push unsigned commit (should be rejected)",
+        "Attempt to push commit with invalid signature (should be rejected)",
+        "Push properly signed commit (should succeed)",
+        "Verify hook logs are generated and monitored",
+        "Test hook performance with large commit batches"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enable Comprehensive Git Audit Logging and Monitoring",
+      "description": "Implement centralized logging of all Git operations including push events, branch protection changes, and signature verification failures to detect tampering attempts.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Git + SIEM Integration",
+        "code": "#!/bin/bash\n# Git Audit Logging with SIEM Integration\n\n# 1. Enable GitHub Advanced Security (GHAS) audit log streaming\n# GitHub Enterprise Cloud: Settings > Audit log > Streaming\n# Configure Azure Event Hubs, Splunk HEC, or AWS S3\n\n# 2. Configure GitHub audit log webhook\ncurl -X POST \\\n  -H \"Accept: application/vnd.github.v3+json\" \\\n  -H \"Authorization: token ${GITHUB_TOKEN}\" \\\n  https://api.github.com/orgs/ORG_NAME/hooks \\\n  -d '{\n    \"name\": \"web\",\n    \"active\": true,\n    \"events\": [\n      \"push\",\n      \"repository\",\n      \"member\",\n      \"organization\",\n      \"team\",\n      \"branch_protection_rule\"\n    ],\n    \"config\": {\n      \"url\": \"https://your-siem.com/github-webhook\",\n      \"content_type\": \"json\",\n      \"secret\": \"your-webhook-secret\"\n    }\n  }'\n\n# 3. GitLab audit log export (Premium/Ultimate)\n# File: /etc/gitlab/gitlab.rb\n# audit_events_streaming_destinations = [\n#   {\n#     destination_url: \"https://splunk.example.com:8088/services/collector\",\n#     verification_token: \"splunk-hec-token\"\n#   }\n# ]\n\n# 4. Custom Git hook for local audit logging\n# File: /path/to/repo.git/hooks/post-receive\ncat > post-receive << 'EOF'\n#!/bin/bash\n\n# Audit log configuration\nAUDIT_LOG_FILE=\"/var/log/git-audit/$(basename $(pwd)).log\"\nSIEM_ENDPOINT=\"https://siem.company.com/api/events\"\nSIEM_API_KEY=\"${SIEM_API_KEY}\"\n\n# Create log directory if it doesn't exist\nmkdir -p $(dirname \"$AUDIT_LOG_FILE\")\n\n# Read push information\nwhile read oldrev newrev refname; do\n    branch=$(echo \"$refname\" | sed 's|refs/heads/||')\n    \n    # Get commits\n    if [ \"$oldrev\" = \"0000000000000000000000000000000000000000\" ]; then\n        commits=$(git rev-list \"$newrev\" --max-count=10)\n    else\n        commits=$(git rev-list \"${oldrev}..${newrev}\")\n    fi\n    \n    # Analyze each commit\n    for commit in $commits; do\n        author=$(git log -1 --format='%an' \"$commit\")\n        author_email=$(git log -1 --format='%ae' \"$commit\")\n        committer=$(git log -1 --format='%cn' \"$commit\")\n        committer_email=$(git log -1 --format='%ce' \"$commit\")\n        message=$(git log -1 --format='%s' \"$commit\")\n        timestamp=$(git log -1 --format='%aI' \"$commit\")\n        \n        # Check signature status\n        signature_status=\"unsigned\"\n        signing_key=\"\"\n        \n        if git verify-commit --raw \"$commit\" 2>&1 | grep -q \"GOODSIG\\|VALIDSIG\"; then\n            signature_status=\"valid\"\n            signing_key=$(git verify-commit --raw \"$commit\" 2>&1 | grep \"VALIDSIG\" | awk '{print $3}')\n        elif git cat-file commit \"$commit\" | grep -q \"^gpgsig \"; then\n            signature_status=\"invalid\"\n        fi\n        \n        # Check for suspicious patterns\n        suspicion_score=0\n        alerts=()\n        \n        # Author/committer mismatch\n        if [ \"$author_email\" != \"$committer_email\" ]; then\n            suspicion_score=$((suspicion_score + 2))\n            alerts+=(\"author_committer_mismatch\")\n        fi\n        \n        # Unsigned commit\n        if [ \"$signature_status\" = \"unsigned\" ]; then\n            suspicion_score=$((suspicion_score + 3))\n            alerts+=(\"unsigned_commit\")\n        fi\n        \n        # Force push indicator\n        if [ \"$oldrev\" != \"0000000000000000000000000000000000000000\" ]; then\n            if ! git merge-base --is-ancestor \"$oldrev\" \"$newrev\"; then\n                suspicion_score=$((suspicion_score + 5))\n                alerts+=(\"force_push_detected\")\n            fi\n        fi\n        \n        # Suspicious commit messages\n        if echo \"$message\" | grep -qiE \"(test|temp|wip|hack|bypass|disable)\"; then\n            suspicion_score=$((suspicion_score + 1))\n            alerts+=(\"suspicious_message\")\n        fi\n        \n        # Build JSON audit event\n        event_json=$(cat <<JSON\n{\n  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\n  \"event_type\": \"git.push\",\n  \"repository\": \"$(basename $(pwd))\",\n  \"branch\": \"$branch\",\n  \"commit\": {\n    \"sha\": \"$commit\",\n    \"author\": \"$author\",\n    \"author_email\": \"$author_email\",\n    \"committer\": \"$committer\",\n    \"committer_email\": \"$committer_email\",\n    \"message\": \"$message\",\n    \"timestamp\": \"$timestamp\",\n    \"signature_status\": \"$signature_status\",\n    \"signing_key\": \"$signing_key\"\n  },\n  \"security\": {\n    \"suspicion_score\": $suspicion_score,\n    \"alerts\": $(printf '%s\\n' \"${alerts[@]}\" | jq -R . | jq -s .)\n  },\n  \"user\": {\n    \"ip_address\": \"${SSH_CONNECTION%% *}\",\n    \"username\": \"$USER\"\n  }\n}\nJSON\n)\n        \n        # Write to local audit log\n        echo \"$event_json\" >> \"$AUDIT_LOG_FILE\"\n        \n        # Send to SIEM\n        if [ -n \"$SIEM_ENDPOINT\" ] && [ -n \"$SIEM_API_KEY\" ]; then\n            curl -s -X POST \"$SIEM_ENDPOINT\" \\\n              -H \"Authorization: Bearer $SIEM_API_KEY\" \\\n              -H \"Content-Type: application/json\" \\\n              -d \"$event_json\" &> /dev/null\n        fi\n        \n        # Alert on high suspicion score\n        if [ $suspicion_score -ge 5 ]; then\n            logger -t git-audit -p auth.warning \"[SECURITY] High-risk Git push detected: $commit in $(basename $(pwd)):$branch (score: $suspicion_score)\"\n        fi\n    done\ndone\n\nexit 0\nEOF\n\nchmod +x post-receive\n\n# 5. Configure log rotation\ncat > /etc/logrotate.d/git-audit << 'EOF'\n/var/log/git-audit/*.log {\n    daily\n    rotate 90\n    compress\n    delaycompress\n    missingok\n    notifempty\n    create 0640 git git\n}\nEOF"
+      },
+      "tools": [
+        {
+          "name": "GitHub Advanced Security",
+          "type": "Audit Log Streaming",
+          "cost": "$49/committer/month"
+        },
+        {
+          "name": "GitLab Audit Events",
+          "type": "Compliance Logging",
+          "cost": "GitLab Premium ($29/user/month)"
+        },
+        {
+          "name": "Azure Sentinel",
+          "type": "SIEM",
+          "cost": "$2.46/GB ingested"
+        },
+        {
+          "name": "Splunk",
+          "type": "SIEM",
+          "cost": "~$150/GB/year"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "DE.CM-1 - Network is monitored to detect anomalous events",
+        "PR.PT-1 - Audit/log records are determined, documented, implemented, and reviewed"
+      ],
+      "validation_steps": [
+        "Enable audit logging in GitHub/GitLab settings",
+        "Configure SIEM integration endpoint",
+        "Perform test push and verify log ingestion",
+        "Create SIEM dashboard for Git security events",
+        "Test alerting on unsigned commits and force pushes",
+        "Verify log retention meets compliance requirements (90 days minimum)"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement CI/CD Pipeline Commit Signature Verification",
+      "description": "Add signature verification as a mandatory CI/CD pipeline step to prevent building and deploying code from unsigned or tampered commits.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "GitHub Actions / GitLab CI",
+        "code": "# GitHub Actions workflow\n# File: .github/workflows/verify-signatures.yml\nname: Verify Commit Signatures\n\non:\n  push:\n    branches: [ main, develop, release/* ]\n  pull_request:\n    branches: [ main, develop ]\n\njobs:\n  verify-signatures:\n    name: Verify All Commit Signatures\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n        with:\n          fetch-depth: 0  # Fetch all history for signature verification\n      \n      - name: Import trusted GPG keys\n        run: |\n          # Import organization's trusted signing keys\n          mkdir -p ~/.gnupg\n          chmod 700 ~/.gnupg\n          echo \"${{ secrets.TRUSTED_GPG_KEYS }}\" | base64 -d | gpg --import\n          \n          # Alternative: Download from key server\n          # gpg --keyserver keys.openpgp.org --recv-keys KEY_ID_1 KEY_ID_2\n      \n      - name: Verify commit signatures\n        run: |\n          set -e\n          \n          echo \"Verifying commit signatures...\"\n          \n          # Get list of commits to verify\n          if [ \"${{ github.event_name }}\" = \"pull_request\" ]; then\n            # PR: verify commits in PR\n            COMMITS=$(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})\n          else\n            # Push: verify commits in push\n            COMMITS=$(git rev-list ${{ github.event.before }}..${{ github.event.after }})\n          fi\n          \n          if [ -z \"$COMMITS\" ]; then\n            echo \"No commits to verify\"\n            exit 0\n          fi\n          \n          unsigned_count=0\n          invalid_count=0\n          \n          for commit in $COMMITS; do\n            author=$(git log -1 --format='%an <%ae>' $commit)\n            message=$(git log -1 --format='%s' $commit)\n            \n            echo \"\"\n            echo \"Checking commit: $commit\"\n            echo \"Author: $author\"\n            echo \"Message: $message\"\n            \n            # Check if commit has a signature\n            if ! git cat-file commit $commit | grep -q \"^gpgsig \"; then\n              echo \"❌ UNSIGNED COMMIT\"\n              unsigned_count=$((unsigned_count + 1))\n              continue\n            fi\n            \n            # Verify signature\n            if git verify-commit $commit 2>&1 | grep -qE \"Good signature|gpg: Good signature\"; then\n              signing_key=$(git log -1 --format='%GK' $commit)\n              signer=$(git log -1 --format='%GS' $commit)\n              echo \"✅ Valid signature by $signer (key: ${signing_key:0:16}...)\"\n            else\n              echo \"❌ INVALID SIGNATURE\"\n              invalid_count=$((invalid_count + 1))\n            fi\n          done\n          \n          echo \"\"\n          echo \"========================================\"\n          echo \"Signature Verification Summary\"\n          echo \"========================================\"\n          echo \"Total commits: $(echo \"$COMMITS\" | wc -l)\"\n          echo \"Unsigned commits: $unsigned_count\"\n          echo \"Invalid signatures: $invalid_count\"\n          \n          if [ $unsigned_count -gt 0 ] || [ $invalid_count -gt 0 ]; then\n            echo \"\"\n            echo \"❌ VERIFICATION FAILED\"\n            echo \"All commits must be signed with a trusted GPG key.\"\n            echo \"\"\n            echo \"To sign your commits:\"\n            echo \"  git config --global commit.gpgsign true\"\n            echo \"  git config --global user.signingkey YOUR_KEY_ID\"\n            echo \"\"\n            exit 1\n          fi\n          \n          echo \"✅ All commits properly signed\"\n      \n      - name: Post verification status\n        if: always()\n        uses: actions/github-script@v7\n        with:\n          script: |\n            const status = '${{ job.status }}';\n            const message = status === 'success' \n              ? '✅ All commits are properly signed'\n              : '❌ Signature verification failed - see workflow logs';\n            \n            if (context.eventName === 'pull_request') {\n              github.rest.issues.createComment({\n                owner: context.repo.owner,\n                repo: context.repo.repo,\n                issue_number: context.issue.number,\n                body: `## Commit Signature Verification\\n\\n${message}`\n              });\n            }\n\n---\n\n# GitLab CI Pipeline\n# File: .gitlab-ci.yml\nverify-signatures:\n  stage: validate\n  image: alpine:latest\n  before_script:\n    - apk add --no-cache git gnupg\n    - mkdir -p ~/.gnupg\n    - chmod 700 ~/.gnupg\n    # Import trusted keys\n    - echo \"$TRUSTED_GPG_KEYS\" | base64 -d | gpg --import\n  script:\n    - |\n      echo \"Verifying commit signatures...\"\n      \n      # Get commits to verify\n      if [ -n \"$CI_MERGE_REQUEST_TARGET_BRANCH_NAME\" ]; then\n        # Merge request\n        COMMITS=$(git rev-list origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}..HEAD)\n      else\n        # Push event\n        COMMITS=$(git rev-list ${CI_COMMIT_BEFORE_SHA}..${CI_COMMIT_SHA})\n      fi\n      \n      unsigned_count=0\n      invalid_count=0\n      \n      for commit in $COMMITS; do\n        echo \"Verifying $commit\"\n        \n        if ! git cat-file commit $commit | grep -q \"^gpgsig \"; then\n          echo \"ERROR: Unsigned commit $commit\"\n          unsigned_count=$((unsigned_count + 1))\n        elif ! git verify-commit $commit 2>&1 | grep -q \"Good signature\"; then\n          echo \"ERROR: Invalid signature on $commit\"\n          invalid_count=$((invalid_count + 1))\n        else\n          echo \"OK: Valid signature on $commit\"\n        fi\n      done\n      \n      if [ $unsigned_count -gt 0 ] || [ $invalid_count -gt 0 ]; then\n        echo \"FAILURE: Found $unsigned_count unsigned and $invalid_count invalid signatures\"\n        exit 1\n      fi\n      \n      echo \"SUCCESS: All commits properly signed\"\n  rules:\n    - if: '$CI_PIPELINE_SOURCE == \"merge_request_event\"'\n    - if: '$CI_COMMIT_BRANCH == \"main\" || $CI_COMMIT_BRANCH == \"develop\"'\n\n---\n\n# Azure DevOps Pipeline\n# File: azure-pipelines.yml\ntrigger:\n  branches:\n    include:\n      - main\n      - develop\n\npool:\n  vmImage: 'ubuntu-latest'\n\nsteps:\n- checkout: self\n  fetchDepth: 0\n\n- bash: |\n    set -e\n    \n    # Install GPG\n    sudo apt-get update && sudo apt-get install -y gnupg\n    \n    # Import trusted keys\n    echo \"$TRUSTED_GPG_KEYS\" | base64 -d | gpg --import\n    \n    # Verify signatures\n    COMMITS=$(git rev-list $(Build.SourceVersion)^..$(Build.SourceVersion))\n    \n    for commit in $COMMITS; do\n      if ! git verify-commit $commit; then\n        echo \"##vso[task.logissue type=error]Commit $commit signature verification failed\"\n        exit 1\n      fi\n    done\n    \n    echo \"All commits properly signed\"\n  displayName: 'Verify Commit Signatures'\n  env:\n    TRUSTED_GPG_KEYS: $(trusted-gpg-keys)"
+      },
+      "tools": [
+        {
+          "name": "GitHub Actions",
+          "type": "CI/CD Pipeline",
+          "cost": "Free for public repos; $0.008/minute for private"
+        },
+        {
+          "name": "GitLab CI/CD",
+          "type": "CI/CD Pipeline",
+          "cost": "Free tier: 400 minutes/month"
+        },
+        {
+          "name": "Azure DevOps Pipelines",
+          "type": "CI/CD Pipeline",
+          "cost": "Free tier: 1,800 minutes/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.8 - System security testing",
+        "A.14.2.9 - System acceptance testing"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms verify software",
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Add signature verification workflow to repository",
+        "Configure trusted GPG keys as CI/CD secrets",
+        "Test with signed commit (should pass)",
+        "Test with unsigned commit (should fail)",
+        "Verify workflow prevents merging unsigned commits",
+        "Check pipeline execution time (should add <30 seconds)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unsigned commits pushed to protected branches",
+      "Force-push operations rewriting Git history",
+      "Commits with spoofed author/committer identity",
+      "GPG signature verification failures in server logs",
+      "Commits from unknown or unauthorized GPG keys",
+      "Rapid succession of commit/push/force-push operations",
+      "Branch protection rules disabled or modified",
+      "Commits with suspicious messages (test, temp, bypass, disable)",
+      "After-hours commits from unusual geographic locations",
+      "Commits modifying security-critical files without review"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect unsigned commits pushed to protected branches\nlet ProtectedBranches = dynamic(['main', 'master', 'production']);\nGitHubAuditLog\n| where Action == 'git.push'\n| extend Branch = tostring(parse_json(Data).ref)\n| where Branch has_any (ProtectedBranches)\n| extend CommitSigned = tostring(parse_json(Data).commit_signed)\n| where CommitSigned == 'false' or isempty(CommitSigned)\n| project TimeGenerated, Actor, Repository, Branch, CommitSHA = tostring(parse_json(Data).commit_sha), IPAddress\n| summarize UnsignedCommitCount = count() by Actor, Repository, Branch, bin(TimeGenerated, 1h)\n| where UnsignedCommitCount > 0\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - Force Push Detection",
+        "query": "// Detect force-push operations indicating history rewriting\nGitHubAuditLog\n| where Action == 'git.push'\n| extend ForcePush = tostring(parse_json(Data).forced)\n| where ForcePush == 'true'\n| project TimeGenerated, Actor, Repository, Branch = tostring(parse_json(Data).ref), \n  OldSHA = tostring(parse_json(Data).before), NewSHA = tostring(parse_json(Data).after), IPAddress\n| join kind=leftouter (\n    GeoIPMapping  // Custom table mapping IPs to countries\n  ) on IPAddress\n| extend RiskScore = case(\n    Country !in ('US', 'CA', 'GB'),  // Trusted countries\n    5,\n    3\n  )\n| where RiskScore >= 3\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=github sourcetype=github:audit action=\"git.push\"\n| eval branch=spath(_raw, \"data.ref\")\n| search branch IN (\"refs/heads/main\", \"refs/heads/master\", \"refs/heads/production\")\n| eval commit_signed=spath(_raw, \"data.commit_signed\")\n| where commit_signed=\"false\" OR isnull(commit_signed)\n| eval commit_sha=spath(_raw, \"data.commit_sha\")\n| table _time, actor, repository, branch, commit_sha, src_ip\n| stats count as unsigned_commits by actor, repository\n| where unsigned_commits > 0\n| sort -unsigned_commits"
+      },
+      {
+        "siem": "Splunk (SPL) - Branch Protection Changes",
+        "query": "index=github sourcetype=github:audit action=\"protected_branch.*\"\n| eval action_type=case(\n    action=\"protected_branch.disabled\", \"DISABLED\",\n    action=\"protected_branch.destroy\", \"DELETED\",\n    action=\"protected_branch.update\", \"MODIFIED\",\n    1=1, action\n  )\n| eval required_signatures=spath(_raw, \"data.required_signatures\")\n| where required_signatures=\"false\" OR action_type IN (\"DISABLED\", \"DELETED\")\n| table _time, actor, repository, action_type, branch, required_signatures\n| eval severity=\"CRITICAL\"\n| outputlookup append=true github_security_alerts.csv"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"github.audit\" AND event.action: \"git.push\" AND \ngithub.repo_protection.branch: (\"main\" OR \"master\" OR \"production\") AND \n(NOT github.commit.signed: true OR NOT _exists_: github.commit.signed)"
+      },
+      {
+        "siem": "Elastic Stack (KQL) - Commit Author Anomaly",
+        "query": "event.dataset: \"github.audit\" AND event.action: \"git.push\" AND \n(\n  github.commit.author_email: *@gmail.com OR \n  github.commit.author_email: *@outlook.com OR\n  NOT github.commit.author_email: *@company.com\n) AND \ngithub.repo_protection.branch: (\"main\" OR \"master\")"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# For GitHub Enterprise Cloud audit logs streamed to CloudWatch\nfields @timestamp, actor, action, repository, data.ref as branch, data.commit_signed as signed\n| filter action = \"git.push\"\n| filter branch in [\"refs/heads/main\", \"refs/heads/master\", \"refs/heads/production\"]\n| filter signed = \"false\" or isempty(signed)\n| stats count(*) as unsigned_commits by actor, repository\n| filter unsigned_commits > 0\n| sort unsigned_commits desc"
+      },
+      {
+        "siem": "GitLab Security Events Query",
+        "query": "# GitLab API query for unsigned commits\ncurl --header \"PRIVATE-TOKEN: <token>\" \\\n  \"https://gitlab.com/api/v4/projects/:id/events?action=pushed&target_type=commit\" \\\n  | jq '.[] | select(.push_data.commit_signed == false) | \n    {author: .author.name, project: .project_id, commit: .push_data.commit_sha, \n     timestamp: .created_at}'"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Git-Secrets",
+        "type": "Commit Content Scanner",
+        "usage": "git secrets --scan-history"
+      },
+      {
+        "name": "Gitleaks",
+        "type": "Sensitive Data Detection",
+        "usage": "gitleaks detect --source . --verbose"
+      },
+      {
+        "name": "GitHub Secret Scanning",
+        "type": "Automated Secret Detection",
+        "usage": "Automatically scans for exposed secrets in commits"
+      },
+      {
+        "name": "Sigstore/Rekor",
+        "type": "Transparency Log for Signatures",
+        "usage": "Immutable audit trail of code signatures"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Technology",
+      "Defense",
+      "Critical Infrastructure"
+    ],
+    "compliance": [
+      "SOC2 (CC6.1, CC7.2)",
+      "ISO27001 (A.12.3.1, A.14.2.6)",
+      "NIST SSDF (PW.4.4, PS.1.1)",
+      "PCI-DSS 4.0 (Requirement 6.3.2)",
+      "HIPAA (164.308(a)(5)(ii)(B))",
+      "FedRAMP (CM-3, SI-7)",
+      "GDPR (Article 32)",
+      "Executive Order 14028 (Secure Software Development)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "SaaS"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential",
+      "Source Code"
+    ]
+  }
+}

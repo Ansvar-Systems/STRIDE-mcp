@@ -1,0 +1,343 @@
+{
+  "id": "STRIDE-AUTH-SAML-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A02:2021 - Cryptographic Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1556.006 - Modify Authentication Process: Multi-Factor Authentication",
+      "T1550.001 - Use Alternate Authentication Material: Application Access Token",
+      "T1078.004 - Valid Accounts: Cloud Accounts"
+    ],
+    "cwe": [
+      "CWE-347 - Improper Verification of Cryptographic Signature",
+      "CWE-290 - Authentication Bypass by Spoofing",
+      "CWE-91 - XML Injection"
+    ]
+  },
+  "threat": {
+    "title": "SAML Response Manipulation via XML Signature Wrapping in Spring Boot and ASP.NET Core",
+    "description": "XML Signature Wrapping (XSW) attacks allow attackers to manipulate SAML assertions while maintaining valid XML signatures, enabling authentication bypass and privilege escalation. By carefully crafting a SAML response with duplicate assertions or injecting unsigned content, attackers can impersonate any user, including administrators, in enterprise SSO implementations. This vulnerability exploits the semantic gap between XML signature validation and application business logic processing.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Spring Boot / ASP.NET Core",
+    "versions_affected": [
+      "Spring Security 5.2.x prior to 5.2.4",
+      "Spring Security 5.3.x prior to 5.3.2",
+      "ASP.NET Core 2.x - 10.x",
+      ".NET Framework 4.x with WIF/WCF"
+    ],
+    "ecosystem": "Enterprise SSO / Identity Management",
+    "dependencies": [
+      "spring-security-saml2-service-provider",
+      "Sustainsys.Saml2",
+      "ComponentSpace.Saml2",
+      "Microsoft.AspNetCore.Authentication.WsFederation"
+    ],
+    "related_frameworks": [
+      "Okta",
+      "Azure AD",
+      "OneLogin",
+      "Auth0",
+      "Keycloak"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker authenticates with valid low-privilege credentials to the Identity Provider (IdP)\n2. Intercepts legitimate SAML response using browser proxy (Burp Suite, OWASP ZAP)\n3. Crafts malicious SAML assertion with administrative privileges while preserving original signed assertion\n4. Wraps unsigned assertion around signed content, exploiting XML parser ambiguity\n5. Replays modified SAML response to Service Provider (SP), bypassing signature validation\n6. Gains unauthorized administrative access, exfiltrates sensitive data, or modifies critical business logic",
+    "prerequisites": [
+      "SAML-based SSO authentication enabled",
+      "Application validates XML signature but processes different assertion tree",
+      "Weak or missing reference validation in SAML response processing",
+      "No additional integrity checks (e.g., assertion ID binding, timestamp validation)",
+      "Attacker has valid credentials or can intercept SAML traffic"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-6800",
+        "description": "XML signature wrapping vulnerability in GitHub Enterprise Server SAML authentication allowing unauthorized access without prior authentication",
+        "cvss_score": 9.8,
+        "published_date": "2024-08-12",
+        "affected_versions": "GitHub Enterprise Server prior to 3.14, fixed in 3.13.3, 3.12.8, 3.11.14, 3.10.16"
+      },
+      {
+        "cve_id": "CVE-2024-45409",
+        "description": "Ruby-SAML XML signature wrapping attack allowing bypass of SAML authentication and unauthorized access by exploiting digital signature verification flaws",
+        "cvss_score": 9.8,
+        "published_date": "2024-09-10",
+        "affected_versions": "ruby-saml prior to 1.18.0"
+      },
+      {
+        "cve_id": "CVE-2020-5407",
+        "description": "Spring Security SAML2 service provider signature wrapping vulnerability allowing malicious users to modify valid SAML responses and append arbitrary assertions",
+        "cvss_score": 8.8,
+        "published_date": "2020-05-13",
+        "affected_versions": "Spring Security 5.2.x prior to 5.2.4, 5.3.x prior to 5.3.2"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Azure Active Directory SAML Persistence Flaw",
+        "date": "2022-08-04",
+        "impact": "Attackers could retain access to SAML applications after user assignment removal, enabling persistent unauthorized access",
+        "root_cause": "Vulnerability in Azure AD SAML token generation allowed users to maintain access after permissions revoked",
+        "source_url": "https://secureworks.com/research/azure-active-directory-flaw-allowed-saml-persistence"
+      },
+      {
+        "incident": "FME Flow SAML Authentication Bypass (CVE-2023-50260)",
+        "date": "2023-12-15",
+        "impact": "Critical CVSS 9.0 vulnerability allowing unauthenticated attackers to bypass authentication and generate REST API tokens for Azure AD and SAML accounts",
+        "root_cause": "Authentication flaw in FME Server 2021.2-2022.2 and FME Flow 2023.0 with imported Azure AD/SAML accounts",
+        "source_url": "https://support.safe.com/hc/en-us/articles/25407469494413"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "812064",
+        "bounty_amount": 7500,
+        "severity": "Critical",
+        "summary": "Rocket.Chat SAML authentication bypass via XML signature wrapping"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Every Signature is Broken: On the Insecurity of Microsoft Office's OOXML Signatures",
+        "authors": ["Simon Rohlmann", "Vladislav Mladenov", "Christian Mainka", "Daniel Hirschberger", "Jörg Schwenk"],
+        "published_date": "2023-08-09",
+        "source_url": "https://www.usenix.org/conference/usenixsecurity23/presentation/rohlmann",
+        "key_finding": "Universal signature forgery attacks demonstrating XML signature wrapping vulnerabilities persist across modern implementations, including SAML tokens"
+      },
+      {
+        "title": "Ruby-SAML Pwned by XML Signature Wrapping Attacks",
+        "authors": ["SSOReady Research Team"],
+        "published_date": "2024-09-11",
+        "source_url": "https://ssoready.com/blog/engineering/ruby-saml-pwned-by-xml-signature-wrapping-attacks/",
+        "key_finding": "Detailed analysis of CVE-2024-45409 demonstrating how XML canonicalization and signature validation gaps enable authentication bypass"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Strict XML Schema Validation with Reference Checking",
+      "description": "Enforce strict XML schema validation ensuring the signed reference ID matches the processed assertion ID. Use hardened SAML libraries that validate the entire signature reference chain and prevent XML structure manipulation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x with Spring Security 6.x",
+        "code": "import org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;\nimport org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;\nimport org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;\nimport org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;\nimport org.springframework.security.saml2.core.Saml2ResponseValidatorResult;\nimport org.springframework.security.web.SecurityFilterChain;\nimport org.opensaml.saml.saml2.core.Response;\nimport org.opensaml.xmlsec.signature.support.SignatureValidator;\nimport java.util.function.Consumer;\n\n@Configuration\npublic class Saml2SecurityConfig {\n\n    @Bean\n    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {\n        OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();\n        \n        // Custom response validator with strict reference checking\n        authenticationProvider.setResponseValidator(customSamlResponseValidator());\n        \n        // Custom assertion validator\n        authenticationProvider.setAssertionValidator(customAssertionValidator());\n        \n        http\n            .authorizeHttpRequests(authorize -> authorize\n                .requestMatchers(\"/public/**\").permitAll()\n                .anyRequest().authenticated()\n            )\n            .saml2Login(saml2 -> saml2\n                .authenticationManager(new ProviderManager(authenticationProvider))\n            )\n            .saml2Logout(Customizer.withDefaults());\n        \n        return http.build();\n    }\n\n    private Consumer<OpenSaml4AuthenticationProvider.ResponseToken> customSamlResponseValidator() {\n        return responseToken -> {\n            Response response = responseToken.getResponse();\n            \n            // 1. Validate signature reference IDs match assertion IDs\n            if (response.getSignature() != null) {\n                List<String> signedReferences = extractSignedReferenceIds(response);\n                List<String> assertionIds = response.getAssertions().stream()\n                    .map(Assertion::getID)\n                    .collect(Collectors.toList());\n                \n                // Ensure all assertions are explicitly signed\n                if (!signedReferences.containsAll(assertionIds)) {\n                    throw new Saml2AuthenticationException(\n                        new Saml2Error(\"invalid_signature\", \"Unsigned assertions detected\")\n                    );\n                }\n            }\n            \n            // 2. Reject responses with duplicate assertion IDs\n            Set<String> uniqueIds = new HashSet<>();\n            for (Assertion assertion : response.getAssertions()) {\n                if (!uniqueIds.add(assertion.getID())) {\n                    throw new Saml2AuthenticationException(\n                        new Saml2Error(\"duplicate_assertion\", \"Duplicate assertion ID detected\")\n                    );\n                }\n            }\n            \n            // 3. Validate single assertion per response (prevent wrapping)\n            if (response.getAssertions().size() != 1) {\n                throw new Saml2AuthenticationException(\n                    new Saml2Error(\"invalid_assertion_count\", \n                        \"Expected exactly one assertion, found: \" + response.getAssertions().size())\n                );\n            }\n        };\n    }\n\n    private Consumer<OpenSaml4AuthenticationProvider.AssertionToken> customAssertionValidator() {\n        return assertionToken -> {\n            Assertion assertion = assertionToken.getAssertion();\n            \n            // 1. Verify assertion is signed (not just response)\n            if (assertion.getSignature() == null) {\n                throw new Saml2AuthenticationException(\n                    new Saml2Error(\"unsigned_assertion\", \"Assertion must be signed\")\n                );\n            }\n            \n            // 2. Strict timestamp validation with maximum skew of 60 seconds\n            Instant now = Instant.now();\n            Instant notBefore = assertion.getConditions().getNotBefore();\n            Instant notOnOrAfter = assertion.getConditions().getNotOnOrAfter();\n            \n            if (now.isBefore(notBefore.minusSeconds(60)) || now.isAfter(notOnOrAfter)) {\n                throw new Saml2AuthenticationException(\n                    new Saml2Error(\"expired_assertion\", \"Assertion timestamp invalid\")\n                );\n            }\n            \n            // 3. Validate Audience restriction\n            String expectedAudience = \"https://your-app.example.com/saml/metadata\";\n            boolean validAudience = assertion.getConditions().getAudienceRestrictions().stream()\n                .flatMap(ar -> ar.getAudiences().stream())\n                .anyMatch(audience -> expectedAudience.equals(audience.getURI()));\n            \n            if (!validAudience) {\n                throw new Saml2AuthenticationException(\n                    new Saml2Error(\"invalid_audience\", \"Assertion audience mismatch\")\n                );\n            }\n        };\n    }\n\n    private List<String> extractSignedReferenceIds(Response response) {\n        // Extract reference URIs from XML signature\n        if (response.getSignature() == null) {\n            return Collections.emptyList();\n        }\n        \n        return response.getSignature().getKeyInfo().getReferences().stream()\n            .map(ref -> ref.getURI().substring(1)) // Remove leading #\n            .collect(Collectors.toList());\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Spring Security SAML 6.x",
+          "type": "SAML Service Provider Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "OpenSAML 4.x",
+          "type": "SAML Processing Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.DS-2 - Data-in-transit is protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Verify assertion signature is validated independently from response signature",
+        "Test with modified SAML assertion to confirm rejection",
+        "Validate single assertion enforcement",
+        "Check reference ID matching between signature and assertions",
+        "Test timestamp validation with expired assertions"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Configure ASP.NET Core with Hardened SAML Signature Validation",
+      "description": "Implement comprehensive SAML signature validation in ASP.NET Core using Sustainsys.Saml2 or ComponentSpace libraries with strict XML canonicalization and assertion binding validation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "csharp",
+        "framework": "ASP.NET Core 8.0",
+        "code": "using Microsoft.AspNetCore.Authentication;\nimport Microsoft.AspNetCore.Authentication.Cookies;\nimport Sustainsys.Saml2;\nimport Sustainsys.Saml2.AspNetCore2;\nimport Sustainsys.Saml2.Configuration;\nimport Sustainsys.Saml2.Metadata;\nimport Sustainsys.Saml2.WebSso;\nimport System.Security.Cryptography.X509Certificates;\n\npublic class Startup\n{\n    public void ConfigureServices(IServiceCollection services)\n    {\n        services.AddAuthentication(options =>\n        {\n            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;\n            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;\n            options.DefaultChallengeScheme = Saml2Defaults.Scheme;\n        })\n        .AddCookie()\n        .AddSaml2(options =>\n        {\n            // Service Provider configuration\n            options.SPOptions.EntityId = new EntityId(\"https://your-app.example.com/saml\");\n            options.SPOptions.ReturnUrl = new Uri(\"https://your-app.example.com/\");\n            \n            // CRITICAL: Enable strict signature validation\n            options.SPOptions.MinIncomingSigningAlgorithm = \"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256\";\n            options.SPOptions.ValidateCertificates = true;\n            \n            // Reject unsigned assertions\n            options.SPOptions.AuthenticationRequestSigningBehavior = SigningBehavior.Always;\n            \n            // Configure Identity Provider\n            var idp = new IdentityProvider(\n                new EntityId(\"https://idp.example.com/metadata\"),\n                options.SPOptions)\n            {\n                MetadataLocation = \"https://idp.example.com/metadata.xml\",\n                \n                // CRITICAL: Require signed assertions, not just signed responses\n                WantAssertionsSigned = true,\n                \n                // Load IdP certificate for signature validation\n                SigningKeys =\n                {\n                    new X509Certificate2(\"idp-signing-cert.crt\")\n                },\n                \n                // Strict binding validation\n                Binding = Saml2BindingType.HttpPost,\n                \n                // Disable insecure artifact binding\n                AllowUnsolicitedAuthnResponse = false\n            };\n            \n            options.IdentityProviders.Add(idp);\n            \n            // Custom SAML response validation\n            options.Notifications.AcsCommandResultCreated = (commandResult, response) =>\n            {\n                ValidateSamlResponse(response);\n            };\n        });\n    }\n\n    private void ValidateSamlResponse(Saml2Response response)\n    {\n        // 1. Ensure exactly one assertion (prevent XML wrapping)\n        if (response.Saml2Response.GetAssertions().Count() != 1)\n        {\n            throw new SecurityException(\n                $\"Expected exactly one assertion, found {response.Saml2Response.GetAssertions().Count()}\");\n        }\n\n        var assertion = response.Saml2Response.GetAssertions().Single();\n\n        // 2. Verify assertion is signed (not relying only on response signature)\n        if (assertion.Signature == null)\n        {\n            throw new SecurityException(\"Assertion must be individually signed\");\n        }\n\n        // 3. Validate assertion ID is referenced in signature\n        var signatureReferences = assertion.Signature.SignedInfo.References\n            .Cast<System.Security.Cryptography.Xml.Reference>()\n            .Select(r => r.Uri.TrimStart('#'))\n            .ToList();\n\n        if (!signatureReferences.Contains(assertion.Id.Value))\n        {\n            throw new SecurityException(\n                \"Assertion ID not found in signature references - possible XML wrapping attack\");\n        }\n\n        // 4. Strict timestamp validation (5-minute clock skew)\n        var now = DateTime.UtcNow;\n        var notBefore = assertion.Conditions.NotBefore ?? DateTime.MinValue;\n        var notOnOrAfter = assertion.Conditions.NotOnOrAfter ?? DateTime.MaxValue;\n        var maxClockSkew = TimeSpan.FromMinutes(5);\n\n        if (now < notBefore.Subtract(maxClockSkew) || now >= notOnOrAfter.Add(maxClockSkew))\n        {\n            throw new SecurityException(\n                $\"Assertion expired or not yet valid. NotBefore: {notBefore}, NotOnOrAfter: {notOnOrAfter}, Now: {now}\");\n        }\n\n        // 5. Validate SubjectConfirmation has InResponseTo matching request ID\n        var subjectConfirmation = assertion.Subject.SubjectConfirmations.FirstOrDefault();\n        if (subjectConfirmation?.SubjectConfirmationData?.InResponseTo == null)\n        {\n            throw new SecurityException(\"Missing InResponseTo in SubjectConfirmation\");\n        }\n\n        // 6. Verify no duplicate NameID or attributes (anomaly detection)\n        var attributeNames = assertion.AttributeStatements\n            .SelectMany(stmt => stmt.Attributes)\n            .Select(attr => attr.Name)\n            .ToList();\n\n        if (attributeNames.Count != attributeNames.Distinct().Count())\n        {\n            throw new SecurityException(\"Duplicate attributes detected - possible injection attack\");\n        }\n    }\n\n    public void Configure(IApplicationBuilder app)\n    {\n        app.UseAuthentication();\n        app.UseAuthorization();\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Sustainsys.Saml2",
+          "type": "SAML2 Library for ASP.NET",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "ComponentSpace.Saml2",
+          "type": "Commercial SAML Library",
+          "cost": "$799/developer license"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.DS-5 - Protections against data leaks",
+        "DE.AE-2 - Detected events are analyzed"
+      ],
+      "validation_steps": [
+        "Install Sustainsys.Saml2 NuGet package (v2.x or later)",
+        "Configure WantAssertionsSigned = true in IdP settings",
+        "Test with tampered SAML response to verify rejection",
+        "Validate InResponseTo binding with request ID",
+        "Enable application insights for SAML validation failures"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Runtime SAML Response Monitoring and Anomaly Detection",
+      "description": "Implement comprehensive logging and monitoring of SAML authentication events with anomaly detection for suspicious patterns including duplicate assertions, mismatched timestamps, privilege escalations, and geographic anomalies.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Azure Sentinel / Log Analytics",
+        "code": "# Azure Sentinel KQL Query for SAML Authentication Anomalies\n\n# Query 1: Detect Multiple Assertions in SAML Response (XML Wrapping Indicator)\nlet samlLogs = AppLogs\n| where OperationName == \"SAML_Authentication\"\n| extend AssertionCount = toint(Properties.AssertionCount)\n| extend Username = tostring(Properties.Username)\n| extend SourceIP = tostring(Properties.ClientIP);\n\nsamlLogs\n| where AssertionCount > 1\n| summarize Count = count(), IPs = make_set(SourceIP) by Username, bin(TimeGenerated, 5m)\n| where Count > 3\n| project TimeGenerated, Username, AssertionCount, IPs, Severity = \"High\"\n| extend AlertDescription = strcat(\"Potential XML wrapping attack: User \", Username, \" with multiple assertions\")\n\n# Query 2: Detect Privilege Escalation via SAML\nlet baselineRoles = AppLogs\n| where TimeGenerated > ago(30d)\n| where OperationName == \"SAML_Authentication\"\n| extend Username = tostring(Properties.Username)\n| extend Roles = parse_json(Properties.Roles)\n| summarize PreviousRoles = make_set(Roles) by Username;\n\nAppLogs\n| where TimeGenerated > ago(1h)\n| where OperationName == \"SAML_Authentication\"\n| extend Username = tostring(Properties.Username)\n| extend CurrentRoles = parse_json(Properties.Roles)\n| join kind=inner (baselineRoles) on Username\n| where CurrentRoles has \"admin\" and not(PreviousRoles has \"admin\")\n| project TimeGenerated, Username, PreviousRoles, CurrentRoles, IPAddress = Properties.ClientIP\n| extend Severity = \"Critical\", AlertType = \"SAML Privilege Escalation\"\n\n# Query 3: Detect Timestamp Manipulation\nAppLogs\n| where OperationName == \"SAML_Authentication\"\n| extend AssertionTimestamp = todatetime(Properties.NotBefore)\n| extend ServerTimestamp = TimeGenerated\n| extend TimeDrift = abs(datetime_diff('second', AssertionTimestamp, ServerTimestamp))\n| where TimeDrift > 300 // More than 5 minutes drift\n| project TimeGenerated, Username = Properties.Username, AssertionTimestamp, ServerTimestamp, TimeDrift\n| extend Severity = \"Medium\", AlertType = \"SAML Timestamp Anomaly\"\n\n# Query 4: Geographic Impossibility Detection\nlet userLocations = AppLogs\n| where TimeGenerated > ago(1h)\n| where OperationName == \"SAML_Authentication\"\n| extend Username = tostring(Properties.Username)\n| extend Location = geo_info_from_ip_address(tostring(Properties.ClientIP))\n| extend Country = tostring(Location.country), City = tostring(Location.city)\n| summarize LastSeen = max(TimeGenerated), LastCountry = any(Country), LastCity = any(City) by Username;\n\nAppLogs\n| where OperationName == \"SAML_Authentication\"\n| extend Username = tostring(Properties.Username)\n| extend CurrentLocation = geo_info_from_ip_address(tostring(Properties.ClientIP))\n| extend CurrentCountry = tostring(CurrentLocation.country)\n| join kind=inner (userLocations) on Username\n| where CurrentCountry != LastCountry\n| where datetime_diff('minute', TimeGenerated, LastSeen) < 60\n| project TimeGenerated, Username, LastCountry, CurrentCountry, TimeSinceLastAuth = datetime_diff('minute', TimeGenerated, LastSeen)\n| extend Severity = \"High\", AlertType = \"SAML Geographic Impossibility\"\n\n# Query 5: Signature Validation Failures\nAppLogs\n| where OperationName == \"SAML_SignatureValidation\"\n| where Properties.ValidationResult == \"Failed\"\n| extend FailureReason = tostring(Properties.Reason)\n| extend Username = tostring(Properties.Username)\n| extend IPAddress = tostring(Properties.ClientIP)\n| summarize FailureCount = count(), Reasons = make_set(FailureReason) by Username, IPAddress, bin(TimeGenerated, 10m)\n| where FailureCount > 5\n| project TimeGenerated, Username, IPAddress, FailureCount, Reasons\n| extend Severity = \"Critical\", AlertType = \"SAML Signature Validation Attack\"\n\n# Create Analytics Rule\n# Name: SAML XML Wrapping Attack Detection\n# Severity: High\n# Tactics: Initial Access, Credential Access\n# Frequency: 5 minutes\n# Query Period: 10 minutes"
+      },
+      "tools": [
+        {
+          "name": "Azure Sentinel",
+          "type": "SIEM / Security Analytics",
+          "cost": "$2.76/GB ingested (first 10GB free)"
+        },
+        {
+          "name": "Splunk Enterprise Security",
+          "type": "SIEM Platform",
+          "cost": "$1,800/GB/year"
+        },
+        {
+          "name": "Elastic Security",
+          "type": "SIEM / Threat Detection",
+          "cost": "Free (Basic) / $95/mo (Standard)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are aggregated and correlated",
+        "DE.CM-1 - The network is monitored",
+        "RS.AN-1 - Notifications are investigated"
+      ],
+      "validation_steps": [
+        "Configure application to log SAML assertion count to Azure Log Analytics",
+        "Deploy KQL queries as scheduled analytics rules",
+        "Create alert action groups for critical SAML anomalies",
+        "Test detection with simulated XML wrapping attack",
+        "Validate geographic impossibility detection with VPN testing"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "SAML responses containing multiple assertions with same Subject",
+      "Signature reference IDs not matching processed assertion IDs",
+      "Sudden privilege escalation (user to admin) via SAML authentication",
+      "SAML assertions with timestamps outside acceptable clock skew",
+      "Authentication from geographically impossible locations within short timeframe",
+      "Repeated SAML signature validation failures from same IP",
+      "SAML InResponseTo field missing or not matching original AuthnRequest ID",
+      "Abnormally large SAML response payloads (>50KB)",
+      "User sessions with conflicting identity attributes"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=webapp sourcetype=saml_auth\n| eval assertion_count=mvcount(assertion_id)\n| where assertion_count > 1\n| stats count by user, client_ip, assertion_count, _time\n| where count > 3\n| eval severity=\"HIGH\"\n| eval description=\"Potential SAML XML wrapping attack - Multiple assertions detected\"\n| table _time, user, client_ip, assertion_count, severity, description"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by user.name with maxspan=5m\n  [authentication where event.outcome == \"success\" and saml.assertion_count > 1]\n  [authentication where event.outcome == \"success\" and user.roles:\"admin\" and \n   not user.previous_roles:\"admin\"]"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, username, sourceIP, assertionCount, roles\n| filter operationName = \"SAMLAuthentication\"\n| filter assertionCount > 1 or (roles like /admin/ and previousRoles not like /admin/)\n| stats count(*) as anomalyCount by username, sourceIP, bin(5m)\n| filter anomalyCount > 2\n| sort @timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "SAML Raider (Burp Suite Extension)",
+        "type": "SAML Penetration Testing",
+        "usage": "burpsuite --load-extension saml-raider.jar to test XML signature wrapping vulnerabilities"
+      },
+      {
+        "name": "OWASP ZAP SAML Add-on",
+        "type": "SAML Security Testing",
+        "usage": "Automated SAML assertion manipulation and signature validation testing"
+      },
+      {
+        "name": "SAMLReQuest",
+        "type": "SAML Message Inspector",
+        "usage": "Browser extension to decode, inspect, and validate SAML messages in real-time"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Enterprise SaaS",
+      "Education"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 8.3)",
+      "HIPAA (164.312(a)(2)(i))",
+      "SOC2 (CC6.1, CC6.2)",
+      "ISO27001 (A.9.2.1, A.9.4.2)",
+      "GDPR (Article 32)",
+      "NIST 800-63B (Digital Identity Guidelines)",
+      "FedRAMP (IA-2, IA-8)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Restricted",
+      "Sensitive PII"
+    ]
+  }
+}

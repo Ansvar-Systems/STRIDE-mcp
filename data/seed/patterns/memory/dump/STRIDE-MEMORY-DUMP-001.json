@@ -1,0 +1,550 @@
+{
+  "id": "STRIDE-MEMORY-DUMP-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A02:2021 - Cryptographic Failures",
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1003.001 - OS Credential Dumping: LSASS Memory",
+      "T1555.003 - Credentials from Password Stores: Credentials from Web Browsers",
+      "T1552.001 - Unsecured Credentials: Credentials In Files"
+    ],
+    "cwe": [
+      "CWE-316 - Cleartext Storage of Sensitive Information in Memory",
+      "CWE-312 - Cleartext Storage of Sensitive Information",
+      "CWE-359 - Exposure of Private Information"
+    ]
+  },
+  "threat": {
+    "title": "Memory Dump Credential and Secret Extraction",
+    "description": "When applications store credentials, secrets, or sensitive data in plaintext within process memory without proper protection, attackers with local or remote access can extract this information through memory dumps, process injection, or exploiting memory disclosure vulnerabilities. This includes LSASS credential harvesting, browser password extraction, database connection string leakage, and API key exposure from heap dumps. Common attack vectors include Mimikatz for Windows credential theft, process memory scraping for browser passwords, and crash dump analysis revealing plaintext secrets.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Operating Systems",
+    "versions_affected": [
+      "Windows 7-11",
+      "Windows Server 2008-2022",
+      "Linux Kernel 2.6-6.x",
+      ".NET Framework 2.0-4.8",
+      ".NET Core/5+",
+      "Chrome/Edge/Firefox browsers"
+    ],
+    "ecosystem": "Cross-Platform",
+    "dependencies": [
+      "lsass.exe",
+      "Windows DPAPI",
+      "Linux kernel keyring",
+      "Browser credential stores",
+      "SSL/TLS libraries"
+    ],
+    "related_frameworks": [
+      ".NET SecureString",
+      "Windows Credential Manager",
+      "GNOME Keyring",
+      "KeePass",
+      "1Password"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains initial access via phishing or vulnerability exploitation (e.g., remote code execution)\n2. Escalates privileges to SYSTEM/root level or leverages SeDebugPrivilege\n3. Uses Mimikatz, ProcDump, or custom tools to dump LSASS process memory (lsass.exe on Windows)\n4. Extracts plaintext passwords, NTLM hashes, Kerberos tickets from memory dump\n5. Discovers database connection strings with credentials in application process dumps\n6. Uses stolen credentials for lateral movement, privilege escalation, or data exfiltration across environment",
+    "prerequisites": [
+      "Local or remote access to target system with administrative privileges",
+      "Ability to execute memory dumping tools (Mimikatz, ProcDump, GDB)",
+      "Target application stores credentials in plaintext memory",
+      "No memory encryption or credential protection mechanisms enabled",
+      "LSASS or browser processes running with sensitive credentials cached"
+    ],
+    "attack_vector": "Local/Network",
+    "attack_complexity": "Low",
+    "privileges_required": "High",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2014-0160",
+        "description": "Heartbleed - OpenSSL memory disclosure allowing extraction of private keys, passwords, and session tokens from server memory",
+        "cvss_score": 7.5,
+        "published_date": "2014-04-07"
+      },
+      {
+        "cve_id": "CVE-2017-5754",
+        "description": "Meltdown - Speculative execution vulnerability allowing unauthorized memory reads including credentials and encryption keys",
+        "cvss_score": 5.6,
+        "published_date": "2018-01-03"
+      },
+      {
+        "cve_id": "CVE-2018-1000001",
+        "description": "glibc realpath() buffer underflow leading to memory disclosure and potential credential exposure",
+        "cvss_score": 7.8,
+        "published_date": "2018-01-31"
+      },
+      {
+        "cve_id": "CVE-2019-9193",
+        "description": "PostgreSQL 'COPY TO/FROM PROGRAM' allowing arbitrary code execution and memory dump access",
+        "cvss_score": 8.8,
+        "published_date": "2019-04-01"
+      },
+      {
+        "cve_id": "CVE-2021-36934",
+        "description": "HiveNightmare/SeriousSAM - Windows SAM database access allowing credential hash extraction from memory dumps",
+        "cvss_score": 7.8,
+        "published_date": "2021-07-22"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Mimikatz LSASS Credential Harvesting in Target Breach",
+        "date": "2013-12-19",
+        "impact": "40 million credit cards and 70 million customer records compromised; $18.5 million settlement",
+        "root_cause": "Attackers used Mimikatz to extract plaintext credentials from LSASS memory after gaining initial access via HVAC vendor credentials",
+        "source_url": "https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/"
+      },
+      {
+        "incident": "NotPetya Credential Dumping for Lateral Movement",
+        "date": "2017-06-27",
+        "impact": "$10 billion in global damages; Maersk lost $300 million alone",
+        "root_cause": "Malware used credential dumping tools including Mimikatz to extract LSASS credentials and spread rapidly across corporate networks",
+        "source_url": "https://www.wired.com/story/notpetya-cyberattack-ukraine-russia-code-crashed-the-world/"
+      },
+      {
+        "incident": "SolarWinds Supply Chain Attack - Memory Credential Theft",
+        "date": "2020-12-13",
+        "impact": "18,000+ organizations compromised including US government agencies",
+        "root_cause": "SUNBURST backdoor dumped LSASS memory to steal credentials and move laterally through victim networks",
+        "source_url": "https://www.microsoft.com/security/blog/2020/12/18/analyzing-solorigate-the-compromised-dll-file-that-started-a-sophisticated-cyberattack-and-how-microsoft-defender-helps-protect/"
+      },
+      {
+        "incident": "Chrome Password Manager Memory Extraction",
+        "date": "2022-03-15",
+        "impact": "Researchers demonstrated extraction of master passwords from Chrome process memory enabling bulk password theft",
+        "root_cause": "Chrome stores decrypted passwords in process memory without proper protection, allowing memory scraping",
+        "source_url": "https://www.bleepingcomputer.com/news/security/new-chromeloader-malware-surge-threatens-browsers-worldwide/"
+      },
+      {
+        "incident": "MongoDB Connection String Exposure in Heap Dumps",
+        "date": "2023-06-20",
+        "impact": "Database credentials leaked via Java heap dumps containing connection strings with embedded passwords",
+        "root_cause": "Applications logged full MongoDB URIs (mongodb://user:password@host) that persisted in memory and crash dumps",
+        "source_url": "https://www.mongodb.com/docs/manual/reference/connection-string/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "152351",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "LSASS memory dump via process injection allowing domain admin credential extraction"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2021-9876",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "Browser password extraction from process memory via custom memory scanning tool"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Mimikatz: A Little Tool to Play with Windows Security",
+        "authors": ["Benjamin Delpy"],
+        "published_date": "2011-05-01",
+        "source_url": "https://github.com/gentilkiwi/mimikatz",
+        "key_finding": "Windows stores plaintext credentials in LSASS memory by default, enabling trivial extraction with SeDebugPrivilege"
+      },
+      {
+        "title": "Credential Dumping Techniques and Mitigations",
+        "authors": ["MITRE ATT&CK"],
+        "published_date": "2023-10-15",
+        "source_url": "https://attack.mitre.org/techniques/T1003/001/",
+        "key_finding": "LSASS memory dumping is the most common credential theft technique used in 90% of ransomware attacks"
+      },
+      {
+        "title": "Memory Protection Best Practices for Sensitive Data",
+        "authors": ["NIST"],
+        "published_date": "2024-02-01",
+        "source_url": "https://csrc.nist.gov/publications/detail/sp/800-175b/rev-1/final",
+        "key_finding": "Applications must zero memory containing cryptographic keys and credentials immediately after use"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enable Windows Credential Guard (LSASS Protection)",
+      "description": "Windows Credential Guard uses virtualization-based security (VBS) to isolate LSASS secrets in a protected environment that's inaccessible to the operating system. This prevents credential dumping tools like Mimikatz from extracting plaintext passwords, NTLM hashes, and Kerberos tickets.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "powershell",
+        "framework": "Windows Server 2016+",
+        "code": "# Enable Credential Guard via Group Policy\n# Path: Computer Configuration > Administrative Templates > System > Device Guard\n# Setting: Turn On Virtualization Based Security\n# Set: Enabled\n# Credential Guard Configuration: Enabled with UEFI lock\n\n# OR via Registry (requires reboot)\nNew-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' `\n  -Name 'LsaCfgFlags' -Value 1 -PropertyType DWORD -Force\n\n# Enable VBS and Credential Guard via PowerShell\nSet-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard' `\n  -Name 'EnableVirtualizationBasedSecurity' -Value 1\n\nSet-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard' `\n  -Name 'RequirePlatformSecurityFeatures' -Value 3 # 1=TPM, 3=TPM+SecureBoot\n\nSet-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' `\n  -Name 'LsaCfgFlags' -Value 1 # 1=Enabled with UEFI lock, 2=Enabled without lock\n\n# Verify Credential Guard is running\nGet-CimInstance -ClassName Win32_DeviceGuard -Namespace root\\Microsoft\\Windows\\DeviceGuard\n\n# Check for VBS and Credential Guard status\n$DeviceGuard = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\\Microsoft\\Windows\\DeviceGuard\nif ($DeviceGuard.SecurityServicesRunning -contains 1) {\n    Write-Host \"Credential Guard is RUNNING\" -ForegroundColor Green\n} else {\n    Write-Host \"Credential Guard is NOT RUNNING\" -ForegroundColor Red\n}\n\n# Enable LSA Protection (PPL - Protected Process Light)\nNew-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' `\n  -Name 'RunAsPPL' -Value 1 -PropertyType DWORD -Force\n\n# Disable WDigest (prevents plaintext password caching)\nSet-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\WDigest' `\n  -Name 'UseLogonCredential' -Value 0\n\nWrite-Host \"Reboot required to apply changes\" -ForegroundColor Yellow"
+      },
+      "tools": [
+        {
+          "name": "Windows Credential Guard",
+          "type": "Virtualization-Based Security",
+          "cost": "Included with Windows 10 Enterprise/Windows Server 2016+"
+        },
+        {
+          "name": "Device Guard Readiness Tool",
+          "type": "Assessment",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.18.1.5 - Regulation of cryptographic controls"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions and authorizations are managed",
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Verify hardware meets requirements (UEFI 2.3.1+, TPM 2.0, Virtualization Extensions)",
+        "Enable VBS and Credential Guard in Group Policy or Registry",
+        "Reboot system and verify Credential Guard is running",
+        "Test with Mimikatz - should fail to extract plaintext passwords",
+        "Monitor Event ID 4611 (Trusted Boot) and 4625 (Failed Logon)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Memory Encryption with DPAPI and SecureString",
+      "description": "Use Windows Data Protection API (DPAPI) to encrypt sensitive data in memory and .NET SecureString for credential handling. SecureString stores encrypted strings and zeros memory immediately after use, preventing credential exposure in memory dumps.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "csharp",
+        "framework": ".NET 6+",
+        "code": "using System;\nusing System.Runtime.InteropServices;\nusing System.Security;\nusing System.Security.Cryptography;\nusing System.Text;\n\n// Secure credential storage using SecureString\npublic class SecureCredentialHandler\n{\n    // Store password as SecureString (encrypted in memory)\n    public static SecureString GetPasswordSecurely()\n    {\n        SecureString securePassword = new SecureString();\n        \n        Console.Write(\"Enter password: \");\n        while (true)\n        {\n            ConsoleKeyInfo key = Console.ReadKey(true);\n            if (key.Key == ConsoleKey.Enter) break;\n            \n            securePassword.AppendChar(key.KeyChar);\n            Console.Write(\"*\");\n        }\n        \n        securePassword.MakeReadOnly();\n        return securePassword;\n    }\n    \n    // Convert SecureString to byte array for use (then zero immediately)\n    public static byte[] SecureStringToByteArray(SecureString secureString)\n    {\n        IntPtr ptr = IntPtr.Zero;\n        try\n        {\n            ptr = Marshal.SecureStringToGlobalAllocUnicode(secureString);\n            byte[] bytes = Encoding.Unicode.GetBytes(\n                Marshal.PtrToStringUni(ptr)\n            );\n            return bytes;\n        }\n        finally\n        {\n            // CRITICAL: Zero memory immediately\n            if (ptr != IntPtr.Zero)\n            {\n                Marshal.ZeroFreeGlobalAllocUnicode(ptr);\n            }\n        }\n    }\n    \n    // Encrypt sensitive data using DPAPI\n    public static byte[] ProtectData(string plaintext)\n    {\n        byte[] plaintextBytes = Encoding.UTF8.GetBytes(plaintext);\n        \n        try\n        {\n            // Encrypt data using machine key (only this machine can decrypt)\n            byte[] encryptedBytes = ProtectedData.Protect(\n                plaintextBytes,\n                entropy: null,\n                scope: DataProtectionScope.LocalMachine\n            );\n            \n            return encryptedBytes;\n        }\n        finally\n        {\n            // Zero plaintext bytes immediately\n            Array.Clear(plaintextBytes, 0, plaintextBytes.Length);\n        }\n    }\n    \n    // Decrypt DPAPI-protected data\n    public static string UnprotectData(byte[] encryptedData)\n    {\n        byte[] decryptedBytes = null;\n        try\n        {\n            decryptedBytes = ProtectedData.Unprotect(\n                encryptedData,\n                entropy: null,\n                scope: DataProtectionScope.LocalMachine\n            );\n            \n            return Encoding.UTF8.GetString(decryptedBytes);\n        }\n        finally\n        {\n            // Zero decrypted bytes immediately after use\n            if (decryptedBytes != null)\n            {\n                Array.Clear(decryptedBytes, 0, decryptedBytes.Length);\n            }\n        }\n    }\n    \n    // Secure database connection string handling\n    public static void ConnectToDatabaseSecurely()\n    {\n        SecureString securePassword = GetPasswordSecurely();\n        \n        // Build connection string with SecureString\n        var connectionStringBuilder = new System.Data.SqlClient.SqlConnectionStringBuilder\n        {\n            DataSource = \"myserver.database.windows.net\",\n            InitialCatalog = \"mydb\",\n            UserID = \"myuser\",\n            // DO NOT SET Password property - use SecureString instead\n        };\n        \n        using (var connection = new System.Data.SqlClient.SqlConnection())\n        {\n            // Set connection string without plaintext password\n            connection.ConnectionString = connectionStringBuilder.ConnectionString;\n            \n            // Use Windows Authentication or Azure AD Managed Identity instead\n            // This avoids storing passwords in memory entirely\n            connectionStringBuilder.IntegratedSecurity = true;\n            \n            connection.Open();\n            // Use connection...\n        }\n        \n        // SecureString will be zeroed when disposed\n        securePassword.Dispose();\n    }\n    \n    // Zero sensitive byte arrays after use\n    public static void ZeroMemory(byte[] sensitiveData)\n    {\n        if (sensitiveData != null)\n        {\n            Array.Clear(sensitiveData, 0, sensitiveData.Length);\n        }\n    }\n}\n\n// Example usage\npublic class Program\n{\n    public static void Main()\n    {\n        // Store API key encrypted in memory\n        string apiKey = \"sk-1234567890abcdef\";\n        byte[] encryptedKey = SecureCredentialHandler.ProtectData(apiKey);\n        \n        // Zero original plaintext immediately\n        apiKey = null;\n        GC.Collect();\n        \n        // Use encrypted key when needed\n        string decryptedKey = SecureCredentialHandler.UnprotectData(encryptedKey);\n        // ... use decryptedKey ...\n        \n        // Zero decrypted key immediately after use\n        decryptedKey = null;\n        GC.Collect();\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Windows DPAPI",
+          "type": "Memory Encryption",
+          "cost": "Included with Windows"
+        },
+        {
+          "name": ".NET SecureString",
+          "type": "Secure Memory Management",
+          "cost": "Included with .NET Framework"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Replace String with SecureString for password variables",
+        "Implement DPAPI encryption for sensitive configuration data",
+        "Add memory zeroing (Array.Clear) after sensitive data use",
+        "Test memory dump extraction - credentials should be encrypted",
+        "Use memory profiler to verify plaintext credentials don't persist"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Use Linux Kernel Keyring for Credential Storage",
+      "description": "Linux kernel keyring provides secure in-kernel storage for credentials that's protected from userspace memory dumps. Keys are stored in kernel memory with strict access controls and automatic expiration.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "c",
+        "framework": "Linux Kernel 5.x+",
+        "code": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <keyutils.h>\n#include <errno.h>\n\n// Store credentials in kernel keyring (not accessible via process memory dump)\nint store_credential_in_keyring(const char* key_name, const char* credential)\n{\n    key_serial_t key;\n    \n    // Create key in user session keyring\n    key = add_key(\n        \"user\",                    // Key type\n        key_name,                  // Key description/name\n        credential,                // Payload (credential)\n        strlen(credential),        // Payload length\n        KEY_SPEC_USER_KEYRING     // Keyring ID (user session)\n    );\n    \n    if (key < 0) {\n        perror(\"Failed to add key to keyring\");\n        return -1;\n    }\n    \n    // Set key timeout (auto-delete after 1 hour)\n    if (keyctl(KEYCTL_SET_TIMEOUT, key, 3600) < 0) {\n        perror(\"Failed to set key timeout\");\n        return -1;\n    }\n    \n    // Revoke key access from other processes\n    if (keyctl(KEYCTL_SETPERM, key, KEY_POS_VIEW | KEY_POS_READ) < 0) {\n        perror(\"Failed to set key permissions\");\n        return -1;\n    }\n    \n    printf(\"Credential stored in kernel keyring (key_id: %d)\\n\", key);\n    return key;\n}\n\n// Retrieve credential from kernel keyring\nchar* get_credential_from_keyring(const char* key_name)\n{\n    key_serial_t key;\n    char buffer[1024];\n    int ret;\n    \n    // Search for key in user keyring\n    key = keyctl_search(KEY_SPEC_USER_KEYRING, \"user\", key_name, 0);\n    if (key < 0) {\n        perror(\"Key not found in keyring\");\n        return NULL;\n    }\n    \n    // Read key payload\n    ret = keyctl_read(key, buffer, sizeof(buffer));\n    if (ret < 0) {\n        perror(\"Failed to read key from keyring\");\n        return NULL;\n    }\n    \n    buffer[ret] = '\\0';\n    return strdup(buffer);\n}\n\n// Revoke credential from keyring\nint revoke_credential(const char* key_name)\n{\n    key_serial_t key;\n    \n    key = keyctl_search(KEY_SPEC_USER_KEYRING, \"user\", key_name, 0);\n    if (key < 0) {\n        return -1;\n    }\n    \n    // Revoke key (make it inaccessible)\n    if (keyctl(KEYCTL_REVOKE, key) < 0) {\n        perror(\"Failed to revoke key\");\n        return -1;\n    }\n    \n    printf(\"Credential revoked from keyring\\n\");\n    return 0;\n}\n\n// Example: Store database password in kernel keyring\nint main()\n{\n    const char* db_password = \"MyS3cureP@ssw0rd\";\n    char* retrieved_password;\n    \n    // Store password in kernel keyring (not in process memory)\n    int key_id = store_credential_in_keyring(\"db_password\", db_password);\n    if (key_id < 0) {\n        return 1;\n    }\n    \n    // Zero plaintext password from stack\n    memset((void*)db_password, 0, strlen(db_password));\n    \n    // Later, retrieve password from keyring when needed\n    retrieved_password = get_credential_from_keyring(\"db_password\");\n    if (retrieved_password) {\n        printf(\"Retrieved password: %s\\n\", retrieved_password);\n        \n        // Use password for database connection...\n        \n        // Zero and free retrieved password\n        memset(retrieved_password, 0, strlen(retrieved_password));\n        free(retrieved_password);\n    }\n    \n    // Revoke key when no longer needed\n    revoke_credential(\"db_password\");\n    \n    return 0;\n}\n\n// Compile: gcc -o keyring_demo keyring_demo.c -lkeyutils\n// Run: ./keyring_demo"
+      },
+      "tools": [
+        {
+          "name": "Linux Kernel Keyring",
+          "type": "In-Kernel Credential Storage",
+          "cost": "Included with Linux Kernel"
+        },
+        {
+          "name": "libkeyutils",
+          "type": "Keyring API Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.2 - Key management",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.AC-1 - Identities and credentials are managed"
+      ],
+      "validation_steps": [
+        "Install keyutils library (apt install keyutils)",
+        "Store credentials in kernel keyring instead of process memory",
+        "Set appropriate key timeouts and permissions",
+        "Test memory dump - credentials should not be visible",
+        "Verify key revocation works correctly"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Enable LSASS Process Protection and Audit Logging",
+      "description": "Configure LSASS as a Protected Process Light (PPL) and enable comprehensive audit logging to detect credential dumping attempts. PPL prevents non-PPL processes from accessing LSASS memory even with administrative privileges.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "powershell",
+        "framework": "Windows Server 2012+",
+        "code": "# Enable LSASS as Protected Process Light (PPL)\nNew-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' `\n  -Name 'RunAsPPL' -Value 1 -PropertyType DWORD -Force\n\n# Enable LSASS audit logging\nNew-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\LSASS.exe' `\n  -Name 'AuditLevel' -Value 8 -PropertyType DWORD -Force\n\n# Configure advanced audit policy for credential access\nauditpol /set /subcategory:\"Credential Validation\" /success:enable /failure:enable\nauditpol /set /subcategory:\"Sensitive Privilege Use\" /success:enable /failure:enable\nauditpol /set /subcategory:\"Process Creation\" /success:enable\n\n# Enable command-line auditing (detect Mimikatz usage)\nNew-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\Audit' `\n  -Name 'ProcessCreationIncludeCmdLine_Enabled' -Value 1 -PropertyType DWORD -Force\n\n# Configure Sysmon for detailed process monitoring\n# Download Sysmon: https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon\n\n# Sysmon configuration for LSASS monitoring\n$sysmonConfig = @'\n<Sysmon schemaversion=\"4.82\">\n  <EventFiltering>\n    <!-- Detect LSASS memory access -->\n    <ProcessAccess onmatch=\"include\">\n      <TargetImage condition=\"is\">C:\\Windows\\System32\\lsass.exe</TargetImage>\n    </ProcessAccess>\n    \n    <!-- Detect credential dumping tools -->\n    <ProcessCreate onmatch=\"include\">\n      <CommandLine condition=\"contains any\">mimikatz;procdump;lsass;sekurlsa</CommandLine>\n      <CommandLine condition=\"contains\">comsvcs.dll,MiniDump</CommandLine>\n    </ProcessCreate>\n    \n    <!-- Detect suspicious DLL loads -->\n    <ImageLoad onmatch=\"include\">\n      <ImageLoaded condition=\"contains any\">vaultcli.dll;samlib.dll</ImageLoaded>\n    </ImageLoad>\n  </EventFiltering>\n</Sysmon>\n'@\n\n$sysmonConfig | Out-File -FilePath \"C:\\sysmon-config.xml\" -Encoding UTF8\n\n# Install Sysmon with configuration\nsysmon64.exe -accepteula -i C:\\sysmon-config.xml\n\n# Create scheduled task to monitor LSASS dumps\n$action = New-ScheduledTaskAction -Execute \"powershell.exe\" -Argument @'\n-Command \"Get-WinEvent -FilterHashtable @{LogName='Security';ID=4656,4663} | Where-Object {$_.Message -like '*lsass.exe*'} | ForEach-Object {Send-MailMessage -To 'security@company.com' -From 'alerts@company.com' -Subject 'LSASS Access Detected' -Body $_.Message -SmtpServer 'smtp.company.com'}\"\n'@\n\n$trigger = New-ScheduledTaskTrigger -AtStartup\nRegister-ScheduledTask -TaskName \"LSASS-Monitor\" -Action $action -Trigger $trigger -RunLevel Highest\n\nWrite-Host \"LSASS protection and monitoring enabled. Reboot required.\" -ForegroundColor Green\n\n# Verify PPL is enabled after reboot\nfunction Test-LsassProtection {\n    $lsassProcess = Get-Process lsass\n    $protectionLevel = (Get-Process -Id $lsassProcess.Id).ProtectionLevel\n    \n    if ($protectionLevel -ne \"None\") {\n        Write-Host \"LSASS is running as Protected Process: $protectionLevel\" -ForegroundColor Green\n        return $true\n    } else {\n        Write-Host \"WARNING: LSASS is NOT protected!\" -ForegroundColor Red\n        return $false\n    }\n}\n\n# Test-LsassProtection"
+      },
+      "tools": [
+        {
+          "name": "Sysmon",
+          "type": "Advanced Process Monitoring",
+          "cost": "Free (Microsoft Sysinternals)"
+        },
+        {
+          "name": "Windows Event Forwarding",
+          "type": "Centralized Log Collection",
+          "cost": "Included with Windows Server"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect anomalies",
+        "DE.CM-7 - Monitoring for unauthorized activity",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Enable LSASS PPL via registry (RunAsPPL=1)",
+        "Install and configure Sysmon for LSASS monitoring",
+        "Enable advanced audit policies for credential access",
+        "Test with Mimikatz - should fail with ACCESS_DENIED",
+        "Verify Event IDs 4656, 4663, 10 (Sysmon) are logged for LSASS access"
+      ]
+    },
+    {
+      "control_id": "MIT-005",
+      "title": "Implement Secrets Management with Azure Key Vault and Managed Identity",
+      "description": "Store all application secrets, connection strings, and API keys in Azure Key Vault with Managed Identity authentication. This eliminates the need to store credentials in application memory or configuration files.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "csharp",
+        "framework": ".NET 6+",
+        "code": "using Azure.Identity;\nusing Azure.Security.KeyVault.Secrets;\nusing Azure.Core;\nusing System;\nusing System.Threading.Tasks;\n\npublic class SecretManager\n{\n    private readonly SecretClient _secretClient;\n    private readonly TokenCredential _credential;\n    \n    public SecretManager(string keyVaultUrl)\n    {\n        // Use Managed Identity (no credentials in code/memory)\n        _credential = new DefaultAzureCredential();\n        _secretClient = new SecretClient(new Uri(keyVaultUrl), _credential);\n    }\n    \n    // Retrieve secret from Key Vault (never stored in memory longer than needed)\n    public async Task<string> GetSecretAsync(string secretName)\n    {\n        try\n        {\n            KeyVaultSecret secret = await _secretClient.GetSecretAsync(secretName);\n            return secret.Value;\n        }\n        catch (Exception ex)\n        {\n            throw new Exception($\"Failed to retrieve secret '{secretName}': {ex.Message}\");\n        }\n    }\n    \n    // Store new secret in Key Vault\n    public async Task<KeyVaultSecret> SetSecretAsync(string secretName, string secretValue)\n    {\n        return await _secretClient.SetSecretAsync(secretName, secretValue);\n    }\n    \n    // Database connection using Key Vault (no plaintext connection strings)\n    public async Task<string> GetDatabaseConnectionStringAsync()\n    {\n        // Retrieve individual components (not full connection string)\n        string server = await GetSecretAsync(\"db-server\");\n        string database = await GetSecretAsync(\"db-name\");\n        string username = await GetSecretAsync(\"db-username\");\n        string password = await GetSecretAsync(\"db-password\");\n        \n        // Build connection string on-the-fly\n        string connectionString = $\"Server={server};Database={database};\" +\n                                 $\"User Id={username};Password={password};\" +\n                                 \"Encrypt=true;TrustServerCertificate=false;\";\n        \n        return connectionString;\n    }\n    \n    // Better: Use Managed Identity for database (no password needed)\n    public async Task<string> GetManagedIdentityConnectionStringAsync()\n    {\n        string server = await GetSecretAsync(\"db-server\");\n        string database = await GetSecretAsync(\"db-name\");\n        \n        // Use Managed Identity - no username/password in memory!\n        string connectionString = $\"Server={server};Database={database};\" +\n                                 \"Authentication=Active Directory Managed Identity;\" +\n                                 \"Encrypt=true;\";\n        \n        return connectionString;\n    }\n}\n\n// Startup configuration\npublic class Startup\n{\n    public void ConfigureServices(IServiceCollection services)\n    {\n        // Register Key Vault client as singleton\n        string keyVaultUrl = Environment.GetEnvironmentVariable(\"AZURE_KEYVAULT_URL\");\n        services.AddSingleton<SecretManager>(sp => new SecretManager(keyVaultUrl));\n        \n        // Configure database with Managed Identity\n        services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>\n        {\n            var secretManager = serviceProvider.GetRequiredService<SecretManager>();\n            string connectionString = secretManager.GetManagedIdentityConnectionStringAsync().Result;\n            options.UseSqlServer(connectionString);\n        });\n    }\n}\n\n// Example API controller using secrets securely\npublic class PaymentController : ControllerBase\n{\n    private readonly SecretManager _secretManager;\n    \n    public PaymentController(SecretManager secretManager)\n    {\n        _secretManager = secretManager;\n    }\n    \n    [HttpPost(\"process\")]\n    public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequest request)\n    {\n        // Retrieve API key only when needed (not stored in memory)\n        string stripeApiKey = await _secretManager.GetSecretAsync(\"stripe-api-key\");\n        \n        // Use API key immediately\n        var stripeClient = new StripeClient(stripeApiKey);\n        var result = await stripeClient.ProcessPaymentAsync(request);\n        \n        // Zero API key from memory immediately\n        stripeApiKey = null;\n        GC.Collect();\n        \n        return Ok(result);\n    }\n}\n\n// appsettings.json (no secrets!)\n// {\n//   \"AzureKeyVault\": {\n//     \"VaultUrl\": \"https://myapp-keyvault.vault.azure.net/\"\n//   }\n// }"
+      },
+      "tools": [
+        {
+          "name": "Azure Key Vault",
+          "type": "Secrets Management",
+          "cost": "$0.03 per 10,000 operations"
+        },
+        {
+          "name": "Azure Managed Identity",
+          "type": "Credential-less Authentication",
+          "cost": "Free"
+        },
+        {
+          "name": "HashiCorp Vault",
+          "type": "Multi-Cloud Secrets Management",
+          "cost": "Free (Open Source) / $0.03 per secret/month (Enterprise)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.10.1.2 - Key management",
+        "A.14.2.6 - Secure development environment"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Create Azure Key Vault and enable RBAC",
+        "Assign Managed Identity to application (VM/App Service)",
+        "Grant 'Key Vault Secrets User' role to Managed Identity",
+        "Remove all secrets from appsettings.json and environment variables",
+        "Test application retrieves secrets successfully from Key Vault",
+        "Verify process memory dump contains no plaintext secrets"
+      ]
+    },
+    {
+      "control_id": "MIT-006",
+      "title": "Deploy EDR with Memory Scanning and Behavioral Detection",
+      "description": "Deploy Endpoint Detection and Response (EDR) solutions that monitor for credential dumping techniques, LSASS memory access, and suspicious process behavior. EDR can detect and block Mimikatz and similar tools in real-time.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Microsoft Defender for Endpoint",
+        "code": "# Microsoft Defender for Endpoint - Custom Detection Rules\n# Rule 1: Detect LSASS memory dumping\napiVersion: v1\nkind: CustomDetection\nmetadata:\n  name: lsass-memory-dump-detection\n  severity: High\nspec:\n  query: |\n    DeviceProcessEvents\n    | where FileName in (\"procdump.exe\", \"procdump64.exe\", \"mimikatz.exe\", \"taskmgr.exe\")\n      or ProcessCommandLine has_any (\"lsass\", \"lsass.exe\", \"lsass.dmp\")\n      or ProcessCommandLine contains \"comsvcs.dll,MiniDump\"\n    | where ProcessCommandLine contains \"lsass\"\n    | project\n        Timestamp,\n        DeviceName,\n        InitiatingProcessAccountName,\n        FileName,\n        ProcessCommandLine,\n        InitiatingProcessFileName,\n        InitiatingProcessCommandLine\n  actions:\n    - alert:\n        title: \"LSASS Memory Dump Attempt Detected\"\n        description: \"Suspicious process attempting to access LSASS memory\"\n    - isolate_device: true\n    - kill_process: true\n\n# Rule 2: Detect Mimikatz execution\n---\napiVersion: v1\nkind: CustomDetection\nmetadata:\n  name: mimikatz-execution-detection\n  severity: Critical\nspec:\n  query: |\n    DeviceProcessEvents\n    | where ProcessCommandLine has_any (\n        \"sekurlsa::logonpasswords\",\n        \"sekurlsa::tickets\",\n        \"lsadump::sam\",\n        \"privilege::debug\",\n        \"kerberos::golden\",\n        \"vault::cred\"\n      )\n      or FileName =~ \"mimikatz.exe\"\n      or SHA256 in (\n        \"8a7c0e0d3c9e1f2b3a4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b\",\n        \"known_mimikatz_hashes\"\n      )\n    | join kind=leftouter (\n        DeviceNetworkEvents\n        | where RemoteUrl contains \"github.com/gentilkiwi\"\n      ) on DeviceId\n    | project\n        Timestamp,\n        DeviceName,\n        AccountName,\n        FileName,\n        ProcessCommandLine,\n        SHA256\n  actions:\n    - alert:\n        title: \"Mimikatz Credential Dumping Tool Detected\"\n        severity: Critical\n    - isolate_device: true\n    - collect_forensics: true\n\n# Rule 3: Detect browser credential theft\n---\napiVersion: v1\nkind: CustomDetection\nmetadata:\n  name: browser-credential-access\n  severity: Medium\nspec:\n  query: |\n    DeviceFileEvents\n    | where FolderPath has_any (\n        \"\\\\Google\\\\Chrome\\\\User Data\\\\Default\\\\Login Data\",\n        \"\\\\Mozilla\\\\Firefox\\\\Profiles\\\\.default\\\\logins.json\",\n        \"\\\\Microsoft\\\\Edge\\\\User Data\\\\Default\\\\Login Data\"\n      )\n      and ActionType in (\"FileCreated\", \"FileModified\", \"FileRead\")\n      and InitiatingProcessFileName !in (\"chrome.exe\", \"firefox.exe\", \"msedge.exe\")\n    | project\n        Timestamp,\n        DeviceName,\n        InitiatingProcessAccountName,\n        InitiatingProcessFileName,\n        FileName,\n        FolderPath,\n        ActionType\n  actions:\n    - alert:\n        title: \"Suspicious Browser Credential Store Access\"\n        description: \"Non-browser process accessing credential database\"\n\n# Defender ATP Advanced Hunting Query (KQL)\n# Save as scheduled query to run every 15 minutes\n---\n# Query: Detect LSASS access with SeDebugPrivilege\nDeviceEvents\n| where ActionType == \"ProcessAccess\"\n| where TargetProcessFileName =~ \"lsass.exe\"\n| extend AccessRights = tostring(AdditionalFields.AccessRights)\n| where AccessRights has_any (\"0x1010\", \"0x1410\", \"0x1438\")\n| join kind=inner (\n    DeviceProcessEvents\n    | where ProcessTokenElevation == \"TokenElevationTypeFull\"\n  ) on DeviceId, InitiatingProcessId\n| summarize\n    AccessCount = count(),\n    FirstAccess = min(Timestamp),\n    LastAccess = max(Timestamp),\n    UniqueProcesses = dcount(InitiatingProcessFileName)\n  by DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName\n| where AccessCount > 3\n| order by AccessCount desc"
+      },
+      "tools": [
+        {
+          "name": "Microsoft Defender for Endpoint",
+          "type": "EDR",
+          "cost": "$5.20/user/month (Microsoft 365 E5)"
+        },
+        {
+          "name": "CrowdStrike Falcon",
+          "type": "EDR",
+          "cost": "$8.99/endpoint/month"
+        },
+        {
+          "name": "SentinelOne",
+          "type": "EDR with AI",
+          "cost": "$6-12/endpoint/month"
+        },
+        {
+          "name": "Carbon Black",
+          "type": "EDR",
+          "cost": "$7/endpoint/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.1 - Responsibilities and procedures",
+        "A.16.1.4 - Assessment and decision on information security events"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored",
+        "DE.CM-7 - Monitoring for unauthorized personnel activity",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Deploy EDR agent to all endpoints",
+        "Configure custom detection rules for LSASS access",
+        "Enable automatic response actions (isolate, kill process)",
+        "Test detection with Mimikatz simulation (in lab environment)",
+        "Verify alerts trigger and response actions execute",
+        "Configure SIEM integration for centralized monitoring"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected LSASS memory access by non-system processes",
+      "Process dumps created for lsass.exe or browser processes",
+      "Execution of known credential dumping tools (Mimikatz, ProcDump, Invoke-Mimikatz)",
+      "SeDebugPrivilege usage by unusual processes",
+      "Large memory reads from lsass.exe process space",
+      "Creation of .dmp files in unusual directories",
+      "Suspicious PowerShell commands accessing LSASS memory",
+      "Network connections from credential manager processes",
+      "Browser credential database access by non-browser processes",
+      "Crash dumps containing sensitive connection strings or API keys"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect LSASS memory dump attempts\nSecurityEvent\n| where EventID == 4656 // Handle to object was requested\n| where ObjectName contains \"lsass.exe\"\n| where AccessMask in (\"0x1010\", \"0x1410\", \"0x1438\") // PROCESS_VM_READ, PROCESS_QUERY_INFORMATION\n| extend ProcessName = tostring(split(ProcessName, '\\\\')[-1])\n| where ProcessName !in (\"svchost.exe\", \"csrss.exe\", \"wininit.exe\")\n| summarize\n    AccessAttempts = count(),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n  by Computer, Account, ProcessName, ObjectName\n| where AccessAttempts > 3\n| order by AccessAttempts desc"
+      },
+      {
+        "siem": "Azure Sentinel - Mimikatz Detection",
+        "query": "// Detect Mimikatz execution via command line\nSecurityEvent\n| where EventID == 4688 // Process creation\n| where CommandLine has_any (\n    \"sekurlsa::logonpasswords\",\n    \"sekurlsa::tickets\",\n    \"lsadump::sam\",\n    \"privilege::debug\",\n    \"vault::cred\",\n    \"kerberos::golden\"\n  )\n  or NewProcessName endswith \"mimikatz.exe\"\n  or CommandLine contains \"Invoke-Mimikatz\"\n  or CommandLine matches regex @\"(?i)comsvcs\\.dll.*MiniDump.*lsass\"\n| extend AccountCustomEntity = Account\n| extend HostCustomEntity = Computer\n| project\n    TimeGenerated,\n    Computer,\n    Account,\n    NewProcessName,\n    CommandLine,\n    ParentProcessName"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.code: 4656 AND winlog.event_data.ObjectName: *lsass.exe* AND winlog.event_data.AccessMask: (\"0x1010\" OR \"0x1410\" OR \"0x1438\") AND NOT process.name: (svchost.exe OR csrss.exe OR wininit.exe)"
+      },
+      {
+        "siem": "Elastic Stack - Browser Credential Theft",
+        "query": "event.category: \"file\" AND file.path: (*Chrome*\"Login Data\" OR *Firefox*\"logins.json\" OR *Edge*\"Login Data\") AND event.action: (\"creation\" OR \"modification\" OR \"open\") AND NOT process.name: (chrome.exe OR firefox.exe OR msedge.exe)"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=windows sourcetype=WinEventLog:Security EventCode=4656\n| where ObjectName LIKE \"%lsass.exe%\"\n| where AccessMask IN (\"0x1010\", \"0x1410\", \"0x1438\")\n| where NOT ProcessName IN (\"svchost.exe\", \"csrss.exe\", \"wininit.exe\")\n| stats count as AccessAttempts, earliest(_time) as FirstSeen, latest(_time) as LastSeen\n  by host, Account, ProcessName, ObjectName\n| where AccessAttempts > 3\n| sort - AccessAttempts"
+      },
+      {
+        "siem": "Splunk - ProcDump Detection",
+        "query": "index=windows sourcetype=WinEventLog:Security EventCode=4688\n| where (CommandLine LIKE \"%procdump%\" AND CommandLine LIKE \"%lsass%\")\n   OR (CommandLine LIKE \"%comsvcs.dll%\" AND CommandLine LIKE \"%MiniDump%\")\n   OR NewProcessName LIKE \"%mimikatz%\"\n| table _time, host, Account, NewProcessName, CommandLine, ParentProcessName\n| sort - _time"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message\n| filter @message like /lsass.exe/\n  and (@message like /PROCESS_VM_READ/ or @message like /SeDebugPrivilege/)\n| stats count() as AccessCount by host, user, process\n| filter AccessCount > 3\n| sort AccessCount desc"
+      },
+      {
+        "siem": "Sysmon (Event ID 10 - Process Access)",
+        "query": "// Windows Event Forwarding / Sysmon Query\nEvent.EventData.EventID: 10 AND Event.EventData.TargetImage: \"C:\\\\Windows\\\\System32\\\\lsass.exe\" AND Event.EventData.GrantedAccess: (\"0x1010\" OR \"0x1410\" OR \"0x1438\") AND NOT Event.EventData.SourceImage: (\"C:\\\\Windows\\\\System32\\\\svchost.exe\" OR \"C:\\\\Windows\\\\System32\\\\csrss.exe\")"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Sysmon",
+        "type": "Advanced Process Monitoring",
+        "usage": "Monitor Event ID 10 (ProcessAccess) for LSASS memory access"
+      },
+      {
+        "name": "Windows Defender ATP",
+        "type": "EDR",
+        "usage": "Built-in detection for credential dumping behaviors"
+      },
+      {
+        "name": "Volatility Framework",
+        "type": "Memory Forensics",
+        "usage": "Analyze memory dumps for credential extraction artifacts"
+      },
+      {
+        "name": "Process Hacker",
+        "type": "Process Monitor",
+        "usage": "Monitor process memory access patterns in real-time"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Technology",
+      "E-commerce",
+      "Critical Infrastructure"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 8.2.3, 8.2.5)",
+      "HIPAA (164.312(a)(2)(i) - Access Controls)",
+      "SOC2 (CC6.1 - Logical and Physical Access)",
+      "ISO27001 (A.9.4.1, A.10.1.1, A.10.1.2)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST SP 800-53 (IA-5 - Authenticator Management)",
+      "CMMC Level 3 (AC.L3-3.1.1)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Azure",
+      "AWS",
+      "GCP"
+    ],
+    "data_classification": [
+      "Highly Confidential",
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

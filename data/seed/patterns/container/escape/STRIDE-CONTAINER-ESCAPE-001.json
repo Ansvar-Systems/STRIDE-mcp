@@ -1,0 +1,348 @@
+{
+  "id": "STRIDE-CONTAINER-ESCAPE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.9,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A08:2021 - Software and Data Integrity Failures"
+    ],
+    "mitre_attack": [
+      "T1611 - Escape to Host",
+      "T1068 - Exploitation for Privilege Escalation",
+      "T1610 - Deploy Container"
+    ],
+    "cwe": [
+      "CWE-250 - Execution with Unnecessary Privileges",
+      "CWE-269 - Improper Privilege Management",
+      "CWE-732 - Incorrect Permission Assignment for Critical Resource"
+    ]
+  },
+  "threat": {
+    "title": "Docker Container Escape via runC Vulnerabilities and Privileged Containers",
+    "description": "Container escape vulnerabilities allow attackers to break out of container isolation and gain root access to the host system. This is achieved through exploiting runC vulnerabilities, misconfigured privileged containers, or unsafe mount configurations. Once escaped, attackers can compromise the entire host, access other containers, steal secrets, and establish persistent backdoors.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.0,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Docker",
+    "versions_affected": [
+      "Docker Engine < 25.0.3",
+      "runC < 1.1.12",
+      "Containerd < 1.7.13"
+    ],
+    "ecosystem": "Container Runtime",
+    "dependencies": [
+      "runC",
+      "containerd",
+      "Linux kernel namespaces",
+      "cgroups"
+    ],
+    "related_frameworks": [
+      "Kubernetes",
+      "Podman",
+      "CRI-O",
+      "LXC"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains ability to deploy malicious container image or exploits existing vulnerable container\n2. Deploys container with privileged flag (--privileged) or dangerous capabilities (CAP_SYS_ADMIN, CAP_SYS_PTRACE)\n3. Exploits runC vulnerability (CVE-2019-5736, CVE-2024-21626, or CVE-2025-31133) to overwrite host runC binary\n4. Triggers container restart or new container spawn, executing malicious runC code on host\n5. Gains root access to host filesystem via /proc/self/exe or masked path manipulation\n6. Establishes persistence, exfiltrates secrets from other containers, pivots to cloud infrastructure",
+    "prerequisites": [
+      "Ability to deploy containers (compromised CI/CD pipeline, Kubernetes RBAC misconfiguration, or Docker API exposure)",
+      "Vulnerable runC version (< 1.1.12) or misconfigured container runtime",
+      "Privileged container mode OR dangerous Linux capabilities enabled",
+      "Host filesystem accessible via bind mounts or procfs manipulation"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "High",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-5736",
+        "description": "runC container escape via /proc/self/exe overwrite allowing host runC binary manipulation",
+        "cvss_score": 8.6,
+        "published_date": "2019-02-11",
+        "source_url": "https://aws.amazon.com/blogs/compute/anatomy-of-cve-2019-5736-a-runc-container-escape/"
+      },
+      {
+        "cve_id": "CVE-2024-21626",
+        "description": "runC file descriptor leak allowing container escape via leaked file descriptors to host filesystem",
+        "cvss_score": 8.6,
+        "published_date": "2024-01-31",
+        "source_url": "https://www.docker.com/blog/docker-security-advisory-multiple-vulnerabilities-in-runc-buildkit-and-moby/"
+      },
+      {
+        "cve_id": "CVE-2025-31133",
+        "description": "runC masked path abuse via symlink replacement of /dev/null to procfs files (core_pattern, sysrq-trigger)",
+        "cvss_score": 8.8,
+        "published_date": "2025-11-05",
+        "source_url": "https://www.sysdig.com/blog/runc-container-escape-vulnerabilities"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Tesla Kubernetes Cryptojacking",
+        "date": "2018-02-20",
+        "impact": "Unauthorized cryptocurrency mining in Tesla's AWS infrastructure, exposure of proprietary telemetry data stored in S3",
+        "root_cause": "Kubernetes console exposed without authentication, allowing container deployment and cluster admin access",
+        "source_url": "https://www.sentinelone.com/cybersecurity-101/cloud-security/kubernetes-security-issues/"
+      },
+      {
+        "incident": "Leaky Vessels Global Container Escape Campaign",
+        "date": "2024-01-31",
+        "impact": "80% of cloud environments vulnerable to CVE-2024-21626, affecting Docker, Kubernetes, and major cloud providers",
+        "root_cause": "Widespread use of vulnerable runC versions across container platforms",
+        "source_url": "https://www.darkreading.com/cloud-security/leaky-vessel-cloud-bugs-container-escapes-globally"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-Docker-Escape",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Container escape via privileged container with host path mount allowing complete host compromise"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "NIST SP 800-190: Application Container Security Guide",
+        "authors": ["NIST"],
+        "published_date": "2017-09-01",
+        "source_url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-190.pdf",
+        "key_finding": "Container escape is one of five major container security threats, requiring defense-in-depth approach"
+      },
+      {
+        "title": "runC Container Breakout Vulnerabilities: A Technical Overview",
+        "authors": ["CNCF"],
+        "published_date": "2025-11-28",
+        "source_url": "https://www.cncf.io/blog/2025/11/28/runc-container-breakout-vulnerabilities-a-technical-overview/",
+        "key_finding": "Three critical runC vulnerabilities (CVE-2025-31133, CVE-2025-52565, CVE-2025-52881) bypass LSM protections"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Docker Security Profiles (AppArmor/SELinux)",
+      "description": "Apply mandatory access control (MAC) security profiles to restrict container capabilities and prevent host filesystem access. AppArmor and SELinux provide kernel-level enforcement that blocks container escape attempts even when vulnerabilities exist.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Docker Engine 25.x + AppArmor",
+        "code": "#!/bin/bash\n# Create custom AppArmor profile for containers\nsudo cat > /etc/apparmor.d/docker-secure << 'EOF'\n#include <tunables/global>\n\nprofile docker-secure flags=(attach_disconnected,mediate_deleted) {\n  #include <abstractions/base>\n  \n  # Deny access to host filesystem roots\n  deny / r,\n  deny /proc/sys/** w,\n  deny /proc/sysrq-trigger rwklx,\n  deny /proc/sys/kernel/core_pattern rwklx,\n  deny /sys/** w,\n  \n  # Allow container-specific paths\n  /var/lib/docker/** rw,\n  /dev/null rw,\n  /dev/zero rw,\n  /dev/random r,\n  /dev/urandom r,\n  \n  # Deny dangerous capabilities\n  deny capability sys_admin,\n  deny capability sys_ptrace,\n  deny capability sys_module,\n  deny capability dac_override,\n  \n  # Block runC binary access\n  deny /usr/bin/runc rwklx,\n  deny /usr/bin/docker-runc rwklx,\n  deny /proc/*/exe rwklx,\n}\nEOF\n\n# Load the profile\nsudo apparmor_parser -r /etc/apparmor.d/docker-secure\n\n# Run container with AppArmor profile\ndocker run -d \\\n  --security-opt apparmor=docker-secure \\\n  --name secure-app \\\n  nginx:latest\n\n# For SELinux (alternative to AppArmor)\n# Enable SELinux enforcing mode\nsudo setenforce 1\n\n# Run container with SELinux label\ndocker run -d \\\n  --security-opt label=type:svirt_sandbox_file_t \\\n  --name secure-app-selinux \\\n  nginx:latest\n\n# Verify security profile is applied\ndocker inspect secure-app | grep -A 5 SecurityOpt"
+      },
+      "tools": [
+        {
+          "name": "AppArmor",
+          "type": "Mandatory Access Control",
+          "cost": "Free (built into Linux kernel)"
+        },
+        {
+          "name": "SELinux",
+          "type": "Mandatory Access Control",
+          "cost": "Free (built into RHEL/CentOS/Fedora)"
+        },
+        {
+          "name": "Bane",
+          "type": "AppArmor Profile Generator",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Verify AppArmor/SELinux is enabled: aa-status or sestatus",
+        "Test profile blocks /proc/sys writes: docker exec <container> sh -c 'echo 1 > /proc/sys/kernel/core_pattern' (should fail)",
+        "Confirm profile loaded: docker inspect <container> | grep SecurityOpt",
+        "Test container cannot access host filesystem: docker exec <container> ls /host (should fail)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Deploy Rootless Docker with User Namespace Remapping",
+      "description": "Run Docker daemon and containers as non-root user using user namespace remapping. This ensures that even if container escape occurs, the attacker only gains unprivileged user access on the host, not root privileges.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Docker Engine 25.x Rootless Mode",
+        "code": "#!/bin/bash\n# Install rootless Docker (one-time setup)\ncurl -fsSL https://get.docker.com/rootless | sh\n\n# Configure system prerequisites\nsudo sh -c 'echo \"$(whoami):100000:65536\" >> /etc/subuid'\nsudo sh -c 'echo \"$(whoami):100000:65536\" >> /etc/subgid'\n\n# Enable systemd user service\nsystemctl --user enable docker.service\nsystemctl --user start docker.service\n\n# Set Docker socket environment variable\nexport DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock\n\n# Add to shell profile for persistence\necho 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> ~/.bashrc\necho 'export PATH=/home/$(whoami)/bin:$PATH' >> ~/.bashrc\n\n# Verify rootless mode\ndocker info | grep -i rootless\n# Should show: \"rootless: true\"\n\n# Run container with user namespace remapping (alternative approach)\n# If rootless mode not available, use userns-remap\nsudo cat > /etc/docker/daemon.json << 'EOF'\n{\n  \"userns-remap\": \"default\",\n  \"default-ulimits\": {\n    \"nofile\": {\n      \"Name\": \"nofile\",\n      \"Hard\": 64000,\n      \"Soft\": 64000\n    }\n  }\n}\nEOF\n\n# Restart Docker daemon\nsudo systemctl restart docker\n\n# Verify user namespace is active\ndocker run --rm alpine cat /proc/self/uid_map\n# Should show remapped UIDs: 0 100000 65536\n\n# Test: Container root is unprivileged on host\ndocker run -d --name test nginx\nps aux | grep nginx\n# nginx processes should run as remapped user (100000+), not root"
+      },
+      "tools": [
+        {
+          "name": "Docker Rootless",
+          "type": "Unprivileged Container Runtime",
+          "cost": "Free (built into Docker 20.10+)"
+        },
+        {
+          "name": "Podman",
+          "type": "Rootless Container Alternative",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Least functionality is configured"
+      ],
+      "validation_steps": [
+        "Check rootless mode: docker info | grep -i rootless",
+        "Verify user namespace mapping: cat /proc/$(docker inspect -f '{{.State.Pid}}' <container>)/uid_map",
+        "Test privilege escalation blocked: docker exec <container> su - (should fail)",
+        "Confirm host processes run as non-root: ps aux | grep docker"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Drop Dangerous Linux Capabilities and Disable Privileged Mode",
+      "description": "Remove unnecessary Linux capabilities from containers and explicitly forbid --privileged flag. Capabilities like CAP_SYS_ADMIN, CAP_SYS_PTRACE, and CAP_SYS_MODULE enable container escape vectors and must be dropped.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.28+ PodSecurityPolicy",
+        "code": "# Kubernetes Pod Security Standards (Restricted Profile)\napiVersion: v1\nkind: Pod\nmetadata:\n  name: secure-app\n  labels:\n    app: secure-app\nspec:\n  securityContext:\n    runAsNonRoot: true\n    runAsUser: 1000\n    fsGroup: 1000\n    seccompProfile:\n      type: RuntimeDefault\n  containers:\n  - name: app\n    image: nginx:1.25-alpine\n    securityContext:\n      allowPrivilegeEscalation: false\n      readOnlyRootFilesystem: true\n      privileged: false\n      capabilities:\n        drop:\n          - ALL  # Drop all capabilities\n        add:\n          - NET_BIND_SERVICE  # Only add what's needed\n    volumeMounts:\n    - name: tmp\n      mountPath: /tmp\n    - name: cache\n      mountPath: /var/cache/nginx\n  volumes:\n  - name: tmp\n    emptyDir: {}\n  - name: cache\n    emptyDir: {}\n\n---\n# Docker Compose with capability dropping\nversion: '3.8'\nservices:\n  app:\n    image: nginx:1.25-alpine\n    cap_drop:\n      - ALL\n    cap_add:\n      - NET_BIND_SERVICE\n    security_opt:\n      - no-new-privileges:true\n    read_only: true\n    user: \"1000:1000\"\n    tmpfs:\n      - /tmp\n      - /var/cache/nginx\n\n---\n# Docker CLI with hardened security\n#!/bin/bash\ndocker run -d \\\n  --name secure-nginx \\\n  --cap-drop ALL \\\n  --cap-add NET_BIND_SERVICE \\\n  --security-opt no-new-privileges:true \\\n  --read-only \\\n  --tmpfs /tmp \\\n  --tmpfs /var/cache/nginx \\\n  --user 1000:1000 \\\n  --pids-limit 100 \\\n  --memory 512m \\\n  --cpus 0.5 \\\n  nginx:1.25-alpine\n\n# Kubernetes admission controller to block privileged containers\napiVersion: v1\nkind: PodSecurityPolicy\nmetadata:\n  name: restricted\nspec:\n  privileged: false  # Block --privileged flag\n  allowPrivilegeEscalation: false\n  requiredDropCapabilities:\n    - ALL\n  allowedCapabilities:\n    - NET_BIND_SERVICE\n  volumes:\n    - 'configMap'\n    - 'emptyDir'\n    - 'projected'\n    - 'secret'\n    - 'downwardAPI'\n    - 'persistentVolumeClaim'\n  hostNetwork: false\n  hostIPC: false\n  hostPID: false\n  runAsUser:\n    rule: 'MustRunAsNonRoot'\n  seLinux:\n    rule: 'RunAsAny'\n  fsGroup:\n    rule: 'RunAsAny'\n  readOnlyRootFilesystem: true"
+      },
+      "tools": [
+        {
+          "name": "Kubernetes Pod Security Standards",
+          "type": "Policy Enforcement",
+          "cost": "Free (built into Kubernetes 1.25+)"
+        },
+        {
+          "name": "Open Policy Agent (OPA)",
+          "type": "Admission Controller",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kyverno",
+          "type": "Kubernetes Policy Engine",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.PT-3 - Least functionality is configured",
+        "PR.AC-4 - Access permissions are managed"
+      ],
+      "validation_steps": [
+        "Audit existing containers: docker ps --format '{{.Names}}' | xargs -I {} docker inspect {} | grep -i privileged",
+        "Test capability drop: docker exec <container> capsh --print (should show minimal caps)",
+        "Verify no new privileges: docker inspect <container> | grep NoNewPrivileges (should be true)",
+        "Block privileged container test: docker run --privileged alpine (should be blocked by admission controller)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Container processes accessing /proc/self/exe or host runC binary",
+      "Unexpected writes to /proc/sys/kernel/core_pattern or /proc/sysrq-trigger",
+      "Container mounting host filesystem paths like /dev, /sys, /proc",
+      "Privileged container deployments or containers with CAP_SYS_ADMIN",
+      "Container processes running as UID 0 (root) on host",
+      "Unusual container restarts or runC process crashes"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=container sourcetype=docker:daemon OR sourcetype=linux_secure\n| search (\"privileged\" OR \"CAP_SYS_ADMIN\" OR \"CAP_SYS_PTRACE\" OR \"/proc/self/exe\" OR \"core_pattern\" OR \"sysrq-trigger\")\n| eval severity=case(\n    match(_raw, \"privileged.*true\"), \"critical\",\n    match(_raw, \"CAP_SYS_ADMIN|CAP_SYS_PTRACE\"), \"high\",\n    match(_raw, \"proc/self/exe|core_pattern|sysrq-trigger\"), \"critical\",\n    1=1, \"medium\"\n  )\n| stats count by host, container_name, severity, _time\n| where severity IN (\"critical\", \"high\")\n| sort -_time"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: (docker.container OR linux.auditd) AND (\n  container.security_context.privileged: true OR\n  process.args: (*CAP_SYS_ADMIN* OR *CAP_SYS_PTRACE* OR *CAP_SYS_MODULE*) OR\n  file.path: (/proc/self/exe OR /proc/sys/kernel/core_pattern OR /proc/sysrq-trigger) OR\n  process.name: runc AND event.action: (exec OR write)\n)"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect container escape attempts\nlet suspiciousCapabilities = dynamic([\"CAP_SYS_ADMIN\", \"CAP_SYS_PTRACE\", \"CAP_SYS_MODULE\", \"CAP_DAC_OVERRIDE\"]);\nlet dangerousPaths = dynamic([\"/proc/self/exe\", \"/proc/sys/kernel/core_pattern\", \"/proc/sysrq-trigger\", \"/sys/\"]);\nContainerLog\n| union AuditLogs, Syslog\n| where TimeGenerated > ago(24h)\n| where (\n    LogEntry contains \"privileged\" and LogEntry contains \"true\"\n  ) or (\n    LogEntry has_any (suspiciousCapabilities)\n  ) or (\n    LogEntry has_any (dangerousPaths)\n  ) or (\n    ProcessName == \"runc\" and (LogEntry contains \"exec\" or LogEntry contains \"write\")\n  )\n| extend Severity = case(\n    LogEntry contains \"privileged\" or LogEntry has_any (dangerousPaths), \"Critical\",\n    LogEntry has_any (suspiciousCapabilities), \"High\",\n    \"Medium\"\n  )\n| project TimeGenerated, Computer, ContainerName, Namespace, Image, LogEntry, Severity\n| where Severity in (\"Critical\", \"High\")\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Datadog (Query Language)",
+        "query": "source:docker status:error OR status:warning\n(@docker.container.privileged:true OR\n @process.args:(*CAP_SYS_ADMIN* OR *CAP_SYS_PTRACE*) OR\n @file.path:(/proc/self/exe OR /proc/sys/kernel/core_pattern OR /proc/sysrq-trigger) OR\n (@process.name:runc AND @event.action:(exec OR write)))"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Falco",
+        "type": "Runtime Threat Detection",
+        "usage": "Detects container escape behaviors using eBPF kernel instrumentation and predefined rules for runC exploitation"
+      },
+      {
+        "name": "Tracee",
+        "type": "Runtime Security",
+        "usage": "Uses eBPF to detect container escape attempts, including procfs manipulation and capability abuse"
+      },
+      {
+        "name": "Aqua Runtime Protection",
+        "type": "Container Security Platform",
+        "usage": "Real-time detection of container escapes with behavioral analysis and anomaly detection"
+      },
+      {
+        "name": "Sysdig Secure",
+        "type": "Cloud-Native Security",
+        "usage": "Monitors container runtime for escape indicators and CVE exploitation attempts"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Cloud Services",
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Critical Infrastructure"
+    ],
+    "compliance": [
+      "NIST SP 800-190 (Section 4.1 - Container Escape)",
+      "CIS Docker Benchmark v1.6.0 (5.1, 5.2, 5.3, 5.25)",
+      "CIS Kubernetes Benchmark v1.8.0 (5.2.1-5.2.9)",
+      "PCI-DSS 4.0 (Requirement 6.4.3)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC6.6, CC6.8)",
+      "ISO27001 (A.14.2.5)",
+      "FedRAMP (SC-39 Process Isolation)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Docker Swarm",
+      "ECS/EKS",
+      "AKS",
+      "GKE"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

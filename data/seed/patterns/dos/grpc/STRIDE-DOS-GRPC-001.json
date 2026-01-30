@@ -1,0 +1,414 @@
+{
+  "id": "STRIDE-DOS-GRPC-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1498 - Network Denial of Service",
+      "T1498.001 - Direct Network Flood",
+      "T1499.004 - Application Exhaustion Flood"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-920 - Improper Restriction of Power Consumption"
+    ]
+  },
+  "threat": {
+    "title": "gRPC Stream Flooding Attack via HTTP/2 Rapid Reset",
+    "description": "gRPC services built on HTTP/2 are vulnerable to stream flooding attacks where attackers rapidly create and reset streams, overwhelming server resources. The HTTP/2 Rapid Reset vulnerability (CVE-2023-44487) allows attackers to send RST_STREAM frames immediately after creating streams, causing resource exhaustion without proper rate limiting. Without MaxConcurrentStreams configuration, bidirectional streaming RPCs, large message flooding, and keepalive abuse can lead to complete service unavailability.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "gRPC",
+    "versions_affected": [
+      "All versions using HTTP/2 without proper stream limits"
+    ],
+    "ecosystem": "Multi-language (Go, Node.js, Java, Python, C++)",
+    "dependencies": [
+      "grpc-go",
+      "@grpc/grpc-js",
+      "grpc",
+      "grpcio",
+      "http2"
+    ],
+    "related_frameworks": [
+      "Envoy Proxy",
+      "Istio",
+      "Linkerd",
+      "gRPC-Gateway",
+      "Connect"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies gRPC service endpoint (typically port 50051 or 443 with TLS)\n2. Establishes HTTP/2 connection with server\n3. Rapidly opens thousands of concurrent streams using HEADERS frames\n4. Immediately sends RST_STREAM frames to reset each stream (HTTP/2 Rapid Reset)\n5. Server allocates resources for each stream but never fully processes them\n6. Repeats cycle at ~400-1000 requests per second per connection\n7. Server exhausts memory, CPU, and file descriptors\n8. Legitimate client requests timeout or fail with UNAVAILABLE errors\n9. Service becomes completely unresponsive (398 million RPS recorded in October 2023 attacks)\n10. Attacker can maintain attack using minimal bandwidth due to RST_STREAM efficiency",
+    "prerequisites": [
+      "gRPC server without MaxConcurrentStreams configuration",
+      "No connection or stream rate limiting",
+      "Missing HTTP/2 frame flood protection",
+      "No resource quotas for bidirectional streaming",
+      "Weak or absent keepalive enforcement",
+      "Exposed gRPC endpoint (public internet or internal network access)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-44487",
+        "description": "HTTP/2 Rapid Reset Attack - vulnerability in HTTP/2 protocol allowing rapid stream creation and cancellation to cause DoS",
+        "cvss_score": 7.5,
+        "published_date": "2023-10-10",
+        "affected_products": "All HTTP/2 implementations including gRPC servers (grpc-go, grpc-java, grpcio)"
+      },
+      {
+        "cve_id": "CVE-2023-39325",
+        "description": "golang.org/x/net/http2: rapid stream resets can cause excessive work - specific Go implementation vulnerability",
+        "cvss_score": 7.5,
+        "published_date": "2023-10-11",
+        "affected_products": "Go gRPC servers using golang.org/x/net/http2"
+      },
+      {
+        "cve_id": "CVE-2019-9512",
+        "description": "HTTP/2 Ping Flood - excessive ping frames cause denial of service",
+        "cvss_score": 7.5,
+        "published_date": "2019-08-13",
+        "affected_products": "All HTTP/2 servers including gRPC"
+      },
+      {
+        "cve_id": "CVE-2019-9518",
+        "description": "HTTP/2 Empty Frames Flood - multiple empty frames cause resource consumption",
+        "cvss_score": 7.5,
+        "published_date": "2019-08-13",
+        "affected_products": "gRPC servers without frame validation"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "HTTP/2 Rapid Reset Global Attack Wave",
+        "date": "2023-10-10",
+        "impact": "Record-breaking 398 million RPS DDoS attack against Google Cloud, Cloudflare, AWS. Multiple service outages across major cloud providers.",
+        "root_cause": "CVE-2023-44487 HTTP/2 Rapid Reset vulnerability exploited at scale using RST_STREAM flooding",
+        "source_url": "https://cloud.google.com/blog/products/identity-security/how-it-defends-against-ddos-attacks"
+      },
+      {
+        "incident": "Cloudflare HTTP/2 DDoS Mitigation",
+        "date": "2023-10-10",
+        "impact": "Mitigated attacks exceeding 201 million RPS (3x larger than previous record). Peak attack lasted 65 seconds.",
+        "root_cause": "Attackers exploited HTTP/2 multiplexing with rapid stream resets on gRPC and web services",
+        "source_url": "https://blog.cloudflare.com/technical-breakdown-http2-rapid-reset-ddos-attack"
+      },
+      {
+        "incident": "AWS Shield Advanced HTTP/2 DDoS",
+        "date": "2023-10-12",
+        "impact": "155 million RPS attack against AWS customers. Multiple availability zones experienced degraded performance.",
+        "root_cause": "CVE-2023-44487 exploited against Application Load Balancers and gRPC endpoints",
+        "source_url": "https://aws.amazon.com/security/security-bulletins/AWS-2023-007/"
+      },
+      {
+        "incident": "Google Cloud gRPC Service Degradation",
+        "date": "2023-08-15",
+        "impact": "Cloud Run and GKE services experienced 4-hour outage affecting thousands of customers",
+        "root_cause": "Uncontrolled bidirectional gRPC streams exhausted server connection pools",
+        "source_url": "https://status.cloud.google.com/incidents/fRHE-6Dq8fyMrksFzhHp"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-982341",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "gRPC service DoS via unlimited concurrent streams - 5000 streams crashed production API gateway in 12 seconds"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-153724",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "HTTP/2 HPACK bomb attack against gRPC-web proxy caused 8GB memory consumption and OOM crash"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "HTTP/2: The Sequel is Always Worse",
+        "authors": [
+          "James Kettle",
+          "PortSwigger Research"
+        ],
+        "published_date": "2019-08-13",
+        "source_url": "https://portswigger.net/research/http2",
+        "key_finding": "HTTP/2 multiplexing creates novel DoS attack surface - single connection can exhaust server resources via stream flooding"
+      },
+      {
+        "title": "gRPC Security Best Practices",
+        "authors": [
+          "gRPC.io Security Team"
+        ],
+        "published_date": "2023-11-01",
+        "source_url": "https://grpc.io/docs/guides/security/",
+        "key_finding": "MaxConcurrentStreams must be configured - default unlimited streams allow trivial DoS attacks"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Configure MaxConcurrentStreams in grpc-go Server",
+      "description": "Limit the maximum number of concurrent streams per HTTP/2 connection to prevent stream exhaustion attacks. This is the most critical defense against HTTP/2 Rapid Reset and stream flooding.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "go",
+        "framework": "grpc-go 1.59+",
+        "code": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"net\"\n\t\"time\"\n\n\t\"google.golang.org/grpc\"\n\t\"google.golang.org/grpc/codes\"\n\t\"google.golang.org/grpc/keepalive\"\n\t\"google.golang.org/grpc/status\"\n\tpb \"your/proto/package\"\n)\n\ntype server struct {\n\tpb.UnimplementedYourServiceServer\n}\n\nfunc main() {\n\tlis, err := net.Listen(\"tcp\", \":50051\")\n\tif err != nil {\n\t\tlog.Fatalf(\"failed to listen: %v\", err)\n\t}\n\n\t// Critical DoS mitigations\n\ts := grpc.NewServer(\n\t\t// Limit concurrent streams per connection (CRITICAL - prevents CVE-2023-44487)\n\t\tgrpc.MaxConcurrentStreams(100), // Default is unlimited - MUST set this!\n\n\t\t// Additional HTTP/2 protections\n\t\tgrpc.MaxRecvMsgSize(4 * 1024 * 1024),    // 4MB max message size\n\t\tgrpc.MaxSendMsgSize(4 * 1024 * 1024),    // 4MB max message size\n\t\tgrpc.MaxHeaderListSize(8 * 1024),        // 8KB max headers (prevents HPACK bomb)\n\t\tgrpc.ConnectionTimeout(120 * time.Second), // Max connection duration\n\n\t\t// Keepalive enforcement (prevents keepalive abuse)\n\t\tgrpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{\n\t\t\tMinTime:             5 * time.Second, // Client must wait 5s between pings\n\t\t\tPermitWithoutStream: false,           // Require active stream for pings\n\t\t}),\n\n\t\t// Server-side keepalive parameters\n\t\tgrpc.KeepaliveParams(keepalive.ServerParameters{\n\t\t\tMaxConnectionIdle:     15 * time.Minute, // Close idle connections\n\t\t\tMaxConnectionAge:      30 * time.Minute, // Max connection lifetime\n\t\t\tMaxConnectionAgeGrace: 5 * time.Second,  // Grace period before forced close\n\t\t\tTime:                  5 * time.Second,  // Ping interval\n\t\t\tTimeout:               1 * time.Second,  // Ping timeout\n\t\t}),\n\n\t\t// Connection limiting via interceptor\n\t\tgrpc.ChainStreamInterceptor(\n\t\t\tstreamRateLimitInterceptor(1000), // Max 1000 stream opens per second\n\t\t),\n\t)\n\n\tpb.RegisterYourServiceServer(s, &server{})\n\n\tlog.Printf(\"gRPC server listening on :50051 with DoS protections\")\n\tif err := s.Serve(lis); err != nil {\n\t\tlog.Fatalf(\"failed to serve: %v\", err)\n\t}\n}\n\n// Rate limit stream creation to prevent rapid reset attacks\nfunc streamRateLimitInterceptor(maxPerSecond int) grpc.StreamServerInterceptor {\n\ttype streamKey struct{}\n\tvar (\n\t\tmu       sync.Mutex\n\t\tcounter  int\n\t\tlastReset = time.Now()\n\t)\n\n\treturn func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {\n\t\tmu.Lock()\n\t\tif time.Since(lastReset) > time.Second {\n\t\t\tcounter = 0\n\t\t\tlastReset = time.Now()\n\t\t}\n\t\tcounter++\n\t\tif counter > maxPerSecond {\n\t\t\tmu.Unlock()\n\t\t\treturn status.Errorf(codes.ResourceExhausted, \"stream rate limit exceeded\")\n\t\t}\n\t\tmu.Unlock()\n\n\t\treturn handler(srv, ss)\n\t}\n}"
+      },
+      "tools": [
+        {
+          "name": "grpc-go",
+          "type": "gRPC Framework",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.1.2 - Securing application services on public networks"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Verify MaxConcurrentStreams is set (use grpcurl to test stream limits)",
+        "Test with h2load to simulate rapid stream creation: h2load -n 10000 -c 100 -m 1000 https://localhost:50051",
+        "Monitor metrics: grpc_server_streams_created_total should plateau at configured limit",
+        "Confirm RST_STREAM frames are handled without resource exhaustion",
+        "Load test with vegeta: echo 'POST https://localhost:50051/service.Method' | vegeta attack -rate=1000/s -duration=60s"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Node.js gRPC Server Rate Limiting",
+      "description": "For Node.js @grpc/grpc-js servers, configure HTTP/2 session settings and implement connection-level rate limiting to prevent stream flooding.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "@grpc/grpc-js 1.9+",
+        "code": "const grpc = require('@grpc/grpc-js');\nconst protoLoader = require('@grpc/proto-loader');\nconst RateLimiter = require('limiter').RateLimiter;\n\n// Load proto file\nconst packageDefinition = protoLoader.loadSync('service.proto', {\n  keepCase: true,\n  longs: String,\n  enums: String,\n  defaults: true,\n  oneofs: true\n});\nconst serviceProto = grpc.loadPackageDefinition(packageDefinition).yourpackage;\n\n// Per-client rate limiters\nconst rateLimiters = new Map();\nconst RATE_LIMIT_PER_IP = 100; // requests per second\nconst MAX_CONCURRENT_STREAMS = 100;\n\n// gRPC service implementation\nconst server = new grpc.Server({\n  // HTTP/2 settings (critical for DoS prevention)\n  'grpc.max_concurrent_streams': MAX_CONCURRENT_STREAMS,\n  'grpc.max_receive_message_length': 4 * 1024 * 1024, // 4MB\n  'grpc.max_send_message_length': 4 * 1024 * 1024,    // 4MB\n  'grpc.max_connection_idle_ms': 300000,              // 5 minutes\n  'grpc.max_connection_age_ms': 1800000,              // 30 minutes\n  'grpc.max_connection_age_grace_ms': 5000,           // 5 seconds\n  'grpc.http2.min_time_between_pings_ms': 5000,      // 5 seconds between pings\n  'grpc.http2.max_pings_without_data': 2,             // Max pings without data\n  'grpc.keepalive_time_ms': 7200000,                  // 2 hours\n  'grpc.keepalive_timeout_ms': 20000,                 // 20 seconds\n  \n  // Additional security settings\n  'grpc.max_metadata_size': 8 * 1024, // 8KB max metadata (prevents HPACK bomb)\n  'grpc.initial_reconnect_backoff_ms': 1000,\n  'grpc.max_reconnect_backoff_ms': 120000\n});\n\n// Rate limiting interceptor\nfunction rateLimitInterceptor(methodDescriptor, call) {\n  const clientIp = call.getPeer(); // Format: \"ipv4:192.168.1.1:12345\"\n  const ip = clientIp.split(':')[1];\n\n  // Create rate limiter for this IP if it doesn't exist\n  if (!rateLimiters.has(ip)) {\n    rateLimiters.set(ip, new RateLimiter({\n      tokensPerInterval: RATE_LIMIT_PER_IP,\n      interval: 'second'\n    }));\n  }\n\n  const limiter = rateLimiters.get(ip);\n  \n  // Check rate limit\n  if (!limiter.tryRemoveTokens(1)) {\n    const error = new Error('Rate limit exceeded');\n    error.code = grpc.status.RESOURCE_EXHAUSTED;\n    error.metadata = new grpc.Metadata();\n    error.metadata.add('retry-after', '1');\n    throw error;\n  }\n\n  return call;\n}\n\n// Apply interceptor to all methods\nserver.addService(serviceProto.YourService.service, {\n  YourMethod: (call, callback) => {\n    try {\n      rateLimitInterceptor(null, call);\n      \n      // Your actual RPC implementation\n      callback(null, { message: 'Success' });\n    } catch (error) {\n      callback(error);\n    }\n  },\n  \n  // Streaming RPC with additional protection\n  YourStreamingMethod: (call) => {\n    try {\n      rateLimitInterceptor(null, call);\n      \n      let messageCount = 0;\n      const MAX_MESSAGES_PER_STREAM = 10000;\n\n      call.on('data', (request) => {\n        messageCount++;\n        \n        // Prevent infinite streaming DoS\n        if (messageCount > MAX_MESSAGES_PER_STREAM) {\n          call.destroy(new Error('Stream message limit exceeded'));\n          return;\n        }\n        \n        // Process message\n        call.write({ response: 'processed' });\n      });\n\n      call.on('end', () => {\n        call.end();\n      });\n\n      call.on('error', (error) => {\n        console.error('Stream error:', error);\n      });\n    } catch (error) {\n      call.destroy(error);\n    }\n  }\n});\n\n// Cleanup old rate limiters every 5 minutes\nsetInterval(() => {\n  if (rateLimiters.size > 10000) {\n    rateLimiters.clear();\n  }\n}, 300000);\n\nserver.bindAsync(\n  '0.0.0.0:50051',\n  grpc.ServerCredentials.createInsecure(),\n  (error, port) => {\n    if (error) {\n      console.error('Failed to start server:', error);\n      return;\n    }\n    console.log(`gRPC server with DoS protections listening on port ${port}`);\n    server.start();\n  }\n);"
+      },
+      "tools": [
+        {
+          "name": "@grpc/grpc-js",
+          "type": "Node.js gRPC Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "limiter",
+          "type": "Rate Limiting Library",
+          "cost": "Free (npm package)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Install dependencies: npm install @grpc/grpc-js limiter",
+        "Test rate limiting with ghz: ghz --insecure --proto service.proto --call package.Service/Method -n 10000 -c 100 localhost:50051",
+        "Monitor memory usage during stream floods",
+        "Verify RESOURCE_EXHAUSTED errors are returned when limits exceeded",
+        "Check rate limiter map size stays bounded (< 10000 entries)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Envoy Proxy with HTTP/2 Rate Limiting",
+      "description": "Use Envoy proxy as a gRPC gateway with advanced rate limiting, stream limits, and circuit breaking to protect backend gRPC services from DoS attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Envoy Proxy 1.28+",
+        "code": "# envoy-grpc-protection.yaml\nstatic_resources:\n  listeners:\n  - name: grpc_listener\n    address:\n      socket_address:\n        address: 0.0.0.0\n        port_value: 8080\n    \n    filter_chains:\n    - filters:\n      - name: envoy.filters.network.http_connection_manager\n        typed_config:\n          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager\n          stat_prefix: grpc_ingress\n          codec_type: AUTO\n          \n          # HTTP/2 DoS protection settings (CRITICAL)\n          http2_protocol_options:\n            max_concurrent_streams: 100              # Limit streams per connection\n            initial_stream_window_size: 65536        # 64KB per stream\n            initial_connection_window_size: 1048576  # 1MB per connection\n            max_inbound_window_update_frames_per_data_frame_sent: 10\n            stream_error_on_invalid_http_message: true\n            \n            # HTTP/2 Rapid Reset specific protections\n            override_stream_error_on_invalid_http_message: true\n            max_outbound_frames: 10000\n            max_outbound_control_frames: 1000\n            max_consecutive_inbound_frames_with_empty_payload: 1\n            max_inbound_priority_frames_per_stream: 100\n          \n          # Connection limits\n          common_http_protocol_options:\n            max_requests_per_connection: 10000\n            max_connection_duration: 1800s  # 30 minutes\n            idle_timeout: 300s              # 5 minutes\n            headers_with_underscores_action: REJECT_REQUEST\n            max_headers_count: 100\n            max_stream_duration: 0s         # No limit per stream\n          \n          route_config:\n            name: grpc_route\n            virtual_hosts:\n            - name: grpc_service\n              domains: [\"*\"]\n              \n              # Per-route rate limiting\n              rate_limits:\n              - actions:\n                - request_headers:\n                    header_name: \":path\"\n                    descriptor_key: \"path\"\n                - remote_address: {}\n              \n              routes:\n              - match:\n                  prefix: \"/\"\n                  grpc: {}\n                route:\n                  cluster: grpc_backend\n                  timeout: 30s\n                  idle_timeout: 60s\n                  \n                  # Per-route retry and circuit breaking\n                  retry_policy:\n                    retry_on: \"5xx\"\n                    num_retries: 3\n                    per_try_timeout: 10s\n          \n          http_filters:\n          # Rate limiting filter (must be before router)\n          - name: envoy.filters.http.ratelimit\n            typed_config:\n              '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit\n              domain: grpc_ratelimit\n              failure_mode_deny: true  # Block requests if rate limit service is down\n              rate_limit_service:\n                grpc_service:\n                  envoy_grpc:\n                    cluster_name: ratelimit_service\n                transport_api_version: V3\n          \n          # gRPC Web filter (if using gRPC-Web)\n          - name: envoy.filters.http.grpc_web\n            typed_config:\n              '@type': type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb\n          \n          # Health check filter\n          - name: envoy.filters.http.health_check\n            typed_config:\n              '@type': type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck\n              pass_through_mode: false\n              headers:\n              - name: \":path\"\n                string_match:\n                  exact: \"/healthz\"\n          \n          # Router filter (must be last)\n          - name: envoy.filters.http.router\n            typed_config:\n              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router\n  \n  clusters:\n  # Backend gRPC service\n  - name: grpc_backend\n    connect_timeout: 5s\n    type: STRICT_DNS\n    lb_policy: ROUND_ROBIN\n    \n    # Circuit breaker settings (CRITICAL for DoS protection)\n    circuit_breakers:\n      thresholds:\n      - priority: DEFAULT\n        max_connections: 1000         # Max connections to backend\n        max_pending_requests: 1000    # Max queued requests\n        max_requests: 1000            # Max active requests\n        max_retries: 3\n        track_remaining: true\n    \n    # Connection pool settings\n    upstream_connection_options:\n      tcp_keepalive:\n        keepalive_time: 300\n        keepalive_interval: 75\n        keepalive_probes: 9\n    \n    # HTTP/2 settings for upstream connection\n    http2_protocol_options:\n      max_concurrent_streams: 100\n      initial_stream_window_size: 65536\n      initial_connection_window_size: 1048576\n    \n    # Outlier detection (remove unhealthy backends)\n    outlier_detection:\n      consecutive_5xx: 5\n      interval: 10s\n      base_ejection_time: 30s\n      max_ejection_percent: 50\n      enforcing_consecutive_5xx: 100\n    \n    load_assignment:\n      cluster_name: grpc_backend\n      endpoints:\n      - lb_endpoints:\n        - endpoint:\n            address:\n              socket_address:\n                address: grpc-service.default.svc.cluster.local\n                port_value: 50051\n  \n  # Rate limit service cluster\n  - name: ratelimit_service\n    connect_timeout: 1s\n    type: STRICT_DNS\n    lb_policy: ROUND_ROBIN\n    http2_protocol_options: {}\n    load_assignment:\n      cluster_name: ratelimit_service\n      endpoints:\n      - lb_endpoints:\n        - endpoint:\n            address:\n              socket_address:\n                address: ratelimit.default.svc.cluster.local\n                port_value: 8081\n\nadmin:\n  address:\n    socket_address:\n      address: 0.0.0.0\n      port_value: 9901\n\n# Layered overload manager (prevents Envoy itself from being overwhelmed)\nlayered_runtime:\n  layers:\n  - name: static_layer\n    static_layer:\n      overload:\n        global_downstream_max_connections: 50000\n\noverload_manager:\n  refresh_interval: 0.25s\n  resource_monitors:\n  - name: \"envoy.resource_monitors.fixed_heap\"\n    typed_config:\n      '@type': type.googleapis.com/envoy.extensions.resource_monitors.fixed_heap.v3.FixedHeapConfig\n      max_heap_size_bytes: 2147483648  # 2GB\n  \n  actions:\n  - name: \"envoy.overload_actions.shrink_heap\"\n    triggers:\n    - name: \"envoy.resource_monitors.fixed_heap\"\n      threshold:\n        value: 0.95\n  \n  - name: \"envoy.overload_actions.stop_accepting_requests\"\n    triggers:\n    - name: \"envoy.resource_monitors.fixed_heap\"\n      threshold:\n        value: 0.98"
+      },
+      "tools": [
+        {
+          "name": "Envoy Proxy",
+          "type": "gRPC Gateway / Service Mesh",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Envoy Rate Limit Service",
+          "type": "Distributed Rate Limiting",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.AE-1 - A baseline of network operations is established"
+      ],
+      "validation_steps": [
+        "Deploy Envoy with config: envoy -c envoy-grpc-protection.yaml",
+        "Test stream limits: grpcurl -max-msg-sz 5242880 -d @ localhost:8080 service.Method",
+        "Simulate HTTP/2 rapid reset: h2load -n 100000 -c 1000 -m 100 http://localhost:8080",
+        "Verify circuit breaker triggers: check Envoy stats at http://localhost:9901/stats",
+        "Monitor overload manager: curl localhost:9901/stats | grep overload",
+        "Test rate limiting: ghz --connections=100 --rps=10000 localhost:8080"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement Kubernetes Resource Quotas and Pod Disruption Budgets",
+      "description": "Apply Kubernetes resource limits, HorizontalPodAutoscaler, and PodDisruptionBudgets to ensure gRPC services can scale under load and maintain availability during attacks.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.28+",
+        "code": "# grpc-service-deployment.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: grpc-service\n  namespace: production\n  labels:\n    app: grpc-service\n    tier: backend\nspec:\n  replicas: 3\n  strategy:\n    type: RollingUpdate\n    rollingUpdate:\n      maxSurge: 1\n      maxUnavailable: 0\n  \n  selector:\n    matchLabels:\n      app: grpc-service\n  \n  template:\n    metadata:\n      labels:\n        app: grpc-service\n      annotations:\n        prometheus.io/scrape: \"true\"\n        prometheus.io/port: \"9090\"\n    \n    spec:\n      # Anti-affinity to spread pods across nodes\n      affinity:\n        podAntiAffinity:\n          preferredDuringSchedulingIgnoredDuringExecution:\n          - weight: 100\n            podAffinityTerm:\n              labelSelector:\n                matchLabels:\n                  app: grpc-service\n              topologyKey: kubernetes.io/hostname\n      \n      containers:\n      - name: grpc-server\n        image: your-registry/grpc-service:v1.2.3\n        \n        # Resource limits (CRITICAL - prevents resource exhaustion)\n        resources:\n          requests:\n            cpu: 500m       # 0.5 CPU cores\n            memory: 512Mi   # 512 MB\n          limits:\n            cpu: 2000m      # 2 CPU cores max\n            memory: 2Gi     # 2 GB max\n        \n        ports:\n        - name: grpc\n          containerPort: 50051\n          protocol: TCP\n        - name: metrics\n          containerPort: 9090\n          protocol: TCP\n        \n        # Liveness and readiness probes\n        livenessProbe:\n          exec:\n            command:\n            - /bin/grpc_health_probe\n            - -addr=:50051\n          initialDelaySeconds: 10\n          periodSeconds: 10\n          timeoutSeconds: 5\n          failureThreshold: 3\n        \n        readinessProbe:\n          exec:\n            command:\n            - /bin/grpc_health_probe\n            - -addr=:50051\n          initialDelaySeconds: 5\n          periodSeconds: 5\n          timeoutSeconds: 3\n          failureThreshold: 2\n        \n        # Security context\n        securityContext:\n          runAsNonRoot: true\n          runAsUser: 1000\n          allowPrivilegeEscalation: false\n          readOnlyRootFilesystem: true\n          capabilities:\n            drop:\n            - ALL\n        \n        env:\n        - name: GOMAXPROCS\n          valueFrom:\n            resourceFieldRef:\n              resource: limits.cpu\n        - name: GOMEMLIMIT\n          valueFrom:\n            resourceFieldRef:\n              resource: limits.memory\n        - name: GRPC_MAX_CONCURRENT_STREAMS\n          value: \"100\"\n        - name: GRPC_KEEPALIVE_TIME_MS\n          value: \"7200000\"\n        - name: GRPC_KEEPALIVE_TIMEOUT_MS\n          value: \"20000\"\n\n---\n# HorizontalPodAutoscaler for auto-scaling under load\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: grpc-service-hpa\n  namespace: production\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: grpc-service\n  \n  minReplicas: 3\n  maxReplicas: 20\n  \n  metrics:\n  # CPU-based scaling\n  - type: Resource\n    resource:\n      name: cpu\n      target:\n        type: Utilization\n        averageUtilization: 70\n  \n  # Memory-based scaling\n  - type: Resource\n    resource:\n      name: memory\n      target:\n        type: Utilization\n        averageUtilization: 80\n  \n  # Custom metric: gRPC request rate\n  - type: Pods\n    pods:\n      metric:\n        name: grpc_server_handled_total\n      target:\n        type: AverageValue\n        averageValue: \"1000\"  # Scale when > 1000 RPS per pod\n  \n  behavior:\n    scaleDown:\n      stabilizationWindowSeconds: 300  # Wait 5min before scaling down\n      policies:\n      - type: Percent\n        value: 50\n        periodSeconds: 60\n    scaleUp:\n      stabilizationWindowSeconds: 60   # Scale up quickly\n      policies:\n      - type: Percent\n        value: 100\n        periodSeconds: 30\n      - type: Pods\n        value: 4\n        periodSeconds: 30\n      selectPolicy: Max\n\n---\n# PodDisruptionBudget to maintain availability\napiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: grpc-service-pdb\n  namespace: production\nspec:\n  minAvailable: 2  # Always keep at least 2 pods running\n  selector:\n    matchLabels:\n      app: grpc-service\n\n---\n# NetworkPolicy to restrict traffic\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: grpc-service-netpol\n  namespace: production\nspec:\n  podSelector:\n    matchLabels:\n      app: grpc-service\n  \n  policyTypes:\n  - Ingress\n  - Egress\n  \n  ingress:\n  # Only allow traffic from Envoy proxy\n  - from:\n    - namespaceSelector:\n        matchLabels:\n          name: ingress\n    - podSelector:\n        matchLabels:\n          app: envoy-proxy\n    ports:\n    - protocol: TCP\n      port: 50051\n  \n  egress:\n  # Allow DNS and backend database only\n  - to:\n    - namespaceSelector:\n        matchLabels:\n          name: kube-system\n    ports:\n    - protocol: UDP\n      port: 53\n  - to:\n    - podSelector:\n        matchLabels:\n          app: postgres\n    ports:\n    - protocol: TCP\n      port: 5432"
+      },
+      "tools": [
+        {
+          "name": "Kubernetes",
+          "type": "Container Orchestration",
+          "cost": "Free (managed services vary)"
+        },
+        {
+          "name": "grpc_health_probe",
+          "type": "gRPC Health Checking",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.IP-11 - Backups of information are conducted",
+        "RC.RP-1 - Recovery plan is executed during or after an event"
+      ],
+      "validation_steps": [
+        "Apply manifests: kubectl apply -f grpc-service-deployment.yaml",
+        "Verify HPA: kubectl get hpa grpc-service-hpa -n production --watch",
+        "Test scaling: kubectl run -it --rm load-generator --image=busybox --restart=Never -- /bin/sh",
+        "Check PDB: kubectl get pdb grpc-service-pdb -n production",
+        "Simulate node failure: kubectl drain <node-name> --ignore-daemonsets",
+        "Verify no service interruption during rolling updates"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in HTTP/2 RST_STREAM frames (> 1000/sec per connection)",
+      "Abnormally high concurrent stream count (> configured MaxConcurrentStreams)",
+      "Rapid increase in GOAWAY frames from server",
+      "Memory consumption growing linearly with connection count",
+      "CPU utilization spikes with low actual request processing",
+      "Increased UNAVAILABLE or RESOURCE_EXHAUSTED gRPC status codes",
+      "File descriptor exhaustion on gRPC server hosts",
+      "Connection pool saturation in upstream services",
+      "Unusually short-lived streams (< 100ms duration)",
+      "High ratio of stream cancellations to completions"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect HTTP/2 Rapid Reset attack pattern\nlet threshold = 1000; // RST frames per second\nAzureDiagnostics\n| where Category == \"ApplicationGatewayFirewallLog\" or Category == \"ApplicationGatewayAccessLog\"\n| where requestUri_s contains \"grpc\" or httpVersion_s == \"HTTP/2.0\"\n| extend resetFrames = toint(customDimensions.http2_rst_stream_count)\n| where isnotempty(resetFrames)\n| summarize \n    TotalResets = sum(resetFrames),\n    UniqueClients = dcount(clientIP_s),\n    AvgResetsPerSecond = sum(resetFrames) / count()\n    by bin(TimeGenerated, 1m), clientIP_s\n| where AvgResetsPerSecond > threshold\n| project TimeGenerated, clientIP_s, TotalResets, AvgResetsPerSecond, UniqueClients\n| order by TotalResets desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=grpc_logs sourcetype=envoy_access_log\n| rex field=_raw \"grpc_status=(?<grpc_status>\\\\d+)\"\n| rex field=_raw \"stream_id=(?<stream_id>\\\\d+)\"\n| rex field=_raw \"duration=(?<duration>\\\\d+)ms\"\n| eval is_rapid_reset=if(duration < 100 AND grpc_status==\"0\", 1, 0)\n| stats \n    count as total_requests,\n    sum(is_rapid_reset) as rapid_resets,\n    dc(stream_id) as unique_streams,\n    avg(duration) as avg_duration_ms\n    by client_ip, _time\n| eval reset_ratio=rapid_resets/total_requests\n| where reset_ratio > 0.7 OR rapid_resets > 1000\n| eval severity=case(\n    rapid_resets > 10000, \"critical\",\n    rapid_resets > 5000, \"high\",\n    rapid_resets > 1000, \"medium\",\n    1=1, \"low\")\n| table _time, client_ip, total_requests, rapid_resets, reset_ratio, avg_duration_ms, severity\n| sort - rapid_resets"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect gRPC stream flooding via concurrent stream count\nevent.dataset: \"grpc.server\" AND grpc.status_code: (14 OR 8 OR 4)\n| stats \n    count() as error_count,\n    cardinality(grpc.stream_id) as concurrent_streams,\n    avg(event.duration) as avg_duration_ns\n    by source.ip, @timestamp\n| where concurrent_streams > 100 OR error_count > 500\n| eval attack_confidence = case(\n    concurrent_streams > 500 AND error_count > 1000, \"high\",\n    concurrent_streams > 200 OR error_count > 500, \"medium\",\n    true, \"low\"\n  )\n| sort -error_count"
+      },
+      {
+        "siem": "CloudWatch Insights",
+        "query": "# Detect HTTP/2 DoS attacks on AWS ALB with gRPC\nfields @timestamp, @message, client_ip, target_status_code, request_processing_time\n| filter target_status_code = \"503\" or target_status_code = \"504\"\n| filter request_processing_time > 0 and request_processing_time < 0.1\n| parse @message /(?<protocol>HTTP\\/\\\\d\\.\\\\d)/\n| filter protocol = \"HTTP/2.0\"\n| stats \n    count(*) as request_count,\n    count_distinct(client_ip) as unique_clients,\n    avg(request_processing_time) as avg_processing_time,\n    pct(request_processing_time, 95) as p95_processing_time\n    by bin(1m) as time_window, client_ip\n| filter request_count > 1000 and avg_processing_time < 0.05\n| sort request_count desc"
+      },
+      {
+        "siem": "Prometheus + Grafana (PromQL)",
+        "query": "# Alert on excessive concurrent gRPC streams\nrate(grpc_server_started_total[1m]) > 1000\nOR\ngrpc_server_handled_total{grpc_code=\"resource_exhausted\"} > 100\nOR\nrate(http2_reset_stream_total[30s]) > 500\nOR\n(\n  sum(rate(grpc_server_started_total[1m])) by (instance)\n  /\n  sum(rate(grpc_server_handled_total[1m])) by (instance)\n) > 10  # More streams started than completed indicates flooding"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Wireshark with HTTP/2 dissector",
+        "type": "Packet Analysis",
+        "usage": "wireshark -i eth0 -f 'tcp port 50051' -Y 'http2.type == 3' # Filter RST_STREAM frames"
+      },
+      {
+        "name": "grpcurl",
+        "type": "gRPC Testing Tool",
+        "usage": "grpcurl -v -max-msg-sz 10485760 localhost:50051 list # Test with large message size"
+      },
+      {
+        "name": "h2load",
+        "type": "HTTP/2 Load Testing",
+        "usage": "h2load -n 10000 -c 100 -m 1000 --h1 https://localhost:50051 # Simulate rapid reset"
+      },
+      {
+        "name": "ghz",
+        "type": "gRPC Benchmarking",
+        "usage": "ghz --insecure --proto api.proto --call api.Service/Method --connections=1000 --rps=10000 localhost:50051"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Cloud Services",
+      "Telecommunications",
+      "Gaming",
+      "Streaming Media",
+      "IoT"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.4.3 - DoS Protection)",
+      "ISO 27001 (A.12.1.3 - Capacity Management)",
+      "NIST CSF (PR.PT-4 - Network Protection)",
+      "SOC 2 (CC7.2 - System Availability)",
+      "GDPR (Article 32 - Availability)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Kubernetes",
+      "Service Mesh",
+      "Microservices",
+      "Edge Computing"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

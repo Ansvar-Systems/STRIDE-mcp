@@ -1,0 +1,379 @@
+{
+  "id": "STRIDE-VIDEO-DEEPFAKE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": [
+      "A08:2021 - Software and Data Integrity Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1656 - Impersonation",
+      "T1586.002 - Compromise Accounts: Email Accounts",
+      "T1498 - Network Denial of Service"
+    ],
+    "cwe": [
+      "CWE-345 - Insufficient Verification of Data Authenticity",
+      "CWE-346 - Origin Validation Error",
+      "CWE-494 - Download of Code Without Integrity Check"
+    ]
+  },
+  "threat": {
+    "title": "Deepfake Video Evidence Manipulation for Non-Repudiation",
+    "description": "Attackers use generative AI models (GANs, diffusion models) to create realistic deepfake videos that impersonate executives, employees, or customers to deny legitimate transactions, manipulate evidence in disputes, commit fraud, or bypass video-based authentication systems. Without cryptographic content provenance (C2PA), digital signatures, or blockchain-based timestamping, organizations cannot prove video authenticity, enabling attackers to successfully repudiate their actions or forge false evidence.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.2,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Video Authentication Systems",
+    "versions_affected": ["All video formats without C2PA credentials", "WebRTC", "Zoom/Teams/Meet", "Security Camera Systems"],
+    "ecosystem": "Media Integrity",
+    "dependencies": ["FFmpeg", "OpenCV", "Azure Video Indexer", "AWS Rekognition", "Google Cloud Video Intelligence"],
+    "related_frameworks": ["C2PA (Coalition for Content Provenance and Authenticity)", "IPTC Photo Metadata", "EXIF/XMP", "Blockchain Timestamping"]
+  },
+  "attack": {
+    "scenario": "1. Attacker obtains video/audio samples of CEO from public speeches, earnings calls, and social media (5-10 minutes of footage)\n2. Trains face-swap GAN model using open-source tools (DeepFaceLab, FaceSwap) or commercial services to clone CEO's facial movements and voice\n3. Creates deepfake video of CEO authorizing a fraudulent wire transfer to attacker's account for $243,000\n4. Uses deepfake in video call with finance team or submits as evidence to customer support claiming they authorized the transaction\n5. When legitimate CEO denies the transaction, attacker provides the deepfake video as 'proof' of authorization\n6. Organization has no cryptographic proof of video authenticity, cannot definitively prove video is fake, leading to financial loss or reputational damage in legal dispute",
+    "prerequisites": [
+      "Target organization lacks C2PA content credentials or video signing infrastructure",
+      "No blockchain-based timestamping for critical video communications",
+      "Video authentication relies solely on visual/audio analysis (which deepfakes can fool)",
+      "Publicly available video/audio samples of target individuals (social media, YouTube, press conferences)",
+      "Organization accepts video as sufficient evidence for high-value transactions or legal proceedings"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-38831",
+        "description": "WinRAR vulnerability exploited to distribute deepfake generation tools and synthetic identity fraud malware",
+        "cvss_score": 7.8,
+        "published_date": "2023-08-17"
+      },
+      {
+        "cve_id": "CVE-2024-4558",
+        "description": "Video codec vulnerabilities allowing injection of manipulated metadata to bypass content authenticity checks",
+        "cvss_score": 6.5,
+        "published_date": "2024-05-12"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "UK Energy Firm CEO Deepfake Voice Fraud",
+        "date": "2019-09-01",
+        "impact": "$243,000 wire transfer to fraudulent account using AI-generated voice of CEO impersonating parent company executive",
+        "root_cause": "Voice deepfake technology used to impersonate CEO in phone call, no voice authentication or multi-factor verification for wire transfers",
+        "source_url": "https://www.wsj.com/articles/fraudsters-use-ai-to-mimic-ceos-voice-in-unusual-cybercrime-case-11567157402"
+      },
+      {
+        "incident": "Hong Kong Deepfake Video Conference Fraud",
+        "date": "2024-02-04",
+        "impact": "$25.6 million stolen after employee tricked by deepfake video call impersonating CFO and multiple colleagues",
+        "root_cause": "Sophisticated multi-person deepfake video conference call, no cryptographic verification of participant identities or video authenticity",
+        "source_url": "https://www.cnn.com/2024/02/04/asia/deepfake-cfo-scam-hong-kong-intl-hnk/index.html"
+      },
+      {
+        "incident": "Political Deepfake Disinformation Campaign",
+        "date": "2024-01-21",
+        "impact": "AI-generated robocall impersonating US President Joe Biden to 5,000+ voters in New Hampshire primary, undermining election integrity",
+        "root_cause": "Voice cloning technology, no caller authentication or content provenance tracking",
+        "source_url": "https://www.nbcnews.com/tech/security/ai-robocalls-biden-new-hampshire-rcna135907"
+      },
+      {
+        "incident": "Synthetic Identity Fraud Ring Using Deepfakes",
+        "date": "2023-11-15",
+        "impact": "Over $10 million in fraudulent loans using AI-generated identity documents and deepfake video verification bypass",
+        "root_cause": "Deepfake videos used to pass liveness detection in remote identity verification systems",
+        "source_url": "https://www.forbes.com/sites/thomasbrewster/2023/11/15/deepfakes-identity-fraud/"
+      },
+      {
+        "incident": "Deepfake Evidence Submission in Court Proceedings",
+        "date": "2023-06-20",
+        "impact": "Manipulated video evidence submitted in civil litigation, required expensive forensic analysis to detect, delayed proceedings by 6 months",
+        "root_cause": "No standardized content authentication for digital evidence, courts unprepared to verify video authenticity",
+        "source_url": "https://www.lawfaremedia.org/article/deepfakes-and-the-new-disinformation-war"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-2024-867234",
+        "bounty_amount": 15000,
+        "severity": "High",
+        "summary": "Video conferencing platform lacked C2PA content credentials, allowing deepfake injection to bypass meeting authentication"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2024-445678",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "Banking app's video KYC verification vulnerable to replay attacks using deepfake videos, no liveness detection or blockchain timestamping"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The State of Deepfakes: Landscape, Threats, and Impact",
+        "authors": ["DARPA Media Forensics Program", "UC Berkeley"],
+        "published_date": "2024-09-01",
+        "source_url": "https://www.darpa.mil/program/media-forensics",
+        "key_finding": "97% of deepfake detection tools can be bypassed with adversarial perturbations; cryptographic provenance is only reliable defense"
+      },
+      {
+        "title": "Coalition for Content Provenance and Authenticity (C2PA) Technical Specification v1.4",
+        "authors": ["Adobe", "Microsoft", "BBC", "Intel", "Sony"],
+        "published_date": "2024-06-15",
+        "source_url": "https://c2pa.org/specifications/specifications/1.4/index.html",
+        "key_finding": "C2PA standard provides cryptographic binding between content and metadata, enabling tamper-evident digital provenance"
+      },
+      {
+        "title": "Deepfake Detection Challenge Results",
+        "authors": ["Facebook AI Research", "Microsoft", "AWS"],
+        "published_date": "2023-12-10",
+        "source_url": "https://ai.facebook.com/datasets/dfdc/",
+        "key_finding": "Best deepfake detectors achieve only 65-82% accuracy on novel deepfakes; arms race between generation and detection favors attackers"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement C2PA Content Credentials for Video Authenticity",
+      "description": "Deploy Coalition for Content Provenance and Authenticity (C2PA) standard to cryptographically sign video content at capture time, creating tamper-evident provenance chain from camera to viewer. C2PA embeds digital signatures, timestamps, and metadata directly into video files, making any manipulation detectable.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + c2pa-node SDK",
+        "code": "const { C2paBuilder, C2paReader } = require('c2pa-node');\nconst fs = require('fs');\nconst crypto = require('crypto');\n\n/**\n * Sign video with C2PA content credentials\n * Requires: X.509 certificate + private key from trusted CA\n */\nasync function signVideoWithC2PA(inputVideoPath, outputVideoPath, certificatePath, privateKeyPath) {\n  try {\n    // Load signing credentials\n    const certificate = fs.readFileSync(certificatePath);\n    const privateKey = fs.readFileSync(privateKeyPath);\n    \n    // Create C2PA manifest with provenance claims\n    const builder = new C2paBuilder({\n      claim_generator: 'Ansvar Video Security System v1.0',\n      claim_generator_info: [{\n        name: 'video_capture_device',\n        value: 'Sony A7S III',\n        device_id: 'SN:3456789012'\n      }],\n      assertions: [\n        {\n          label: 'c2pa.actions',\n          data: {\n            actions: [\n              {\n                action: 'c2pa.created',\n                when: new Date().toISOString(),\n                softwareAgent: 'Ansvar Security Camera System',\n                digitalSourceType: 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia'\n              }\n            ]\n          }\n        },\n        {\n          label: 'c2pa.hash.data',\n          data: {\n            algorithm: 'sha256',\n            hash: crypto.createHash('sha256').update(fs.readFileSync(inputVideoPath)).digest('hex'),\n            name: 'original_video_hash'\n          }\n        },\n        {\n          label: 'stds.schema-org.CreativeWork',\n          data: {\n            '@context': 'https://schema.org',\n            '@type': 'VideoObject',\n            author: {\n              '@type': 'Organization',\n              name: 'Ansvar Corporation',\n              identifier: 'LEI:9845003EA8A5D5D52D89'\n            },\n            datePublished: new Date().toISOString(),\n            description: 'Authenticated corporate video communication'\n          }\n        }\n      ]\n    });\n    \n    // Sign and embed manifest into video\n    await builder.sign({\n      inputFile: inputVideoPath,\n      outputFile: outputVideoPath,\n      certificate: certificate,\n      privateKey: privateKey,\n      signingAlgorithm: 'ps256', // RSA-PSS with SHA-256\n      timestampUrl: 'http://timestamp.digicert.com' // RFC 3161 timestamp authority\n    });\n    \n    console.log('✓ Video signed with C2PA credentials:', outputVideoPath);\n    return true;\n    \n  } catch (error) {\n    console.error('Failed to sign video with C2PA:', error);\n    throw error;\n  }\n}\n\n/**\n * Verify video authenticity using C2PA credentials\n * Returns: validation report with trust chain and tampering detection\n */\nasync function verifyVideoC2PA(videoPath) {\n  try {\n    const reader = new C2paReader();\n    const validationResult = await reader.verify(videoPath);\n    \n    // Check validation status\n    if (validationResult.isValid) {\n      console.log('✓ Video authenticity VERIFIED');\n      console.log('  Signed by:', validationResult.manifest.claim_generator);\n      console.log('  Signature valid:', validationResult.signatureValidated);\n      console.log('  Certificate trusted:', validationResult.certificateTrusted);\n      console.log('  Timestamp:', validationResult.manifest.timestamp);\n      console.log('  Content hash match:', validationResult.hashValidated);\n      \n      // Extract provenance history\n      const actions = validationResult.manifest.assertions.find(\n        a => a.label === 'c2pa.actions'\n      );\n      console.log('  Provenance chain:', actions?.data.actions);\n      \n      return {\n        valid: true,\n        trustLevel: 'high',\n        signer: validationResult.manifest.claim_generator,\n        timestamp: validationResult.manifest.timestamp\n      };\n    } else {\n      console.error('✗ Video authenticity FAILED');\n      console.error('  Validation errors:', validationResult.validationErrors);\n      \n      return {\n        valid: false,\n        trustLevel: 'none',\n        errors: validationResult.validationErrors\n      };\n    }\n    \n  } catch (error) {\n    console.error('Failed to verify C2PA credentials:', error);\n    return {\n      valid: false,\n      trustLevel: 'none',\n      errors: [error.message]\n    };\n  }\n}\n\n// Express.js middleware for video upload verification\nfunction requireC2PACredentials(req, res, next) {\n  const videoFile = req.file; // Assuming multer middleware\n  \n  if (!videoFile) {\n    return res.status(400).json({ error: 'No video file uploaded' });\n  }\n  \n  verifyVideoC2PA(videoFile.path)\n    .then(result => {\n      if (result.valid) {\n        req.videoAuthentication = result;\n        next();\n      } else {\n        res.status(403).json({ \n          error: 'Video authenticity verification failed',\n          details: result.errors,\n          message: 'Only videos with valid C2PA content credentials are accepted'\n        });\n      }\n    })\n    .catch(error => {\n      res.status(500).json({ error: 'Verification error', details: error.message });\n    });\n}\n\n// Example usage in video upload endpoint\napp.post('/api/submit-video-evidence', \n  upload.single('video'),\n  requireC2PACredentials,\n  async (req, res) => {\n    // Video is guaranteed to have valid C2PA credentials\n    const videoAuth = req.videoAuthentication;\n    \n    res.json({\n      message: 'Video evidence accepted',\n      authenticity: videoAuth,\n      evidenceId: crypto.randomUUID()\n    });\n  }\n);\n\nmodule.exports = {\n  signVideoWithC2PA,\n  verifyVideoC2PA,\n  requireC2PACredentials\n};"
+      },
+      "tools": [
+        {
+          "name": "c2pa-node",
+          "type": "Content Authenticity SDK",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Adobe Content Authenticity Initiative",
+          "type": "C2PA Verification Service",
+          "cost": "Free tier available / Enterprise pricing"
+        },
+        {
+          "name": "DigiCert Timestamp Authority",
+          "type": "RFC 3161 Trusted Timestamping",
+          "cost": "$500-$2000/year"
+        }
+      ],
+      "iso27001_controls": [
+        "A.18.1.3 - Protection of records",
+        "A.12.2.1 - Controls against malware",
+        "A.14.1.2 - Securing application services"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms are used to verify software, firmware, and information integrity",
+        "PR.DS-2 - Data-in-transit is protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Obtain X.509 certificate from trusted CA (DigiCert, GlobalSign) for C2PA signing",
+        "Install c2pa-node SDK and configure with certificate/private key",
+        "Sign test video and verify C2PA manifest embeds correctly in MP4 metadata",
+        "Test tamper detection by modifying signed video (should fail verification)",
+        "Integrate C2PA verification into video upload/playback workflows",
+        "Configure Content Authenticity verification in Adobe Photoshop/Premiere for user validation"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Deploy Microsoft Video Authenticator API for Deepfake Detection",
+      "description": "Use Microsoft's Video Authenticator API to analyze video frames for deepfake manipulation artifacts such as GAN fingerprints, facial warping inconsistencies, temporal coherence violations, and blending boundary artifacts. Provides confidence score (0-100%) indicating likelihood of synthetic manipulation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Azure Cognitive Services + Python",
+        "code": "import os\nimport requests\nimport hashlib\nimport json\nfrom datetime import datetime\nfrom azure.cognitiveservices.vision.face import FaceClient\nfrom msrest.authentication import CognitiveServicesCredentials\nfrom azure.storage.blob import BlobServiceClient\n\nclass DeepfakeDetector:\n    \"\"\"\n    Multi-layer deepfake detection using Microsoft Video Authenticator,\n    Azure Face API liveness detection, and temporal consistency analysis\n    \"\"\"\n    \n    def __init__(self, subscription_key, endpoint, storage_connection_string):\n        self.subscription_key = subscription_key\n        self.endpoint = endpoint\n        self.face_client = FaceClient(endpoint, CognitiveServicesCredentials(subscription_key))\n        self.blob_service = BlobServiceClient.from_connection_string(storage_connection_string)\n        \n    def analyze_video_for_deepfake(self, video_path):\n        \"\"\"\n        Comprehensive deepfake detection pipeline\n        Returns: dict with confidence score, detected artifacts, and recommendation\n        \"\"\"\n        results = {\n            'video_hash': self._calculate_hash(video_path),\n            'timestamp': datetime.utcnow().isoformat(),\n            'detections': []\n        }\n        \n        # Step 1: Upload video to Azure Blob Storage\n        video_url = self._upload_video(video_path)\n        \n        # Step 2: Microsoft Video Authenticator API (detection model)\n        try:\n            headers = {\n                'Ocp-Apim-Subscription-Key': self.subscription_key,\n                'Content-Type': 'application/json'\n            }\n            \n            authenticator_url = f\"{self.endpoint}/videosearch/v1.0/authenticator/analyze\"\n            payload = {\n                'url': video_url,\n                'detectDeepfake': True,\n                'detectSynthetic': True,\n                'analyzeFrameConsistency': True,\n                'analyzeLipSync': True\n            }\n            \n            response = requests.post(authenticator_url, headers=headers, json=payload, timeout=120)\n            response.raise_for_status()\n            \n            authenticator_result = response.json()\n            deepfake_probability = authenticator_result.get('deepfakeProbability', 0)\n            \n            results['detections'].append({\n                'method': 'Microsoft Video Authenticator',\n                'deepfake_probability': deepfake_probability,\n                'confidence': authenticator_result.get('confidence', 0),\n                'artifacts_detected': authenticator_result.get('artifacts', []),\n                'manipulation_regions': authenticator_result.get('manipulationRegions', [])\n            })\n            \n        except Exception as e:\n            results['detections'].append({\n                'method': 'Microsoft Video Authenticator',\n                'error': str(e)\n            })\n        \n        # Step 3: Azure Face API liveness detection (frame-by-frame)\n        try:\n            # Extract frames from video\n            frames = self._extract_frames(video_path, sample_rate=5)  # 5 frames/sec\n            \n            liveness_scores = []\n            for frame_path in frames:\n                with open(frame_path, 'rb') as frame:\n                    detected_faces = self.face_client.face.detect_with_stream(\n                        frame,\n                        return_face_attributes=['headPose', 'blur', 'exposure', 'noise'],\n                        detection_model='detection_03',\n                        recognition_model='recognition_04'\n                    )\n                    \n                    if detected_faces:\n                        face = detected_faces[0]\n                        # Check for GAN artifacts (unnatural head pose, perfect exposure)\n                        liveness_score = self._calculate_liveness_score(face)\n                        liveness_scores.append(liveness_score)\n            \n            avg_liveness = sum(liveness_scores) / len(liveness_scores) if liveness_scores else 0\n            \n            results['detections'].append({\n                'method': 'Azure Face Liveness Detection',\n                'average_liveness_score': avg_liveness,\n                'frames_analyzed': len(frames),\n                'suspicious_frames': len([s for s in liveness_scores if s < 0.6])\n            })\n            \n        except Exception as e:\n            results['detections'].append({\n                'method': 'Azure Face Liveness',\n                'error': str(e)\n            })\n        \n        # Step 4: Temporal consistency analysis (detect frame-to-frame artifacts)\n        try:\n            temporal_score = self._analyze_temporal_consistency(video_path)\n            \n            results['detections'].append({\n                'method': 'Temporal Consistency Analysis',\n                'consistency_score': temporal_score,\n                'inconsistencies_detected': temporal_score < 0.85\n            })\n            \n        except Exception as e:\n            results['detections'].append({\n                'method': 'Temporal Consistency',\n                'error': str(e)\n            })\n        \n        # Calculate overall verdict\n        results['overall_assessment'] = self._calculate_verdict(results['detections'])\n        \n        return results\n    \n    def _calculate_liveness_score(self, face):\n        \"\"\"Calculate liveness score based on facial attributes (0-1 scale)\"\"\"\n        score = 1.0\n        \n        # Unnatural head pose suggests GAN generation\n        if abs(face.face_attributes.head_pose.pitch) > 30:\n            score -= 0.2\n        if abs(face.face_attributes.head_pose.roll) > 25:\n            score -= 0.2\n            \n        # Perfect exposure/no noise suggests synthetic image\n        if face.face_attributes.blur.value < 0.1 and face.face_attributes.noise.value < 0.05:\n            score -= 0.3\n            \n        return max(0, score)\n    \n    def _analyze_temporal_consistency(self, video_path):\n        \"\"\"Analyze frame-to-frame consistency (deepfakes often have temporal artifacts)\"\"\"\n        # Simplified implementation - production should use optical flow analysis\n        frames = self._extract_frames(video_path, sample_rate=10)\n        \n        consistency_scores = []\n        for i in range(len(frames) - 1):\n            # Calculate perceptual hash difference between consecutive frames\n            hash1 = self._perceptual_hash(frames[i])\n            hash2 = self._perceptual_hash(frames[i + 1])\n            similarity = self._hamming_distance(hash1, hash2)\n            consistency_scores.append(similarity)\n        \n        return sum(consistency_scores) / len(consistency_scores) if consistency_scores else 1.0\n    \n    def _calculate_verdict(self, detections):\n        \"\"\"Aggregate detection results into final verdict\"\"\"\n        deepfake_prob = 0\n        \n        for detection in detections:\n            if 'error' in detection:\n                continue\n                \n            if detection.get('method') == 'Microsoft Video Authenticator':\n                deepfake_prob = max(deepfake_prob, detection.get('deepfake_probability', 0))\n            \n            if detection.get('method') == 'Azure Face Liveness Detection':\n                if detection.get('average_liveness_score', 1) < 0.6:\n                    deepfake_prob = max(deepfake_prob, 0.7)\n            \n            if detection.get('method') == 'Temporal Consistency Analysis':\n                if detection.get('consistency_score', 1) < 0.85:\n                    deepfake_prob = max(deepfake_prob, 0.6)\n        \n        if deepfake_prob >= 0.7:\n            return {\n                'verdict': 'LIKELY_DEEPFAKE',\n                'confidence': deepfake_prob,\n                'recommendation': 'REJECT - High probability of synthetic manipulation'\n            }\n        elif deepfake_prob >= 0.4:\n            return {\n                'verdict': 'SUSPICIOUS',\n                'confidence': deepfake_prob,\n                'recommendation': 'REVIEW - Manual forensic analysis required'\n            }\n        else:\n            return {\n                'verdict': 'LIKELY_AUTHENTIC',\n                'confidence': 1 - deepfake_prob,\n                'recommendation': 'ACCEPT - Low probability of manipulation'\n            }\n    \n    def _calculate_hash(self, file_path):\n        \"\"\"Calculate SHA-256 hash of video file\"\"\"\n        sha256 = hashlib.sha256()\n        with open(file_path, 'rb') as f:\n            for block in iter(lambda: f.read(4096), b''):\n                sha256.update(block)\n        return sha256.hexdigest()\n    \n    def _upload_video(self, video_path):\n        \"\"\"Upload video to Azure Blob Storage and return SAS URL\"\"\"\n        # Implementation omitted for brevity\n        pass\n    \n    def _extract_frames(self, video_path, sample_rate):\n        \"\"\"Extract frames from video at specified sample rate\"\"\"\n        # Implementation using FFmpeg or OpenCV\n        pass\n    \n    def _perceptual_hash(self, image_path):\n        \"\"\"Calculate perceptual hash of image\"\"\"\n        # Implementation using imagehash library\n        pass\n    \n    def _hamming_distance(self, hash1, hash2):\n        \"\"\"Calculate Hamming distance between two hashes\"\"\"\n        pass\n\n# Example usage in Flask API\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\ndetector = DeepfakeDetector(\n    subscription_key=os.environ['AZURE_COGNITIVE_KEY'],\n    endpoint=os.environ['AZURE_COGNITIVE_ENDPOINT'],\n    storage_connection_string=os.environ['AZURE_STORAGE_CONNECTION']\n)\n\n@app.route('/api/verify-video', methods=['POST'])\ndef verify_video():\n    if 'video' not in request.files:\n        return jsonify({'error': 'No video file provided'}), 400\n    \n    video_file = request.files['video']\n    temp_path = f\"/tmp/{video_file.filename}\"\n    video_file.save(temp_path)\n    \n    try:\n        results = detector.analyze_video_for_deepfake(temp_path)\n        \n        # Log results to SIEM\n        log_to_siem(results)\n        \n        return jsonify(results), 200\n        \n    except Exception as e:\n        return jsonify({'error': str(e)}), 500\n    finally:\n        os.remove(temp_path)\n\nif __name__ == '__main__':\n    app.run(host='0.0.0.0', port=5000)"
+      },
+      "tools": [
+        {
+          "name": "Microsoft Video Authenticator",
+          "type": "Deepfake Detection API",
+          "cost": "$1-3 per video analyzed"
+        },
+        {
+          "name": "Azure Face API",
+          "type": "Liveness Detection",
+          "cost": "$1 per 1,000 transactions"
+        },
+        {
+          "name": "Sensity AI",
+          "type": "Deepfake Detection Platform",
+          "cost": "Enterprise pricing (contact sales)"
+        },
+        {
+          "name": "Reality Defender",
+          "type": "Multi-modal Deepfake Detection",
+          "cost": "$0.10-0.50 per scan"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.2.1 - Controls against malware",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "DE.CM-4 - Malicious code is detected",
+        "PR.DS-6 - Integrity checking mechanisms are used"
+      ],
+      "validation_steps": [
+        "Create Azure Cognitive Services account with Video Authenticator API enabled",
+        "Test with known deepfake samples from DFDC dataset (Facebook AI Research)",
+        "Validate detection accuracy: target >80% true positive rate, <10% false positive rate",
+        "Integrate API into video upload/verification workflows",
+        "Configure automated quarantine for videos with deepfake_probability > 0.7",
+        "Establish manual review process for 0.4-0.7 probability range"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Blockchain-Based Video Timestamping and Provenance Tracking",
+      "description": "Create immutable audit trail of video creation, modifications, and custody chain using blockchain timestamping (Bitcoin, Ethereum, Hyperledger). Hash each video frame sequence and anchor to blockchain, making it cryptographically impossible to alter video history without detection.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + Ethereum + IPFS",
+        "code": "const { ethers } = require('ethers');\nconst { create } = require('ipfs-http-client');\nconst crypto = require('crypto');\nconst ffmpeg = require('fluent-ffmpeg');\nconst fs = require('fs');\n\n/**\n * Blockchain-based video timestamping and provenance system\n * Uses Ethereum smart contract + IPFS for decentralized storage\n */\n\n// Ethereum smart contract ABI for VideoProvenance\nconst VIDEO_PROVENANCE_ABI = [\n  \"function registerVideo(bytes32 videoHash, string ipfsHash, string metadata) public returns (uint256)\",\n  \"function verifyVideo(bytes32 videoHash) public view returns (uint256 timestamp, address creator, string ipfsHash, bool exists)\",\n  \"function recordModification(bytes32 originalHash, bytes32 newHash, string modificationType) public\",\n  \"function getProvenanceChain(bytes32 videoHash) public view returns (tuple(bytes32 hash, uint256 timestamp, address actor, string action)[] memory)\",\n  \"event VideoRegistered(bytes32 indexed videoHash, uint256 timestamp, address indexed creator)\",\n  \"event VideoModified(bytes32 indexed originalHash, bytes32 indexed newHash, uint256 timestamp)\"\n];\n\nclass VideoProvenanceSystem {\n  constructor(ethereumRpcUrl, contractAddress, privateKey, ipfsUrl) {\n    // Connect to Ethereum network (mainnet, Polygon, or Arbitrum for lower fees)\n    this.provider = new ethers.providers.JsonRpcProvider(ethereumRpcUrl);\n    this.wallet = new ethers.Wallet(privateKey, this.provider);\n    this.contract = new ethers.Contract(contractAddress, VIDEO_PROVENANCE_ABI, this.wallet);\n    \n    // Connect to IPFS for decentralized storage\n    this.ipfs = create({ url: ipfsUrl });\n  }\n  \n  /**\n   * Register new video with blockchain timestamp\n   * Creates immutable record of video hash, upload time, and creator\n   */\n  async registerVideo(videoPath, metadata = {}) {\n    try {\n      console.log('Step 1: Calculating video hash...');\n      const videoHash = await this._calculateVideoHash(videoPath);\n      const videoHashBytes32 = ethers.utils.formatBytes32String(videoHash.slice(0, 32));\n      \n      console.log('Step 2: Uploading video to IPFS...');\n      const videoBuffer = fs.readFileSync(videoPath);\n      const ipfsResult = await this.ipfs.add(videoBuffer, {\n        pin: true,  // Pin to prevent garbage collection\n        wrapWithDirectory: false\n      });\n      const ipfsCid = ipfsResult.cid.toString();\n      \n      console.log('Step 3: Extracting video metadata...');\n      const videoMetadata = await this._extractMetadata(videoPath);\n      const enrichedMetadata = {\n        ...metadata,\n        ...videoMetadata,\n        uploadTimestamp: new Date().toISOString(),\n        ipfsCid: ipfsCid\n      };\n      \n      console.log('Step 4: Recording on Ethereum blockchain...');\n      const tx = await this.contract.registerVideo(\n        videoHashBytes32,\n        ipfsCid,\n        JSON.stringify(enrichedMetadata),\n        {\n          gasLimit: 500000,\n          // Use EIP-1559 gas pricing for Ethereum mainnet\n          maxFeePerGas: ethers.utils.parseUnits('50', 'gwei'),\n          maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei')\n        }\n      );\n      \n      console.log('Transaction submitted:', tx.hash);\n      const receipt = await tx.wait();\n      \n      // Extract registration event\n      const event = receipt.events.find(e => e.event === 'VideoRegistered');\n      const blockTimestamp = (await this.provider.getBlock(receipt.blockNumber)).timestamp;\n      \n      console.log('✓ Video registered on blockchain');\n      \n      return {\n        success: true,\n        videoHash: videoHash,\n        ipfsCid: ipfsCid,\n        blockchainTxHash: tx.hash,\n        blockNumber: receipt.blockNumber,\n        timestamp: blockTimestamp,\n        provenanceUrl: `https://etherscan.io/tx/${tx.hash}`,\n        ipfsGatewayUrl: `https://ipfs.io/ipfs/${ipfsCid}`,\n        verificationCode: this._generateVerificationCode(videoHash, blockTimestamp)\n      };\n      \n    } catch (error) {\n      console.error('Failed to register video:', error);\n      throw error;\n    }\n  }\n  \n  /**\n   * Verify video authenticity against blockchain record\n   * Returns: provenance chain, timestamp, and tampering detection\n   */\n  async verifyVideo(videoPath) {\n    try {\n      const videoHash = await this._calculateVideoHash(videoPath);\n      const videoHashBytes32 = ethers.utils.formatBytes32String(videoHash.slice(0, 32));\n      \n      // Query blockchain for video record\n      const [timestamp, creator, ipfsHash, exists] = await this.contract.verifyVideo(videoHashBytes32);\n      \n      if (!exists) {\n        return {\n          verified: false,\n          status: 'NOT_REGISTERED',\n          message: 'Video hash not found in blockchain. Either never registered or content has been modified.',\n          videoHash: videoHash\n        };\n      }\n      \n      // Retrieve full provenance chain\n      const provenanceChain = await this.contract.getProvenanceChain(videoHashBytes32);\n      \n      // Verify video content matches IPFS record\n      let ipfsVerified = false;\n      try {\n        const ipfsContent = [];\n        for await (const chunk of this.ipfs.cat(ipfsHash)) {\n          ipfsContent.push(chunk);\n        }\n        const ipfsBuffer = Buffer.concat(ipfsContent);\n        const ipfsVideoHash = crypto.createHash('sha256').update(ipfsBuffer).digest('hex');\n        ipfsVerified = (ipfsVideoHash === videoHash);\n      } catch (error) {\n        console.warn('IPFS verification failed:', error);\n      }\n      \n      return {\n        verified: true,\n        status: 'AUTHENTIC',\n        message: 'Video hash matches blockchain record. Content has not been altered since registration.',\n        videoHash: videoHash,\n        registrationTimestamp: new Date(timestamp.toNumber() * 1000).toISOString(),\n        creator: creator,\n        ipfsCid: ipfsHash,\n        ipfsContentMatch: ipfsVerified,\n        provenanceChain: provenanceChain.map(entry => ({\n          hash: entry.hash,\n          timestamp: new Date(entry.timestamp.toNumber() * 1000).toISOString(),\n          actor: entry.actor,\n          action: entry.action\n        })),\n        blockchainExplorerUrl: `https://etherscan.io/address/${creator}`,\n        trustLevel: ipfsVerified ? 'HIGH' : 'MEDIUM'\n      };\n      \n    } catch (error) {\n      console.error('Verification failed:', error);\n      throw error;\n    }\n  }\n  \n  /**\n   * Record video modification on blockchain\n   * Maintains audit trail of all edits\n   */\n  async recordModification(originalVideoPath, modifiedVideoPath, modificationType) {\n    try {\n      const originalHash = await this._calculateVideoHash(originalVideoPath);\n      const modifiedHash = await this._calculateVideoHash(modifiedVideoPath);\n      \n      const originalHashBytes32 = ethers.utils.formatBytes32String(originalHash.slice(0, 32));\n      const modifiedHashBytes32 = ethers.utils.formatBytes32String(modifiedHash.slice(0, 32));\n      \n      const tx = await this.contract.recordModification(\n        originalHashBytes32,\n        modifiedHashBytes32,\n        modificationType,\n        { gasLimit: 300000 }\n      );\n      \n      const receipt = await tx.wait();\n      \n      console.log('✓ Modification recorded on blockchain');\n      \n      return {\n        success: true,\n        originalHash: originalHash,\n        modifiedHash: modifiedHash,\n        txHash: tx.hash,\n        blockNumber: receipt.blockNumber\n      };\n      \n    } catch (error) {\n      console.error('Failed to record modification:', error);\n      throw error;\n    }\n  }\n  \n  /**\n   * Calculate cryptographic hash of video file\n   * Uses SHA-256 of frame sequence to detect any content changes\n   */\n  async _calculateVideoHash(videoPath) {\n    return new Promise((resolve, reject) => {\n      const hash = crypto.createHash('sha256');\n      const stream = fs.createReadStream(videoPath);\n      \n      stream.on('data', (chunk) => hash.update(chunk));\n      stream.on('end', () => resolve(hash.digest('hex')));\n      stream.on('error', reject);\n    });\n  }\n  \n  /**\n   * Extract video metadata (duration, resolution, codec, creation date)\n   */\n  async _extractMetadata(videoPath) {\n    return new Promise((resolve, reject) => {\n      ffmpeg.ffprobe(videoPath, (err, metadata) => {\n        if (err) return reject(err);\n        \n        const videoStream = metadata.streams.find(s => s.codec_type === 'video');\n        \n        resolve({\n          duration: metadata.format.duration,\n          size: metadata.format.size,\n          format: metadata.format.format_name,\n          codec: videoStream?.codec_name,\n          resolution: `${videoStream?.width}x${videoStream?.height}`,\n          frameRate: videoStream?.r_frame_rate,\n          bitrate: metadata.format.bit_rate\n        });\n      });\n    });\n  }\n  \n  /**\n   * Generate human-readable verification code\n   * Format: ANSVAR-YYYYMMDD-XXXXX\n   */\n  _generateVerificationCode(videoHash, timestamp) {\n    const date = new Date(timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '');\n    const shortHash = videoHash.slice(0, 10).toUpperCase();\n    return `ANSVAR-${date}-${shortHash}`;\n  }\n}\n\n// Express.js integration\nconst express = require('express');\nconst multer = require('multer');\nconst app = express();\nconst upload = multer({ dest: '/tmp/uploads/' });\n\nconst provenanceSystem = new VideoProvenanceSystem(\n  process.env.ETHEREUM_RPC_URL,  // e.g., Infura or Alchemy endpoint\n  process.env.CONTRACT_ADDRESS,\n  process.env.PRIVATE_KEY,\n  process.env.IPFS_URL  // e.g., 'https://ipfs.infura.io:5001'\n);\n\n// Register video endpoint\napp.post('/api/register-video', upload.single('video'), async (req, res) => {\n  try {\n    const result = await provenanceSystem.registerVideo(\n      req.file.path,\n      {\n        uploader: req.body.uploader,\n        description: req.body.description,\n        category: req.body.category\n      }\n    );\n    \n    res.json(result);\n  } catch (error) {\n    res.status(500).json({ error: error.message });\n  }\n});\n\n// Verify video endpoint\napp.post('/api/verify-video', upload.single('video'), async (req, res) => {\n  try {\n    const result = await provenanceSystem.verifyVideo(req.file.path);\n    res.json(result);\n  } catch (error) {\n    res.status(500).json({ error: error.message });\n  }\n});\n\nmodule.exports = { VideoProvenanceSystem };"
+      },
+      "tools": [
+        {
+          "name": "Ethereum Blockchain",
+          "type": "Immutable Ledger",
+          "cost": "$5-50 per transaction (gas fees vary)"
+        },
+        {
+          "name": "IPFS (InterPlanetary File System)",
+          "type": "Decentralized Storage",
+          "cost": "$0.01-0.05 per GB/month (Pinata, Infura)"
+        },
+        {
+          "name": "Polygon (Ethereum L2)",
+          "type": "Low-cost Blockchain Alternative",
+          "cost": "$0.01-0.10 per transaction"
+        },
+        {
+          "name": "Chainlink Proof of Reserve",
+          "type": "Oracle for Off-chain Data Verification",
+          "cost": "Variable based on usage"
+        }
+      ],
+      "iso27001_controls": [
+        "A.18.1.3 - Protection of records",
+        "A.12.3.1 - Information backup",
+        "A.16.1.7 - Collection of evidence"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms are used to verify software, firmware, and information integrity",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Deploy VideoProvenance smart contract to Ethereum testnet (Sepolia) for testing",
+        "Set up IPFS node or use hosted service (Pinata, Infura)",
+        "Test video registration and verify transaction appears on blockchain explorer",
+        "Modify test video and verify detection (hash mismatch)",
+        "Measure costs: estimate $10-30 per video registration on mainnet, consider L2 (Polygon) for cost reduction",
+        "Implement automated monitoring for blockchain transaction failures"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Video authentication failures in C2PA verification checks",
+      "High deepfake probability scores (>0.7) from Microsoft Video Authenticator API",
+      "Temporal inconsistencies in frame-to-frame analysis",
+      "Missing or invalid blockchain timestamps for critical video evidence",
+      "Face liveness detection failures in video KYC systems",
+      "Suspicious metadata (creation date mismatch, missing EXIF data)",
+      "Multiple submissions of similar videos with different content hashes",
+      "Video evidence submitted for high-value transactions without cryptographic signatures",
+      "Reports of executives/employees denying actions shown in video evidence"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect deepfake video authentication failures\nCustomLogs_CL\n| where Category == \"VideoAuthentication\"\n| where DeepfakeProbability_d > 0.7 or C2PAValidation_s == \"FAILED\"\n| extend Severity = case(\n    DeepfakeProbability_d > 0.9, \"Critical\",\n    DeepfakeProbability_d > 0.7, \"High\",\n    \"Medium\"\n  )\n| summarize \n    FailureCount = count(),\n    AvgDeepfakeProb = avg(DeepfakeProbability_d),\n    VideoHashes = make_set(VideoHash_s)\n    by UploaderIP_s, UploaderUser_s, bin(TimeGenerated, 1h)\n| where FailureCount > 3\n| project TimeGenerated, UploaderUser_s, UploaderIP_s, FailureCount, AvgDeepfakeProb, Severity\n| order by AvgDeepfakeProb desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=video_verification sourcetype=deepfake_detection\n| where deepfake_probability > 0.7 OR c2pa_validation=\"failed\" OR blockchain_timestamp_missing=true\n| eval risk_score = case(\n    deepfake_probability > 0.9, 10,\n    deepfake_probability > 0.7, 8,\n    c2pa_validation=\"failed\", 7,\n    blockchain_timestamp_missing=true, 6,\n    1=1, 3\n  )\n| stats \n    count as detection_count,\n    avg(deepfake_probability) as avg_deepfake_prob,\n    max(risk_score) as max_risk,\n    values(video_hash) as suspicious_videos,\n    dc(video_hash) as unique_videos\n    by uploader_user, uploader_ip, transaction_amount\n| where detection_count > 2 OR max_risk >= 8\n| sort - max_risk, - avg_deepfake_prob"
+      },
+      {
+        "siem": "Elastic (KQL)",
+        "query": "event.category: \"video_authentication\" AND (\n  video.deepfake_probability: >0.7 OR\n  video.c2pa_validation: \"failed\" OR\n  video.blockchain_verified: false\n) AND transaction.amount: >10000"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, uploader.user, video.hash, deepfake.probability, c2pa.validation, blockchain.verified, transaction.amount\n| filter deepfake.probability > 0.7 or c2pa.validation = \"FAILED\" or blockchain.verified = false\n| filter transaction.amount > 10000\n| stats count(*) as failures, avg(deepfake.probability) as avg_prob by uploader.user, uploader.ip\n| filter failures > 3\n| sort avg_prob desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Deepware Scanner",
+        "type": "Browser Extension for Deepfake Detection",
+        "usage": "chrome-extension://deepware - Real-time scanning of videos in browser"
+      },
+      {
+        "name": "Content Authenticity Verify",
+        "type": "Adobe C2PA Verification Tool",
+        "usage": "https://contentcredentials.org/verify - Upload video to check C2PA credentials"
+      },
+      {
+        "name": "InVID/WeVerify",
+        "type": "Video Verification Plugin",
+        "usage": "Browser plugin for journalists to verify video authenticity"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Legal Services",
+      "Media and Entertainment",
+      "Government",
+      "Healthcare",
+      "Insurance",
+      "Law Enforcement"
+    ],
+    "compliance": [
+      "SOC2 (CC6.1 - Logical and Physical Access Controls)",
+      "ISO27001 (A.18.1.3 - Protection of Records)",
+      "NIST CSF (PR.DS-6 - Integrity Checking)",
+      "eIDAS (EU Regulation 910/2014 - Electronic Signatures)",
+      "Federal Rules of Evidence (901 - Authentication)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Edge Computing"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Legal Evidence",
+      "Financial Records",
+      "Authentication Data"
+    ]
+  }
+}

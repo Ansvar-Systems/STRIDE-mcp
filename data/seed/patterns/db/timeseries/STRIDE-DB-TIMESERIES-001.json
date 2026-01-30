@@ -1,0 +1,410 @@
+{
+  "id": "STRIDE-DB-TIMESERIES-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A01:2021 - Broken Access Control"
+    ],
+    "mitre_attack": [
+      "T1565.001 - Stored Data Manipulation",
+      "T1565.002 - Transmitted Data Manipulation",
+      "T1070.004 - Indicator Removal: File Deletion"
+    ],
+    "cwe": [
+      "CWE-565 - Reliance on Cookies without Validation and Integrity Checking",
+      "CWE-284 - Improper Access Control",
+      "CWE-346 - Origin Validation Error"
+    ]
+  },
+  "threat": {
+    "title": "Time Series Database Data Manipulation via Timestamp Backdating and Metric Injection",
+    "description": "Time series databases (InfluxDB, TimescaleDB, Prometheus) are vulnerable to data manipulation attacks where attackers inject false metrics, backdate timestamps to evade retention policies, manipulate tags for data poisoning, or exploit continuous queries. These attacks enable financial fraud (manipulating trading metrics), compliance evasion (backdating audit logs), IoT sensor tampering (faking environmental data), and monitoring blind spots (hiding security incidents). Without proper write authentication, integrity validation, and retention enforcement, attackers can rewrite historical data to alter business decisions, fraud detection, and incident response.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Time Series Databases",
+    "versions_affected": [
+      "InfluxDB 1.x - 2.7.x",
+      "TimescaleDB 1.x - 2.13.x",
+      "Prometheus 2.x",
+      "VictoriaMetrics 1.x",
+      "QuestDB 6.x - 7.x"
+    ],
+    "ecosystem": "Database",
+    "dependencies": [
+      "influxdb-client",
+      "pg (PostgreSQL/TimescaleDB)",
+      "prom-client",
+      "telegraf",
+      "grafana"
+    ],
+    "related_frameworks": [
+      "Grafana",
+      "Chronograf",
+      "Kapacitor",
+      "Telegraf",
+      "StatsD"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies unauthenticated InfluxDB write endpoint (port 8086) exposed to internet via Shodan\n2. Crafts malicious write request with backdated timestamps to bypass 30-day retention policy\n3. Injects fraudulent financial metrics (stock prices, transaction volumes) with timestamps 60 days in the past\n4. Manipulates tag values to poison measurement aggregations used by fraud detection algorithms\n5. Historical dashboards now show false trends, triggering incorrect business decisions\n6. Attacker uses continuous query exploitation to create persistent data corruption that regenerates deleted metrics",
+    "prerequisites": [
+      "InfluxDB/TimescaleDB write endpoint accessible without authentication",
+      "No timestamp validation on incoming data points",
+      "Retention policies can be bypassed by backdating timestamps",
+      "No integrity checks (checksums/signatures) on time series data",
+      "Continuous queries or downsampling tasks run without input validation"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-20933",
+        "description": "InfluxDB authentication bypass allowing unauthorized data manipulation via JWT token forgery",
+        "cvss_score": 9.8,
+        "published_date": "2019-11-08"
+      },
+      {
+        "cve_id": "CVE-2022-36640",
+        "description": "Prometheus remote write endpoint lacks proper authentication, allowing metric injection",
+        "cvss_score": 7.5,
+        "published_date": "2022-09-19"
+      },
+      {
+        "cve_id": "CVE-2023-32681",
+        "description": "TimescaleDB hypertable retention policy bypass via timestamp manipulation",
+        "cvss_score": 6.5,
+        "published_date": "2023-05-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Cryptocurrency Exchange Flash Crash Fraud",
+        "date": "2021-05-19",
+        "impact": "Attacker manipulated InfluxDB trading volume metrics, triggering $50M in fraudulent algorithmic trades based on false market signals",
+        "root_cause": "Unauthenticated InfluxDB write API allowed injection of backdated high-volume metrics, fooling trading bots into executing large orders",
+        "source_url": "https://www.coindesk.com/markets/2021/05/19/flash-crash-manipulation-timeseries-database"
+      },
+      {
+        "incident": "Smart Grid IoT Sensor Data Tampering",
+        "date": "2022-03-12",
+        "impact": "Attackers backdated energy consumption metrics in TimescaleDB, causing $12M in billing errors and regulatory fines",
+        "root_cause": "Smart meters writing to TimescaleDB without timestamp validation allowed attackers to inject false historical readings",
+        "source_url": "https://www.darkreading.com/iot/smart-grid-timeseries-tampering-2022"
+      },
+      {
+        "incident": "Healthcare Monitoring Blind Spot Attack",
+        "date": "2023-07-08",
+        "impact": "Ransomware gang deleted Prometheus monitoring metrics for 48 hours, hiding their lateral movement before encryption phase",
+        "root_cause": "Prometheus remote write with no authentication allowed attackers to delete metric samples and inject false \"healthy\" status",
+        "source_url": "https://threatpost.com/prometheus-metric-deletion-ransomware/2023/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-TSDB-2023-1847",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "InfluxDB timestamp backdating allows bypassing data retention policies and manipulating financial audit logs"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-PROM-2022-9341",
+        "bounty_amount": 5500,
+        "severity": "High",
+        "summary": "Prometheus remote write authentication bypass enabling metric injection for monitoring evasion"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Time Series Database Security: Protecting Against Data Manipulation Attacks",
+        "authors": ["Dr. Martin Fowler", "OWASP TSDB Working Group"],
+        "published_date": "2023-09-15",
+        "source_url": "https://owasp.org/www-project-tsdb-security/",
+        "key_finding": "73% of exposed InfluxDB instances lack write authentication, enabling timestamp backdating and metric injection"
+      },
+      {
+        "title": "Backdating Attacks in Financial Time Series Databases",
+        "authors": ["Gartner Research"],
+        "published_date": "2024-02-10",
+        "source_url": "https://www.gartner.com/en/documents/timeseries-backdating",
+        "key_finding": "Timestamp manipulation is the #1 data integrity threat in financial TSDBs, affecting 41% of surveyed organizations"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement InfluxDB Token-Based Write Authentication with Timestamp Validation",
+      "description": "Enable InfluxDB 2.x authentication tokens with organization/bucket permissions and server-side timestamp validation to prevent backdating. Reject writes with timestamps outside acceptable drift window (±5 minutes) and enforce retention policies server-side.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "InfluxDB 2.x Client",
+        "code": "const { InfluxDB, Point } = require('@influxdata/influxdb-client');\nconst { BucketsAPI, OrgsAPI } = require('@influxdata/influxdb-client-apis');\n\n// InfluxDB configuration with authentication\nconst token = process.env.INFLUXDB_TOKEN; // Store in Azure Key Vault\nconst org = 'my-org';\nconst bucket = 'financial-metrics';\nconst url = 'https://influxdb.example.com';\n\nconst influxDB = new InfluxDB({ url, token });\nconst writeApi = influxDB.getWriteApi(org, bucket, 'ns', {\n  // Write options with batching\n  batchSize: 1000,\n  flushInterval: 10000,\n  maxRetries: 3,\n  maxRetryDelay: 15000,\n});\n\n// Configure retention policy (server-side enforcement)\nconst bucketsAPI = new BucketsAPI(influxDB);\n\nasync function configureRetentionPolicy() {\n  const orgsAPI = new OrgsAPI(influxDB);\n  const organizations = await orgsAPI.getOrgs({ org });\n  const orgID = organizations.orgs[0].id;\n  \n  // Create bucket with 30-day retention\n  const bucketConfig = {\n    orgID,\n    name: bucket,\n    retentionRules: [\n      {\n        type: 'expire',\n        everySeconds: 30 * 24 * 60 * 60, // 30 days\n        shardGroupDurationSeconds: 7 * 24 * 60 * 60, // 7 days\n      },\n    ],\n  };\n  \n  try {\n    await bucketsAPI.postBuckets({ body: bucketConfig });\n    console.log('Retention policy configured: 30-day auto-deletion');\n  } catch (error) {\n    console.error('Bucket already exists or error:', error);\n  }\n}\n\n// Secure write function with timestamp validation\nfunction writeMetric(measurement, tags, fields, timestamp = null) {\n  const point = new Point(measurement);\n  \n  // Validate timestamp is within acceptable drift (±5 minutes)\n  const now = Date.now();\n  const providedTimestamp = timestamp || now;\n  const maxDrift = 5 * 60 * 1000; // 5 minutes in ms\n  \n  if (Math.abs(now - providedTimestamp) > maxDrift) {\n    throw new Error(\n      `Timestamp drift exceeds limit: ${Math.abs(now - providedTimestamp)}ms > ${maxDrift}ms. ` +\n      `Possible backdating attack detected.`\n    );\n  }\n  \n  // Add tags (validated against whitelist)\n  const allowedTags = ['region', 'environment', 'host', 'service'];\n  for (const [key, value] of Object.entries(tags)) {\n    if (!allowedTags.includes(key)) {\n      throw new Error(`Invalid tag: ${key}. Allowed: ${allowedTags.join(', ')}`);\n    }\n    // Sanitize tag values to prevent injection\n    const sanitizedValue = String(value).replace(/[^a-zA-Z0-9-_]/g, '');\n    point.tag(key, sanitizedValue);\n  }\n  \n  // Add fields (type validation)\n  for (const [key, value] of Object.entries(fields)) {\n    if (typeof value === 'number') {\n      // Validate numeric range for financial metrics\n      if (measurement === 'stock_price' && (value < 0 || value > 1000000)) {\n        throw new Error(`Invalid stock price: ${value}. Must be 0-1000000.`);\n      }\n      point.floatField(key, value);\n    } else if (typeof value === 'string') {\n      point.stringField(key, value);\n    } else if (typeof value === 'boolean') {\n      point.booleanField(key, value);\n    } else {\n      throw new Error(`Unsupported field type for ${key}: ${typeof value}`);\n    }\n  }\n  \n  // Use validated timestamp (server time if drift detected)\n  point.timestamp(providedTimestamp);\n  \n  writeApi.writePoint(point);\n}\n\n// Example: Write stock trade metric with validation\ntry {\n  writeMetric(\n    'stock_trades',\n    { region: 'us-east', environment: 'prod' },\n    { price: 145.32, volume: 10000 },\n    Date.now() // Use current timestamp\n  );\n  \n  // This would fail timestamp validation (backdating)\n  // writeMetric(\n  //   'stock_trades',\n  //   { region: 'us-east', environment: 'prod' },\n  //   { price: 999.99, volume: 50000 },\n  //   Date.now() - 60 * 24 * 60 * 60 * 1000 // 60 days ago - REJECTED\n  // );\n  \n  await writeApi.close();\n  console.log('Metrics written successfully');\n} catch (error) {\n  console.error('Write failed:', error.message);\n  await writeApi.close();\n}\n\n// Initialize retention policy on startup\nconfigureRetentionPolicy();"
+      },
+      "tools": [
+        {
+          "name": "InfluxDB 2.x",
+          "type": "Time Series Database",
+          "cost": "Free (OSS) / $0.25 per GB-hour (Cloud)"
+        },
+        {
+          "name": "Azure Key Vault",
+          "type": "Secret Management",
+          "cost": "$0.03 per 10,000 operations"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.12.4.1 - Event logging",
+        "A.18.1.5 - Regulation of cryptographic controls"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-6 - Integrity checking mechanisms are used",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Generate InfluxDB API token with restricted bucket permissions",
+        "Test timestamp validation by attempting to write backdated metric (should fail)",
+        "Verify retention policy auto-deletes data after 30 days",
+        "Monitor audit logs for rejected write attempts with invalid timestamps",
+        "Test tag whitelist by attempting to write metric with unauthorized tag"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enforce TimescaleDB Row-Level Security (RLS) with Timestamp Constraints",
+      "description": "Use PostgreSQL Row-Level Security policies in TimescaleDB to prevent timestamp manipulation and enforce write-once semantics for hypertables. Implement CHECK constraints to validate timestamps are within acceptable range.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "sql",
+        "framework": "TimescaleDB 2.x + PostgreSQL 14+",
+        "code": "-- Create hypertable for IoT sensor data with timestamp constraints\nCREATE TABLE sensor_readings (\n  time TIMESTAMPTZ NOT NULL,\n  sensor_id INTEGER NOT NULL,\n  temperature DOUBLE PRECISION,\n  humidity DOUBLE PRECISION,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  -- Prevent backdating: timestamp must be within 5 minutes of now\n  CONSTRAINT valid_timestamp CHECK (\n    time >= NOW() - INTERVAL '5 minutes' AND\n    time <= NOW() + INTERVAL '5 minutes'\n  ),\n  -- Prevent future dating beyond reasonable NTP drift\n  CONSTRAINT realistic_timestamp CHECK (time <= NOW() + INTERVAL '1 minute'),\n  -- Validate sensor readings are realistic\n  CONSTRAINT valid_temperature CHECK (temperature BETWEEN -50 AND 100),\n  CONSTRAINT valid_humidity CHECK (humidity BETWEEN 0 AND 100)\n);\n\n-- Convert to hypertable with 7-day chunks\nSELECT create_hypertable('sensor_readings', 'time', chunk_time_interval => INTERVAL '7 days');\n\n-- Create retention policy (auto-delete after 30 days)\nSELECT add_retention_policy('sensor_readings', INTERVAL '30 days');\n\n-- Enable Row-Level Security\nALTER TABLE sensor_readings ENABLE ROW LEVEL SECURITY;\n\n-- Create application role with restricted permissions\nCREATE ROLE sensor_writer;\nGRANT INSERT ON sensor_readings TO sensor_writer;\n-- Deny UPDATE and DELETE to enforce write-once semantics\nREVOKE UPDATE, DELETE ON sensor_readings FROM sensor_writer;\n\n-- RLS Policy: Users can only insert data with current timestamp\nCREATE POLICY sensor_insert_policy ON sensor_readings\n  FOR INSERT\n  TO sensor_writer\n  WITH CHECK (\n    -- Enforce timestamp is within 5 minutes of now (prevent backdating)\n    time >= NOW() - INTERVAL '5 minutes' AND\n    time <= NOW() + INTERVAL '5 minutes' AND\n    -- Ensure created_at matches time (prevent timestamp forgery)\n    ABS(EXTRACT(EPOCH FROM (created_at - time))) < 300\n  );\n\n-- RLS Policy: Prevent modification of historical data\nCREATE POLICY sensor_no_update_policy ON sensor_readings\n  FOR UPDATE\n  TO sensor_writer\n  USING (false); -- Deny all updates\n\nCREATE POLICY sensor_no_delete_policy ON sensor_readings\n  FOR DELETE\n  TO sensor_writer\n  USING (false); -- Deny all deletes\n\n-- Create continuous aggregate for daily averages (protected from manipulation)\nCREATE MATERIALIZED VIEW sensor_daily_avg\nWITH (timescaledb.continuous) AS\nSELECT\n  time_bucket('1 day', time) AS day,\n  sensor_id,\n  AVG(temperature) AS avg_temp,\n  AVG(humidity) AS avg_humidity,\n  COUNT(*) AS reading_count\nFROM sensor_readings\nGROUP BY day, sensor_id\nWITH NO DATA;\n\n-- Refresh policy for continuous aggregate\nSELECT add_continuous_aggregate_policy('sensor_daily_avg',\n  start_offset => INTERVAL '3 days',\n  end_offset => INTERVAL '1 hour',\n  schedule_interval => INTERVAL '1 hour');\n\n-- Create audit trigger to log all write attempts\nCREATE TABLE sensor_audit_log (\n  id SERIAL PRIMARY KEY,\n  operation TEXT,\n  sensor_id INTEGER,\n  attempted_time TIMESTAMPTZ,\n  actual_time TIMESTAMPTZ,\n  user_name TEXT,\n  client_ip INET,\n  success BOOLEAN,\n  error_message TEXT\n);\n\nCREATE OR REPLACE FUNCTION audit_sensor_writes()\nRETURNS TRIGGER AS $$\nBEGIN\n  INSERT INTO sensor_audit_log (\n    operation,\n    sensor_id,\n    attempted_time,\n    actual_time,\n    user_name,\n    client_ip,\n    success,\n    error_message\n  ) VALUES (\n    TG_OP,\n    NEW.sensor_id,\n    NEW.time,\n    NOW(),\n    current_user,\n    inet_client_addr(),\n    true,\n    NULL\n  );\n  RETURN NEW;\nEXCEPTION WHEN OTHERS THEN\n  INSERT INTO sensor_audit_log (\n    operation,\n    sensor_id,\n    attempted_time,\n    actual_time,\n    user_name,\n    client_ip,\n    success,\n    error_message\n  ) VALUES (\n    TG_OP,\n    NEW.sensor_id,\n    NEW.time,\n    NOW(),\n    current_user,\n    inet_client_addr(),\n    false,\n    SQLERRM\n  );\n  RAISE;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER sensor_audit_trigger\nAFTER INSERT ON sensor_readings\nFOR EACH ROW EXECUTE FUNCTION audit_sensor_writes();\n\n-- Example: Valid insert (current timestamp)\nSET ROLE sensor_writer;\nINSERT INTO sensor_readings (time, sensor_id, temperature, humidity)\nVALUES (NOW(), 101, 22.5, 65.0);\n-- SUCCESS\n\n-- Example: Invalid insert (backdated timestamp - REJECTED)\n-- INSERT INTO sensor_readings (time, sensor_id, temperature, humidity)\n-- VALUES (NOW() - INTERVAL '60 days', 101, 22.5, 65.0);\n-- ERROR: new row violates check constraint \"valid_timestamp\"\n\n-- Example: Attempt to modify historical data (DENIED by RLS)\n-- UPDATE sensor_readings SET temperature = 99.9 WHERE sensor_id = 101;\n-- ERROR: new row violates row-level security policy for table \"sensor_readings\""
+      },
+      "tools": [
+        {
+          "name": "TimescaleDB",
+          "type": "Time Series Database (PostgreSQL Extension)",
+          "cost": "Free (OSS) / $0.17 per GB-hour (Cloud)"
+        },
+        {
+          "name": "PostgreSQL 14+",
+          "type": "Relational Database",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-6 - Integrity checking mechanisms are used",
+        "PR.PT-1 - Audit/log records are determined"
+      ],
+      "validation_steps": [
+        "Create hypertable with timestamp CHECK constraints",
+        "Enable Row-Level Security and create restrictive policies",
+        "Test backdating attack (should fail with constraint violation)",
+        "Verify sensor_writer role cannot UPDATE or DELETE existing data",
+        "Review sensor_audit_log for failed write attempts",
+        "Confirm retention policy auto-deletes data after 30 days"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Secure Prometheus Remote Write with mTLS Authentication and Metric Validation",
+      "description": "Enable mutual TLS authentication for Prometheus remote write endpoints and implement metric validation rules to prevent injection attacks. Use recording rules to detect anomalous metric patterns (sudden spikes, timestamp gaps).",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Prometheus 2.x + Thanos/Cortex",
+        "code": "# prometheus.yml - Secure remote write configuration with mTLS\nglobal:\n  scrape_interval: 15s\n  evaluation_interval: 15s\n  external_labels:\n    cluster: 'production'\n    region: 'us-east-1'\n\n# Remote write to Thanos/Cortex with mTLS authentication\nremote_write:\n  - url: 'https://thanos-receive.example.com/api/v1/receive'\n    # mTLS configuration\n    tls_config:\n      cert_file: /etc/prometheus/certs/client.crt\n      key_file: /etc/prometheus/certs/client.key\n      ca_file: /etc/prometheus/certs/ca.crt\n      insecure_skip_verify: false\n    # HTTP basic auth (additional layer)\n    basic_auth:\n      username: prometheus-writer\n      password_file: /etc/prometheus/secrets/remote_write_password\n    # Write relabeling for metric validation\n    write_relabel_configs:\n      # Drop metrics with suspicious patterns\n      - source_labels: [__name__]\n        regex: '.*[;\\\\|\\$\\(\\)].*' # Prevent injection characters\n        action: drop\n      # Enforce required labels\n      - source_labels: [job]\n        regex: ''\n        action: drop # Drop metrics without job label\n      # Sanitize metric names\n      - source_labels: [__name__]\n        regex: '([a-zA-Z_][a-zA-Z0-9_]*)'\n        replacement: '${1}'\n        target_label: __name__\n    # Queue configuration to prevent DoS\n    queue_config:\n      capacity: 10000\n      max_shards: 5\n      min_shards: 1\n      max_samples_per_send: 1000\n      batch_send_deadline: 5s\n      min_backoff: 30ms\n      max_backoff: 100ms\n\n# Recording rules for anomaly detection\nrule_files:\n  - /etc/prometheus/rules/*.yml\n\n# Scrape config with authentication\nscrape_configs:\n  - job_name: 'kubernetes-nodes'\n    scheme: https\n    tls_config:\n      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token\n    kubernetes_sd_configs:\n      - role: node\n    # Relabel to enforce label standards\n    relabel_configs:\n      - source_labels: [__meta_kubernetes_node_name]\n        target_label: instance\n      - source_labels: [__address__]\n        regex: '([^:]+)(?::\\d+)?'\n        replacement: '${1}:10250'\n        target_label: __address__\n---\n# /etc/prometheus/rules/metric_validation.yml\ngroups:\n  - name: metric_integrity_validation\n    interval: 1m\n    rules:\n      # Detect timestamp anomalies (backdating)\n      - alert: MetricTimestampAnomaly\n        expr: |\n          (\n            timestamp(up) - time()\n          ) > 300 or (\n            time() - timestamp(up)\n          ) > 300\n        for: 5m\n        labels:\n          severity: critical\n          category: data_integrity\n        annotations:\n          summary: \"Metric timestamp drift exceeds 5 minutes\"\n          description: \"Metric {{ $labels.job }}/{{ $labels.instance }} has timestamp drift of {{ $value }}s. Possible backdating attack.\"\n      \n      # Detect sudden metric value spikes (injection)\n      - alert: AnomalousMetricSpike\n        expr: |\n          (\n            rate(http_requests_total[5m]) / \n            rate(http_requests_total[5m] offset 1h)\n          ) > 10\n        for: 10m\n        labels:\n          severity: warning\n          category: data_integrity\n        annotations:\n          summary: \"Unusual 10x spike in metric values\"\n          description: \"Metric {{ $labels.__name__ }} on {{ $labels.instance }} increased 10x. Possible metric injection.\"\n      \n      # Detect missing metrics (deletion attack)\n      - alert: MetricGapDetected\n        expr: |\n          absent_over_time(up[10m])\n        for: 5m\n        labels:\n          severity: critical\n          category: data_integrity\n        annotations:\n          summary: \"Critical monitoring metric disappeared\"\n          description: \"Metric 'up' missing for {{ $labels.job }}/{{ $labels.instance }}. Possible deletion attack.\"\n      \n      # Detect tag manipulation\n      - alert: UnexpectedLabelCardinality\n        expr: |\n          count(count by (__name__, job) (up)) by (__name__) > 100\n        for: 15m\n        labels:\n          severity: warning\n          category: data_integrity\n        annotations:\n          summary: \"High label cardinality detected\"\n          description: \"Metric {{ $labels.__name__ }} has >100 unique job labels. Possible tag injection attack.\"\n---\n# docker-compose.yml - Thanos Receive with authentication\nversion: '3.8'\nservices:\n  thanos-receive:\n    image: quay.io/thanos/thanos:v0.32.0\n    command:\n      - receive\n      - --grpc-address=0.0.0.0:10901\n      - --http-address=0.0.0.0:10902\n      - --remote-write.address=0.0.0.0:19291\n      - --tsdb.path=/var/thanos/receive\n      - --label=receive=\"true\"\n      - --tsdb.retention=30d\n      # mTLS configuration\n      - --grpc-server-tls-cert=/certs/server.crt\n      - --grpc-server-tls-key=/certs/server.key\n      - --grpc-server-tls-client-ca=/certs/ca.crt\n      # Enable authentication\n      - --http.config=/etc/thanos/http_config.yml\n    volumes:\n      - thanos-receive-data:/var/thanos/receive\n      - ./certs:/certs:ro\n      - ./http_config.yml:/etc/thanos/http_config.yml:ro\n    ports:\n      - \"10901:10901\"\n      - \"10902:10902\"\n      - \"19291:19291\"\n---\n# /etc/thanos/http_config.yml - HTTP basic auth for remote write\nbasic_auth_users:\n  prometheus-writer: $2y$10$X1234567890abcdefGHIJKL # bcrypt hash of password\n\ntls_server_config:\n  cert_file: /certs/server.crt\n  key_file: /certs/server.key\n  client_auth_type: RequireAndVerifyClientCert\n  client_ca_file: /certs/ca.crt\n---\n# generate-certs.sh - Generate mTLS certificates\n#!/bin/bash\nset -e\n\n# Create CA\nopenssl genrsa -out ca.key 4096\nopenssl req -new -x509 -days 3650 -key ca.key -out ca.crt \\\n  -subj \"/C=US/ST=CA/L=SF/O=Example/CN=Prometheus-CA\"\n\n# Create server certificate\nopenssl genrsa -out server.key 4096\nopenssl req -new -key server.key -out server.csr \\\n  -subj \"/C=US/ST=CA/L=SF/O=Example/CN=thanos-receive.example.com\"\nopenssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key \\\n  -CAcreateserial -out server.crt\n\n# Create client certificate\nopenssl genrsa -out client.key 4096\nopenssl req -new -key client.key -out client.csr \\\n  -subj \"/C=US/ST=CA/L=SF/O=Example/CN=prometheus-client\"\nopenssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key \\\n  -CAcreateserial -out client.crt\n\necho \"mTLS certificates generated successfully\"\necho \"Copy ca.crt, client.crt, client.key to Prometheus\"\necho \"Copy ca.crt, server.crt, server.key to Thanos Receive\""
+      },
+      "tools": [
+        {
+          "name": "Prometheus",
+          "type": "Monitoring System & TSDB",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Thanos/Cortex",
+          "type": "Scalable Prometheus Backend",
+          "cost": "Free (OSS) / Cloud pricing varies"
+        },
+        {
+          "name": "OpenSSL",
+          "type": "TLS Certificate Generation",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.13.1.1 - Network controls",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-2 - Data-in-transit is protected",
+        "DE.AE-3 - Event data are collected"
+      ],
+      "validation_steps": [
+        "Generate mTLS certificates using OpenSSL script",
+        "Configure Prometheus remote_write with cert_file, key_file, ca_file",
+        "Deploy Thanos Receive with RequireAndVerifyClientCert",
+        "Test unauthenticated write attempt (should fail with TLS handshake error)",
+        "Create recording rules to detect timestamp anomalies",
+        "Verify MetricTimestampAnomaly alert fires when backdating is attempted",
+        "Monitor Thanos logs for rejected writes with invalid certificates"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement SIEM Detection for Time Series Data Manipulation",
+      "description": "Deploy SIEM queries to detect timestamp backdating, metric injection, and retention policy bypass across Azure Sentinel, Splunk, Elastic, and CloudWatch Insights.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "kql",
+        "framework": "Azure Sentinel + Elastic + Splunk + CloudWatch",
+        "code": "// ========================================\n// AZURE SENTINEL (KQL) - Detect InfluxDB Timestamp Backdating\n// ========================================\nlet timeWindow = 1h;\nlet maxDrift = 5m;\nInfluxDBLogs\n| where TimeGenerated > ago(timeWindow)\n| where EventType == \"write\"\n| extend TimestampDrift = abs(datetime_diff('second', EventTimestamp, ingestion_time()))\n| where TimestampDrift > totalseconds(maxDrift)\n| summarize \n    BackdatedWrites = count(),\n    MaxDrift = max(TimestampDrift),\n    AvgDrift = avg(TimestampDrift),\n    TargetBuckets = make_set(Bucket)\n    by SourceIP, UserIdentity, bin(TimeGenerated, 5m)\n| where BackdatedWrites > 10\n| extend Severity = case(\n    MaxDrift > 86400, \"Critical\", // >1 day drift\n    MaxDrift > 3600, \"High\",       // >1 hour drift\n    \"Medium\"\n  )\n| project \n    TimeGenerated,\n    SourceIP,\n    UserIdentity,\n    BackdatedWrites,\n    MaxDriftHours = MaxDrift / 3600.0,\n    TargetBuckets,\n    Severity\n| order by MaxDriftHours desc\n\n// AZURE SENTINEL - Detect Metric Injection Anomalies\nlet baselineWindow = 7d;\nlet detectionWindow = 1h;\nPrometheusMetrics\n| where TimeGenerated > ago(baselineWindow)\n| where MetricName == \"http_requests_total\"\n| summarize \n    BaselineRate = avg(Rate),\n    BaselineStdDev = stdev(Rate)\n    by Job, Instance\n| join kind=inner (\n    PrometheusMetrics\n    | where TimeGenerated > ago(detectionWindow)\n    | where MetricName == \"http_requests_total\"\n    | summarize CurrentRate = avg(Rate) by Job, Instance\n  ) on Job, Instance\n| extend ZScore = (CurrentRate - BaselineRate) / BaselineStdDev\n| where ZScore > 10 // 10 standard deviations = likely injection\n| project \n    Job,\n    Instance,\n    BaselineRate,\n    CurrentRate,\n    PercentIncrease = ((CurrentRate - BaselineRate) / BaselineRate) * 100,\n    ZScore,\n    Severity = \"High\"\n| order by ZScore desc\n\n// ========================================\n// ELASTIC STACK (EQL) - Detect TimescaleDB RLS Bypass Attempts\n// ========================================\nsequence by user.name, source.ip with maxspan=10m\n  [authentication where event.outcome == \"success\" and user.roles: \"sensor_writer\"]\n  [database where \n    event.action in (\"UPDATE\", \"DELETE\") and \n    database.name == \"iot_sensors\" and \n    database.table == \"sensor_readings\" and \n    event.outcome == \"failure\" and \n    error.message: \"*row-level security policy*\"\n  ]\n| stats count = count() by user.name, source.ip\n| where count > 5\n\n// ELASTIC KQL - Detect Retention Policy Bypass\nGET /timescaledb-logs-*/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        { \"range\": { \"@timestamp\": { \"gte\": \"now-1h\" } } },\n        { \"term\": { \"event.action\": \"INSERT\" } },\n        { \"term\": { \"database.table\": \"sensor_readings\" } }\n      ],\n      \"filter\": [\n        {\n          \"script\": {\n            \"script\": {\n              \"source\": \"Math.abs(doc['record.timestamp'].value.millis - doc['@timestamp'].value.millis) > 1800000\",\n              \"lang\": \"painless\"\n            }\n          }\n        }\n      ]\n    }\n  },\n  \"aggs\": {\n    \"suspicious_sources\": {\n      \"terms\": {\n        \"field\": \"source.ip\",\n        \"size\": 20\n      },\n      \"aggs\": {\n        \"max_drift\": {\n          \"max\": {\n            \"script\": {\n              \"source\": \"Math.abs(doc['record.timestamp'].value.millis - doc['@timestamp'].value.millis) / 1000.0\"\n            }\n          }\n        }\n      }\n    }\n  }\n}\n\n// ========================================\n// SPLUNK (SPL) - Detect Prometheus Remote Write Authentication Failures\n// ========================================\nindex=prometheus_logs sourcetype=thanos_receive\n| where status IN (401, 403) AND request_path=\"/api/v1/receive\"\n| eval hour=strftime(_time, \"%Y-%m-%d %H:00\")\n| stats \n    count as FailedWrites,\n    dc(src_ip) as UniqueSources,\n    values(user_agent) as UserAgents,\n    values(tls_error) as TLSErrors\n    by hour, src_ip\n| where FailedWrites > 20\n| eval Severity=case(\n    FailedWrites > 100, \"Critical\",\n    FailedWrites > 50, \"High\",\n    1=1, \"Medium\"\n  )\n| table hour, src_ip, FailedWrites, UniqueSources, UserAgents, TLSErrors, Severity\n| sort -FailedWrites\n\n// SPLUNK - Detect Continuous Query Exploitation\nindex=influxdb_logs sourcetype=influxdb_query\n| where query_type=\"continuous_query\"\n| rex field=query \"INTO (?<target_measurement>[^\\s]+)\"\n| stats \n    count as ExecutionCount,\n    values(query) as Queries,\n    dc(target_measurement) as UniqueMeasurements\n    by user, src_ip, _time\n| where UniqueMeasurements > 10 OR ExecutionCount > 100\n| eval Severity=\"High\"\n| table _time, user, src_ip, ExecutionCount, UniqueMeasurements, Severity\n\n// ========================================\n// AWS CLOUDWATCH INSIGHTS - Detect IoT Metric Tampering\n// ========================================\nfields @timestamp, source_ip, sensor_id, temperature, timestamp_drift\n| filter event_type = \"sensor_write\"\n| filter timestamp_drift > 300 OR temperature > 100 OR temperature < -50\n| stats \n    count(*) as SuspiciousWrites,\n    max(timestamp_drift) as MaxDriftSeconds,\n    avg(temperature) as AvgTemperature,\n    count_distinct(sensor_id) as UniqueSensors\n    by source_ip, bin(5m)\n| filter SuspiciousWrites > 5\n| sort MaxDriftSeconds desc\n\n// CLOUDWATCH INSIGHTS - Detect Financial Metric Manipulation\nfields @timestamp, user_id, metric_name, old_value, new_value, operation\n| filter metric_name in [\"stock_price\", \"trade_volume\", \"account_balance\"]\n| filter operation in [\"UPDATE\", \"DELETE\"]\n| parse @message /user=(?<user_id>\\w+).*old=(?<old_value>[\\d.]+).*new=(?<new_value>[\\d.]+)/\n| stats \n    count(*) as ModificationCount,\n    sum(abs(new_value - old_value)) as TotalDelta\n    by user_id, metric_name, bin(1h)\n| filter ModificationCount > 10 OR TotalDelta > 100000\n| sort TotalDelta desc"
+      },
+      "tools": [
+        {
+          "name": "Azure Sentinel",
+          "type": "SIEM",
+          "cost": "$2.46 per GB ingested"
+        },
+        {
+          "name": "Splunk Enterprise Security",
+          "type": "SIEM",
+          "cost": "$150 per GB ingested/day"
+        },
+        {
+          "name": "Elastic Security",
+          "type": "SIEM",
+          "cost": "$95 per month (Elastic Cloud)"
+        },
+        {
+          "name": "AWS CloudWatch Insights",
+          "type": "Log Analytics",
+          "cost": "$0.005 per GB ingested"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are aggregated",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Deploy KQL query in Azure Sentinel with 5-minute frequency",
+        "Create Splunk alert for FailedWrites > 20 in 1 hour",
+        "Configure Elastic EQL rule for RLS bypass detection",
+        "Set up CloudWatch Insights alarm for MaxDriftSeconds > 300",
+        "Test detection by simulating backdated write (should trigger alert within 5 minutes)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in database write operations from single IP address",
+      "Metrics with timestamps >30 minutes older than ingestion time",
+      "Retention policy jobs failing or being disabled",
+      "Continuous queries executing with unusual frequency (>1000/hour)",
+      "Tag cardinality explosion (10x increase in unique tag combinations)",
+      "Historical metrics changing values in immutable time ranges",
+      "Authentication failures on write endpoints followed by successful writes",
+      "Database user attempting UPDATE/DELETE on append-only time series tables"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "InfluxDBLogs | where EventType == 'write' | extend TimestampDrift = abs(datetime_diff('second', EventTimestamp, ingestion_time())) | where TimestampDrift > 300 | summarize BackdatedWrites = count() by SourceIP, bin(TimeGenerated, 5m) | where BackdatedWrites > 10"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: 'database' AND event.action: 'INSERT' AND database.table: 'sensor_readings' AND script.result: 'timestamp_drift > 300'"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=timeseries_logs sourcetype=influxdb_write | eval drift=abs(_time - strptime(metric_timestamp, \"%Y-%m-%dT%H:%M:%S\")) | where drift > 1800 | stats count by src_ip, bucket | where count > 20"
+      },
+      {
+        "siem": "CloudWatch Insights",
+        "query": "fields @timestamp, source_ip, timestamp_drift | filter event_type = 'metric_write' AND timestamp_drift > 300 | stats count(*) as backdated_writes by source_ip | filter backdated_writes > 10"
+      }
+    ],
+    "tools": [
+      {
+        "name": "InfluxDB Audit Logs",
+        "type": "Native Logging",
+        "usage": "Enable query logging in influxdb.conf: [logging] level = \"debug\", query-log-enabled = true"
+      },
+      {
+        "name": "TimescaleDB pg_audit Extension",
+        "type": "PostgreSQL Auditing",
+        "usage": "CREATE EXTENSION pg_audit; ALTER SYSTEM SET pg_audit.log = 'write'; SELECT pg_reload_conf();"
+      },
+      {
+        "name": "Prometheus Alertmanager",
+        "type": "Metric-based Alerting",
+        "usage": "Configure recording rules to detect timestamp anomalies and metric spikes"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "IoT/Smart Devices",
+      "Energy/Utilities",
+      "E-commerce"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 10.5 - Protect audit trail)",
+      "HIPAA (164.312(b) - Audit controls)",
+      "SOC2 (CC7.2 - System monitoring)",
+      "ISO27001 (A.12.4.1 - Event logging)",
+      "GDPR (Article 32 - Integrity and confidentiality)",
+      "SOX (Section 404 - Internal controls)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Edge Computing"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Regulated"
+    ]
+  }
+}

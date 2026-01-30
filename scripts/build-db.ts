@@ -10,7 +10,7 @@
  * - Commits database to git for instant user startup
  */
 
-import { readdir, readFile, stat } from 'fs/promises';
+import { readdir, readFile, stat, unlink } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
@@ -168,9 +168,9 @@ function insertPattern(db: Database.Database, pattern: Pattern) {
         mitigation.description,
         mitigation.effectiveness,
         mitigation.implementation_complexity,
-        mitigation.code_example.language,
-        mitigation.code_example.framework,
-        mitigation.code_example.code
+        mitigation.code_example?.language || null,
+        mitigation.code_example?.framework || null,
+        mitigation.code_example?.code || null
       );
     }
 
@@ -270,6 +270,14 @@ async function buildDatabase() {
   }
 
   console.log(`✅ All ${patterns.length} patterns validated\n`);
+
+  // Delete old database if it exists
+  try {
+    await unlink(DB_PATH);
+    console.log('🗑️  Deleted old database\n');
+  } catch (error) {
+    // Ignore error if file doesn't exist
+  }
 
   // Create database
   console.log(`📦 Creating database: ${DB_PATH}`);

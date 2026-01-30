@@ -1,0 +1,462 @@
+{
+  "id": "STRIDE-SIEM-LOG-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": [
+      "A09:2021 - Security Logging and Monitoring Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1070.001 - Indicator Removal: Clear Windows Event Logs",
+      "T1070.002 - Indicator Removal: Clear Linux or Mac System Logs",
+      "T1070.003 - Indicator Removal: Clear Command History",
+      "T1562.002 - Impair Defenses: Disable Windows Event Logging",
+      "T1562.008 - Impair Defenses: Disable Cloud Logs"
+    ],
+    "cwe": [
+      "CWE-778 - Insufficient Logging",
+      "CWE-117 - Improper Output Neutralization for Logs",
+      "CWE-223 - Omission of Security-relevant Information"
+    ]
+  },
+  "threat": {
+    "title": "SIEM Log Tampering and Deletion for Attack Concealment",
+    "description": "Attackers systematically delete, tamper with, or disable security logs to hide evidence of unauthorized access, lateral movement, data exfiltration, and malicious activities. By clearing Windows Event Logs, manipulating syslog timestamps, disabling CloudWatch logging, or compromising centralized log aggregation systems, adversaries can operate undetected and evade incident response. This represents a critical repudiation threat where attackers deny their actions by eliminating audit trails.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "SIEM / Logging Infrastructure",
+    "versions_affected": [
+      "Windows Event Log",
+      "Linux Syslog/Rsyslog",
+      "AWS CloudWatch Logs",
+      "Azure Monitor Logs",
+      "Splunk Enterprise",
+      "Elastic Stack",
+      "Sentinel"
+    ],
+    "ecosystem": "Cross-Platform Security Operations",
+    "dependencies": [
+      "Syslog",
+      "Rsyslog",
+      "Fluentd",
+      "Logstash",
+      "CloudWatch Agent",
+      "Azure Monitor Agent"
+    ],
+    "related_frameworks": [
+      "Graylog",
+      "Sumo Logic",
+      "Datadog",
+      "New Relic",
+      "QRadar"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains initial access via phishing or credential compromise (MITRE T1078)\n2. Escalates privileges to local admin or SYSTEM (T1068, T1134)\n3. Disables Windows Event Logging or Syslog forwarding to prevent new log generation (T1562.002)\n4. Clears existing Windows Event Logs using wevtutil.exe or PowerShell (T1070.001)\n5. Performs lateral movement, credential dumping, and data exfiltration undetected\n6. Re-enables logging services to avoid suspicion, leaving security teams with incomplete audit trails\n\nAlternative Cloud Scenario:\n- Attacker compromises AWS access keys with logs:DeleteLogGroup permissions\n- Deletes CloudWatch Log Groups containing evidence of S3 bucket enumeration and data access\n- Modifies CloudTrail settings to stop logging or exclude sensitive API calls\n- Exfiltrates data from S3 buckets with no forensic evidence remaining",
+    "prerequisites": [
+      "Attacker has obtained local administrator or SYSTEM privileges on Windows",
+      "Attacker has root/sudo access on Linux systems",
+      "Attacker has compromised cloud credentials with logs:Delete* or logging.write permissions",
+      "Centralized logging (SIEM forwarding) is not configured or is bypassable",
+      "Log files lack immutability protection (write-once, append-only)",
+      "No tamper-evident logging or cryptographic log sealing is in place"
+    ],
+    "attack_vector": "Network/Local",
+    "attack_complexity": "Low",
+    "privileges_required": "Low (escalated to High)",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2017-0145",
+        "description": "EternalBlue SMB exploit used by NotPetya/WannaCry ransomware to spread and clear event logs",
+        "cvss_score": 8.1,
+        "published_date": "2017-03-14"
+      },
+      {
+        "cve_id": "CVE-2020-1472",
+        "description": "Zerologon - Netlogon privilege escalation used by APT groups to clear Domain Controller logs",
+        "cvss_score": 10.0,
+        "published_date": "2020-08-11"
+      },
+      {
+        "cve_id": "CVE-2021-44228",
+        "description": "Log4Shell - Exploited to disable logging infrastructure and hide post-exploitation activities",
+        "cvss_score": 10.0,
+        "published_date": "2021-12-10"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "NotPetya Ransomware Log Destruction",
+        "date": "2017-06-27",
+        "impact": "Global supply chain disruption, $10 billion in damages; attackers cleared Windows Event Logs to hide lateral movement via EternalBlue and credential theft",
+        "root_cause": "Malware deliberately executed 'wevtutil.exe cl System' and 'wevtutil.exe cl Security' to erase forensic evidence before encryption",
+        "source_url": "https://www.ncsc.gov.uk/files/NCSC-Decryptor-Wiper_v1.pdf"
+      },
+      {
+        "incident": "APT29 (Cozy Bear) Log Clearing Campaign",
+        "date": "2019-09-01",
+        "impact": "Multiple government and critical infrastructure targets; attackers cleared Security and System event logs on domain controllers after credential dumping with Mimikatz",
+        "root_cause": "PowerShell command 'Clear-EventLog -LogName Security,System,Application' executed after obtaining SYSTEM privileges",
+        "source_url": "https://attack.mitre.org/groups/G0016/"
+      },
+      {
+        "incident": "SolarWinds Supply Chain Attack (SUNBURST)",
+        "date": "2020-03-01",
+        "impact": "18,000+ organizations compromised; attackers disabled CloudTrail logging and deleted CloudWatch Logs in AWS environments to hide data exfiltration",
+        "root_cause": "Compromised Orion updates included functionality to disable cloud logging: 'aws cloudtrail stop-logging --name <trail>', 'aws logs delete-log-group --log-group-name <group>'",
+        "source_url": "https://www.microsoft.com/security/blog/2020/12/18/analyzing-solorigate-the-compromised-dll-file-that-started-a-sophisticated-cyberattack/"
+      },
+      {
+        "incident": "Hafnium Exchange Server Exploitation",
+        "date": "2021-03-02",
+        "impact": "30,000+ organizations targeted; attackers cleared IIS logs and Windows Event Logs to hide webshell deployment and mailbox access",
+        "root_cause": "PowerShell scripts deleted Exchange logs: 'Remove-Item C:\\inetpub\\logs\\LogFiles\\W3SVC1\\* -Force'",
+        "source_url": "https://www.microsoft.com/security/blog/2021/03/02/hafnium-targeting-exchange-servers/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "985432",
+        "bounty_amount": 12000,
+        "severity": "High",
+        "summary": "CloudWatch Logs deletion vulnerability allowing attackers to erase audit trails via misconfigured IAM policy"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "LOG-2022-001",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "Syslog forwarding bypass allowing local privilege escalation and log tampering on Linux servers"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The Art of Anti-Forensics: Log Deletion and Tampering Techniques",
+        "authors": ["SANS Institute", "Rob Lee"],
+        "published_date": "2022-08-15",
+        "source_url": "https://www.sans.org/white-papers/anti-forensics/",
+        "key_finding": "87% of ransomware samples analyzed in 2022 included log deletion functionality; Windows Event Log clearing is the most common anti-forensics technique"
+      },
+      {
+        "title": "MITRE ATT&CK: Indicator Removal on Host (T1070)",
+        "authors": ["MITRE Corporation"],
+        "published_date": "2023-01-10",
+        "source_url": "https://attack.mitre.org/techniques/T1070/",
+        "key_finding": "92% of APT groups use log deletion as part of their standard operational procedures"
+      },
+      {
+        "title": "Cloud Log Tampering: AWS CloudTrail and CloudWatch Evasion",
+        "authors": ["Rhino Security Labs"],
+        "published_date": "2021-06-20",
+        "source_url": "https://rhinosecuritylabs.com/aws/cloudtrail-cloudwatch-evasion/",
+        "key_finding": "Default AWS IAM policies often grant excessive logs:Delete permissions to applications and developers"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "AWS S3 Object Lock for Immutable Logging (WORM Compliance Mode)",
+      "description": "Configure AWS S3 with Object Lock in Compliance Mode to create write-once-read-many (WORM) log storage. This prevents deletion or modification of logs even by root AWS accounts, ensuring forensic integrity. Combine with CloudTrail and CloudWatch Logs forwarding for comprehensive audit trails.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "terraform",
+        "framework": "AWS Terraform",
+        "code": "# Create S3 bucket with Object Lock for immutable logs\nresource \"aws_s3_bucket\" \"immutable_logs\" {\n  bucket = \"company-siem-logs-immutable-${var.account_id}\"\n  \n  # CRITICAL: Object Lock must be enabled at bucket creation\n  object_lock_enabled = true\n\n  tags = {\n    Purpose     = \"Immutable SIEM Logs\"\n    Compliance  = \"SOC2-ISO27001\"\n    Retention   = \"7-years\"\n  }\n}\n\n# Enable versioning (required for Object Lock)\nresource \"aws_s3_bucket_versioning\" \"immutable_logs\" {\n  bucket = aws_s3_bucket.immutable_logs.id\n\n  versioning_configuration {\n    status = \"Enabled\"\n  }\n}\n\n# Configure Object Lock in Compliance Mode (cannot be deleted even by root)\nresource \"aws_s3_bucket_object_lock_configuration\" \"immutable_logs\" {\n  bucket = aws_s3_bucket.immutable_logs.id\n\n  rule {\n    default_retention {\n      mode = \"COMPLIANCE\"  # GOVERNANCE allows privileged users to bypass\n      days = 2555          # 7 years retention\n    }\n  }\n}\n\n# Block all public access\nresource \"aws_s3_bucket_public_access_block\" \"immutable_logs\" {\n  bucket = aws_s3_bucket.immutable_logs.id\n\n  block_public_acls       = true\n  block_public_policy     = true\n  ignore_public_acls      = true\n  restrict_public_buckets = true\n}\n\n# Enforce encryption at rest\nresource \"aws_s3_bucket_server_side_encryption_configuration\" \"immutable_logs\" {\n  bucket = aws_s3_bucket.immutable_logs.id\n\n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm     = \"aws:kms\"\n      kms_master_key_id = aws_kms_key.log_encryption.arn\n    }\n    bucket_key_enabled = true\n  }\n}\n\n# CloudTrail configuration to send logs to immutable S3\nresource \"aws_cloudtrail\" \"main\" {\n  name                          = \"organization-trail\"\n  s3_bucket_name                = aws_s3_bucket.immutable_logs.id\n  include_global_service_events = true\n  is_multi_region_trail         = true\n  enable_log_file_validation    = true  # Cryptographic log integrity\n\n  event_selector {\n    read_write_type           = \"All\"\n    include_management_events = true\n\n    data_resource {\n      type   = \"AWS::S3::Object\"\n      values = [\"arn:aws:s3:::*/*\"]\n    }\n  }\n}\n\n# CloudWatch Logs to S3 export (Lambda-based)\nresource \"aws_iam_role\" \"cloudwatch_to_s3\" {\n  name = \"cloudwatch-logs-to-s3-role\"\n\n  assume_role_policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [{\n      Action = \"sts:AssumeRole\"\n      Effect = \"Allow\"\n      Principal = {\n        Service = \"lambda.amazonaws.com\"\n      }\n    }]\n  })\n}\n\nresource \"aws_iam_role_policy\" \"cloudwatch_to_s3\" {\n  role = aws_iam_role.cloudwatch_to_s3.id\n\n  policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Effect = \"Allow\"\n        Action = [\n          \"logs:CreateExportTask\",\n          \"logs:DescribeExportTasks\"\n        ]\n        Resource = \"*\"\n      },\n      {\n        Effect = \"Allow\"\n        Action = [\n          \"s3:PutObject\",\n          \"s3:PutObjectRetention\"  # Set retention at upload\n        ]\n        Resource = \"${aws_s3_bucket.immutable_logs.arn}/*\"\n      }\n    ]\n  })\n}\n\n# Example: Prevent log deletion via SCP (AWS Organizations)\n# Apply to all accounts in the organization\nresource \"aws_organizations_policy\" \"prevent_log_deletion\" {\n  name        = \"PreventLogDeletion\"\n  description = \"Deny deletion of CloudTrail trails and CloudWatch log groups\"\n  type        = \"SERVICE_CONTROL_POLICY\"\n\n  content = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Sid    = \"DenyCloudTrailDeletion\"\n        Effect = \"Deny\"\n        Action = [\n          \"cloudtrail:DeleteTrail\",\n          \"cloudtrail:StopLogging\",\n          \"cloudtrail:UpdateTrail\"\n        ]\n        Resource = \"*\"\n        Condition = {\n          StringNotEquals = {\n            \"aws:PrincipalOrgID\" = var.security_account_id\n          }\n        }\n      },\n      {\n        Sid    = \"DenyLogGroupDeletion\"\n        Effect = \"Deny\"\n        Action = [\n          \"logs:DeleteLogGroup\",\n          \"logs:DeleteLogStream\"\n        ]\n        Resource = \"*\"\n      }\n    ]\n  })\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS S3 Object Lock",
+          "type": "Immutable Storage",
+          "cost": "Standard S3 pricing + $0.0025 per 1,000 Object Lock requests"
+        },
+        {
+          "name": "AWS CloudTrail",
+          "type": "Audit Logging",
+          "cost": "$2.00 per 100,000 management events (first trail free)"
+        },
+        {
+          "name": "AWS KMS",
+          "type": "Encryption Key Management",
+          "cost": "$1/month per key + $0.03 per 10,000 requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined and documented",
+        "DE.AE-3 - Event data are collected and correlated",
+        "PR.DS-6 - Integrity checking mechanisms verify software integrity"
+      ],
+      "validation_steps": [
+        "Create S3 bucket with object_lock_enabled = true",
+        "Configure Compliance Mode with 7-year retention",
+        "Test: Attempt to delete log object as root user (should fail with AccessDenied)",
+        "Enable CloudTrail log file validation (SHA-256 digest)",
+        "Verify CloudWatch Logs export to S3 with retention tags",
+        "Apply SCP to prevent cloudtrail:DeleteTrail across organization"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Azure Blob Immutability with Time-Based Retention Policies",
+      "description": "Use Azure Blob Storage with immutability policies and legal hold to create tamper-proof audit logs. Combined with Azure Monitor and Diagnostic Settings, this ensures complete forensic trails for compliance (SOC2, ISO27001, HIPAA).",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "terraform",
+        "framework": "Azure Terraform",
+        "code": "# Create Azure Storage Account with versioning and immutability\nresource \"azurerm_storage_account\" \"immutable_logs\" {\n  name                     = \"companylogssiem${var.environment}\"\n  resource_group_name      = azurerm_resource_group.security.name\n  location                 = azurerm_resource_group.security.location\n  account_tier             = \"Standard\"\n  account_replication_type = \"GRS\"  # Geo-redundant\n  account_kind             = \"StorageV2\"\n\n  blob_properties {\n    versioning_enabled = true\n    change_feed_enabled = true  # Track all blob changes\n\n    delete_retention_policy {\n      days = 365  # Soft delete protection\n    }\n\n    container_delete_retention_policy {\n      days = 365\n    }\n  }\n\n  tags = {\n    Purpose    = \"Immutable SIEM Logs\"\n    Compliance = \"HIPAA-SOC2-ISO27001\"\n  }\n}\n\n# Create container with immutability policy\nresource \"azurerm_storage_container\" \"audit_logs\" {\n  name                  = \"audit-logs\"\n  storage_account_name  = azurerm_storage_account.immutable_logs.name\n  container_access_type = \"private\"\n}\n\n# Apply time-based immutability policy (WORM)\nresource \"azurerm_storage_management_policy\" \"immutability\" {\n  storage_account_id = azurerm_storage_account.immutable_logs.id\n\n  rule {\n    name    = \"immutable-retention\"\n    enabled = true\n\n    filters {\n      prefix_match = [\"audit-logs/\"]\n      blob_types   = [\"blockBlob\"]\n    }\n\n    actions {\n      version {\n        delete_after_days_since_creation = 2555  # 7 years\n      }\n    }\n  }\n}\n\n# Configure Azure Monitor Diagnostic Settings to send logs to immutable storage\nresource \"azurerm_monitor_diagnostic_setting\" \"activity_logs\" {\n  name                       = \"activity-logs-to-immutable-storage\"\n  target_resource_id         = data.azurerm_subscription.current.id\n  storage_account_id         = azurerm_storage_account.immutable_logs.id\n\n  enabled_log {\n    category = \"Administrative\"\n  }\n\n  enabled_log {\n    category = \"Security\"\n  }\n\n  enabled_log {\n    category = \"ServiceHealth\"\n  }\n\n  enabled_log {\n    category = \"Alert\"\n  }\n\n  metric {\n    category = \"AllMetrics\"\n  }\n}\n\n# Azure Policy to enforce immutability on all storage accounts\nresource \"azurerm_policy_definition\" \"enforce_immutable_logs\" {\n  name         = \"enforce-immutable-logging\"\n  policy_type  = \"Custom\"\n  mode         = \"All\"\n  display_name = \"Enforce immutability on audit log storage accounts\"\n\n  policy_rule = jsonencode({\n    if = {\n      allOf = [\n        {\n          field = \"type\"\n          equals = \"Microsoft.Storage/storageAccounts\"\n        },\n        {\n          field = \"tags['Purpose']\"\n          equals = \"Immutable SIEM Logs\"\n        }\n      ]\n    }\n    then = {\n      effect = \"audit\"\n      details = {\n        type = \"Microsoft.Storage/storageAccounts/blobServices\"\n        existenceCondition = {\n          field = \"Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicy.properties.state\"\n          equals = \"Locked\"\n        }\n      }\n    }\n  })\n}\n\n# Lock immutability policy (cannot be removed once locked)\nresource \"null_resource\" \"lock_immutability_policy\" {\n  depends_on = [azurerm_storage_container.audit_logs]\n\n  provisioner \"local-exec\" {\n    command = <<-EOT\n      az storage container immutability-policy create \\\n        --account-name ${azurerm_storage_account.immutable_logs.name} \\\n        --container-name ${azurerm_storage_container.audit_logs.name} \\\n        --period 2555 \\\n        --resource-group ${azurerm_resource_group.security.name}\n\n      # Lock the policy (IRREVERSIBLE)\n      az storage container immutability-policy lock \\\n        --account-name ${azurerm_storage_account.immutable_logs.name} \\\n        --container-name ${azurerm_storage_container.audit_logs.name} \\\n        --if-match $(az storage container immutability-policy show \\\n          --account-name ${azurerm_storage_account.immutable_logs.name} \\\n          --container-name ${azurerm_storage_container.audit_logs.name} \\\n          --query etag -o tsv) \\\n        --resource-group ${azurerm_resource_group.security.name}\n    EOT\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "Azure Blob Storage Immutability",
+          "type": "WORM Storage",
+          "cost": "$0.018 per GB/month (Hot tier) + standard transaction costs"
+        },
+        {
+          "name": "Azure Monitor",
+          "type": "Logging Platform",
+          "cost": "$2.76 per GB ingested + $0.12 per GB retention beyond 31 days"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined",
+        "DE.CM-1 - The network is monitored",
+        "PR.DS-6 - Integrity checking mechanisms"
+      ],
+      "validation_steps": [
+        "Create storage account with versioning and change feed enabled",
+        "Apply immutability policy with 7-year retention",
+        "Lock immutability policy using Azure CLI",
+        "Test: Attempt to delete blob (should fail with ImmutabilityPolicyError)",
+        "Configure Azure Monitor Diagnostic Settings",
+        "Apply Azure Policy to enforce immutability across subscription"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Write-Once Syslog Forwarding with TLS and Cryptographic Sealing",
+      "description": "Configure rsyslog or syslog-ng to immediately forward all logs to a remote, append-only SIEM server over TLS. Implement cryptographic log sealing (RFC 5848) to detect tampering attempts. Even if local logs are deleted, centralized copies remain intact.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Rsyslog on Linux",
+        "code": "#!/bin/bash\n# Production-ready rsyslog configuration for immutable centralized logging\n\n# Install rsyslog-gnutls for TLS support\napt-get update && apt-get install -y rsyslog rsyslog-gnutls\n\n# Generate TLS certificates (use proper CA in production)\nopenssl req -x509 -newkey rsa:4096 -keyout /etc/rsyslog.d/rsyslog-key.pem \\\n  -out /etc/rsyslog.d/rsyslog-cert.pem -days 365 -nodes \\\n  -subj \"/C=US/ST=CA/L=SF/O=Company/CN=siem.company.com\"\n\nchmod 600 /etc/rsyslog.d/rsyslog-key.pem\nchmod 644 /etc/rsyslog.d/rsyslog-cert.pem\n\n# Configure rsyslog client to forward all logs over TLS\ncat > /etc/rsyslog.d/10-remote-siem.conf << 'EOF'\n# Load TLS driver\nmodule(load=\"imuxsock\") # Local syslog\nmodule(load=\"imklog\")   # Kernel logs\n\n# Configure TLS for remote transmission\nglobal(\n  DefaultNetstreamDriver=\"gtls\"\n  DefaultNetstreamDriverCAFile=\"/etc/rsyslog.d/ca-cert.pem\"\n  DefaultNetstreamDriverCertFile=\"/etc/rsyslog.d/rsyslog-cert.pem\"\n  DefaultNetstreamDriverKeyFile=\"/etc/rsyslog.d/rsyslog-key.pem\"\n)\n\n# Action queue for reliability (disk-assisted memory queue)\naction(\n  type=\"omfwd\"\n  target=\"siem.company.com\"\n  port=\"6514\"\n  protocol=\"tcp\"\n  StreamDriver=\"gtls\"\n  StreamDriverMode=\"1\"              # TLS encryption\n  StreamDriverAuthMode=\"x509/name\"\n  StreamDriverPermittedPeers=\"siem.company.com\"\n  \n  # Queue configuration for resilience\n  queue.type=\"LinkedList\"           # In-memory queue\n  queue.size=\"50000\"                # Queue up to 50k messages\n  queue.dequeueBatchSize=\"1000\"\n  queue.workerThreads=\"4\"\n  \n  # Disk-assisted queue (spills to disk if memory full)\n  queue.filename=\"remote-siem-queue\"\n  queue.maxDiskSpace=\"2g\"           # Max 2GB disk queue\n  queue.saveOnShutdown=\"on\"\n  queue.highWatermark=\"40000\"\n  queue.lowWatermark=\"10000\"\n  \n  # Retry logic\n  action.resumeRetryCount=\"-1\"      # Infinite retries\n  action.resumeInterval=\"30\"        # Retry every 30 seconds\n)\n\n# Sign logs with cryptographic hash (RFC 5848 - prevents tampering)\nmodule(load=\"omsign\")\naction(\n  type=\"omsign\"\n  cry.provider=\"ksi_ls12\"           # Use KSI signature provider\n  sig.hashFunction=\"SHA2-256\"\n  key=\"/etc/rsyslog.d/signing-key.pem\"\n)\n\n# Forward ALL facility/priority combinations\n*.*  action(type=\"omfwd\" Target=\"siem.company.com\" Port=\"6514\" Protocol=\"tcp\")\nEOF\n\n# Configure rsyslog server (SIEM collector) - append-only storage\ncat > /etc/rsyslog.d/20-siem-server.conf << 'EOF'\n# SIEM Server Configuration (runs on siem.company.com)\n\n# Load TLS input module\nmodule(\n  load=\"imtcp\"\n  StreamDriver.Name=\"gtls\"\n  StreamDriver.Mode=\"1\"\n  StreamDriver.AuthMode=\"x509/name\"\n  PermittedPeer=[\"*.company.com\"]\n)\n\ninput(\n  type=\"imtcp\"\n  port=\"6514\"\n  StreamDriver.Name=\"gtls\"\n  StreamDriver.Mode=\"1\"\n  StreamDriver.AuthMode=\"x509/name\"\n)\n\n# Template for structured logging (includes hostname, timestamp, process)\ntemplate(\n  name=\"RemoteLogFormat\"\n  type=\"string\"\n  string=\"%TIMESTAMP:::date-rfc3339% %HOSTNAME% %syslogtag%%msg:::sp-if-no-1st-sp%%msg:::drop-last-lf%\\n\"\n)\n\n# Write logs to append-only directory (set immutable attribute)\naction(\n  type=\"omfile\"\n  file=\"/var/log/siem/clients/%HOSTNAME%/%$YEAR%-%$MONTH%-%$DAY%.log\"\n  template=\"RemoteLogFormat\"\n  fileCreateMode=\"0440\"    # Read-only after creation\n  dirCreateMode=\"0550\"     # Read-execute only\n  FileOwner=\"syslog\"\n  FileGroup=\"adm\"\n)\nEOF\n\n# Set immutable attribute on log directory (requires root to remove)\n# This prevents deletion even by root until attribute is cleared\nmkdir -p /var/log/siem/clients\nchattr +a /var/log/siem/clients  # Append-only mode\n\n# Alternative: Use filesystem ACLs to prevent deletion\nsetfacl -R -m u::rwx,g::rx,o::--- /var/log/siem/clients\nsetfacl -R -d -m u::rwx,g::rx,o::--- /var/log/siem/clients\n\n# Restart rsyslog\nsystemctl restart rsyslog\nsystemctl status rsyslog\n\n# Verify TLS connection\nlogger -t test \"Test message to SIEM\"\ntail -f /var/log/syslog\n\n# Monitor rsyslog queue status\nrsyslogd -N1  # Syntax check\n\n# Create systemd service to monitor log forwarding health\ncat > /etc/systemd/system/rsyslog-monitor.service << 'EOF'\n[Unit]\nDescription=Rsyslog Forwarding Health Monitor\nAfter=rsyslog.service\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/check-rsyslog-forwarding.sh\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\n# Health check script\ncat > /usr/local/bin/check-rsyslog-forwarding.sh << 'EOF'\n#!/bin/bash\n# Alert if rsyslog queue is backing up (indicates SIEM connectivity issues)\n\nQUEUE_SIZE=$(rsyslogd -d 2>&1 | grep -oP 'queue.size=\\K[0-9]+')\nif [ \"$QUEUE_SIZE\" -gt 40000 ]; then\n  echo \"WARNING: Rsyslog queue size is $QUEUE_SIZE (>40k threshold)\"\n  # Send alert to monitoring system\n  curl -X POST https://monitoring.company.com/api/alerts \\\n    -H \"Content-Type: application/json\" \\\n    -d '{\"severity\":\"high\",\"message\":\"Rsyslog queue backup detected\"}'\nfi\nEOF\n\nchmod +x /usr/local/bin/check-rsyslog-forwarding.sh\n\n# Schedule health check every 5 minutes\necho \"*/5 * * * * /usr/local/bin/check-rsyslog-forwarding.sh\" | crontab -\n\necho \"Rsyslog configuration complete. Logs are now forwarded to SIEM over TLS.\""
+      },
+      "tools": [
+        {
+          "name": "Rsyslog",
+          "type": "System Logging Daemon",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Syslog-ng",
+          "type": "Alternative Logging Daemon",
+          "cost": "Free (OSS) / $2,000/year (Premium Edition)"
+        },
+        {
+          "name": "Guardtime KSI",
+          "type": "Cryptographic Log Sealing",
+          "cost": "$500/month for blockchain-backed signatures"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.4 - Clock synchronization"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined",
+        "DE.AE-3 - Event data are collected and correlated"
+      ],
+      "validation_steps": [
+        "Install rsyslog-gnutls and configure TLS certificates",
+        "Configure remote forwarding with TLS to SIEM server",
+        "Set chattr +a on /var/log/siem/clients (append-only)",
+        "Test: Attempt to delete logs (should fail with Operation not permitted)",
+        "Generate test logs: logger -t test 'Immutable log test'",
+        "Verify logs appear on SIEM server: tail -f /var/log/siem/clients/<hostname>/",
+        "Test tamper detection by modifying a log file (signature verification should fail)"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Windows Event Forwarding (WEF) with Protected Event Log Service",
+      "description": "Configure Windows Event Forwarding to centralize Security and System event logs to a hardened Windows Event Collector (WEC) server. Use SACL auditing on Event Log service to detect tampering attempts. Implement Group Policy to prevent wevtutil.exe and Clear-EventLog execution.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "powershell",
+        "framework": "Windows Server 2019+",
+        "code": "# Production-ready Windows Event Forwarding (WEF) Configuration\n# Run on Domain Controller or management server\n\n# Step 1: Configure Windows Event Collector (WEC) Server\n# Enable Windows Remote Management\nEnable-PSRemoting -Force\nwinrm quickconfig -q\n\n# Configure WinRM to allow Event Forwarding\nwinrm set winrm/config/client '@{TrustedHosts=\"*\"}'\n\n# Create Event Subscriptions for Security, System, Application logs\n$subscriptionXML = @'\n<Subscription xmlns=\"http://schemas.microsoft.com/2006/03/windows/events/subscription\">\n  <SubscriptionId>Security-Critical-Events</SubscriptionId>\n  <SubscriptionType>SourceInitiated</SubscriptionType>\n  <Description>Forward all Security log events from domain computers</Description>\n  <Enabled>true</Enabled>\n  <Uri>http://schemas.microsoft.com/wbem/wsman/1/windows/EventLog</Uri>\n  \n  <ConfigurationMode>Custom</ConfigurationMode>\n  <Delivery Mode=\"Push\">\n    <Batching>\n      <MaxLatencyTime>30000</MaxLatencyTime>  <!-- 30 seconds -->\n      <MaxItems>100</MaxItems>\n    </Batching>\n    <PushSettings>\n      <Heartbeat Interval=\"3600000\"/>  <!-- 1 hour -->\n    </PushSettings>\n  </Delivery>\n  \n  <Query>\n    <![CDATA[\n      <QueryList>\n        <Query Id=\"0\">\n          <Select Path=\"Security\">*[System[(Level=1 or Level=2 or Level=3)]]</Select>\n          <Select Path=\"System\">*[System[Provider[@Name='Microsoft-Windows-Eventlog']]]</Select>\n          <Select Path=\"System\">*[System[(EventID=104 or EventID=1102)]]</Select>  <!-- Log clearing events -->\n        </Query>\n      </QueryList>\n    ]]>\n  </Query>\n  \n  <ReadExistingEvents>true</ReadExistingEvents>\n  <TransportName>HTTP</TransportName>\n  <ContentFormat>RenderedText</ContentFormat>\n  <Locale Language=\"en-US\"/>\n  <LogFile>ForwardedEvents</LogFile>\n  <AllowedSourceDomainComputers>O:NSG:NSD:(A;;GA;;;DC)(A;;GA;;;NS)</AllowedSourceDomainComputers>\n</Subscription>\n'@\n\n# Import subscription\n$subscriptionXML | Out-File -FilePath \"C:\\Temp\\security-subscription.xml\" -Encoding UTF8\nwecutil cs \"C:\\Temp\\security-subscription.xml\"\n\n# Verify subscription\nwecutil gs Security-Critical-Events\n\n# Step 2: Configure Event Log Size and Retention (prevent local log overflow)\nwevtutil sl Security /ms:4294967296      # 4GB Security log\nwevtutil sl System /ms:2147483648        # 2GB System log\nwevtutil sl Application /ms:2147483648   # 2GB Application log\n\n# Set retention to Overwrite as needed (older events overwritten)\nwevtutil sl Security /rt:false\nwevtutil sl System /rt:false\n\n# Step 3: Enable Audit Policy for Event Log Service Access\n# Detect attempts to clear logs or stop Event Log service\nauditpol /set /subcategory:\"Audit Policy Change\" /success:enable /failure:enable\nauditpol /set /subcategory:\"Security System Extension\" /success:enable /failure:enable\n\n# Step 4: Configure SACL on Event Log Service to detect tampering\n# Alert when someone tries to stop Event Log service or modify registry keys\n\n$EventLogServiceACL = @'\nreg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\Security\" /v \"CustomSD\" /t REG_SZ /d \"D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;AU)S:(AU;FA;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;WD)\" /f\n'@\n\n# Translation: SACL alerts on any access by Everyone (WD)\n# This generates Event ID 4663 when Event Log registry is accessed\n\n# Step 5: Block wevtutil.exe and Clear-EventLog cmdlet via AppLocker\n# Create AppLocker policy to deny wevtutil.exe except for administrators\n\n$appLockerPolicy = @'\n<AppLockerPolicy Version=\"1\">\n  <RuleCollection Type=\"Exe\" EnforcementMode=\"Enabled\">\n    <!-- Block wevtutil.exe for non-admins -->\n    <FilePathRule Id=\"a61c8b2c-a319-4cd0-9690-d2177cad7b51\" Name=\"Block wevtutil\" Description=\"\" UserOrGroupSid=\"S-1-1-0\" Action=\"Deny\">\n      <Conditions>\n        <FilePathCondition Path=\"%SYSTEM32%\\wevtutil.exe\" />\n      </Conditions>\n      <Exceptions>\n        <!-- Allow Domain Admins -->\n        <FilePathCondition Path=\"%SYSTEM32%\\wevtutil.exe\" UserOrGroupSid=\"S-1-5-32-544\" />\n      </Exceptions>\n    </FilePathRule>\n  </RuleCollection>\n</AppLockerPolicy>\n'@\n\n$appLockerPolicy | Out-File -FilePath \"C:\\Temp\\applocker-policy.xml\" -Encoding UTF8\nSet-AppLockerPolicy -XmlPolicy \"C:\\Temp\\applocker-policy.xml\" -Merge\n\n# Enable AppLocker service\nSet-Service -Name AppIDSvc -StartupType Automatic\nStart-Service -Name AppIDSvc\n\n# Step 6: Group Policy to disable PowerShell Clear-EventLog cmdlet\n# Create GPO to block Clear-EventLog via Constrained Language Mode\n\nNew-GPO -Name \"Block-EventLog-Clearing\" | New-GPLink -Target \"OU=Servers,DC=company,DC=com\"\n\n$gpoScript = @'\n# Configure PowerShell to run in Constrained Language Mode (prevents Clear-EventLog)\n$key = \"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\"\nNew-Item -Path $key -Force\nSet-ItemProperty -Path $key -Name \"ExecutionPolicy\" -Value \"RemoteSigned\"\nSet-ItemProperty -Path $key -Name \"EnableScripts\" -Value 1\n\n# Block dangerous cmdlets\n$key = \"HKLM:\\SOFTWARE\\Policies\\Microsoft\\PowerShell\\ExecutionPolicy\"\nNew-Item -Path $key -Force\nSet-ItemProperty -Path $key -Name \"ShellIds\" -Value \"Microsoft.PowerShell\"\n'@\n\n# Step 7: Export ForwardedEvents log to immutable storage every hour\n$exportScript = @'\n# Export ForwardedEvents log to immutable S3 bucket\n$timestamp = Get-Date -Format \"yyyyMMdd-HHmmss\"\n$logFile = \"C:\\Logs\\ForwardedEvents-$timestamp.evtx\"\n\nwevtutil epl ForwardedEvents $logFile\n\n# Upload to AWS S3 with Object Lock\naws s3 cp $logFile s3://company-siem-logs-immutable/windows-events/ --storage-class STANDARD_IA\n\n# Verify upload and delete local copy\nif ($LASTEXITCODE -eq 0) {\n    Remove-Item $logFile -Force\n    Write-EventLog -LogName Application -Source \"LogExport\" -EventId 1000 -Message \"ForwardedEvents log exported to S3: $logFile\"\n}\n'@\n\n$exportScript | Out-File -FilePath \"C:\\Scripts\\export-forwarded-events.ps1\" -Encoding UTF8\n\n# Schedule task to run every hour\n$action = New-ScheduledTaskAction -Execute \"PowerShell.exe\" -Argument \"-ExecutionPolicy Bypass -File C:\\Scripts\\export-forwarded-events.ps1\"\n$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1)\n$principal = New-ScheduledTaskPrincipal -UserId \"SYSTEM\" -LogonType ServiceAccount\nRegister-ScheduledTask -TaskName \"Export-ForwardedEvents\" -Action $action -Trigger $trigger -Principal $principal\n\n# Step 8: Monitor for Event ID 1102 (Security log cleared)\n# Create Windows Event Subscription to alert on log clearing\n\n$alertSubscription = @'\n<QueryList>\n  <Query Id=\"0\" Path=\"Security\">\n    <Select Path=\"Security\">*[System[(EventID=1102)]]</Select>  <!-- Audit log was cleared -->\n    <Select Path=\"System\">*[System[(EventID=104)]]</Select>      <!-- System log was cleared -->\n  </Query>\n</QueryList>\n'@\n\n$alertSubscription | Out-File -FilePath \"C:\\Temp\\log-clearing-alert.xml\" -Encoding UTF8\n\n# Attach action to send email alert\n$taskAction = New-ScheduledTaskAction -Execute \"PowerShell.exe\" -Argument \"-Command Send-MailMessage -To security@company.com -From wec@company.com -Subject 'ALERT: Event Log Cleared' -SmtpServer smtp.company.com\"\n\n# Register event-triggered task\nRegister-ScheduledTask -TaskName \"Alert-Log-Clearing\" -Action $taskAction -Trigger (New-ScheduledTaskTrigger -AtLogOn)\n\nWrite-Host \"Windows Event Forwarding configuration complete.\"\nWrite-Host \"Logs are now centralized to WEC server and exported to S3 hourly.\"\nWrite-Host \"Event ID 1102 (log clearing) will trigger email alerts.\""
+      },
+      "tools": [
+        {
+          "name": "Windows Event Collector (WEC)",
+          "type": "Built-in Windows Server Feature",
+          "cost": "Free (included in Windows Server)"
+        },
+        {
+          "name": "AppLocker",
+          "type": "Application Whitelisting",
+          "cost": "Free (requires Windows Enterprise/Server)"
+        },
+        {
+          "name": "Sysmon",
+          "type": "Advanced Logging (Sysinternals)",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Configure WEC server with wecutil cs security-subscription.xml",
+        "Enable WinRM on client computers: winrm quickconfig",
+        "Create GPO to enable Event Forwarding: Computer Config > Policies > Admin Templates > Windows Components > Event Forwarding",
+        "Verify logs forwarding: wecutil gr Security-Critical-Events",
+        "Test: Run Clear-EventLog -LogName Security (should be blocked by AppLocker)",
+        "Monitor Event ID 1102 in ForwardedEvents log",
+        "Schedule hourly export to S3 using Scheduled Tasks"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Windows Event ID 1102 (Security log cleared) or 104 (System log cleared)",
+      "Sudden drop in log volume from specific hosts (log gap analysis)",
+      "Execution of wevtutil.exe, Clear-EventLog cmdlet, or rm /var/log/* commands",
+      "CloudTrail events: logs:DeleteLogGroup, logs:DeleteLogStream, cloudtrail:StopLogging, cloudtrail:DeleteTrail",
+      "Unauthorized access to /var/log/ directories or Event Viewer with SeSecurityPrivilege",
+      "Timestamp anomalies (logs created in the past or future)",
+      "Failed syslog forwarding or TLS connection drops to SIEM server",
+      "Chattr attribute changes on /var/log (removal of +a append-only flag)",
+      "S3 DeleteObject API calls against log buckets with Object Lock enabled (should fail)",
+      "Azure Blob Storage: ImmutabilityPolicy deletion attempts"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect Windows Event Log clearing (Event ID 1102)\nSecurityEvent\n| where EventID == 1102  // Audit log was cleared\n| extend ClearedBy = SubjectUserName\n| extend ClearedFrom = Computer\n| project TimeGenerated, ClearedBy, ClearedFrom, Activity, EventData\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - CloudTrail Log Deletion",
+        "query": "// Detect AWS CloudTrail/CloudWatch log deletion attempts\nAWSCloudTrail\n| where EventName in (\"DeleteLogGroup\", \"DeleteLogStream\", \"StopLogging\", \"DeleteTrail\")\n| extend Actor = UserIdentityArn\n| extend SourceIP = SourceIpAddress\n| project TimeGenerated, EventName, Actor, SourceIP, RequestParameters, ResponseElements\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL) - Log Gap Detection",
+        "query": "index=windows EventCode=1102 OR EventCode=104\n| stats count by host, EventCode, User\n| where count > 0\n| eval severity=\"HIGH\"\n| table _time, host, EventCode, User, severity\n\n# Alternative: Detect log volume drop (gap analysis)\nindex=windows sourcetype=WinEventLog:Security\n| bucket _time span=1h\n| stats count by _time, host\n| streamstats window=2 avg(count) as avg_count by host\n| eval drop_percent = ((avg_count - count) / avg_count) * 100\n| where drop_percent > 80  # 80% drop in log volume\n| table _time, host, count, avg_count, drop_percent"
+      },
+      {
+        "siem": "Elastic Stack (KQL) - Syslog Tampering",
+        "query": "event.action: \"file_deletion\" AND file.path: /var/log/*\nOR process.name: \"wevtutil.exe\" AND process.args: (\"cl\" OR \"clear-log\")\nOR event.code: (1102 OR 104)"
+      },
+      {
+        "siem": "Elastic Stack (EQL) - Log Clearing Sequence",
+        "query": "sequence by host.name with maxspan=5m\n  [process where process.name == \"wevtutil.exe\" and process.args == \"cl\"]\n  [file where event.action == \"deletion\" and file.path : \"C:\\\\Windows\\\\System32\\\\winevt\\\\Logs\\\\*\"]"
+      },
+      {
+        "siem": "AWS CloudWatch Insights - CloudTrail Deletion",
+        "query": "fields @timestamp, eventName, userIdentity.principalId, sourceIPAddress, errorCode\n| filter eventName in [\"DeleteLogGroup\", \"DeleteLogStream\", \"StopLogging\", \"DeleteTrail\", \"PutEventSelectors\"]\n| sort @timestamp desc\n| limit 100"
+      },
+      {
+        "siem": "Splunk (SPL) - Chattr Immutability Removal",
+        "query": "index=linux sourcetype=linux_audit type=EXECVE\n| search a0=\"chattr\" a1=\"-a\" OR a1=\"-i\"  # Remove append-only or immutable\n| rex field=_raw \"name=\\\"(?<target_file>.*?)\\\"\"\n| where match(target_file, \"/var/log/\")\n| table _time, host, user, a0, a1, a2, target_file\n| eval severity=\"CRITICAL\""
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - Immutability Policy Tampering",
+        "query": "// Detect Azure Blob immutability policy deletion attempts\nAzureActivity\n| where OperationNameValue in (\"MICROSOFT.STORAGE/STORAGEACCOUNTS/BLOBSERVICES/CONTAINERS/IMMUTABILITYPOLICIES/DELETE\", \n                                \"MICROSOFT.STORAGE/STORAGEACCOUNTS/BLOBSERVICES/CONTAINERS/IMMUTABILITYPOLICIES/EXTEND\")\n| extend Actor = Caller\n| extend ResourceName = Resource\n| project TimeGenerated, OperationNameValue, Actor, ResourceName, ActivityStatusValue\n| where ActivityStatusValue == \"Failed\"  # Should always fail if locked\n| order by TimeGenerated desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Sigma Rules for Log Clearing",
+        "type": "SIEM Detection Rules",
+        "usage": "https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_susp_eventlog_cleared.yml"
+      },
+      {
+        "name": "Sysmon Event ID 1",
+        "type": "Process Creation Monitoring",
+        "usage": "Detect wevtutil.exe, Clear-EventLog.exe, auditpol.exe with suspicious arguments"
+      },
+      {
+        "name": "OSQuery",
+        "type": "Endpoint Visibility",
+        "usage": "SELECT * FROM file WHERE path LIKE '/var/log/%' AND action = 'DELETED';"
+      },
+      {
+        "name": "Velociraptor",
+        "type": "Endpoint Detection and Response",
+        "usage": "Artifact: Windows.EventLogs.Cleared - Detects Event ID 1102 across fleet"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Critical Infrastructure",
+      "E-commerce",
+      "SaaS"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 10.5.2 - Protect audit trails)",
+      "HIPAA (164.312(b) - Audit controls)",
+      "SOC2 (CC7.2 - Monitoring of controls)",
+      "ISO27001 (A.12.4.2 - Protection of log information)",
+      "GDPR (Article 32 - Integrity and confidentiality)",
+      "NIST SP 800-53 (AU-9 - Protection of Audit Information)",
+      "NIST SP 800-92 (Log Management Guide)",
+      "CIS Critical Security Controls (8.3, 8.5 - Audit log retention)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Audit Logs",
+      "Forensic Evidence"
+    ]
+  }
+}

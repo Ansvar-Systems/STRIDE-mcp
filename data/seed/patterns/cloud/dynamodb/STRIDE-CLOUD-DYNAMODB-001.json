@@ -1,0 +1,370 @@
+{
+  "id": "STRIDE-CLOUD-DYNAMODB-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "API4:2023 - Unrestricted Resource Consumption",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1499 - Endpoint Denial of Service",
+      "T1499.002 - Service Exhaustion Flood",
+      "T1498 - Network Denial of Service"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-405 - Asymmetric Resource Consumption (Amplification)"
+    ]
+  },
+  "threat": {
+    "title": "DynamoDB Throttling Attack via Hot Partition and Scan Operation Abuse",
+    "description": "Attackers exploit DynamoDB's partition-based architecture to cause service degradation through hot partition attacks, scan operation abuse, and read/write capacity exhaustion. By targeting predictable partition keys or triggering expensive full-table scans, adversaries can exhaust provisioned throughput, trigger cascading failures across dependent services (Lambda, API Gateway), and cause widespread application denial of service. This is particularly severe in serverless architectures where DynamoDB throttling creates retry storms that amplify the attack impact.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "AWS DynamoDB",
+    "versions_affected": ["All versions"],
+    "ecosystem": "AWS Cloud",
+    "dependencies": [
+      "AWS SDK (JavaScript/Python/Java)",
+      "AWS Lambda",
+      "AWS API Gateway",
+      "CloudWatch",
+      "AWS Auto Scaling"
+    ],
+    "related_frameworks": [
+      "Amazon Aurora Serverless",
+      "Azure Cosmos DB",
+      "Google Cloud Firestore",
+      "MongoDB Atlas"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies DynamoDB table with predictable partition keys (e.g., date-based, sequential IDs) through API enumeration\n2. Crafts malicious requests targeting a single hot partition key repeatedly (e.g., today's date for time-series data)\n3. Sends concurrent API requests exceeding partition's 3000 RCU or 1000 WCU per-second limit\n4. DynamoDB begins throttling with ProvisionedThroughputExceededException errors\n5. Triggers retry storms from application layer (Lambda, microservices) amplifying the load by 10-50x\n6. Cascading failure spreads to dependent services as DynamoDB throttling causes Lambda timeouts, SQS delays, and API Gateway 5xx errors\n\nAlternative attack vector: Attacker exploits unauthenticated or poorly-protected scan operations via public API endpoints, causing full-table scans that consume massive read capacity (charged by data scanned, not returned). A single 100GB table scan can cost $12.50 and consume 20,000+ RCUs, exhausting capacity for legitimate traffic.",
+    "prerequisites": [
+      "DynamoDB table with provisioned capacity mode OR on-demand mode without AWS WAF rate limiting",
+      "Predictable or low-cardinality partition keys (dates, status codes, single tenant ID)",
+      "Public or poorly authenticated API endpoints exposing DynamoDB scan/query operations",
+      "Missing application-level throttling or request validation",
+      "No CloudWatch alarms for throttle events or capacity exhaustion"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CWE-400",
+        "description": "Uncontrolled Resource Consumption - Database queries that take a long time to process are good DoS targets",
+        "cvss_score": 7.5,
+        "published_date": "Ongoing weakness class"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "AWS US-EAST-1 DynamoDB Outage",
+        "date": "2025-10-19",
+        "impact": "24-hour cascading failure affecting 142 AWS services including Lambda, EC2, SQS, and IAM across us-east-1 region. DynamoDB DNS failure triggered retry storms that overwhelmed internal resolvers.",
+        "root_cause": "DynamoDB DNS race condition created empty endpoint record, causing cascading throttling across all dependent AWS services. IAM stored policies in DynamoDB, amplifying the blast radius to all services requiring authentication.",
+        "source_url": "https://www.infoq.com/news/2025/11/aws-dynamodb-outage-postmortem/"
+      },
+      {
+        "incident": "Lambda Throttling Domino Effect",
+        "date": "2025-10-15",
+        "impact": "Production pipeline paralyzed for hours due to DynamoDB throttling causing exponential Lambda retry amplification. Each throttled request generated 5-10 retries across service layers, multiplying costs and latency.",
+        "root_cause": "DynamoDB hot partition throttling triggered non-idempotent Lambda retries that compounded stress instead of dissipating it, creating excess costs and duplicate processing.",
+        "source_url": "https://www.tech-reader.blog/2025/10/aws-lambda-error-throttling-domino.html"
+      },
+      {
+        "incident": "DynamoDB Single Hot Partition Table Failure",
+        "date": "2025-11-01",
+        "impact": "Entire production DynamoDB table taken offline by a single hot partition receiving concentrated traffic, despite adequate overall table capacity.",
+        "root_cause": "Poor partition key design caused all writes to concentrate on one partition key value, exceeding the per-partition throughput limit of 1000 WCU/second.",
+        "source_url": "https://medium.com/@daxx5/how-a-single-hot-partition-took-down-our-entire-dynamodb-table-a60b77e7eb47"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Hypothetical-DDB-001",
+        "bounty_amount": 3000,
+        "severity": "High",
+        "summary": "Unauthenticated API endpoint allowing full-table DynamoDB scans causing $500/hour cost spike and service degradation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Enhanced Throttling Observability in Amazon DynamoDB",
+        "authors": ["AWS Database Team"],
+        "published_date": "2025-08-01",
+        "source_url": "https://aws.amazon.com/blogs/database/enhanced-throttling-observability-in-amazon-dynamodb/",
+        "key_finding": "AWS introduced 8 new CloudWatch metrics in August 2025 for granular throttling detection, enabling identification of exact partition keys, indexes, and throttle reasons down to individual operations"
+      },
+      {
+        "title": "DynamoDB Scan - Why You Should (Almost) Never Use It",
+        "authors": ["Dynobase Team"],
+        "published_date": "2024-06-15",
+        "source_url": "https://dynobase.dev/dynamodb-scan/",
+        "key_finding": "DynamoDB scan cost depends on data scanned, not returned. Full table scans have O(n) complexity and can cost 10-100x more than queries, making them prime DoS attack vectors"
+      },
+      {
+        "title": "12 Amazon DynamoDB Security Best Practices",
+        "authors": ["Dynobase Security Team"],
+        "published_date": "2025-01-15",
+        "source_url": "https://dynobase.dev/dynamodb-security/",
+        "key_finding": "Use Auto Scaling and API throttling limits to prevent DoS attacks. Set CloudWatch alarms for ProvisionedThroughputExceeded and implement VPC endpoint policies to limit scan operations"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enable DynamoDB Auto Scaling with Exponential Backoff Retry Logic",
+      "description": "Implement DynamoDB Auto Scaling to automatically adjust read/write capacity during traffic spikes, combined with AWS SDK exponential backoff to gracefully handle throttling events and prevent retry storms. This prevents both accidental capacity exhaustion and malicious DoS attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "AWS SDK v3 (Node.js)",
+        "code": "import { DynamoDBClient } from '@aws-sdk/client-dynamodb';\nimport { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';\nimport { NodeHttpHandler } from '@aws-sdk/node-http-handler';\nimport { ConfiguredRetryStrategy } from '@aws-sdk/util-retry';\n\n// Configure exponential backoff with jitter for retry storm prevention\nconst retryStrategy = new ConfiguredRetryStrategy(\n  10, // Max attempts (default: 3)\n  (attempt) => {\n    // Exponential backoff: 100ms * 2^attempt + random jitter\n    const baseDelay = 100 * Math.pow(2, attempt);\n    const jitter = Math.random() * 100; // Random 0-100ms jitter\n    return Math.min(baseDelay + jitter, 20000); // Cap at 20 seconds\n  }\n);\n\nconst client = new DynamoDBClient({\n  region: 'us-east-1',\n  maxAttempts: 10,\n  retryStrategy,\n  requestHandler: new NodeHttpHandler({\n    connectionTimeout: 5000,\n    socketTimeout: 5000,\n  }),\n});\n\nconst docClient = DynamoDBDocumentClient.from(client, {\n  marshallOptions: {\n    removeUndefinedValues: true,\n    convertClassInstanceToMap: true,\n  },\n});\n\n// Write operation with throttle-aware error handling\nasync function writeItemSafely(tableName, item) {\n  const params = {\n    TableName: tableName,\n    Item: item,\n  };\n\n  try {\n    const result = await docClient.send(new PutCommand(params));\n    console.log('Item written successfully');\n    return result;\n  } catch (error) {\n    if (error.name === 'ProvisionedThroughputExceededException') {\n      console.error('Throttling detected - Auto Scaling should kick in');\n      // Emit CloudWatch metric for alerting\n      throw new Error('DynamoDB throttled - backoff in progress');\n    } else if (error.name === 'RequestLimitExceeded') {\n      console.error('Account-level throttling - contact AWS Support');\n      throw error;\n    } else {\n      throw error;\n    }\n  }\n}\n\n// Enable Auto Scaling via AWS CLI or CloudFormation\n// aws application-autoscaling register-scalable-target \\\n//   --service-namespace dynamodb \\\n//   --resource-id table/MyTable \\\n//   --scalable-dimension dynamodb:table:WriteCapacityUnits \\\n//   --min-capacity 5 \\\n//   --max-capacity 500\n//\n// aws application-autoscaling put-scaling-policy \\\n//   --service-namespace dynamodb \\\n//   --resource-id table/MyTable \\\n//   --scalable-dimension dynamodb:table:WriteCapacityUnits \\\n//   --policy-name MyScalingPolicy \\\n//   --policy-type TargetTrackingScaling \\\n//   --target-tracking-scaling-policy-configuration file://scaling-policy.json\n\n// scaling-policy.json:\n// {\n//   \"TargetValue\": 70.0,\n//   \"PredefinedMetricSpecification\": {\n//     \"PredefinedMetricType\": \"DynamoDBWriteCapacityUtilization\"\n//   },\n//   \"ScaleOutCooldown\": 60,\n//   \"ScaleInCooldown\": 300\n// }\n\n// Circuit breaker pattern for cascade failure prevention\nclass DynamoDBCircuitBreaker {\n  constructor(threshold = 5, timeout = 60000) {\n    this.failureCount = 0;\n    this.threshold = threshold;\n    this.timeout = timeout;\n    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN\n    this.nextAttempt = Date.now();\n  }\n\n  async execute(fn) {\n    if (this.state === 'OPEN') {\n      if (Date.now() < this.nextAttempt) {\n        throw new Error('Circuit breaker is OPEN - rejecting request');\n      }\n      this.state = 'HALF_OPEN';\n    }\n\n    try {\n      const result = await fn();\n      this.onSuccess();\n      return result;\n    } catch (error) {\n      this.onFailure();\n      throw error;\n    }\n  }\n\n  onSuccess() {\n    this.failureCount = 0;\n    this.state = 'CLOSED';\n  }\n\n  onFailure() {\n    this.failureCount++;\n    if (this.failureCount >= this.threshold) {\n      this.state = 'OPEN';\n      this.nextAttempt = Date.now() + this.timeout;\n      console.error(`Circuit breaker OPENED after ${this.failureCount} failures`);\n    }\n  }\n}\n\nconst circuitBreaker = new DynamoDBCircuitBreaker();\n\n// Usage with circuit breaker\nasync function resilientWrite(tableName, item) {\n  return circuitBreaker.execute(() => writeItemSafely(tableName, item));\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS Application Auto Scaling",
+          "type": "Capacity Management",
+          "cost": "Free (only pay for scaled capacity)"
+        },
+        {
+          "name": "AWS SDK v3 with ConfiguredRetryStrategy",
+          "type": "Retry Logic Framework",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup (capacity management)",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.DS-4 - Adequate capacity to ensure availability",
+        "DE.AE-5 - Incident alert thresholds are established"
+      ],
+      "validation_steps": [
+        "Enable Auto Scaling for both read and write capacity with 70% target utilization",
+        "Configure exponential backoff in AWS SDK with minimum 10 retry attempts and jitter",
+        "Test throttling behavior with load testing tool (Artillery, Locust) ramping to 2x capacity",
+        "Verify Auto Scaling triggers within 60 seconds of capacity breach",
+        "Implement circuit breaker pattern to prevent cascading Lambda failures"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Design High-Cardinality Partition Keys and Disable Scan Operations",
+      "description": "Prevent hot partition attacks by designing partition keys with high cardinality that distribute load evenly across partitions (e.g., hashed user IDs, UUIDs). Explicitly deny scan operations via IAM policies and VPC endpoint policies unless absolutely necessary, forcing attackers to use more expensive query operations.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "DynamoDB Table Design + IAM Policy",
+        "code": "// ANTI-PATTERN: Low-cardinality partition key (hot partition risk)\n// ❌ BAD: Using date as partition key\nconst badSchema = {\n  TableName: 'Orders',\n  KeySchema: [\n    { AttributeName: 'orderDate', KeyType: 'HASH' }, // Only ~365 unique values!\n    { AttributeName: 'orderId', KeyType: 'RANGE' },\n  ],\n};\n// All orders for today concentrate on ONE partition\n\n// BEST PRACTICE: High-cardinality partition key with composite design\n// ✅ GOOD: Using hashed userId or composite key\nimport crypto from 'crypto';\n\nfunction generatePartitionKey(userId, shardCount = 100) {\n  // Hash userId and distribute across N shards for even distribution\n  const hash = crypto.createHash('md5').update(userId).digest('hex');\n  const shard = parseInt(hash.substring(0, 8), 16) % shardCount;\n  return `USER#${userId}#SHARD#${shard}`;\n}\n\nconst goodSchema = {\n  TableName: 'Orders',\n  KeySchema: [\n    { AttributeName: 'pk', KeyType: 'HASH' }, // High cardinality: userId + shard\n    { AttributeName: 'sk', KeyType: 'RANGE' }, // orderDate#orderId for sorting\n  ],\n  AttributeDefinitions: [\n    { AttributeName: 'pk', AttributeType: 'S' },\n    { AttributeName: 'sk', AttributeType: 'S' },\n    { AttributeName: 'gsi1pk', AttributeType: 'S' },\n    { AttributeName: 'gsi1sk', AttributeType: 'S' },\n  ],\n  GlobalSecondaryIndexes: [\n    {\n      IndexName: 'GSI1',\n      KeySchema: [\n        { AttributeName: 'gsi1pk', KeyType: 'HASH' }, // e.g., \"ORDER_STATUS#PENDING\"\n        { AttributeName: 'gsi1sk', KeyType: 'RANGE' }, // e.g., orderDate\n      ],\n      Projection: { ProjectionType: 'ALL' },\n      ProvisionedThroughput: {\n        ReadCapacityUnits: 100,\n        WriteCapacityUnits: 100,\n      },\n    },\n  ],\n};\n\n// Write operation with good partition key\nasync function createOrder(userId, orderData) {\n  const orderId = crypto.randomUUID();\n  const timestamp = new Date().toISOString();\n  \n  const item = {\n    pk: generatePartitionKey(userId), // Evenly distributed\n    sk: `ORDER#${timestamp}#${orderId}`,\n    gsi1pk: `ORDER_STATUS#${orderData.status}`,\n    gsi1sk: timestamp,\n    userId,\n    orderId,\n    ...orderData,\n  };\n\n  await docClient.send(new PutCommand({\n    TableName: 'Orders',\n    Item: item,\n  }));\n}\n\n// IAM Policy to DENY scan operations (prevent abuse)\nconst denyScansPolicy = {\n  Version: '2012-10-17',\n  Statement: [\n    {\n      Sid: 'AllowDynamoDBAccess',\n      Effect: 'Allow',\n      Action: [\n        'dynamodb:GetItem',\n        'dynamodb:Query',\n        'dynamodb:PutItem',\n        'dynamodb:UpdateItem',\n        'dynamodb:DeleteItem',\n        'dynamodb:BatchGetItem',\n        'dynamodb:BatchWriteItem',\n      ],\n      Resource: 'arn:aws:dynamodb:us-east-1:123456789012:table/Orders',\n    },\n    {\n      Sid: 'DenyScanOperations',\n      Effect: 'Deny',\n      Action: 'dynamodb:Scan',\n      Resource: [\n        'arn:aws:dynamodb:us-east-1:123456789012:table/Orders',\n        'arn:aws:dynamodb:us-east-1:123456789012:table/Orders/index/*',\n      ],\n    },\n  ],\n};\n\n// VPC Endpoint Policy to block scans at network level\nconst vpcEndpointPolicy = {\n  Version: '2012-10-17',\n  Statement: [\n    {\n      Sid: 'BlockScans',\n      Effect: 'Deny',\n      Principal: '*',\n      Action: 'dynamodb:Scan',\n      Resource: '*',\n    },\n    {\n      Sid: 'AllowOtherOperations',\n      Effect: 'Allow',\n      Principal: '*',\n      Action: 'dynamodb:*',\n      Resource: '*',\n    },\n  ],\n};\n\n// Apply via AWS CLI:\n// aws ec2 modify-vpc-endpoint --vpc-endpoint-id vpce-xxx --policy-document file://vpc-endpoint-policy.json"
+      },
+      "tools": [
+        {
+          "name": "AWS CloudWatch Contributor Insights",
+          "type": "Hot Partition Detection",
+          "cost": "$0.50 per million log events analyzed"
+        },
+        {
+          "name": "NoSQL Workbench for DynamoDB",
+          "type": "Data Modeling Tool",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions and authorizations are managed",
+        "PR.DS-1 - Data-at-rest is protected"
+      ],
+      "validation_steps": [
+        "Analyze partition key cardinality using CloudWatch Contributor Insights (target: >10,000 unique keys)",
+        "Test IAM policy with aws dynamodb scan command (should return AccessDeniedException)",
+        "Verify VPC endpoint policy blocks scan operations from EC2 instances",
+        "Load test with 1000 RPS across different partition keys (monitor ProvisionedThroughputExceeded metric should be zero)",
+        "Use NoSQL Workbench to visualize access patterns and identify hot partitions"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement AWS WAF Rate Limiting and API Gateway Request Validation",
+      "description": "Deploy AWS WAF in front of API Gateway to enforce rate limiting (e.g., 100 requests/5 minutes per IP) and block suspicious traffic patterns before they reach DynamoDB. Combine with API Gateway request validation to reject malformed queries and limit scan operations.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS CloudFormation / Terraform",
+        "code": "# CloudFormation template for WAF + API Gateway protection\nAWSTemplateFormatVersion: '2010-09-09'\nDescription: 'WAF Rate Limiting for DynamoDB API Protection'\n\nResources:\n  # WAF Web ACL with rate limiting\n  DynamoDBAPIWebACL:\n    Type: AWS::WAFv2::WebACL\n    Properties:\n      Name: DynamoDBAPIProtection\n      Scope: REGIONAL\n      DefaultAction:\n        Allow: {}\n      Rules:\n        # Rule 1: Rate limit per IP (prevent burst attacks)\n        - Name: RateLimitPerIP\n          Priority: 1\n          Statement:\n            RateBasedStatement:\n              Limit: 100 # Max 100 requests per 5 minutes\n              AggregateKeyType: IP\n          Action:\n            Block:\n              CustomResponse:\n                ResponseCode: 429\n                CustomResponseBodyKey: TooManyRequests\n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: RateLimitPerIP\n        \n        # Rule 2: Block scan operations in query strings\n        - Name: BlockScanOperations\n          Priority: 2\n          Statement:\n            OrStatement:\n              Statements:\n                - ByteMatchStatement:\n                    SearchString: 'scan'\n                    FieldToMatch:\n                      UriPath: {}\n                    TextTransformations:\n                      - Priority: 0\n                        Type: LOWERCASE\n                - ByteMatchStatement:\n                    SearchString: 'TableName'\n                    FieldToMatch:\n                      Body:\n                        OversizeHandling: CONTINUE\n                    TextTransformations:\n                      - Priority: 0\n                        Type: NONE\n          Action:\n            Block:\n              CustomResponse:\n                ResponseCode: 403\n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: BlockedScanOperations\n        \n        # Rule 3: AWS Managed Rule - Core Rule Set (SQL injection, XSS)\n        - Name: AWSManagedRulesCommonRuleSet\n          Priority: 3\n          OverrideAction:\n            None: {}\n          Statement:\n            ManagedRuleGroupStatement:\n              VendorName: AWS\n              Name: AWSManagedRulesCommonRuleSet\n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: AWSManagedRulesCommonRuleSet\n      \n      VisibilityConfig:\n        SampledRequestsEnabled: true\n        CloudWatchMetricsEnabled: true\n        MetricName: DynamoDBAPIWebACL\n      \n      CustomResponseBodies:\n        TooManyRequests:\n          ContentType: APPLICATION_JSON\n          Content: '{\"error\": \"Rate limit exceeded. Please retry after 5 minutes.\"}'\n\n  # API Gateway with request validation\n  DynamoDBAPIGateway:\n    Type: AWS::ApiGateway::RestApi\n    Properties:\n      Name: DynamoDBProtectedAPI\n      Description: API Gateway with WAF protection and request validation\n      EndpointConfiguration:\n        Types:\n          - REGIONAL\n  \n  # Request validator for strict input validation\n  RequestValidator:\n    Type: AWS::ApiGateway::RequestValidator\n    Properties:\n      RestApiId: !Ref DynamoDBAPIGateway\n      ValidateRequestBody: true\n      ValidateRequestParameters: true\n      Name: RequestBodyAndParametersValidator\n  \n  # API Gateway model for request validation\n  QueryRequestModel:\n    Type: AWS::ApiGateway::Model\n    Properties:\n      RestApiId: !Ref DynamoDBAPIGateway\n      ContentType: application/json\n      Name: QueryRequestModel\n      Schema:\n        $schema: 'http://json-schema.org/draft-04/schema#'\n        type: object\n        properties:\n          userId:\n            type: string\n            pattern: '^[a-zA-Z0-9-]{1,100}$'\n          limit:\n            type: integer\n            minimum: 1\n            maximum: 100\n          lastEvaluatedKey:\n            type: object\n        required:\n          - userId\n        additionalProperties: false\n  \n  # Associate WAF with API Gateway\n  WAFAssociation:\n    Type: AWS::WAFv2::WebACLAssociation\n    Properties:\n      ResourceArn: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${DynamoDBAPIGateway}/stages/prod'\n      WebACLArn: !GetAtt DynamoDBAPIWebACL.Arn\n  \n  # CloudWatch Alarm for rate limit triggers\n  RateLimitAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: DynamoDB-WAF-RateLimit-Triggered\n      AlarmDescription: Alert when WAF rate limiting blocks excessive requests\n      MetricName: BlockedRequests\n      Namespace: AWS/WAFV2\n      Statistic: Sum\n      Period: 300\n      EvaluationPeriods: 1\n      Threshold: 10\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: Rule\n          Value: RateLimitPerIP\n        - Name: WebACL\n          Value: !GetAtt DynamoDBAPIWebACL.Name\n      AlarmActions:\n        - !Ref SecurityAlertSNSTopic\n  \n  SecurityAlertSNSTopic:\n    Type: AWS::SNS::Topic\n    Properties:\n      TopicName: DynamoDB-Security-Alerts\n      DisplayName: DynamoDB API Security Alerts\n\nOutputs:\n  WebACLArn:\n    Value: !GetAtt DynamoDBAPIWebACL.Arn\n  APIGatewayId:\n    Value: !Ref DynamoDBAPIGateway"
+      },
+      "tools": [
+        {
+          "name": "AWS WAF",
+          "type": "Web Application Firewall",
+          "cost": "$5/month per Web ACL + $1 per million requests"
+        },
+        {
+          "name": "AWS API Gateway",
+          "type": "API Management & Throttling",
+          "cost": "$3.50 per million requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.14.1.2 - Securing application services on public networks"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Deploy WAF Web ACL and associate with API Gateway stage",
+        "Test rate limiting with curl/Apache Bench exceeding 100 req/5min (should return HTTP 429)",
+        "Verify request validation rejects queries without required userId parameter",
+        "Configure CloudWatch Alarms for BlockedRequests metric with SNS notifications",
+        "Enable WAF logging to S3 for forensic analysis of blocked requests"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Deploy CloudWatch Contributor Insights and Throttle-Specific Alarms",
+      "description": "Enable the 8 new DynamoDB throttle metrics introduced in August 2025 to detect hot partitions, GSI throttling, and account limit breaches in real-time. Use CloudWatch Contributor Insights to identify the exact partition keys causing throttling and trigger automated remediation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "CloudWatch Alarms + Contributor Insights",
+        "code": "# CloudFormation: CloudWatch Alarms for DynamoDB throttling detection\nAWSTemplateFormatVersion: '2010-09-09'\nResources:\n  # Alarm for Write Throttling Events\n  WriteThrottleAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: DynamoDB-WriteThrottle-Orders-Table\n      AlarmDescription: Triggers when write operations are throttled\n      MetricName: WriteThrottleEvents\n      Namespace: AWS/DynamoDB\n      Statistic: Sum\n      Period: 60\n      EvaluationPeriods: 2\n      Threshold: 10\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: TableName\n          Value: Orders\n      AlarmActions:\n        - !Ref ThrottleAlertTopic\n      TreatMissingData: notBreaching\n  \n  # Alarm for Read Throttling Events\n  ReadThrottleAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: DynamoDB-ReadThrottle-Orders-Table\n      AlarmDescription: Triggers when read operations are throttled\n      MetricName: ReadThrottleEvents\n      Namespace: AWS/DynamoDB\n      Statistic: Sum\n      Period: 60\n      EvaluationPeriods: 2\n      Threshold: 10\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: TableName\n          Value: Orders\n      AlarmActions:\n        - !Ref ThrottleAlertTopic\n  \n  # Alarm for GSI Write Throttling (back-pressure)\n  GSIWriteThrottleAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: DynamoDB-GSI-WriteThrottle-Orders-GSI1\n      AlarmDescription: Triggers when GSI write capacity is exhausted causing base table throttling\n      MetricName: WriteThrottleEvents\n      Namespace: AWS/DynamoDB\n      Statistic: Sum\n      Period: 60\n      EvaluationPeriods: 1\n      Threshold: 5\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: TableName\n          Value: Orders\n        - Name: GlobalSecondaryIndexName\n          Value: GSI1\n      AlarmActions:\n        - !Ref ThrottleAlertTopic\n  \n  # Alarm for Account-Level Throttling\n  AccountLimitThrottleAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: DynamoDB-AccountLimit-Throttle\n      AlarmDescription: Triggers when account-level read/write limits are exceeded\n      MetricName: AccountProvisionedReadCapacityUtilization\n      Namespace: AWS/DynamoDB\n      Statistic: Average\n      Period: 300\n      EvaluationPeriods: 1\n      Threshold: 80\n      ComparisonOperator: GreaterThanThreshold\n      AlarmActions:\n        - !Ref ThrottleAlertTopic\n  \n  ThrottleAlertTopic:\n    Type: AWS::SNS::Topic\n    Properties:\n      TopicName: DynamoDB-Throttle-Alerts\n      Subscription:\n        - Endpoint: security-team@example.com\n          Protocol: email\n  \n  # Contributor Insights Rule to identify hot partition keys\n  ContributorInsightsRule:\n    Type: AWS::DynamoDB::Table\n    Properties:\n      TableName: Orders\n      ContributorInsightsSpecification:\n        Enabled: true\n\n# Enable via AWS CLI for existing tables:\n# aws dynamodb update-contributor-insights \\\n#   --table-name Orders \\\n#   --contributor-insights-action ENABLE\n\n# Query Contributor Insights to find hot keys:\n# aws cloudwatch get-metric-data \\\n#   --metric-data-queries file://contributor-insights-query.json \\\n#   --start-time 2026-01-30T00:00:00Z \\\n#   --end-time 2026-01-30T23:59:59Z\n\n# contributor-insights-query.json:\n# {\n#   \"Id\": \"throttledKeys\",\n#   \"MetricStat\": {\n#     \"Metric\": {\n#       \"Namespace\": \"AWS/DynamoDB/Contributor-Insights\",\n#       \"MetricName\": \"ThrottledRequestsPerPartitionKey\",\n#       \"Dimensions\": [\n#         {\"Name\": \"TableName\", \"Value\": \"Orders\"}\n#       ]\n#     },\n#     \"Period\": 300,\n#     \"Stat\": \"Maximum\"\n#   }\n# }\n\n# CloudWatch Logs Insights Query for DynamoDB Throttling Analysis\n# Run in CloudWatch Logs Insights console:\n\nfields @timestamp, @message, userIdentity.principalId, requestParameters.tableName, errorCode, errorMessage\n| filter eventSource = \"dynamodb.amazonaws.com\"\n| filter errorCode in [\"ProvisionedThroughputExceededException\", \"RequestLimitExceeded\", \"ThrottlingException\"]\n| stats count() as ThrottleCount by requestParameters.tableName, userIdentity.principalId, errorCode\n| sort ThrottleCount desc\n| limit 20\n\n# Alternative: Use new throttle-reason-specific metrics (August 2025+)\n# Metrics now include:\n# - ReadThrottleEvents (with dimension: ThrottleReason=ProvisionedThroughputExceeded)\n# - WriteThrottleEvents (with dimension: ThrottleReason=KeyRangeThroughputExceeded)\n# - ReadThrottleEvents (with dimension: ThrottleReason=AccountLimitExceeded)\n# - WriteThrottleEvents (with dimension: ThrottleReason=IndexWriteProvisionedThroughputExceeded)"
+      },
+      "tools": [
+        {
+          "name": "CloudWatch Contributor Insights",
+          "type": "Hot Partition Detection",
+          "cost": "$0.50 per million log events + $0.50 per rule/month"
+        },
+        {
+          "name": "CloudWatch Alarms",
+          "type": "Real-time Monitoring",
+          "cost": "$0.10 per alarm/month (first 10 free)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "DE.CM-7 - Monitoring for unauthorized activity"
+      ],
+      "validation_steps": [
+        "Enable Contributor Insights on all production DynamoDB tables",
+        "Create CloudWatch Alarms for WriteThrottleEvents and ReadThrottleEvents (threshold: 10 events/min)",
+        "Test alarm triggers with simulated hot partition load (Artillery script)",
+        "Configure SNS topic with email/Slack notifications for throttle events",
+        "Run CloudWatch Logs Insights query to identify top throttled tables and IAM principals"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in ProvisionedThroughputExceededException errors (>100/min)",
+      "CloudWatch metric WriteThrottleEvents or ReadThrottleEvents sustained above baseline",
+      "Contributor Insights showing 80%+ requests to a single partition key",
+      "Lambda function concurrent execution limit reached due to DynamoDB retries",
+      "Unusual API Gateway 5xx error rate correlated with DynamoDB throttling",
+      "High ConsumedReadCapacityUnits on table with low data return (indicates scan abuse)",
+      "GSI WriteThrottleEvents causing back-pressure on base table writes",
+      "Account-level throttling (RequestLimitExceeded) despite table-level capacity available"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect DynamoDB throttling attacks via CloudTrail logs\nAWSCloudTrail\n| where EventSource == \"dynamodb.amazonaws.com\"\n| where ErrorCode in (\"ProvisionedThroughputExceededException\", \"RequestLimitExceeded\", \"ThrottlingException\")\n| extend TableName = tostring(RequestParameters.tableName)\n| extend SourceIP = tostring(SourceIpAddress)\n| summarize ThrottleCount = count(), UniqueIPs = dcount(SourceIP) by TableName, UserIdentityPrincipalId, bin(TimeGenerated, 5m)\n| where ThrottleCount > 50 // More than 50 throttle events in 5 minutes\n| order by ThrottleCount desc\n| project TimeGenerated, TableName, UserIdentityPrincipalId, ThrottleCount, UniqueIPs"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=aws_cloudtrail sourcetype=aws:cloudtrail eventSource=dynamodb.amazonaws.com\n  (errorCode=\"ProvisionedThroughputExceededException\" OR errorCode=\"RequestLimitExceeded\" OR errorCode=\"ThrottlingException\")\n| eval table_name=spath(_raw, \"requestParameters.tableName\")\n| eval source_ip=spath(_raw, \"sourceIPAddress\")\n| eval principal=spath(_raw, \"userIdentity.principalId\")\n| bin _time span=5m\n| stats count as throttle_count dc(source_ip) as unique_ips by _time, table_name, principal\n| where throttle_count > 50\n| sort -throttle_count\n| table _time, table_name, principal, throttle_count, unique_ips"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.provider: \"dynamodb.amazonaws.com\" AND event.outcome: \"failure\" AND (aws.cloudtrail.error_code: \"ProvisionedThroughputExceededException\" OR aws.cloudtrail.error_code: \"RequestLimitExceeded\")\n| stats count() by aws.cloudtrail.request_parameters.tableName, user.id, date_histogram(@timestamp, \"5m\")\n| where count > 50"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Query for DynamoDB throttle events with partition key analysis\nfields @timestamp, requestParameters.tableName, requestParameters.key, errorCode, errorMessage, sourceIPAddress, userIdentity.principalId\n| filter eventSource = \"dynamodb.amazonaws.com\"\n| filter errorCode in [\"ProvisionedThroughputExceededException\", \"ThrottlingException\", \"RequestLimitExceeded\"]\n| parse requestParameters.key /\"(?<partitionKey>[^,]+)/\n| stats count() as throttleEvents by requestParameters.tableName, partitionKey, sourceIPAddress, bin(5m)\n| filter throttleEvents > 20\n| sort throttleEvents desc\n| limit 50"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights - Scan Abuse Detection",
+        "query": "# Detect expensive scan operations causing DoS\nfields @timestamp, requestParameters.tableName, requestParameters.scanFilter, responseElements.scannedCount, responseElements.count, billedSizeBytes\n| filter eventName = \"Scan\"\n| filter responseElements.scannedCount > 100000 OR billedSizeBytes > 10485760\n| stats sum(responseElements.scannedCount) as totalScanned, sum(billedSizeBytes) as totalBilled, count() as scanCount by requestParameters.tableName, userIdentity.principalId, bin(1h)\n| filter scanCount > 10 or totalScanned > 1000000\n| sort totalBilled desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS CloudWatch Contributor Insights",
+        "type": "Hot Partition Key Analysis",
+        "usage": "aws dynamodb update-contributor-insights --table-name Orders --contributor-insights-action ENABLE"
+      },
+      {
+        "name": "AWS X-Ray",
+        "type": "Distributed Tracing for Throttle Root Cause",
+        "usage": "Trace Lambda->DynamoDB calls to identify retry amplification patterns"
+      },
+      {
+        "name": "DynamoDB Export to S3 + Athena",
+        "type": "Historical Partition Key Analysis",
+        "usage": "Analyze partition key distribution across full table dataset to identify skew"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "E-commerce",
+      "SaaS",
+      "Gaming",
+      "IoT",
+      "Healthcare"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.9 - Improper resource management)",
+      "SOC2 (CC7.2 - Availability commitments)",
+      "ISO27001 (A.17.2.1 - Availability)",
+      "NIST CSF (PR.DS-4 - Adequate capacity)",
+      "FedRAMP (SC-5 - Denial of Service Protection)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Serverless",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

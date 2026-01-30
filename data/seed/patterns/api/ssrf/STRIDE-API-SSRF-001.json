@@ -1,0 +1,365 @@
+{
+  "id": "STRIDE-API-SSRF-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.2,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A10:2021 - Server-Side Request Forgery (SSRF)",
+      "A01:2021 - Broken Access Control"
+    ],
+    "mitre_attack": [
+      "T1071.001 - Application Layer Protocol: Web Protocols",
+      "T1078.004 - Valid Accounts: Cloud Accounts",
+      "T1552.005 - Credentials from Password Stores: Cloud Instance Metadata API"
+    ],
+    "cwe": [
+      "CWE-918 - Server-Side Request Forgery (SSRF)",
+      "CWE-441 - Unintended Proxy or Intermediary",
+      "CWE-606 - Unchecked Input for Loop Condition"
+    ]
+  },
+  "threat": {
+    "title": "Server-Side Request Forgery (SSRF) Enabling Cloud Metadata Service Access",
+    "description": "Server-Side Request Forgery (SSRF) vulnerabilities allow attackers to force applications to make unauthorized requests to internal resources, including cloud metadata services. By manipulating URL parameters or request bodies, attackers can access AWS EC2 metadata service (169.254.169.254), Azure Instance Metadata Service (169.254.169.254), or GCP metadata endpoints to extract IAM credentials, access tokens, and sensitive configuration data. This attack vector was notably exploited in the 2019 Capital One breach, resulting in exposure of 106 million customer records.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.6,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Express.js / Spring Boot",
+    "versions_affected": ["Express.js 3.x-5.x", "Spring Boot 2.x-3.x"],
+    "ecosystem": "Node.js / Java",
+    "dependencies": ["axios", "node-fetch", "got", "request", "RestTemplate", "WebClient", "HttpClient"],
+    "related_frameworks": ["Koa.js", "Fastify", "NestJS", "Hapi", "Spring Framework", "Micronaut", "Quarkus"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies an endpoint that fetches external resources based on user input (e.g., /api/fetch?url=https://example.com/image.png)\n2. Attacker crafts malicious request targeting AWS metadata service: /api/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/\n3. Application makes unauthorized request to metadata service and returns IAM role name (e.g., 'EC2-WebApp-Role')\n4. Attacker refines request to extract temporary credentials: /api/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2-WebApp-Role\n5. Metadata service returns JSON response containing AccessKeyId, SecretAccessKey, and SessionToken with elevated permissions\n6. Attacker uses stolen credentials to access S3 buckets, RDS databases, or other AWS resources, exfiltrating sensitive data or escalating privileges within the cloud environment",
+    "prerequisites": [
+      "Application accepts user-controlled URLs for server-side HTTP requests",
+      "No URL allowlist or protocol validation implemented",
+      "Application runs on cloud infrastructure (AWS EC2, Azure VM, GCP Compute Engine)",
+      "IMDSv1 enabled (AWS) or no metadata service authentication required",
+      "IAM role attached to instance has excessive permissions (S3 read/write, RDS access, etc.)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2021-26855",
+        "description": "Microsoft Exchange Server SSRF vulnerability (Proxylogon) allowing authentication bypass via arbitrary HTTP requests as Exchange server",
+        "cvss_score": 9.8,
+        "published_date": "2021-03-02"
+      },
+      {
+        "cve_id": "CVE-2019-9827",
+        "description": "Hawt Hawtio SSRF vulnerability in /proxy/ endpoint allowing remote attackers to trigger HTTP requests to arbitrary hosts",
+        "cvss_score": 9.8,
+        "published_date": "2019-05-07"
+      },
+      {
+        "cve_id": "CVE-2019-8451",
+        "description": "Atlassian Jira pre-authentication SSRF in /plugins/servlet/gadgets/makeRequest affecting 45% of scanned instances",
+        "cvss_score": 8.2,
+        "published_date": "2019-10-16"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Capital One Data Breach",
+        "date": "2019-03-22",
+        "impact": "106 million customers affected (100M US, 6M Canada); $80 million fine; exposure of SSNs, bank account numbers, credit scores, and transaction data",
+        "root_cause": "SSRF vulnerability in misconfigured ModSecurity WAF on AWS EC2 instance allowed access to metadata service at 169.254.169.254, exposing IAM role credentials (ISRM-WAF-Role) with excessive S3 permissions",
+        "source_url": "https://blog.appsecco.com/an-ssrf-privileged-aws-keys-and-the-capital-one-breach-4c3c2cded3af"
+      },
+      {
+        "incident": "Microsoft Exchange ProxyLogon Attacks",
+        "date": "2021-03-02",
+        "impact": "60,000+ organizations worldwide compromised; mass exploitation by Hafnium APT group; deployment of web shells and ransomware",
+        "root_cause": "CVE-2021-26855 SSRF vulnerability allowed unauthenticated attackers to send arbitrary HTTP requests and authenticate as Exchange server",
+        "source_url": "https://www.rapid7.com/blog/post/2021/03/03/mass-exploitation-of-exchange-server-zero-day-cves-what-you-need-to-know/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "341876",
+        "bounty_amount": 12500,
+        "severity": "Critical",
+        "summary": "SSRF in webhook functionality allowing AWS metadata access and credential theft"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "SSRF-2020-001",
+        "bounty_amount": 8000,
+        "severity": "Critical",
+        "summary": "SSRF via URL parameter in image processing endpoint exposing GCP metadata service"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "A Systematic Analysis of the Capital One Data Breach: Critical Lessons Learned",
+        "authors": ["ACM Transactions on Privacy and Security"],
+        "published_date": "2022-08-01",
+        "source_url": "https://dl.acm.org/doi/full/10.1145/3546068",
+        "key_finding": "SSRF combined with overprivileged IAM roles and IMDSv1 created perfect storm for massive data breach"
+      },
+      {
+        "title": "SSRF to AWS Metadata Exposure: How Attackers Steal Cloud Credentials",
+        "authors": ["Resecurity"],
+        "published_date": "2023-09-15",
+        "source_url": "https://www.resecurity.com/blog/article/ssrf-to-aws-metadata-exposure-how-attackers-steal-cloud-credentials",
+        "key_finding": "169.254.169.254 remains most targeted endpoint in cloud SSRF attacks, accounting for 73% of observed exploitation attempts"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Strict URL Allowlisting and Protocol Validation",
+      "description": "Validate and restrict server-side HTTP requests to a predefined allowlist of trusted domains and protocols. Block access to private IP ranges (RFC 1918), loopback addresses, and cloud metadata endpoints. Use URL parsing libraries to prevent bypass techniques like DNS rebinding, URL encoding, and decimal/octal IP representations.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst axios = require('axios');\nconst { URL } = require('url');\nconst dns = require('dns').promises;\n\nconst app = express();\n\n// Allowlist of permitted domains\nconst ALLOWED_DOMAINS = [\n  'api.example.com',\n  'cdn.example.com',\n  'images.example.com'\n];\n\n// Blocked IP ranges (RFC 1918, loopback, metadata services)\nconst BLOCKED_IP_RANGES = [\n  /^127\\./, // Loopback\n  /^10\\./, // Private Class A\n  /^172\\.(1[6-9]|2[0-9]|3[0-1])\\./, // Private Class B\n  /^192\\.168\\./, // Private Class C\n  /^169\\.254\\./, // Link-local (AWS/Azure/GCP metadata)\n  /^0\\./, // Reserved\n  /^224\\./, // Multicast\n  /^::1$/, // IPv6 loopback\n  /^fc00:/, // IPv6 private\n  /^fe80:/ // IPv6 link-local\n];\n\nfunction isBlockedIP(ip) {\n  return BLOCKED_IP_RANGES.some(pattern => pattern.test(ip));\n}\n\nasync function validateUrl(urlString) {\n  let parsedUrl;\n  \n  try {\n    parsedUrl = new URL(urlString);\n  } catch (error) {\n    throw new Error('Invalid URL format');\n  }\n  \n  // Only allow HTTPS protocol\n  if (parsedUrl.protocol !== 'https:') {\n    throw new Error('Only HTTPS protocol is allowed');\n  }\n  \n  // Validate against domain allowlist\n  if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {\n    throw new Error(`Domain ${parsedUrl.hostname} is not in allowlist`);\n  }\n  \n  // Resolve DNS and check for blocked IPs (prevent DNS rebinding)\n  try {\n    const addresses = await dns.resolve4(parsedUrl.hostname);\n    \n    for (const ip of addresses) {\n      if (isBlockedIP(ip)) {\n        throw new Error(`Resolved IP ${ip} is in blocked range`);\n      }\n    }\n  } catch (error) {\n    if (error.code === 'ENOTFOUND') {\n      throw new Error('Domain could not be resolved');\n    }\n    throw error;\n  }\n  \n  return parsedUrl.href;\n}\n\napp.get('/api/fetch', async (req, res) => {\n  const { url } = req.query;\n  \n  if (!url) {\n    return res.status(400).json({ error: 'URL parameter is required' });\n  }\n  \n  try {\n    // Validate URL before making request\n    const validatedUrl = await validateUrl(url);\n    \n    // Make HTTP request with timeout and size limits\n    const response = await axios.get(validatedUrl, {\n      timeout: 5000, // 5 second timeout\n      maxContentLength: 10 * 1024 * 1024, // 10MB max\n      maxRedirects: 0, // Disable redirects to prevent bypass\n      validateStatus: (status) => status < 400\n    });\n    \n    res.json({ data: response.data });\n  } catch (error) {\n    console.error('URL fetch error:', error.message);\n    res.status(400).json({ error: 'Failed to fetch URL', details: error.message });\n  }\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));"
+      },
+      "tools": [
+        {
+          "name": "validator.js",
+          "type": "URL Validation Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "AWS VPC Endpoints",
+          "type": "Network Isolation",
+          "cost": "$0.01 per GB transferred"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Test with metadata service URLs (http://169.254.169.254/latest/meta-data/)",
+        "Attempt bypass with decimal IPs (http://2852039166/ = 169.254.169.254)",
+        "Test with encoded URLs (%68%74%74%70://169.254.169.254)",
+        "Verify DNS rebinding protection with time-delayed DNS changes",
+        "Test redirect bypass attempts (allowed domain -> metadata service)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enforce AWS IMDSv2 with Hop Limit and Require Session Tokens",
+      "description": "Upgrade AWS EC2 instances to Instance Metadata Service Version 2 (IMDSv2), which requires session-oriented requests with PUT method to obtain tokens. Set HttpPutResponseHopLimit to 1 to prevent metadata access from containers. This mitigation specifically addresses the Capital One breach attack vector.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "AWS EC2 / Terraform",
+        "code": "#!/bin/bash\n# Enable IMDSv2 on existing EC2 instances\n# This prevents SSRF attacks from accessing metadata without session tokens\n\nINSTANCE_ID=\"i-1234567890abcdef0\"\n\n# Require IMDSv2 (disable IMDSv1)\naws ec2 modify-instance-metadata-options \\\n  --instance-id $INSTANCE_ID \\\n  --http-tokens required \\\n  --http-put-response-hop-limit 1 \\\n  --http-endpoint enabled\n\n# Verify IMDSv2 configuration\naws ec2 describe-instances \\\n  --instance-ids $INSTANCE_ID \\\n  --query 'Reservations[].Instances[].MetadataOptions'\n\n# --- Terraform Configuration ---\n# Add to your EC2 instance configuration\n\n# terraform/main.tf\nresource \"aws_instance\" \"web_server\" {\n  ami           = \"ami-0c55b159cbfafe1f0\"\n  instance_type = \"t3.medium\"\n  \n  # Enforce IMDSv2 with hop limit = 1\n  metadata_options {\n    http_endpoint               = \"enabled\"\n    http_tokens                 = \"required\"  # Require IMDSv2\n    http_put_response_hop_limit = 1           # Prevent container escape\n    instance_metadata_tags      = \"disabled\"\n  }\n  \n  # IAM role with least privilege\n  iam_instance_profile = aws_iam_instance_profile.web_app_profile.name\n  \n  tags = {\n    Name = \"WebApp-SSRF-Protected\"\n  }\n}\n\n# Least privilege IAM role for EC2 instance\nresource \"aws_iam_role\" \"web_app_role\" {\n  name = \"WebApp-MinimalPermissions\"\n  \n  assume_role_policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Action = \"sts:AssumeRole\"\n        Effect = \"Allow\"\n        Principal = {\n          Service = \"ec2.amazonaws.com\"\n        }\n      }\n    ]\n  })\n}\n\n# Restrict S3 access to specific buckets only\nresource \"aws_iam_role_policy\" \"web_app_s3\" {\n  name = \"S3-LimitedAccess\"\n  role = aws_iam_role.web_app_role.id\n  \n  policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Effect = \"Allow\"\n        Action = [\n          \"s3:GetObject\",\n          \"s3:PutObject\"\n        ]\n        Resource = \"arn:aws:s3:::my-app-uploads-bucket/*\"\n      },\n      {\n        Effect = \"Allow\"\n        Action = [\"s3:ListBucket\"]\n        Resource = \"arn:aws:s3:::my-app-uploads-bucket\"\n      }\n    ]\n  })\n}\n\nresource \"aws_iam_instance_profile\" \"web_app_profile\" {\n  name = \"WebApp-Profile\"\n  role = aws_iam_role.web_app_role.name\n}\n\n# --- AWS Organizations SCP to enforce IMDSv2 across all accounts ---\n# organizations_scp.json\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"RequireIMDSv2\",\n      \"Effect\": \"Deny\",\n      \"Action\": \"ec2:RunInstances\",\n      \"Resource\": \"arn:aws:ec2:*:*:instance/*\",\n      \"Condition\": {\n        \"StringNotEquals\": {\n          \"ec2:MetadataHttpTokens\": \"required\"\n        }\n      }\n    }\n  ]\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS IMDSv2",
+          "type": "Metadata Service Security",
+          "cost": "Free"
+        },
+        {
+          "name": "Terraform / AWS CLI",
+          "type": "Infrastructure as Code",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS Config Rules",
+          "type": "Compliance Monitoring",
+          "cost": "$0.001 per configuration item"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Verify HttpTokens = required on all EC2 instances",
+        "Confirm HttpPutResponseHopLimit = 1 to prevent container escape",
+        "Test metadata access fails without session token",
+        "Implement AWS Config rule to detect IMDSv1 usage",
+        "Review IAM role permissions for least privilege compliance"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Network Segmentation and Egress Filtering",
+      "description": "Deploy network-level controls to restrict outbound traffic from application servers. Use AWS Security Groups, Network ACLs, or firewall rules to block access to metadata service IP ranges and other internal resources. Implement VPC endpoints for AWS services to avoid traversing public internet.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "hcl",
+        "framework": "Terraform (AWS VPC)",
+        "code": "# Terraform configuration for network segmentation\n# File: terraform/network.tf\n\n# VPC with private subnets for application servers\nresource \"aws_vpc\" \"main\" {\n  cidr_block           = \"10.0.0.0/16\"\n  enable_dns_hostnames = true\n  enable_dns_support   = true\n  \n  tags = {\n    Name = \"WebApp-VPC-SSRF-Protected\"\n  }\n}\n\n# Private subnet for application servers (no direct internet access)\nresource \"aws_subnet\" \"private_app\" {\n  vpc_id            = aws_vpc.main.id\n  cidr_block        = \"10.0.1.0/24\"\n  availability_zone = \"us-east-1a\"\n  \n  tags = {\n    Name = \"Private-App-Subnet\"\n  }\n}\n\n# Security group with strict egress rules\nresource \"aws_security_group\" \"app_server\" {\n  name        = \"app-server-ssrf-protected\"\n  description = \"Security group with SSRF protections\"\n  vpc_id      = aws_vpc.main.id\n  \n  # Ingress: Allow HTTPS from ALB only\n  ingress {\n    description     = \"HTTPS from ALB\"\n    from_port       = 443\n    to_port         = 443\n    protocol        = \"tcp\"\n    security_groups = [aws_security_group.alb.id]\n  }\n  \n  # Egress: Allow HTTPS to internet (for external APIs only)\n  egress {\n    description = \"HTTPS to internet\"\n    from_port   = 443\n    to_port     = 443\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n  \n  # Egress: Allow PostgreSQL to RDS\n  egress {\n    description     = \"PostgreSQL to RDS\"\n    from_port       = 5432\n    to_port         = 5432\n    protocol        = \"tcp\"\n    security_groups = [aws_security_group.rds.id]\n  }\n  \n  tags = {\n    Name = \"App-Server-SG\"\n  }\n}\n\n# Network ACL to block metadata service (defense in depth)\nresource \"aws_network_acl\" \"app_subnet\" {\n  vpc_id     = aws_vpc.main.id\n  subnet_ids = [aws_subnet.private_app.id]\n  \n  # Deny outbound to metadata service (169.254.169.254)\n  egress {\n    rule_no    = 50\n    protocol   = \"tcp\"\n    action     = \"deny\"\n    cidr_block = \"169.254.169.254/32\"\n    from_port  = 80\n    to_port    = 80\n  }\n  \n  # Deny outbound to link-local range (169.254.0.0/16)\n  egress {\n    rule_no    = 51\n    protocol   = \"-1\"\n    action     = \"deny\"\n    cidr_block = \"169.254.0.0/16\"\n    from_port  = 0\n    to_port    = 0\n  }\n  \n  # Allow all other outbound traffic\n  egress {\n    rule_no    = 100\n    protocol   = \"-1\"\n    action     = \"allow\"\n    cidr_block = \"0.0.0.0/0\"\n    from_port  = 0\n    to_port    = 0\n  }\n  \n  # Allow all inbound traffic\n  ingress {\n    rule_no    = 100\n    protocol   = \"-1\"\n    action     = \"allow\"\n    cidr_block = \"0.0.0.0/0\"\n    from_port  = 0\n    to_port    = 0\n  }\n  \n  tags = {\n    Name = \"App-Subnet-ACL-SSRF-Protection\"\n  }\n}\n\n# VPC Endpoint for S3 (avoid traversing internet)\nresource \"aws_vpc_endpoint\" \"s3\" {\n  vpc_id       = aws_vpc.main.id\n  service_name = \"com.amazonaws.us-east-1.s3\"\n  \n  route_table_ids = [aws_route_table.private.id]\n  \n  policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Effect    = \"Allow\"\n        Principal = \"*\"\n        Action    = [\"s3:GetObject\", \"s3:PutObject\"]\n        Resource  = \"arn:aws:s3:::my-app-uploads-bucket/*\"\n      }\n    ]\n  })\n  \n  tags = {\n    Name = \"S3-VPC-Endpoint\"\n  }\n}\n\n# VPC Endpoint for EC2 API (prevents SSRF to AWS API endpoints)\nresource \"aws_vpc_endpoint\" \"ec2\" {\n  vpc_id              = aws_vpc.main.id\n  service_name        = \"com.amazonaws.us-east-1.ec2\"\n  vpc_endpoint_type   = \"Interface\"\n  subnet_ids          = [aws_subnet.private_app.id]\n  security_group_ids  = [aws_security_group.vpc_endpoint.id]\n  private_dns_enabled = true\n  \n  tags = {\n    Name = \"EC2-VPC-Endpoint\"\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS VPC Endpoints",
+          "type": "Network Isolation",
+          "cost": "$0.01 per GB transferred"
+        },
+        {
+          "name": "AWS Network ACLs",
+          "type": "Network Firewall",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS Network Firewall",
+          "type": "Advanced Filtering",
+          "cost": "$0.395 per firewall/hour + $0.065 per GB"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-7 - Monitoring for unauthorized activity"
+      ],
+      "validation_steps": [
+        "Test outbound connectivity to 169.254.169.254 is blocked",
+        "Verify S3 access works through VPC endpoint only",
+        "Confirm security group rules restrict egress to required services",
+        "Test Network ACL rules block metadata service access",
+        "Monitor VPC Flow Logs for blocked connection attempts"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP requests to 169.254.169.254 or other cloud metadata endpoints",
+      "Unusual DNS queries for link-local addresses (169.254.0.0/16)",
+      "Application making requests to RFC 1918 private IP addresses",
+      "High volume of URL parameter-based requests with internal IPs",
+      "Sudden increase in outbound connections to port 80/443 from application servers",
+      "AWS CloudTrail logs showing IAM credential usage from unexpected IP addresses",
+      "Application logs showing failed URL validation or blocked requests"
+    ],
+    "log_queries": [
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Detect requests to AWS metadata service\nfields @timestamp, @message, url, sourceIP\n| filter url like /169\\.254\\.169\\.254/ or url like /metadata/ or url like /latest\\/meta-data/\n| stats count() by url, sourceIP\n| sort count desc\n\n# Detect IMDSv1 usage (should be zero if IMDSv2 enforced)\nfields @timestamp, httpMethod, requestPath\n| filter requestPath = \"/latest/meta-data/iam/security-credentials/\"\n| filter httpMethod = \"GET\"\n| stats count() by bin(5m)"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect SSRF attempts to Azure Instance Metadata Service\nAzureDiagnostics\n| where Category == \"ApplicationGatewayAccessLog\" or Category == \"AppServiceHTTPLogs\"\n| where requestUri_s contains \"169.254.169.254\" or requestUri_s contains \"/metadata/instance\"\n| summarize RequestCount = count() by clientIP_s, requestUri_s, bin(TimeGenerated, 5m)\n| where RequestCount > 5\n| order by RequestCount desc\n\n// Detect unusual outbound connections to private IP ranges\nAzureNetworkAnalytics_CL\n| where FlowDirection_s == \"O\" // Outbound\n| where DestIP matches regex @\"^(10\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|192\\.168\\.|169\\.254\\.)\"\n| summarize ConnectionCount = count() by SrcIP, DestIP, DestPort, bin(TimeGenerated, 1h)\n| where ConnectionCount > 100"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| regex url=\"169\\.254\\.169\\.254|metadata|latest/meta-data|instance-data\"\n| stats count by src_ip, url, status, _time\n| where count > 3\n\n# Detect SSRF via URL parameters\nindex=app_logs sourcetype=express_logs\n| rex field=_raw \"url=(?<fetched_url>[^&\\s]+)\"\n| rex field=fetched_url \"(?<ip_address>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"\n| where match(ip_address, \"^(10\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|192\\.168\\.|169\\.254\\.|127\\.)\") OR match(fetched_url, \"localhost|0\\.0\\.0\\.0\")\n| stats count by user_id, ip_address, fetched_url\n| sort -count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "# Detect SSRF to metadata endpoints\nurl.full:(*169.254.169.254* OR *metadata* OR *instance-data*) AND event.category:\"web\"\n\n# Detect access to private IP ranges via application\nsource.ip:(10.0.0.0/8 OR 172.16.0.0/12 OR 192.168.0.0/16 OR 169.254.0.0/16) AND event.outcome:\"success\" AND NOT user_agent.original:\"ELB-HealthChecker*\""
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS GuardDuty",
+        "type": "Threat Detection",
+        "usage": "Automatically detects UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration finding when EC2 credentials are used outside the instance"
+      },
+      {
+        "name": "AWS VPC Flow Logs",
+        "type": "Network Monitoring",
+        "usage": "Monitor traffic to 169.254.169.254 and other metadata endpoints; analyze rejected connections"
+      },
+      {
+        "name": "OWASP ZAP SSRF Plugin",
+        "type": "Vulnerability Scanner",
+        "usage": "Automated SSRF detection in web applications during security testing"
+      },
+      {
+        "name": "Burp Suite Collaborator",
+        "type": "SSRF Detection",
+        "usage": "Out-of-band detection of SSRF vulnerabilities using external callback server"
+      }
+    ]
+  },
+  "code_examples": {
+    "vulnerable": {
+      "express_js": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst axios = require('axios');\n\nconst app = express();\n\n// VULNERABLE: No URL validation - allows SSRF attacks\napp.get('/api/fetch', async (req, res) => {\n  const { url } = req.query;\n  \n  try {\n    // Directly fetches user-provided URL without validation\n    const response = await axios.get(url);\n    res.json({ data: response.data });\n  } catch (error) {\n    res.status(500).json({ error: error.message });\n  }\n});\n\n// VULNERABLE: Image proxy without validation\napp.get('/api/proxy-image', async (req, res) => {\n  const imageUrl = req.query.imageUrl;\n  \n  // Attacker can provide: http://169.254.169.254/latest/meta-data/\n  const response = await axios.get(imageUrl, {\n    responseType: 'stream'\n  });\n  \n  response.data.pipe(res);\n});\n\n// VULNERABLE: Webhook with user-controlled URL\napp.post('/api/webhook', async (req, res) => {\n  const { callbackUrl, event } = req.body;\n  \n  // Sends sensitive data to attacker-controlled endpoint\n  await axios.post(callbackUrl, {\n    event,\n    timestamp: Date.now(),\n    internalData: process.env.SECRET_KEY // Data leakage\n  });\n  \n  res.json({ status: 'webhook sent' });\n});\n\napp.listen(3000);"
+      },
+      "spring_boot": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "package com.example.vulnerable;\n\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.web.client.RestTemplate;\nimport org.springframework.http.ResponseEntity;\nimport java.net.URI;\n\n@RestController\n@RequestMapping(\"/api\")\npublic class VulnerableController {\n    \n    private final RestTemplate restTemplate = new RestTemplate();\n    \n    // VULNERABLE: No URL validation - allows SSRF\n    @GetMapping(\"/fetch\")\n    public ResponseEntity<String> fetchUrl(@RequestParam String url) {\n        try {\n            // Directly fetches user-provided URL\n            // Attacker can use: http://169.254.169.254/latest/meta-data/iam/security-credentials/\n            String response = restTemplate.getForObject(url, String.class);\n            return ResponseEntity.ok(response);\n        } catch (Exception e) {\n            return ResponseEntity.status(500).body(e.getMessage());\n        }\n    }\n    \n    // VULNERABLE: PDF generator with external resource loading\n    @PostMapping(\"/generate-pdf\")\n    public ResponseEntity<String> generatePdf(@RequestBody PdfRequest request) {\n        // Fetches external images/resources without validation\n        // Attacker can inject SSRF payloads in HTML content\n        String htmlContent = request.getHtmlContent();\n        \n        // HTML like: <img src=\"http://169.254.169.254/latest/meta-data/\">\n        // PDF library will fetch this URL server-side\n        String pdfUrl = convertHtmlToPdf(htmlContent);\n        \n        return ResponseEntity.ok(pdfUrl);\n    }\n    \n    // VULNERABLE: Service status check with user input\n    @GetMapping(\"/check-service\")\n    public ResponseEntity<ServiceStatus> checkService(@RequestParam String serviceUrl) {\n        try {\n            URI uri = new URI(serviceUrl);\n            \n            // No validation - can target internal services\n            ResponseEntity<String> response = restTemplate.getForEntity(uri, String.class);\n            \n            return ResponseEntity.ok(new ServiceStatus(\n                serviceUrl,\n                response.getStatusCode().is2xxSuccessful(),\n                response.getBody()\n            ));\n        } catch (Exception e) {\n            return ResponseEntity.ok(new ServiceStatus(serviceUrl, false, e.getMessage()));\n        }\n    }\n    \n    private String convertHtmlToPdf(String html) {\n        // Simulated PDF conversion that fetches external resources\n        return \"/pdfs/generated.pdf\";\n    }\n    \n    static class PdfRequest {\n        private String htmlContent;\n        \n        public String getHtmlContent() { return htmlContent; }\n        public void setHtmlContent(String htmlContent) { this.htmlContent = htmlContent; }\n    }\n    \n    static class ServiceStatus {\n        private String url;\n        private boolean online;\n        private String response;\n        \n        public ServiceStatus(String url, boolean online, String response) {\n            this.url = url;\n            this.online = online;\n            this.response = response;\n        }\n        \n        // Getters\n        public String getUrl() { return url; }\n        public boolean isOnline() { return online; }\n        public String getResponse() { return response; }\n    }\n}"
+      }
+    },
+    "secure": {
+      "express_js": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst axios = require('axios');\nconst { URL } = require('url');\nconst dns = require('dns').promises;\nconst ipaddr = require('ipaddr.js');\n\nconst app = express();\n\n// Allowlist configuration\nconst ALLOWED_DOMAINS = ['api.example.com', 'cdn.example.com'];\nconst ALLOWED_PROTOCOLS = ['https:'];\n\n// Comprehensive IP blocking (RFC 1918, loopback, link-local, etc.)\nfunction isPrivateOrReservedIP(ip) {\n  try {\n    const addr = ipaddr.process(ip);\n    \n    if (addr.kind() === 'ipv4') {\n      // Check various private/reserved ranges\n      return (\n        addr.match(ipaddr.parseCIDR('0.0.0.0/8')) ||      // Current network\n        addr.match(ipaddr.parseCIDR('10.0.0.0/8')) ||     // Private Class A\n        addr.match(ipaddr.parseCIDR('127.0.0.0/8')) ||    // Loopback\n        addr.match(ipaddr.parseCIDR('169.254.0.0/16')) || // Link-local (METADATA!)\n        addr.match(ipaddr.parseCIDR('172.16.0.0/12')) ||  // Private Class B\n        addr.match(ipaddr.parseCIDR('192.168.0.0/16')) || // Private Class C\n        addr.match(ipaddr.parseCIDR('224.0.0.0/4')) ||    // Multicast\n        addr.match(ipaddr.parseCIDR('240.0.0.0/4'))       // Reserved\n      );\n    } else if (addr.kind() === 'ipv6') {\n      return (\n        addr.match(ipaddr.parseCIDR('::1/128')) ||        // Loopback\n        addr.match(ipaddr.parseCIDR('fc00::/7')) ||       // Unique local\n        addr.match(ipaddr.parseCIDR('fe80::/10'))         // Link-local\n      );\n    }\n  } catch (e) {\n    return true; // Block on parse error\n  }\n  return false;\n}\n\nasync function validateAndSanitizeUrl(urlString) {\n  // Parse URL\n  let parsedUrl;\n  try {\n    parsedUrl = new URL(urlString);\n  } catch (error) {\n    throw new Error('Invalid URL format');\n  }\n  \n  // Protocol validation\n  if (!ALLOWED_PROTOCOLS.includes(parsedUrl.protocol)) {\n    throw new Error(`Protocol ${parsedUrl.protocol} not allowed. Only HTTPS permitted.`);\n  }\n  \n  // Domain allowlist check\n  if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {\n    throw new Error(`Domain ${parsedUrl.hostname} is not in allowlist`);\n  }\n  \n  // Check if hostname is IP address (block direct IP access)\n  if (ipaddr.isValid(parsedUrl.hostname)) {\n    throw new Error('Direct IP addresses are not allowed');\n  }\n  \n  // DNS resolution and validation (prevent DNS rebinding)\n  let resolvedIPs;\n  try {\n    resolvedIPs = await dns.resolve4(parsedUrl.hostname);\n  } catch (error) {\n    throw new Error(`Failed to resolve hostname: ${error.message}`);\n  }\n  \n  // Check all resolved IPs\n  for (const ip of resolvedIPs) {\n    if (isPrivateOrReservedIP(ip)) {\n      throw new Error(`Resolved IP ${ip} is in blocked range (private/reserved)`);\n    }\n  }\n  \n  return parsedUrl.href;\n}\n\n// SECURE: URL fetch with comprehensive validation\napp.get('/api/fetch', async (req, res) => {\n  const { url } = req.query;\n  \n  if (!url) {\n    return res.status(400).json({ error: 'URL parameter required' });\n  }\n  \n  try {\n    const validatedUrl = await validateAndSanitizeUrl(url);\n    \n    const response = await axios.get(validatedUrl, {\n      timeout: 5000,\n      maxContentLength: 10 * 1024 * 1024, // 10MB max\n      maxRedirects: 0, // Disable redirects\n      validateStatus: (status) => status < 400,\n      headers: {\n        'User-Agent': 'MyApp/1.0'\n      }\n    });\n    \n    // Log successful fetch for audit\n    console.log(`[AUDIT] Successful URL fetch: ${validatedUrl} by IP ${req.ip}`);\n    \n    res.json({ data: response.data });\n  } catch (error) {\n    // Log failed attempts for security monitoring\n    console.warn(`[SECURITY] Blocked URL fetch attempt: ${url} by IP ${req.ip} - ${error.message}`);\n    res.status(400).json({ error: 'Failed to fetch URL', details: error.message });\n  }\n});\n\n// SECURE: Webhook with validation\napp.post('/api/webhook', async (req, res) => {\n  const { callbackUrl, event } = req.body;\n  \n  try {\n    const validatedUrl = await validateAndSanitizeUrl(callbackUrl);\n    \n    await axios.post(validatedUrl, {\n      event,\n      timestamp: Date.now()\n      // Never send sensitive internal data\n    }, {\n      timeout: 3000,\n      maxRedirects: 0\n    });\n    \n    res.json({ status: 'webhook sent' });\n  } catch (error) {\n    console.warn(`[SECURITY] Blocked webhook attempt: ${callbackUrl}`);\n    res.status(400).json({ error: 'Invalid webhook URL' });\n  }\n});\n\napp.listen(3000, () => console.log('Secure server running on port 3000'));"
+      },
+      "spring_boot": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "package com.example.secure;\n\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.web.client.RestTemplate;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.stereotype.Service;\nimport inet.ipaddr.IPAddress;\nimport inet.ipaddr.IPAddressString;\n\nimport java.net.URI;\nimport java.net.InetAddress;\nimport java.net.UnknownHostException;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.Set;\n\n@RestController\n@RequestMapping(\"/api\")\npublic class SecureController {\n    \n    private final UrlValidationService urlValidationService;\n    private final RestTemplate restTemplate;\n    \n    public SecureController(UrlValidationService urlValidationService) {\n        this.urlValidationService = urlValidationService;\n        this.restTemplate = new RestTemplate();\n    }\n    \n    // SECURE: URL fetch with validation\n    @GetMapping(\"/fetch\")\n    public ResponseEntity<?> fetchUrl(@RequestParam String url) {\n        try {\n            String validatedUrl = urlValidationService.validateAndSanitize(url);\n            String response = restTemplate.getForObject(validatedUrl, String.class);\n            return ResponseEntity.ok(response);\n        } catch (SecurityException e) {\n            return ResponseEntity.status(400).body(Map.of(\"error\", e.getMessage()));\n        }\n    }\n}\n\n@Service\nclass UrlValidationService {\n    \n    private static final Set<String> ALLOWED_DOMAINS = Set.of(\n        \"api.example.com\",\n        \"cdn.example.com\"\n    );\n    \n    private static final List<String> ALLOWED_PROTOCOLS = List.of(\"https\");\n    \n    // Private IP ranges (CIDR notation)\n    private static final List<String> BLOCKED_IP_RANGES = Arrays.asList(\n        \"0.0.0.0/8\",        // Current network\n        \"10.0.0.0/8\",       // Private Class A\n        \"127.0.0.0/8\",      // Loopback\n        \"169.254.0.0/16\",   // Link-local (AWS/Azure/GCP metadata)\n        \"172.16.0.0/12\",    // Private Class B\n        \"192.168.0.0/16\",   // Private Class C\n        \"224.0.0.0/4\",      // Multicast\n        \"240.0.0.0/4\",      // Reserved\n        \"::1/128\",          // IPv6 loopback\n        \"fc00::/7\",         // IPv6 unique local\n        \"fe80::/10\"         // IPv6 link-local\n    );\n    \n    public String validateAndSanitize(String urlString) throws SecurityException {\n        URI uri;\n        \n        try {\n            uri = new URI(urlString);\n        } catch (Exception e) {\n            throw new SecurityException(\"Invalid URL format\");\n        }\n        \n        // Protocol validation\n        if (!ALLOWED_PROTOCOLS.contains(uri.getScheme())) {\n            throw new SecurityException(\"Only HTTPS protocol is allowed\");\n        }\n        \n        // Domain allowlist\n        String host = uri.getHost();\n        if (!ALLOWED_DOMAINS.contains(host)) {\n            throw new SecurityException(\"Domain not in allowlist: \" + host);\n        }\n        \n        // Check if host is IP address (block direct IP access)\n        if (isIpAddress(host)) {\n            throw new SecurityException(\"Direct IP addresses are not allowed\");\n        }\n        \n        // DNS resolution and IP validation\n        try {\n            InetAddress[] addresses = InetAddress.getAllByName(host);\n            \n            for (InetAddress addr : addresses) {\n                String ip = addr.getHostAddress();\n                \n                if (isBlockedIP(ip)) {\n                    throw new SecurityException(\n                        \"Resolved IP \" + ip + \" is in blocked range (private/reserved)\"\n                    );\n                }\n            }\n        } catch (UnknownHostException e) {\n            throw new SecurityException(\"Failed to resolve hostname: \" + host);\n        }\n        \n        return uri.toString();\n    }\n    \n    private boolean isIpAddress(String host) {\n        return new IPAddressString(host).isIPAddress();\n    }\n    \n    private boolean isBlockedIP(String ipString) {\n        IPAddressString ipAddrStr = new IPAddressString(ipString);\n        \n        if (!ipAddrStr.isIPAddress()) {\n            return true; // Invalid IP = block\n        }\n        \n        IPAddress ipAddr = ipAddrStr.getAddress();\n        \n        // Check against all blocked ranges\n        for (String blockedRange : BLOCKED_IP_RANGES) {\n            IPAddressString rangeStr = new IPAddressString(blockedRange);\n            if (rangeStr.contains(ipAddr)) {\n                return true;\n            }\n        }\n        \n        return false;\n    }\n}\n\n// Dependencies in pom.xml:\n/*\n<dependency>\n    <groupId>com.github.seancfoley</groupId>\n    <artifactId>ipaddress</artifactId>\n    <version>5.4.0</version>\n</dependency>\n*/"
+      }
+    }
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Technology",
+      "Cloud Infrastructure"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.2.4)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC6.1, CC7.2)",
+      "ISO27001 (A.13.1.3, A.14.2.1)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SC-7, AC-4)"
+    ],
+    "deployment": [
+      "AWS EC2",
+      "Azure Virtual Machines",
+      "GCP Compute Engine",
+      "Kubernetes",
+      "Docker",
+      "On-Premise"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

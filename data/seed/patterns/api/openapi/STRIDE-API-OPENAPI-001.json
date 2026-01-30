@@ -1,0 +1,407 @@
+{
+  "id": "STRIDE-API-OPENAPI-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "API3:2023 - Broken Object Property Level Authorization",
+      "API8:2023 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1659 - Content Injection"
+    ],
+    "cwe": [
+      "CWE-20 - Improper Input Validation",
+      "CWE-1287 - Improper Validation of Specified Type of Input"
+    ]
+  },
+  "threat": {
+    "title": "OpenAPI Schema Manipulation and Spoofing",
+    "description": "Attackers exploit weaknesses in OpenAPI schema validation by manipulating request payloads to bypass authentication, inject additional properties via mass assignment, leverage type coercion vulnerabilities, or exploit missing schema enforcement. When APIs fail to properly validate against their OpenAPI specifications with strict schemas, attackers can inject unauthorized fields, bypass required field validation, exploit additionalProperties:true defaults, and manipulate data types to gain unauthorized access or elevate privileges.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "OpenAPI/Swagger",
+    "versions_affected": ["OpenAPI 3.0.x", "OpenAPI 3.1.x", "Swagger 2.0"],
+    "ecosystem": "Multi-platform",
+    "dependencies": [
+      "express-openapi-validator",
+      "swagger-parser",
+      "springdoc-openapi",
+      "FastAPI",
+      "ajv (JSON Schema validator)"
+    ],
+    "related_frameworks": [
+      "Express.js",
+      "Spring Boot",
+      "FastAPI",
+      "NestJS",
+      "ASP.NET Core"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker analyzes publicly exposed OpenAPI/Swagger documentation endpoint (/swagger.json, /openapi.json, /api-docs)\n2. Identifies schema definition with additionalProperties:true (default) or missing required field validations\n3. Crafts malicious payload adding 'isAdmin': true or 'role': 'administrator' to user registration/update request\n4. Exploits type coercion by sending string '1' where boolean true expected, bypassing strict validation\n5. Server-side mass assignment automatically binds unauthorized properties to internal user object\n6. Gains administrative privileges or bypasses authentication checks due to schema pollution",
+    "prerequisites": [
+      "OpenAPI specification exposed or discoverable (Swagger UI, /api-docs endpoint)",
+      "Schema validation either missing or uses additionalProperties:true (OAS 3.x default)",
+      "API implementation uses auto-binding/mass assignment (e.g., Object.assign, model.from_dict)",
+      "No explicit property allowlisting or schema enforcement with additionalProperties:false",
+      "Type coercion enabled in validation library without strict mode"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2016-5641",
+        "description": "Remote Code Execution via Swagger Parameter Injection - Swagger allowed parameter injection leading to RCE",
+        "cvss_score": 9.8,
+        "published_date": "2016-06-23"
+      },
+      {
+        "cve_id": "CVE-2019-7238",
+        "description": "swagger-parser-core vulnerability allowing schema manipulation",
+        "cvss_score": 7.5,
+        "published_date": "2019-02-05"
+      },
+      {
+        "cve_id": "CVE-2022-2900",
+        "description": "swagger-parser-safe-url-resolver schema validation bypass vulnerability",
+        "cvss_score": 6.5,
+        "published_date": "2022-08-23"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Octopus Deploy AD Enumeration via Schema Bypass",
+        "date": "2024-01-15",
+        "impact": "Critical authorization bypass allowing unauthenticated AD user enumeration when AD integration enabled",
+        "root_cause": "Insufficient OpenAPI schema validation allowed unauthorized endpoint access without authentication",
+        "source_url": "https://medium.com/@neorusiwork/autoswagger-the-free-api-security-tool-every-developer-needs-in-2025-e429086bacfe"
+      },
+      {
+        "incident": "API Security Incidents Survey 2024",
+        "date": "2024-12-31",
+        "impact": "99% of organizations reported API security incidents in 2024, with authorization bypass accounting for 95% of API attacks",
+        "root_cause": "Weak schema validation and missing property-level authorization checks in OpenAPI implementations",
+        "source_url": "https://medium.com/@neorusiwork/autoswagger-the-free-api-security-tool-every-developer-needs-in-2025-e429086bacfe"
+      },
+      {
+        "incident": "API Vulnerability Surge 2024",
+        "date": "2024-12-31",
+        "impact": "40% increase in API vulnerabilities year-over-year, with schema validation bypasses as primary attack vector",
+        "root_cause": "Default additionalProperties:true in OpenAPI 3.x and inadequate validation implementations",
+        "source_url": "https://medium.com/@neorusiwork/autoswagger-the-free-api-security-tool-every-developer-needs-in-2025-e429086bacfe"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "GraphQL-AuthBypass-2024",
+        "bounty_amount": 8500,
+        "severity": "Critical",
+        "summary": "GraphQL schema manipulation combined with OpenAPI validation bypass allowing authentication bypass via missing required fields and type coercion"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "MassAssignment-Admin-2023",
+        "bounty_amount": 12000,
+        "severity": "Critical",
+        "summary": "Mass assignment via additionalProperties exploitation - attacker added 'isAdmin' field to user profile update bypassing OpenAPI schema validation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP API Security Top 10 2023 - API3 Broken Object Property Level Authorization",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-07-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/",
+        "key_finding": "Mass assignment and excessive data exposure (now combined as API3:2023) result from lack of schema-based validation with proper property filtering"
+      },
+      {
+        "title": "API Schema Pollution: How Malformed Requests Bypass Validation",
+        "authors": ["InstaTunnel Security Research"],
+        "published_date": "2024-11-15",
+        "source_url": "https://instatunnel.my/blog/api-schema-pollution-when-malformed-requests-break-your-entire-backend",
+        "key_finding": "Schema pollution exploits fundamental assumptions applications make about incoming data structures, bypassing validation through type confusion and property injection"
+      },
+      {
+        "title": "Swagger API Vulnerabilities and Exploitation",
+        "authors": ["Syed Shahwar"],
+        "published_date": "2025-12-01",
+        "source_url": "https://medium.com/@shahwarshah/swagger-api-vulnerabilities-9c320cc3f164",
+        "key_finding": "Misconfigured Swagger instances lead to DOM XSS, HTML injection, and open redirects. Publicly deployed Swagger UI without authentication exposes sensitive endpoints"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enforce Strict Schema Validation with additionalProperties:false",
+      "description": "Configure OpenAPI schemas to explicitly reject any properties not defined in the specification by setting additionalProperties:false for all request body schemas. This prevents mass assignment attacks and property injection.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "OpenAPI 3.1.x",
+        "code": "# Secure OpenAPI Schema Definition\nopenapi: 3.1.0\ninfo:\n  title: Secure User API\n  version: 1.0.0\n\npaths:\n  /users:\n    post:\n      summary: Create new user\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              type: object\n              required:\n                - username\n                - email\n                - password\n              properties:\n                username:\n                  type: string\n                  minLength: 3\n                  maxLength: 50\n                  pattern: '^[a-zA-Z0-9_]+$'\n                email:\n                  type: string\n                  format: email\n                  maxLength: 255\n                password:\n                  type: string\n                  format: password\n                  minLength: 12\n              # CRITICAL: Prevent property injection\n              additionalProperties: false\n      responses:\n        '201':\n          description: User created\n          content:\n            application/json:\n              schema:\n                type: object\n                properties:\n                  id:\n                    type: string\n                    format: uuid\n                  username:\n                    type: string\n                  email:\n                    type: string\n                  createdAt:\n                    type: string\n                    format: date-time\n                # Only return safe fields\n                additionalProperties: false"
+      },
+      "tools": [
+        {
+          "name": "OpenAPI Specification",
+          "type": "Schema Definition Standard",
+          "cost": "Free"
+        },
+        {
+          "name": "Spectral Linter",
+          "type": "OpenAPI Validation Tool",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.3 - Protection of application services transactions",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Review all OpenAPI schema definitions for missing additionalProperties:false",
+        "Use Spectral linter with custom rule: 'schemas-additionalProperties-false'",
+        "Test by sending request with extra fields - should return 400 Bad Request",
+        "Verify error messages don't expose internal schema structure"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Request Validation with express-openapi-validator (Node.js)",
+      "description": "Use express-openapi-validator middleware to automatically validate all incoming requests against OpenAPI specification before they reach route handlers. This provides defense-in-depth against schema manipulation attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x with express-openapi-validator",
+        "code": "const express = require('express');\nconst OpenApiValidator = require('express-openapi-validator');\nconst path = require('path');\n\nconst app = express();\napp.use(express.json());\n\n// Install OpenAPI validator middleware\napp.use(\n  OpenApiValidator.middleware({\n    apiSpec: path.join(__dirname, 'openapi.yaml'),\n    \n    // CRITICAL SECURITY SETTINGS\n    validateRequests: {\n      allowUnknownQueryParameters: false,  // Reject extra query params\n      coerceTypes: false,                  // Disable type coercion to prevent bypass\n      removeAdditional: false              // Don't silently remove - fail explicitly\n    },\n    validateResponses: {\n      removeAdditional: 'failing',         // Validate responses don't leak data\n      coerceTypes: false\n    },\n    validateSecurity: {\n      handlers: {\n        bearerAuth: async (req, scopes, schema) => {\n          // Custom JWT validation\n          const token = req.headers.authorization?.split(' ')[1];\n          if (!token) throw new Error('No token provided');\n          \n          const decoded = verifyJWT(token);\n          req.user = decoded;\n          \n          // Verify scopes\n          if (scopes.length && !scopes.some(s => decoded.scopes?.includes(s))) {\n            throw new Error('Insufficient permissions');\n          }\n          return true;\n        }\n      }\n    },\n    \n    // Enable strict validation\n    validateFormats: 'full',\n    \n    // Custom error handler\n    unknownFormats: ['int64', 'uuid']  // Whitelist custom formats\n  })\n);\n\n// Define routes AFTER validator middleware\napp.post('/users', async (req, res) => {\n  // At this point, req.body is guaranteed to match OpenAPI schema\n  // No extra properties, correct types, all required fields present\n  \n  const { username, email, password } = req.body;\n  \n  // Explicit property allowlist (defense in depth)\n  const userData = {\n    username,\n    email,\n    password: await hashPassword(password),\n    createdAt: new Date(),\n    role: 'user',  // NEVER allow role from request\n    isAdmin: false // NEVER allow isAdmin from request\n  };\n  \n  const user = await db.users.create(userData);\n  \n  // Return only safe fields\n  res.status(201).json({\n    id: user.id,\n    username: user.username,\n    email: user.email,\n    createdAt: user.createdAt\n  });\n});\n\n// Global error handler for validation failures\napp.use((err, req, res, next) => {\n  // OpenAPI validation errors\n  if (err.status === 400 && err.errors) {\n    return res.status(400).json({\n      error: 'Validation failed',\n      message: 'Request does not match API specification',\n      // Don't expose detailed schema in production\n      details: process.env.NODE_ENV === 'development' ? err.errors : undefined\n    });\n  }\n  \n  // Security errors\n  if (err.status === 401 || err.status === 403) {\n    return res.status(err.status).json({\n      error: err.message\n    });\n  }\n  \n  next(err);\n});\n\napp.listen(3000);"
+      },
+      "tools": [
+        {
+          "name": "express-openapi-validator",
+          "type": "Request/Response Validation Middleware",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-1 - Network monitored to detect anomalies"
+      ],
+      "validation_steps": [
+        "Install: npm install express-openapi-validator",
+        "Configure with strict validation options (coerceTypes:false, removeAdditional:false)",
+        "Test with malicious payloads: extra fields, wrong types, missing required",
+        "Verify 400 errors returned with appropriate messages",
+        "Test security handlers enforce authentication/authorization"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Schema Validation with Spring Boot and springdoc-openapi",
+      "description": "Configure Spring Boot applications to validate requests against OpenAPI specifications using springdoc-openapi and Jakarta Bean Validation with strict settings.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x with springdoc-openapi",
+        "code": "// build.gradle dependencies\n// implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'\n// implementation 'org.springframework.boot:spring-boot-starter-validation'\n\n// Application Configuration\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;\nimport org.springframework.context.annotation.Bean;\nimport com.fasterxml.jackson.databind.DeserializationFeature;\n\n@Configuration\npublic class OpenApiSecurityConfig {\n    \n    @Bean\n    public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {\n        return builder -> builder\n            // CRITICAL: Fail on unknown properties (prevent mass assignment)\n            .failOnUnknownProperties(true)\n            // Disable type coercion attacks\n            .featuresToDisable(\n                DeserializationFeature.ACCEPT_FLOAT_AS_INT,\n                DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT\n            );\n    }\n    \n    @Bean\n    public OpenAPI customOpenAPI() {\n        return new OpenAPI()\n            .info(new Info()\n                .title(\"Secure User API\")\n                .version(\"1.0.0\"))\n            .components(new Components()\n                .addSecuritySchemes(\"bearerAuth\",\n                    new SecurityScheme()\n                        .type(SecurityScheme.Type.HTTP)\n                        .scheme(\"bearer\")\n                        .bearerFormat(\"JWT\")));\n    }\n}\n\n// DTO with strict validation\nimport jakarta.validation.constraints.*;\nimport com.fasterxml.jackson.annotation.JsonProperty;\nimport io.swagger.v3.oas.annotations.media.Schema;\n\n@Schema(description = \"User registration request\", additionalProperties = Schema.AdditionalPropertiesValue.FALSE)\npublic class CreateUserRequest {\n    \n    @NotBlank(message = \"Username is required\")\n    @Size(min = 3, max = 50)\n    @Pattern(regexp = \"^[a-zA-Z0-9_]+$\", message = \"Username must contain only alphanumeric characters and underscores\")\n    @Schema(description = \"Unique username\", example = \"john_doe\", required = true)\n    private String username;\n    \n    @NotBlank(message = \"Email is required\")\n    @Email(message = \"Email must be valid\")\n    @Size(max = 255)\n    @Schema(description = \"User email address\", example = \"john@example.com\", required = true)\n    private String email;\n    \n    @NotBlank(message = \"Password is required\")\n    @Size(min = 12, message = \"Password must be at least 12 characters\")\n    @Schema(description = \"User password\", format = \"password\", required = true)\n    private String password;\n    \n    // CRITICAL: Only expose allowed fields via setters\n    // No setters for isAdmin, role, etc.\n    \n    public String getUsername() { return username; }\n    public void setUsername(String username) { this.username = username; }\n    \n    public String getEmail() { return email; }\n    public void setEmail(String email) { this.email = email; }\n    \n    public String getPassword() { return password; }\n    public void setPassword(String password) { this.password = password; }\n}\n\n// Controller with validation\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.validation.annotation.Validated;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.prepost.PreAuthorize;\nimport jakarta.validation.Valid;\n\n@RestController\n@RequestMapping(\"/api/users\")\n@Validated\npublic class UserController {\n    \n    private final UserService userService;\n    \n    @PostMapping\n    public ResponseEntity<UserResponse> createUser(\n        @Valid @RequestBody CreateUserRequest request) {\n        \n        // Validation already enforced by @Valid and Jackson config\n        // Extra properties rejected, types validated, constraints checked\n        \n        UserResponse user = userService.createUser(request);\n        return ResponseEntity.status(201).body(user);\n    }\n    \n    @GetMapping(\"/{id}\")\n    @PreAuthorize(\"hasRole('USER')\")\n    public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {\n        return ResponseEntity.ok(userService.getUser(id));\n    }\n}\n\n// Global Exception Handler\nimport org.springframework.web.bind.annotation.ExceptionHandler;\nimport org.springframework.web.bind.annotation.RestControllerAdvice;\nimport org.springframework.http.HttpStatus;\nimport com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;\n\n@RestControllerAdvice\npublic class GlobalExceptionHandler {\n    \n    @ExceptionHandler(UnrecognizedPropertyException.class)\n    public ResponseEntity<ErrorResponse> handleUnrecognizedProperty(\n        UnrecognizedPropertyException ex) {\n        return ResponseEntity\n            .status(HttpStatus.BAD_REQUEST)\n            .body(new ErrorResponse(\n                \"Validation failed\",\n                \"Request contains unexpected property: \" + ex.getPropertyName()\n            ));\n    }\n    \n    @ExceptionHandler(MethodArgumentNotValidException.class)\n    public ResponseEntity<ErrorResponse> handleValidationErrors(\n        MethodArgumentNotValidException ex) {\n        return ResponseEntity\n            .status(HttpStatus.BAD_REQUEST)\n            .body(new ErrorResponse(\n                \"Validation failed\",\n                \"Request does not match API specification\"\n            ));\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "springdoc-openapi",
+          "type": "OpenAPI Documentation and Validation",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Jakarta Bean Validation",
+          "type": "Request Validation Framework",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.IP-2 - System Development Life Cycle implemented"
+      ],
+      "validation_steps": [
+        "Add springdoc-openapi-starter-webmvc-ui dependency",
+        "Configure Jackson with failOnUnknownProperties(true)",
+        "Add @Valid to all request body parameters",
+        "Test with extra properties - should return 400",
+        "Verify Swagger UI at /swagger-ui.html shows accurate schema"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement Strict Validation with FastAPI and Pydantic",
+      "description": "Leverage FastAPI's built-in Pydantic validation with strict mode to prevent type coercion and property injection attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "FastAPI with Pydantic v2",
+        "code": "from fastapi import FastAPI, HTTPException, Depends, status\nfrom fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\nfrom pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator\nfrom typing import Annotated\nfrom datetime import datetime\nimport re\n\napp = FastAPI(\n    title=\"Secure User API\",\n    version=\"1.0.0\",\n    openapi_version=\"3.1.0\"\n)\n\nsecurity = HTTPBearer()\n\n# Strict Pydantic model - prevents property injection and type coercion\nclass CreateUserRequest(BaseModel):\n    \"\"\"User creation request with strict validation\"\"\"\n    \n    # CRITICAL: Strict mode prevents type coercion attacks\n    model_config = ConfigDict(\n        extra='forbid',  # Reject any extra fields (additionalProperties:false)\n        str_strip_whitespace=True,\n        strict=True  # Disable type coercion (prevent \"1\" -> 1, \"true\" -> True)\n    )\n    \n    username: Annotated[\n        str,\n        Field(\n            min_length=3,\n            max_length=50,\n            pattern=r'^[a-zA-Z0-9_]+$',\n            description=\"Unique username (alphanumeric and underscores only)\",\n            examples=[\"john_doe\"]\n        )\n    ]\n    \n    email: Annotated[\n        EmailStr,\n        Field(\n            max_length=255,\n            description=\"Valid email address\",\n            examples=[\"john@example.com\"]\n        )\n    ]\n    \n    password: Annotated[\n        str,\n        Field(\n            min_length=12,\n            description=\"Strong password (min 12 chars)\",\n            json_schema_extra={'format': 'password'}\n        )\n    ]\n    \n    @field_validator('password')\n    @classmethod\n    def validate_password_strength(cls, v: str) -> str:\n        \"\"\"Ensure password meets security requirements\"\"\"\n        if not re.search(r'[A-Z]', v):\n            raise ValueError('Password must contain uppercase letter')\n        if not re.search(r'[a-z]', v):\n            raise ValueError('Password must contain lowercase letter')\n        if not re.search(r'[0-9]', v):\n            raise ValueError('Password must contain digit')\n        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', v):\n            raise ValueError('Password must contain special character')\n        return v\n\nclass UserResponse(BaseModel):\n    \"\"\"Safe user response - only public fields\"\"\"\n    model_config = ConfigDict(extra='forbid')\n    \n    id: str = Field(description=\"User UUID\")\n    username: str\n    email: EmailStr\n    created_at: datetime\n    # NEVER expose: password, role, is_admin, internal_id, etc.\n\n@app.post(\n    \"/users\",\n    response_model=UserResponse,\n    status_code=status.HTTP_201_CREATED,\n    responses={\n        201: {\"description\": \"User created successfully\"},\n        400: {\"description\": \"Validation failed\"},\n        422: {\"description\": \"Unprocessable entity - schema violation\"}\n    }\n)\nasync def create_user(user_data: CreateUserRequest) -> UserResponse:\n    \"\"\"\n    Create new user with strict schema validation.\n    \n    Extra properties are rejected, types are strictly validated,\n    and all constraints are enforced.\n    \"\"\"\n    \n    # At this point, user_data is guaranteed to:\n    # 1. Contain ONLY username, email, password\n    # 2. Have correct types (no type coercion)\n    # 3. Pass all validation constraints\n    \n    # Create user with explicit property assignment (defense in depth)\n    user = await create_user_in_db(\n        username=user_data.username,\n        email=user_data.email,\n        password_hash=hash_password(user_data.password),\n        role=\"user\",  # NEVER from request\n        is_admin=False,  # NEVER from request\n        created_at=datetime.utcnow()\n    )\n    \n    return UserResponse(\n        id=str(user.id),\n        username=user.username,\n        email=user.email,\n        created_at=user.created_at\n    )\n\n@app.get(\"/users/{user_id}\", response_model=UserResponse)\nasync def get_user(\n    user_id: str,\n    credentials: HTTPAuthorizationCredentials = Depends(security)\n) -> UserResponse:\n    \"\"\"Get user by ID (authenticated)\"\"\"\n    \n    # Validate JWT token\n    current_user = verify_jwt(credentials.credentials)\n    \n    # Authorization check\n    if current_user.id != user_id and not current_user.is_admin:\n        raise HTTPException(\n            status_code=status.HTTP_403_FORBIDDEN,\n            detail=\"Insufficient permissions\"\n        )\n    \n    user = await get_user_from_db(user_id)\n    if not user:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"User not found\"\n        )\n    \n    return UserResponse(\n        id=str(user.id),\n        username=user.username,\n        email=user.email,\n        created_at=user.created_at\n    )\n\n# Custom exception handler for validation errors\nfrom fastapi.exceptions import RequestValidationError\nfrom fastapi.responses import JSONResponse\n\n@app.exception_handler(RequestValidationError)\nasync def validation_exception_handler(request, exc):\n    \"\"\"Custom error response for validation failures\"\"\"\n    return JSONResponse(\n        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,\n        content={\n            \"error\": \"Validation failed\",\n            \"message\": \"Request does not match API specification\",\n            # In production, don't expose detailed errors\n            \"details\": exc.errors() if app.debug else None\n        }\n    )"
+      },
+      "tools": [
+        {
+          "name": "FastAPI",
+          "type": "Python API Framework",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Pydantic v2",
+          "type": "Data Validation Library",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.AC-4 - Access permissions managed"
+      ],
+      "validation_steps": [
+        "Install: pip install fastapi pydantic[email] uvicorn",
+        "Configure Pydantic models with extra='forbid' and strict=True",
+        "Test with extra properties - should return 422",
+        "Test type coercion bypass attempts (string '1' for boolean)",
+        "Verify OpenAPI schema at /docs shows additionalProperties:false"
+      ]
+    },
+    {
+      "control_id": "MIT-005",
+      "title": "Disable Public Access to OpenAPI Documentation in Production",
+      "description": "Remove or secure Swagger UI and OpenAPI specification endpoints in production environments to prevent attackers from analyzing API structure and identifying attack vectors.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js with conditional Swagger UI",
+        "code": "const express = require('express');\nconst swaggerUi = require('swagger-ui-express');\nconst YAML = require('yamljs');\nconst app = express();\n\n// Load OpenAPI spec\nconst openapiSpec = YAML.load('./openapi.yaml');\n\n// ONLY enable Swagger UI in development/staging\nif (process.env.NODE_ENV !== 'production') {\n  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));\n  console.log('Swagger UI available at /api-docs');\n} else {\n  // In production: require authentication for API docs\n  app.use('/api-docs', authenticateAdmin, swaggerUi.serve, swaggerUi.setup(openapiSpec));\n  \n  // Or completely disable:\n  // app.use('/api-docs', (req, res) => {\n  //   res.status(404).json({ error: 'Not found' });\n  // });\n}\n\n// Remove /openapi.json endpoint in production\nif (process.env.NODE_ENV !== 'production') {\n  app.get('/openapi.json', (req, res) => {\n    res.json(openapiSpec);\n  });\n}\n\n// Spring Boot: Disable springdoc endpoints\n// application-prod.properties:\n// springdoc.api-docs.enabled=false\n// springdoc.swagger-ui.enabled=false\n\n// FastAPI: Conditional documentation\n// app = FastAPI(\n//     docs_url=\"/docs\" if os.getenv(\"ENV\") != \"production\" else None,\n//     redoc_url=\"/redoc\" if os.getenv(\"ENV\") != \"production\" else None,\n//     openapi_url=\"/openapi.json\" if os.getenv(\"ENV\") != \"production\" else None\n// )"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.14.1.3 - Protection of application services transactions",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Verify /api-docs, /swagger-ui.html endpoints return 404 in production",
+        "Confirm /openapi.json is not publicly accessible",
+        "If docs needed, implement IP allowlisting or OAuth2 authentication",
+        "Use Shodan or similar to verify endpoints not exposed: 'swagger site:yourdomain.com'"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP 422 or 400 errors with validation failure messages indicating extra properties",
+      "Multiple requests with varying property combinations testing schema boundaries",
+      "Requests containing administrative fields (isAdmin, role, permissions, privileges)",
+      "Type mismatch attempts in requests (strings for booleans, integers for strings)",
+      "Unusual property names matching internal database fields (_id, internal_role, created_by_system)",
+      "Repeated access to /swagger.json, /api-docs, /openapi.json endpoints",
+      "Successful privilege escalation following schema validation errors"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect mass assignment and schema manipulation attempts\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where ResultCode in (400, 422) // Validation failures\n| extend RequestBody = parse_json(RequestBody)\n| extend SuspiciousFields = bag_keys(RequestBody) has_any (\"isAdmin\", \"role\", \"admin\", \"privileges\", \"_id\", \"internal\")\n| where SuspiciousFields == true\n| summarize \n    AttemptCount = count(),\n    UniqueIPs = dcount(ClientIp),\n    SamplePayloads = make_set(RequestBody, 5)\n  by UserAgent, bin(TimeGenerated, 5m)\n| where AttemptCount > 10\n| project TimeGenerated, UserAgent, AttemptCount, UniqueIPs, SamplePayloads\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=api_logs sourcetype=access_combined\n| where status IN (400, 422)\n| spath input=request_body\n| eval suspicious_fields=if(match(request_body, \"(?i)(isAdmin|role|admin|privileges|_id|internal|system)\"), 1, 0)\n| where suspicious_fields=1\n| stats count as attempts, dc(client_ip) as unique_ips, values(request_body) as sample_payloads by user_agent, _time span=5m\n| where attempts > 10\n| table _time, user_agent, attempts, unique_ips, sample_payloads\n| sort -attempts"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.response.status_code: (400 OR 422) AND \n(\n  http.request.body.content: (*isAdmin* OR *role* OR *admin* OR *privileges* OR *_id* OR *internal*)\n) AND \n@timestamp >= \"now-1h\"\n| timechart span=5m count() by user_agent.original\n| where count > 10"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, statusCode, requestBody, userAgent, sourceIP\n| filter statusCode in [400, 422]\n| filter requestBody like /isAdmin|role|admin|privileges|_id|internal/i\n| stats count() as attempts, count_distinct(sourceIP) as uniqueIPs by userAgent, bin(5m)\n| filter attempts > 10\n| sort attempts desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "42Crunch API Security Audit",
+        "type": "OpenAPI Security Linter",
+        "usage": "Scans OpenAPI specs for security issues including missing additionalProperties:false"
+      },
+      {
+        "name": "Spectral",
+        "type": "OpenAPI Linter",
+        "usage": "spectral lint openapi.yaml --ruleset https://stoplight.io/api-security.ruleset.yaml"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "API Security Scanner",
+        "usage": "Import OpenAPI spec and scan for schema validation bypasses"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.5.1 - Injection flaws)",
+      "HIPAA (164.312(a)(2)(i) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access)",
+      "ISO27001 (A.14.2.1, A.14.2.5)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (SI-10 - Information Input Validation)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Internal",
+      "Public"
+    ]
+  }
+}

@@ -1,0 +1,417 @@
+{
+  "id": "STRIDE-API-WEBSOCKET-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.0,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1539 - Steal Web Session Cookie",
+      "T1185 - Browser Session Hijacking"
+    ],
+    "cwe": [
+      "CWE-346 - Origin Validation Error",
+      "CWE-1385 - Missing Origin Validation in WebSockets",
+      "CWE-352 - Cross-Site Request Forgery (CSRF)"
+    ]
+  },
+  "threat": {
+    "title": "WebSocket Origin Validation Bypass (Cross-Site WebSocket Hijacking)",
+    "description": "Cross-Site WebSocket Hijacking (CSWSH) occurs when WebSocket servers fail to validate the Origin header during the handshake process. When combined with cookie-based authentication and SameSite=None cookies, attackers can establish unauthorized WebSocket connections through victim browsers by hosting malicious pages. This allows complete hijacking of real-time communication channels, enabling attackers to send arbitrary messages, exfiltrate sensitive data, and perform privileged actions on behalf of authenticated users.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "WebSocket Protocol",
+    "versions_affected": ["RFC 6455 (all implementations lacking origin validation)"],
+    "ecosystem": "Cross-platform (Node.js, Java, Python)",
+    "dependencies": ["socket.io", "ws", "Flask-SocketIO", "Spring WebSocket", "sockjs"],
+    "related_frameworks": ["Express.js", "Spring Boot", "Flask", "Django Channels", "NestJS"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies target application using WebSocket with cookie-based authentication\n2. Attacker discovers WebSocket endpoint lacks Origin header validation (SameSite=None cookies)\n3. Attacker creates malicious HTML page with WebSocket client code targeting victim's session\n4. Victim visits attacker's page while authenticated to legitimate application\n5. Malicious JavaScript establishes WebSocket connection using victim's cookies\n6. Attacker gains full control over WebSocket channel: reads messages, sends commands, exfiltrates data, performs admin actions (e.g., account deletion, privilege escalation)",
+    "prerequisites": [
+      "WebSocket server does not validate Origin header during handshake",
+      "Application uses cookie-based session authentication",
+      "Cookies have SameSite=None attribute or no SameSite attribute",
+      "Victim is authenticated and visits attacker-controlled website",
+      "No CSRF token or additional authentication required for WebSocket handshake"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-55591",
+        "description": "Fortinet FortiOS/FortiProxy authentication bypass via Node.js WebSocket module allowing super-admin privileges through crafted requests",
+        "cvss_score": 9.8,
+        "published_date": "2025-01-14"
+      },
+      {
+        "cve_id": "CVE-2024-26135",
+        "description": "MeshCentral Cross-Site WebSocket Hijacking vulnerability allowing unauthorized access to remote management sessions",
+        "cvss_score": 8.1,
+        "published_date": "2024-06-12"
+      },
+      {
+        "cve_id": "CVE-2021-1403",
+        "description": "Cisco IOS XE Software web UI Cross-Site WebSocket Hijacking leading to memory corruption and DoS",
+        "cvss_score": 6.5,
+        "published_date": "2021-03-24"
+      },
+      {
+        "cve_id": "CVE-2019-13209",
+        "description": "Rancher 2 through 2.2.4 Cross-Site WebSocket Hijacking allowing cluster access with victim permissions",
+        "cvss_score": 8.8,
+        "published_date": "2019-07-03"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Fortinet FortiOS Zero-Day Exploitation (CVE-2024-55591)",
+        "date": "2024-11-15",
+        "impact": "50,000+ internet-facing devices vulnerable; actively exploited in the wild; unauthorized admin account creation and configuration changes",
+        "root_cause": "Authentication bypass via Node.js WebSocket module in FortiOS allowing super-admin privileges",
+        "source_url": "https://www.tenable.com/blog/cve-2024-55591-fortinet-authentication-bypass-zero-day-vulnerability-exploited-in-the-wild"
+      },
+      {
+        "incident": "Gitpod WebSocket RCE via CSWSH",
+        "date": "2023-08-22",
+        "impact": "Full account takeover and complete workspace compromise; attackers could execute arbitrary code in development environments",
+        "root_cause": "Gitpod's JSONRPC API used WebSockets with cookie-based authentication but lacked Origin validation",
+        "source_url": "https://blog.includesecurity.com/2025/04/cross-site-websocket-hijacking-exploitation-in-2025/"
+      },
+      {
+        "incident": "GraphQL API CSWSH Attack (2025 Pentest)",
+        "date": "2025-01-15",
+        "impact": "Arbitrary API calls including account deletion operations via hijacked WebSocket; complete API abuse capability",
+        "root_cause": "GraphQL API accessible via WebSocket with SameSite=None cookies and no Origin validation",
+        "source_url": "https://blog.includesecurity.com/2025/04/cross-site-websocket-hijacking-exploitation-in-2025/"
+      },
+      {
+        "incident": "MeshCentral Remote Management Hijacking (CVE-2024-26135)",
+        "date": "2024-06-12",
+        "impact": "Unauthorized access to remote desktop sessions and system management interfaces",
+        "root_cause": "Cross-Site WebSocket Hijacking in MeshCentral's remote management protocol",
+        "source_url": "https://www.praetorian.com/blog/meshcentral-cross-site-websocket-hijacking-vulnerability/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "535436",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "Lack of Origin check leads to Cross-Site WebSocket Hijacking - WebSocket server provided successful 101 protocol handshake even with malicious origins"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "211283",
+        "bounty_amount": 1500,
+        "severity": "High",
+        "summary": "Cross-Site WebSocket Hijacking allowing admin to modify shared documents from low-privilege reader account"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "274324",
+        "bounty_amount": 3000,
+        "severity": "Critical",
+        "summary": "CSWSH vulnerability enabling full account takeover via hijacked WebSocket connections"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "178990",
+        "bounty_amount": 1000,
+        "severity": "Medium",
+        "summary": "WebSocket traffic not validating Origin header, allowing cross-site hijacking attacks"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Cross-Site WebSocket Hijacking Exploitation in 2025",
+        "authors": ["Include Security Research Team"],
+        "published_date": "2025-04-01",
+        "source_url": "https://blog.includesecurity.com/2025/04/cross-site-websocket-hijacking-exploitation-in-2025/",
+        "key_finding": "Firefox Total Cookie Protection blocks cookie-based CSWSH, but Chrome and Chromium derivatives remain vulnerable. CSWSH remains widespread in production applications."
+      },
+      {
+        "title": "OWASP WebSocket Security Cheat Sheet",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-11-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html",
+        "key_finding": "WebSocket connections are not restricted by Same-Origin Policy, making Origin validation critical for security"
+      },
+      {
+        "title": "Can't Stop, Won't Stop Hijacking WebSockets",
+        "authors": ["Black Hills Information Security"],
+        "published_date": "2023-09-12",
+        "source_url": "https://www.blackhillsinfosec.com/cant-stop-wont-stop-hijacking-websockets/",
+        "key_finding": "CSWSH attacks are trivial to execute when Origin validation is missing, with attack complexity rated as 'Low'"
+      },
+      {
+        "title": "WebSocket Chaos: The Real-Time Protocol That's Really Insecure",
+        "authors": ["InstaTunnel Security Research"],
+        "published_date": "2024-08-20",
+        "source_url": "https://instatunnel.my/blog/websocket-chaos-the-real-time-protocol-thats-really-insecure",
+        "key_finding": "Missing Origin validation assigned CWE-1385 classification; identified as critical vulnerability pattern"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Strict Origin Header Validation (Socket.IO + Express.js)",
+      "description": "Validate the Origin header during WebSocket handshake to ensure connections only originate from trusted domains. This is the primary defense against CSWSH attacks. Configure Socket.IO with explicit CORS allowlist and reject connections from unauthorized origins.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Socket.IO 4.x",
+        "code": "const express = require('express');\nconst { createServer } = require('http');\nconst { Server } = require('socket.io');\n\nconst app = express();\nconst httpServer = createServer(app);\n\n// Strict Origin validation with allowlist\nconst ALLOWED_ORIGINS = [\n  'https://app.example.com',\n  'https://admin.example.com',\n  /^https:\\/\\/.*\\.example\\.com$/  // Allow all example.com subdomains\n];\n\nconst io = new Server(httpServer, {\n  cors: {\n    origin: (origin, callback) => {\n      // Allow requests with no origin (mobile apps, curl, etc.)\n      if (!origin) {\n        return callback(new Error('Origin header required'));\n      }\n\n      // Check if origin matches allowlist\n      const isAllowed = ALLOWED_ORIGINS.some(allowedOrigin => {\n        if (typeof allowedOrigin === 'string') {\n          return origin === allowedOrigin;\n        }\n        if (allowedOrigin instanceof RegExp) {\n          return allowedOrigin.test(origin);\n        }\n        return false;\n      });\n\n      if (isAllowed) {\n        callback(null, true);\n      } else {\n        console.warn(`Rejected WebSocket connection from unauthorized origin: ${origin}`);\n        callback(new Error('Origin not allowed'));\n      }\n    },\n    credentials: true,\n    methods: ['GET', 'POST']\n  }\n});\n\n// Additional handshake authentication with CSRF token\nio.use((socket, next) => {\n  const token = socket.handshake.auth.token;\n  const csrfToken = socket.handshake.headers['x-csrf-token'];\n  \n  if (!token || !csrfToken) {\n    return next(new Error('Authentication required'));\n  }\n  \n  // Validate JWT and CSRF token\n  try {\n    const decoded = verifyJWT(token);\n    if (!validateCSRFToken(csrfToken, decoded.userId)) {\n      return next(new Error('Invalid CSRF token'));\n    }\n    socket.userId = decoded.userId;\n    next();\n  } catch (err) {\n    next(new Error('Invalid authentication'));\n  }\n});\n\nio.on('connection', (socket) => {\n  console.log(`User ${socket.userId} connected from ${socket.handshake.headers.origin}`);\n  \n  socket.on('message', (data) => {\n    // Handle messages with validated origin and authentication\n    console.log(`Message from user ${socket.userId}:`, data);\n  });\n});\n\nhttpServer.listen(3000, () => {\n  console.log('Server listening on port 3000');\n});"
+      },
+      "tools": [
+        {
+          "name": "Socket.IO",
+          "type": "WebSocket Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Test WebSocket connection from allowed origin (should succeed)",
+        "Test WebSocket connection from unauthorized origin (should fail with CORS error)",
+        "Test connection with null origin (should fail)",
+        "Test connection with wildcard origin attack (should fail)",
+        "Verify CSRF token validation in handshake middleware",
+        "Check server logs for rejected connection attempts"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Token-Based Authentication for WebSocket Handshake (Spring Boot)",
+      "description": "Replace cookie-based authentication with token-based authentication passed in WebSocket handshake headers or query parameters. This eliminates automatic credential inclusion by browsers, preventing CSWSH attacks even if Origin validation fails.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x + Spring WebSocket",
+        "code": "import org.springframework.context.annotation.Configuration;\nimport org.springframework.messaging.Message;\nimport org.springframework.messaging.MessageChannel;\nimport org.springframework.messaging.simp.config.ChannelRegistration;\nimport org.springframework.messaging.simp.config.MessageBrokerRegistry;\nimport org.springframework.messaging.simp.stomp.StompCommand;\nimport org.springframework.messaging.simp.stomp.StompHeaderAccessor;\nimport org.springframework.messaging.support.ChannelInterceptor;\nimport org.springframework.messaging.support.MessageHeaderAccessor;\nimport org.springframework.security.authentication.UsernamePasswordAuthenticationToken;\nimport org.springframework.security.core.context.SecurityContextHolder;\nimport org.springframework.web.socket.config.annotation.*;\n\nimport java.util.List;\nimport java.util.Set;\n\n@Configuration\n@EnableWebSocketMessageBroker\npublic class WebSocketConfig implements WebSocketMessageBrokerConfigurer {\n\n    private static final Set<String> ALLOWED_ORIGINS = Set.of(\n        \"https://app.example.com\",\n        \"https://admin.example.com\"\n    );\n\n    @Override\n    public void configureMessageBroker(MessageBrokerRegistry config) {\n        config.enableSimpleBroker(\"/topic\", \"/queue\");\n        config.setApplicationDestinationPrefixes(\"/app\");\n    }\n\n    @Override\n    public void registerStompEndpoints(StompEndpointRegistry registry) {\n        registry.addEndpoint(\"/ws\")\n            .setAllowedOriginPatterns(ALLOWED_ORIGINS.toArray(new String[0]))\n            .withSockJS();\n    }\n\n    @Override\n    public void configureClientInboundChannel(ChannelRegistration registration) {\n        registration.interceptors(new ChannelInterceptor() {\n            @Override\n            public Message<?> preSend(Message<?> message, MessageChannel channel) {\n                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(\n                    message, StompHeaderAccessor.class\n                );\n\n                if (StompCommand.CONNECT.equals(accessor.getCommand())) {\n                    // Validate Origin header\n                    String origin = accessor.getFirstNativeHeader(\"origin\");\n                    if (origin == null || !ALLOWED_ORIGINS.contains(origin)) {\n                        throw new SecurityException(\"Unauthorized origin: \" + origin);\n                    }\n\n                    // Extract and validate JWT token from header\n                    String authToken = accessor.getFirstNativeHeader(\"Authorization\");\n                    if (authToken == null || !authToken.startsWith(\"Bearer \")) {\n                        throw new SecurityException(\"Missing or invalid authentication token\");\n                    }\n\n                    String token = authToken.substring(7);\n                    try {\n                        // Validate JWT and extract user details\n                        Claims claims = Jwts.parserBuilder()\n                            .setSigningKey(getSigningKey())\n                            .build()\n                            .parseClaimsJws(token)\n                            .getBody();\n\n                        String username = claims.getSubject();\n                        List<String> roles = claims.get(\"roles\", List.class);\n\n                        // Create authentication object\n                        UsernamePasswordAuthenticationToken authentication = \n                            new UsernamePasswordAuthenticationToken(\n                                username, null, getAuthorities(roles)\n                            );\n\n                        // Set authentication in accessor\n                        accessor.setUser(authentication);\n                        SecurityContextHolder.getContext().setAuthentication(authentication);\n                        \n                    } catch (Exception e) {\n                        throw new SecurityException(\"Invalid authentication token\", e);\n                    }\n                }\n                return message;\n            }\n        });\n    }\n\n    private Key getSigningKey() {\n        // Retrieve signing key from secure vault (Azure Key Vault, AWS Secrets Manager)\n        return Keys.hmacShaKeyFor(getJwtSecret().getBytes());\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Spring Security",
+          "type": "Authentication Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "JJWT",
+          "type": "JWT Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.4.2 - Secure log-on procedures"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.AC-7 - Users, devices, and other assets are authenticated"
+      ],
+      "validation_steps": [
+        "Test WebSocket connection without Authorization header (should fail)",
+        "Test connection with invalid JWT token (should fail)",
+        "Test connection with expired JWT token (should fail)",
+        "Test connection from unauthorized origin with valid token (should fail)",
+        "Test successful connection with valid token and allowed origin",
+        "Verify no cookies are used for WebSocket authentication"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Set Strict SameSite Cookie Attributes (Flask-SocketIO)",
+      "description": "Configure session cookies with SameSite=Strict or SameSite=Lax attributes to prevent browsers from sending cookies in cross-site WebSocket requests. This provides defense-in-depth even if Origin validation is misconfigured.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask 3.x + Flask-SocketIO 5.x",
+        "code": "from flask import Flask, session, request\nfrom flask_socketio import SocketIO, emit, disconnect\nfrom flask_session import Session\nimport jwt\nfrom datetime import datetime, timedelta\nimport os\n\napp = Flask(__name__)\n\n# Secure session configuration with strict SameSite\napp.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY')\napp.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only\napp.config['SESSION_COOKIE_HTTPONLY'] = True\napp.config['SESSION_COOKIE_SAMESITE'] = 'Strict'  # Prevent cross-site cookie sending\napp.config['SESSION_COOKIE_NAME'] = '__Secure-session'  # Secure cookie naming\napp.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)\n\n# Initialize Flask-SocketIO with strict CORS\nALLOWED_ORIGINS = [\n    'https://app.example.com',\n    'https://admin.example.com'\n]\n\nsocketio = SocketIO(\n    app,\n    cors_allowed_origins=ALLOWED_ORIGINS,\n    logger=True,\n    engineio_logger=True,\n    ping_timeout=10,\n    ping_interval=5\n)\n\nJWT_SECRET = os.environ.get('JWT_SECRET_KEY')\n\ndef verify_token(token):\n    \"\"\"Verify JWT token and return payload.\"\"\"\n    try:\n        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])\n        return payload\n    except jwt.ExpiredSignatureError:\n        return None\n    except jwt.InvalidTokenError:\n        return None\n\n@socketio.on('connect')\ndef handle_connect(auth):\n    \"\"\"Handle WebSocket connection with Origin and token validation.\"\"\"\n    # Validate Origin header\n    origin = request.headers.get('Origin')\n    if origin not in ALLOWED_ORIGINS:\n        print(f'[SECURITY] Rejected connection from unauthorized origin: {origin}')\n        disconnect()\n        return False\n    \n    # Validate authentication token (not relying on cookies)\n    if not auth or 'token' not in auth:\n        print('[SECURITY] Connection rejected: No authentication token')\n        disconnect()\n        return False\n    \n    token = auth['token']\n    payload = verify_token(token)\n    \n    if not payload:\n        print('[SECURITY] Connection rejected: Invalid or expired token')\n        disconnect()\n        return False\n    \n    # Store user info in session\n    session['user_id'] = payload['user_id']\n    session['username'] = payload['username']\n    session.permanent = True\n    \n    print(f'[INFO] User {payload[\"username\"]} connected from {origin}')\n    emit('connected', {'status': 'success', 'user': payload['username']})\n    return True\n\n@socketio.on('message')\ndef handle_message(data):\n    \"\"\"Handle incoming WebSocket messages.\"\"\"\n    if 'user_id' not in session:\n        print('[SECURITY] Unauthorized message attempt')\n        disconnect()\n        return\n    \n    user_id = session['user_id']\n    print(f'[MESSAGE] From user {user_id}: {data}')\n    \n    # Process message with validated user context\n    emit('response', {\n        'status': 'received',\n        'timestamp': datetime.utcnow().isoformat(),\n        'echo': data\n    })\n\n@socketio.on('disconnect')\ndef handle_disconnect():\n    \"\"\"Handle WebSocket disconnection.\"\"\"\n    user_id = session.get('user_id', 'unknown')\n    print(f'[INFO] User {user_id} disconnected')\n\nif __name__ == '__main__':\n    # Run with TLS in production\n    socketio.run(\n        app,\n        host='0.0.0.0',\n        port=5000,\n        ssl_context=('cert.pem', 'key.pem'),  # TLS certificates\n        debug=False\n    )"
+      },
+      "tools": [
+        {
+          "name": "Flask-SocketIO",
+          "type": "WebSocket Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "PyJWT",
+          "type": "JWT Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.9.4.3 - Password management system"
+      ],
+      "nist_csf": [
+        "PR.AC-3 - Remote access is managed",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Verify session cookie has SameSite=Strict in browser DevTools",
+        "Test cross-site WebSocket connection (should fail due to no cookies sent)",
+        "Verify cookie is only sent over HTTPS (Secure flag)",
+        "Confirm cookie is not accessible via JavaScript (HttpOnly flag)",
+        "Test token-based authentication flow",
+        "Verify Origin validation rejects unauthorized domains"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement CSRF Token Validation for WebSocket Handshake",
+      "description": "Add CSRF token validation to WebSocket handshake requests, similar to form submissions. Generate unique tokens per user session and validate them before establishing WebSocket connections. This provides an additional layer of defense against CSWSH attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Socket.IO 4.x + CSRF Protection",
+        "code": "const express = require('express');\nconst { createServer } = require('http');\nconst { Server } = require('socket.io');\nconst csrf = require('csurf');\nconst cookieParser = require('cookie-parser');\nconst session = require('express-session');\nconst crypto = require('crypto');\n\nconst app = express();\nconst httpServer = createServer(app);\n\n// Session configuration\napp.use(cookieParser());\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    secure: true,\n    httpOnly: true,\n    sameSite: 'strict',\n    maxAge: 3600000\n  }\n}));\n\n// CSRF protection for HTTP routes\nconst csrfProtection = csrf({ cookie: false });\n\n// Store CSRF tokens per session\nconst csrfTokenStore = new Map();\n\n// Generate CSRF token for WebSocket connections\napp.get('/api/ws-token', csrfProtection, (req, res) => {\n  const wsToken = crypto.randomBytes(32).toString('hex');\n  const userId = req.session.userId;\n  \n  if (!userId) {\n    return res.status(401).json({ error: 'Not authenticated' });\n  }\n  \n  // Store token with expiration\n  csrfTokenStore.set(userId, {\n    token: wsToken,\n    expires: Date.now() + 300000 // 5 minutes\n  });\n  \n  res.json({\n    wsToken: wsToken,\n    csrfToken: req.csrfToken()\n  });\n});\n\nconst ALLOWED_ORIGINS = [\n  'https://app.example.com',\n  'https://admin.example.com'\n];\n\nconst io = new Server(httpServer, {\n  cors: {\n    origin: ALLOWED_ORIGINS,\n    credentials: true\n  }\n});\n\n// WebSocket authentication middleware with CSRF validation\nio.use((socket, next) => {\n  const origin = socket.handshake.headers.origin;\n  const wsToken = socket.handshake.auth.wsToken;\n  const userId = socket.handshake.auth.userId;\n  \n  // Validate Origin\n  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {\n    console.warn(`[SECURITY] Rejected WS from unauthorized origin: ${origin}`);\n    return next(new Error('Unauthorized origin'));\n  }\n  \n  // Validate CSRF token\n  if (!wsToken || !userId) {\n    console.warn('[SECURITY] Missing WebSocket CSRF token or user ID');\n    return next(new Error('CSRF token required'));\n  }\n  \n  const storedToken = csrfTokenStore.get(userId);\n  \n  if (!storedToken) {\n    console.warn(`[SECURITY] No CSRF token found for user ${userId}`);\n    return next(new Error('Invalid CSRF token'));\n  }\n  \n  // Check token expiration\n  if (storedToken.expires < Date.now()) {\n    console.warn(`[SECURITY] Expired CSRF token for user ${userId}`);\n    csrfTokenStore.delete(userId);\n    return next(new Error('CSRF token expired'));\n  }\n  \n  // Validate token match\n  if (storedToken.token !== wsToken) {\n    console.warn(`[SECURITY] CSRF token mismatch for user ${userId}`);\n    return next(new Error('Invalid CSRF token'));\n  }\n  \n  // Token valid - remove it (single use)\n  csrfTokenStore.delete(userId);\n  \n  // Set user context\n  socket.userId = userId;\n  console.log(`[INFO] User ${userId} authenticated via WebSocket with CSRF validation`);\n  next();\n});\n\nio.on('connection', (socket) => {\n  console.log(`WebSocket connection established for user ${socket.userId}`);\n  \n  socket.on('message', (data) => {\n    console.log(`Message from user ${socket.userId}:`, data);\n    socket.emit('response', { status: 'received', data });\n  });\n  \n  socket.on('disconnect', () => {\n    console.log(`User ${socket.userId} disconnected`);\n  });\n});\n\n// Cleanup expired tokens every minute\nsetInterval(() => {\n  const now = Date.now();\n  for (const [userId, tokenData] of csrfTokenStore.entries()) {\n    if (tokenData.expires < now) {\n      csrfTokenStore.delete(userId);\n    }\n  }\n}, 60000);\n\nhttpServer.listen(3000, () => {\n  console.log('Server listening on port 3000 with CSRF protection');\n});\n\n/* Client-side example:\n\n// First, fetch CSRF token\nfetch('https://api.example.com/api/ws-token', {\n  credentials: 'include',\n  headers: {\n    'X-CSRF-Token': getCsrfTokenFromCookie()\n  }\n})\n.then(res => res.json())\n.then(({ wsToken }) => {\n  // Connect to WebSocket with CSRF token\n  const socket = io('wss://api.example.com', {\n    auth: {\n      wsToken: wsToken,\n      userId: getCurrentUserId()\n    }\n  });\n  \n  socket.on('connect', () => {\n    console.log('Connected with CSRF validation');\n  });\n});\n*/"
+      },
+      "tools": [
+        {
+          "name": "csurf",
+          "type": "CSRF Protection Middleware",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Test WebSocket connection without CSRF token (should fail)",
+        "Test connection with invalid CSRF token (should fail)",
+        "Test connection with expired CSRF token (should fail)",
+        "Test successful connection with valid fresh CSRF token",
+        "Verify token is single-use (reuse should fail)",
+        "Confirm token cleanup runs periodically"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "WebSocket connections from unexpected geographic locations or IP ranges",
+      "Multiple WebSocket connections from single user with different origins",
+      "WebSocket handshake requests with null or mismatched Origin headers",
+      "Rapid succession of failed WebSocket connection attempts",
+      "WebSocket traffic to sensitive endpoints without proper authentication headers",
+      "Unusual patterns in WebSocket message frequency or content",
+      "WebSocket connections established outside normal business hours for service accounts"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect WebSocket connections from unauthorized origins\nlet AllowedOrigins = dynamic(['https://app.example.com', 'https://admin.example.com']);\nW3CIISLog\n| where csMethod == 'GET' and csUriStem contains '/socket.io/'\n| where scStatus == 101  // WebSocket upgrade successful\n| extend Origin = extract(@'Origin:\\s*([^\\r\\n]+)', 1, csReferer)\n| where Origin !in (AllowedOrigins) and isnotempty(Origin)\n| summarize \n    ConnectionAttempts = count(),\n    UniqueIPs = dcount(cIP),\n    Origins = make_set(Origin)\n    by bin(TimeGenerated, 5m), csUsername\n| where ConnectionAttempts > 3\n| project TimeGenerated, csUsername, ConnectionAttempts, UniqueIPs, Origins\n| order by ConnectionAttempts desc"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - Null Origin Detection",
+        "query": "// Detect WebSocket handshake with null or missing Origin header\nW3CIISLog\n| where csMethod == 'GET' and scStatus == 101\n| where csUriStem has_any ('/socket.io/', '/ws', '/websocket')\n| extend Origin = extract(@'Origin:\\s*([^\\r\\n]+)', 1, csReferer)\n| where Origin == 'null' or isempty(Origin)\n| project \n    TimeGenerated,\n    ClientIP = cIP,\n    UserAgent = csUserAgent,\n    Origin,\n    URI = csUriStem,\n    User = csUsername\n| summarize Count = count() by ClientIP, bin(TimeGenerated, 1h)\n| where Count > 5"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| search status=101 uri_path=\"*/socket.io/*\" OR uri_path=\"*/ws\" OR uri_path=\"*/websocket\"\n| eval allowed_origins=\"https://app.example.com,https://admin.example.com\"\n| where NOT match(origin, \"^(https://app\\.example\\.com|https://admin\\.example\\.com)$\")\n| stats count AS connection_attempts, dc(clientip) AS unique_ips, values(origin) AS origins by _time span=5m, username\n| where connection_attempts > 3\n| sort - connection_attempts\n| table _time, username, connection_attempts, unique_ips, origins"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.response.status_code: 101 AND (\n  url.path: */socket.io/* OR \n  url.path: */ws OR \n  url.path: */websocket\n) AND NOT http.request.headers.origin: (\n  \"https://app.example.com\" OR \n  \"https://admin.example.com\"\n)"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, origin, clientIp, statusCode, uri\n| filter statusCode = 101\n| filter uri like /\\/socket\\.io\\//\n| filter origin != 'https://app.example.com' and origin != 'https://admin.example.com'\n| stats count() as connectionAttempts, count_distinct(clientIp) as uniqueIPs by bin(5m) as time_window, userId\n| filter connectionAttempts > 3\n| sort connectionAttempts desc"
+      },
+      {
+        "siem": "Splunk (SPL) - CSWSH Attack Pattern",
+        "query": "index=app_logs sourcetype=websocket_logs\n| search event_type=\"websocket_handshake\"\n| eval is_suspicious = if(\n    (isnull(origin) OR origin=\"null\" OR NOT match(origin, \"^https://[a-z0-9-]+\\.example\\.com$\")) AND\n    auth_method=\"cookie\" AND\n    same_site!=\"Strict\",\n    1, 0\n  )\n| where is_suspicious=1\n| stats \n    count AS total_attempts,\n    dc(session_id) AS unique_sessions,\n    values(origin) AS suspicious_origins,\n    values(user_agent) AS user_agents\n    by clientip, user_id\n| where total_attempts > 2\n| eval risk_score = case(\n    total_attempts > 10, \"critical\",\n    total_attempts > 5, \"high\",\n    total_attempts > 2, \"medium\",\n    1=1, \"low\"\n  )\n| table clientip, user_id, total_attempts, unique_sessions, suspicious_origins, risk_score"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Burp Suite WebSocket Extension",
+        "type": "Manual Testing",
+        "usage": "Use Burp Suite to intercept WebSocket handshakes and test Origin header manipulation"
+      },
+      {
+        "name": "wscat",
+        "type": "CLI WebSocket Testing",
+        "usage": "wscat -c wss://target.com/socket.io/ -H \"Origin: https://evil.com\" to test Origin validation"
+      },
+      {
+        "name": "OWASP ZAP WebSocket Fuzzer",
+        "type": "Automated Security Testing",
+        "usage": "Automated fuzzing of WebSocket connections with origin manipulation"
+      },
+      {
+        "name": "cswsh CLI Tool",
+        "type": "CSWSH Exploitation Tool",
+        "usage": "Command-line tool for testing Cross-Site WebSocket Hijacking vulnerabilities (https://github.com/DeepakPawar95/cswsh)"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Cryptocurrency Exchanges",
+      "Real-time Collaboration Tools",
+      "Gaming",
+      "IoT Platforms"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.9 - Improper Access Control)",
+      "HIPAA (164.312(a)(1) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.9.4.1, A.13.1.3)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (AC-3 - Access Enforcement)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Edge Computing"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Restricted"
+    ]
+  }
+}

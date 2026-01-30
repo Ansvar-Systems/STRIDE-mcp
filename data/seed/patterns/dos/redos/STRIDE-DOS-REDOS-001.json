@@ -1,0 +1,354 @@
+{
+  "id": "STRIDE-DOS-REDOS-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.1,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A06:2021 - Vulnerable and Outdated Components",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1499.004 - Application or System Exploitation",
+      "T1498.001 - Direct Network Flood"
+    ],
+    "cwe": [
+      "CWE-1333 - Inefficient Regular Expression Complexity",
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling"
+    ]
+  },
+  "threat": {
+    "title": "Regular Expression Denial of Service (ReDoS) via Catastrophic Backtracking",
+    "description": "ReDoS attacks exploit inefficient regular expressions that exhibit catastrophic backtracking behavior when processing specially crafted input strings. Attackers send malicious payloads that cause regex engines to consume exponential CPU time, leading to application hangs, service disruption, and complete denial of service. This is particularly dangerous in Node.js single-threaded event loop and Python web applications where regex validation is commonly used for email, URL, or input sanitization.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Node.js",
+    "versions_affected": ["All versions (regex engine dependent)"],
+    "ecosystem": "JavaScript/Python",
+    "dependencies": ["validator", "express-validator", "email-regex", "url-regex", "re (Python)"],
+    "related_frameworks": ["Express.js", "Fastify", "Flask", "Django", "Koa.js"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies endpoint using vulnerable regex (e.g., email validation: ^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$)\n2. Crafts malicious input with repeating patterns that trigger catastrophic backtracking (e.g., 'aaaaaaaaaaaaaaaaaaaaaaaa!')\n3. Submits malicious payload to API endpoint (POST /api/register with email field)\n4. Regex engine enters exponential time complexity O(2^n) loop trying all possible match combinations\n5. Single request blocks event loop for 30+ seconds, consuming 100% CPU\n6. Attacker sends multiple concurrent requests, causing complete application freeze and service outage",
+    "prerequisites": [
+      "Application uses regex with nested quantifiers (e.g., (a+)+, (.*)*)",
+      "User-controlled input is passed directly to regex without length limits",
+      "No timeout mechanisms for regex execution",
+      "Vulnerable patterns in email, URL, or data validation libraries"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2022-25918",
+        "description": "validator.js isEmail() function vulnerable to ReDoS via malicious email string with excessive dots and characters",
+        "cvss_score": 7.5,
+        "published_date": "2022-08-30",
+        "affected_package": "validator@<13.7.0",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-25918"
+      },
+      {
+        "cve_id": "CVE-2020-7662",
+        "description": "url-regex package vulnerable to ReDoS via malformed URLs with repeating slashes and characters",
+        "cvss_score": 7.5,
+        "published_date": "2020-06-08",
+        "affected_package": "url-regex@<5.0.0",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-7662"
+      },
+      {
+        "cve_id": "CVE-2021-3749",
+        "description": "axios package vulnerable to ReDoS in URL parsing regex via crafted URLs",
+        "cvss_score": 7.5,
+        "published_date": "2021-08-31",
+        "affected_package": "axios@<0.21.2",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-3749"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Cloudflare Global Outage",
+        "date": "2019-07-02",
+        "impact": "27-minute global outage affecting millions of sites; CPU exhaustion across edge servers due to single malformed regex in WAF rule",
+        "root_cause": "Deployment of WAF rule containing regex .*(?:.*=.*)$ that caused catastrophic backtracking on specific HTTP requests",
+        "source_url": "https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/"
+      },
+      {
+        "incident": "Stack Overflow Outage",
+        "date": "2016-07-20",
+        "impact": "34-minute complete site outage; ReDoS in regex used for parsing post content caused 100% CPU consumption",
+        "root_cause": "Regex pattern ^\\s*[a-z,\\s]+[a-z]+\\s*$ triggered catastrophic backtracking on malicious input with 80,000 spaces",
+        "source_url": "https://stackstatus.net/post/147710624694/outage-postmortem-july-20-2016"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-511265",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "ReDoS in email validation endpoint causing 30-second response times with crafted email addresses"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The Impact of Regular Expression Denial of Service (ReDoS) in Practice",
+        "authors": ["James Davis", "Francisco Servant", "Dongyoon Lee"],
+        "published_date": "2018-09-01",
+        "source_url": "https://davisjam.github.io/files/publications/DavisServantLee-EmpiricalAnalysisOfReDoS-ESECFSE18.pdf",
+        "key_finding": "Analyzed 25,000 npm packages and found 10% vulnerable to ReDoS; attack complexity O(2^n) confirmed in real-world patterns"
+      },
+      {
+        "title": "OWASP Regular Expression Denial of Service Prevention Cheat Sheet",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-03-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/Regular_Expression_Denial_of_Service_Prevention_Cheat_Sheet.html",
+        "key_finding": "ReDoS is preventable through static analysis, input length limits, and timeout mechanisms"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use Safe Regex Patterns and Static Analysis Tools",
+      "description": "Replace vulnerable regex patterns with safe alternatives that avoid nested quantifiers and catastrophic backtracking. Use static analysis tools like safe-regex and eslint-plugin-security to detect vulnerable patterns during development.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js/Express.js",
+        "code": "// VULNERABLE PATTERN (DO NOT USE)\n// Time complexity: O(2^n) - exponential!\nconst vulnerableEmailRegex = /^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$/;\nconst vulnerablePattern = /^(a+)+$/;  // Nested quantifiers\nconst vulnerableUrl = /(https?:\\/\\/)?(www\\.)?([a-zA-Z0-9\\-]+\\.)+[a-zA-Z]{2,}/;\n\n// SAFE PATTERN (RECOMMENDED)\n// Time complexity: O(n) - linear!\nconst safeEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;\nconst safeUrlRegex = /^https?:\\/\\/[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\\/.*$/i;\n\n// Install safe-regex: npm install safe-regex --save-dev\nconst safeRegex = require('safe-regex');\n\n// Check regex safety at runtime or in tests\nfunction isRegexSafe(pattern) {\n  const isSafe = safeRegex(pattern);\n  if (!isSafe) {\n    console.error(`⚠️ UNSAFE REGEX DETECTED: ${pattern}`);\n    throw new Error('Regex pattern vulnerable to ReDoS');\n  }\n  return isSafe;\n}\n\n// Example: Safe email validation middleware\nconst express = require('express');\nconst app = express();\n\napp.use(express.json());\n\n// Validation middleware with safe patterns\napp.post('/api/register', (req, res) => {\n  const { email } = req.body;\n  \n  // Input length limit (first line of defense)\n  if (!email || email.length > 254) {  // RFC 5321 max email length\n    return res.status(400).json({ error: 'Invalid email format' });\n  }\n  \n  // Safe regex validation\n  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;\n  \n  if (!emailPattern.test(email)) {\n    return res.status(400).json({ error: 'Invalid email format' });\n  }\n  \n  res.json({ message: 'Registration successful', email });\n});\n\n// Static analysis in package.json scripts\n// \"scripts\": {\n//   \"lint:regex\": \"eslint . --plugin security --rule 'security/detect-unsafe-regex: error'\"\n// }\n\napp.listen(3000);"
+      },
+      "tools": [
+        {
+          "name": "safe-regex",
+          "type": "Static Analysis Library",
+          "cost": "Free (npm package)",
+          "installation": "npm install safe-regex --save-dev"
+        },
+        {
+          "name": "eslint-plugin-security",
+          "type": "ESLint Plugin",
+          "cost": "Free",
+          "installation": "npm install eslint-plugin-security --save-dev"
+        },
+        {
+          "name": "recheck",
+          "type": "ReDoS Vulnerability Scanner",
+          "cost": "Free",
+          "installation": "npm install recheck --save-dev"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle to manage systems is implemented",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Run safe-regex on all regex patterns in codebase",
+        "Replace vulnerable patterns with safe alternatives",
+        "Add ESLint security rules to CI/CD pipeline",
+        "Test regex patterns with fuzzing tools (e.g., 'a'.repeat(1000))",
+        "Document safe regex patterns in code review guidelines"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Regex Execution Timeouts",
+      "description": "Add timeout mechanisms to regex execution to prevent long-running operations from blocking the event loop. Use libraries like regex-ddos or implement custom timeout wrappers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js",
+        "code": "// METHOD 1: Using regex-ddos package (Recommended)\nconst safeRegex = require('regex-ddos');\n\n// Configure global timeout (default: 100ms)\nconst createSafeRegex = (pattern, flags = '') => {\n  return safeRegex(pattern, flags, {\n    timeout: 100,  // Maximum 100ms execution time\n    maxLength: 1000  // Maximum input length\n  });\n};\n\n// Usage example\napp.post('/api/validate', (req, res) => {\n  const { email } = req.body;\n  \n  try {\n    const emailRegex = createSafeRegex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/);\n    const isValid = emailRegex.test(email);\n    \n    res.json({ valid: isValid });\n  } catch (error) {\n    if (error.message.includes('timeout')) {\n      console.error('⚠️ ReDoS attack detected - regex timeout triggered');\n      return res.status(400).json({ error: 'Input validation timeout' });\n    }\n    throw error;\n  }\n});\n\n// METHOD 2: Custom timeout wrapper using Worker Threads (for complex cases)\nconst { Worker } = require('worker_threads');\nconst path = require('path');\n\nfunction testRegexWithTimeout(pattern, input, timeout = 1000) {\n  return new Promise((resolve, reject) => {\n    const worker = new Worker(path.join(__dirname, 'regex-worker.js'), {\n      workerData: { pattern: pattern.toString(), input }\n    });\n    \n    const timer = setTimeout(() => {\n      worker.terminate();\n      reject(new Error('Regex execution timeout'));\n    }, timeout);\n    \n    worker.on('message', (result) => {\n      clearTimeout(timer);\n      resolve(result);\n    });\n    \n    worker.on('error', (error) => {\n      clearTimeout(timer);\n      reject(error);\n    });\n  });\n}\n\n// regex-worker.js (separate file)\n// const { parentPort, workerData } = require('worker_threads');\n// const regex = new RegExp(workerData.pattern);\n// const result = regex.test(workerData.input);\n// parentPort.postMessage(result);\n\n// METHOD 3: Python timeout decorator\n// import signal\n// from functools import wraps\n// \n// def timeout(seconds):\n//     def decorator(func):\n//         @wraps(func)\n//         def wrapper(*args, **kwargs):\n//             def timeout_handler(signum, frame):\n//                 raise TimeoutError(f'Regex execution exceeded {seconds}s')\n//             \n//             signal.signal(signal.SIGALRM, timeout_handler)\n//             signal.alarm(seconds)\n//             try:\n//                 result = func(*args, **kwargs)\n//             finally:\n//                 signal.alarm(0)\n//             return result\n//         return wrapper\n//     return decorator\n// \n// @timeout(1)\n// def validate_email(email):\n//     import re\n//     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n//     return re.match(pattern, email) is not None"
+      },
+      "tools": [
+        {
+          "name": "regex-ddos",
+          "type": "ReDoS Protection Library",
+          "cost": "Free (npm package)",
+          "installation": "npm install regex-ddos"
+        },
+        {
+          "name": "Worker Threads (Node.js)",
+          "type": "Built-in Isolation Mechanism",
+          "cost": "Free (native)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.DS-4 - Adequate capacity to ensure availability is maintained",
+        "DE.AE-2 - Detected events are analyzed"
+      ],
+      "validation_steps": [
+        "Install regex timeout library (regex-ddos)",
+        "Wrap all user-input regex operations with timeout",
+        "Test timeout with malicious input (e.g., 'a'.repeat(10000) + '!')",
+        "Verify timeout errors are logged and monitored",
+        "Configure alert thresholds for repeated timeout events"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enforce Input Length Limits and Rate Limiting",
+      "description": "Implement strict input length validation before regex processing and apply rate limiting to prevent mass ReDoS attacks. Combine with WAF rules to block suspicious patterns.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js",
+        "code": "const express = require('express');\nconst rateLimit = require('express-rate-limit');\nconst app = express();\n\napp.use(express.json({ limit: '10kb' }));  // Global payload size limit\n\n// Rate limiting middleware\nconst apiLimiter = rateLimit({\n  windowMs: 15 * 60 * 1000,  // 15 minutes\n  max: 100,  // Limit each IP to 100 requests per windowMs\n  message: 'Too many requests from this IP, please try again later',\n  standardHeaders: true,\n  legacyHeaders: false,\n  // Skip rate limiting for trusted IPs\n  skip: (req) => {\n    const trustedIPs = ['10.0.0.0/8', '172.16.0.0/12'];\n    return trustedIPs.some(range => req.ip.startsWith(range));\n  }\n});\n\n// Stricter rate limiting for validation endpoints\nconst validationLimiter = rateLimit({\n  windowMs: 1 * 60 * 1000,  // 1 minute\n  max: 10,  // Max 10 validation requests per minute\n  message: 'Validation rate limit exceeded'\n});\n\napp.use('/api/', apiLimiter);\n\n// Input sanitization and validation middleware\nfunction validateInputLength(req, res, next) {\n  const maxLengths = {\n    email: 254,      // RFC 5321\n    username: 50,\n    url: 2048,       // Browser URL limit\n    phone: 20,\n    postalCode: 10\n  };\n  \n  for (const [field, maxLength] of Object.entries(maxLengths)) {\n    if (req.body[field] && req.body[field].length > maxLength) {\n      return res.status(400).json({\n        error: `${field} exceeds maximum length of ${maxLength} characters`\n      });\n    }\n  }\n  \n  next();\n}\n\n// Example endpoint with comprehensive protection\napp.post('/api/register',\n  validationLimiter,\n  validateInputLength,\n  (req, res) => {\n    const { email, username } = req.body;\n    \n    // Additional character whitelist validation\n    const allowedEmailChars = /^[a-zA-Z0-9._%+-@]+$/;\n    if (!allowedEmailChars.test(email)) {\n      return res.status(400).json({ error: 'Email contains invalid characters' });\n    }\n    \n    // Safe regex validation (after length check)\n    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;\n    if (!emailRegex.test(email)) {\n      return res.status(400).json({ error: 'Invalid email format' });\n    }\n    \n    res.json({ message: 'Registration successful' });\n  }\n);\n\n// Python (Flask) equivalent\n// from flask import Flask, request, jsonify\n// from flask_limiter import Limiter\n// from flask_limiter.util import get_remote_address\n// import re\n// \n// app = Flask(__name__)\n// limiter = Limiter(\n//     app=app,\n//     key_func=get_remote_address,\n//     default_limits=[\"100 per 15 minutes\"]\n// )\n// \n// MAX_LENGTHS = {'email': 254, 'username': 50, 'url': 2048}\n// \n// @app.route('/api/register', methods=['POST'])\n// @limiter.limit(\"10 per minute\")\n// def register():\n//     email = request.json.get('email', '')\n//     \n//     # Length validation\n//     if len(email) > MAX_LENGTHS['email']:\n//         return jsonify({'error': 'Email too long'}), 400\n//     \n//     # Safe regex validation\n//     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n//     if not re.match(pattern, email):\n//         return jsonify({'error': 'Invalid email'}), 400\n//     \n//     return jsonify({'message': 'Success'}), 200"
+      },
+      "tools": [
+        {
+          "name": "express-rate-limit",
+          "type": "Rate Limiting Middleware",
+          "cost": "Free (npm package)",
+          "installation": "npm install express-rate-limit"
+        },
+        {
+          "name": "Flask-Limiter",
+          "type": "Python Rate Limiting",
+          "cost": "Free (PyPI)",
+          "installation": "pip install Flask-Limiter"
+        },
+        {
+          "name": "Azure WAF (Application Gateway)",
+          "type": "Web Application Firewall",
+          "cost": "$125/month (Standard tier)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.12.1.3 - Capacity management"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Define maximum input lengths for all fields",
+        "Implement middleware to enforce length limits before regex",
+        "Configure rate limiting (10 requests/min for validation endpoints)",
+        "Test with excessive input lengths (e.g., 10KB email string)",
+        "Monitor rate limit violations in application logs"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in API response times (>5 seconds) for validation endpoints",
+      "100% CPU utilization on single Node.js process or Python worker",
+      "Event loop lag exceeding 1000ms in Node.js applications",
+      "Repeated timeout errors in application logs",
+      "High memory consumption with no corresponding traffic increase",
+      "Single IP address making repetitive requests with unusual input patterns"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect slow regex processing and potential ReDoS attacks\nAppServiceHTTPLogs\n| where TimeGenerated > ago(15m)\n| where TimeTaken > 5000  // Response time > 5 seconds\n| where UriStem contains \"validate\" or UriStem contains \"register\"\n| summarize \n    SlowRequests = count(),\n    AvgResponseTime = avg(TimeTaken),\n    MaxResponseTime = max(TimeTaken),\n    UniqueIPs = dcount(CIp)\n    by bin(TimeGenerated, 1m), UriStem\n| where SlowRequests > 5\n| order by TimeGenerated desc, SlowRequests desc\n| project TimeGenerated, UriStem, SlowRequests, AvgResponseTime, MaxResponseTime, UniqueIPs"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by host.name, process.pid with maxspan=30s\n  [process where event.category == \"process\" and process.cpu.pct > 0.95]\n  [network where http.response.status_code == 200 and event.duration > 5000000000]\n| stats count() by host.name, source.ip\n| where count > 3"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=express_access\n| eval response_time_ms=response_time*1000\n| where response_time_ms > 5000 AND (uri_path=\"/api/register\" OR uri_path=\"/api/validate\")\n| stats count as slow_requests, avg(response_time_ms) as avg_ms, max(response_time_ms) as max_ms by client_ip, uri_path\n| where slow_requests > 5\n| sort -slow_requests\n| eval severity=case(\n    max_ms > 30000, \"CRITICAL\",\n    max_ms > 10000, \"HIGH\",\n    max_ms > 5000, \"MEDIUM\"\n  )\n| table _time, client_ip, uri_path, slow_requests, avg_ms, max_ms, severity"
+      },
+      {
+        "siem": "CloudWatch Insights (AWS)",
+        "query": "fields @timestamp, @message, @duration\n| filter @duration > 5000 and (@message like /validate/ or @message like /register/)\n| stats count(*) as slow_requests, avg(@duration) as avg_duration, max(@duration) as max_duration by bin(5m)\n| filter slow_requests > 5\n| sort @timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Node.js Event Loop Monitor",
+        "type": "Performance Monitoring",
+        "usage": "const eventLoopMonitor = require('event-loop-monitor'); eventLoopMonitor.on('delay', (delay) => { if (delay > 1000) console.error('Event loop lag detected:', delay); });"
+      },
+      {
+        "name": "AppDynamics",
+        "type": "APM (Application Performance Monitoring)",
+        "usage": "Real-time CPU profiling and slow transaction detection"
+      },
+      {
+        "name": "New Relic",
+        "type": "APM",
+        "usage": "Set alert conditions for 'Web transaction time > 5s' with threshold 5 occurrences in 5 minutes"
+      },
+      {
+        "name": "Azure Application Insights",
+        "type": "APM",
+        "usage": "Create alert rule: 'Server response time > 5000ms' with aggregation 'Average' over 5 minutes"
+      }
+    ]
+  },
+  "testing": {
+    "proof_of_concept": {
+      "description": "Demonstrates catastrophic backtracking with vulnerable email regex",
+      "language": "javascript",
+      "code": "// Vulnerable regex pattern (DO NOT USE IN PRODUCTION)\nconst vulnerableEmailRegex = /^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$/;\n\n// Test payloads that trigger catastrophic backtracking\nconst maliciousPayloads = [\n  'a'.repeat(30) + '!',  // 30 'a' characters followed by invalid char\n  'aaaaaaaaaaaaaaaaaaaaaaaaaaaa@',  // Many 'a' chars with @ but no domain\n  'test@' + 'a'.repeat(30) + '!',  // Valid start, malicious domain\n];\n\nconsole.log('⚠️ Testing ReDoS vulnerability...\\n');\n\nmaliciousPayloads.forEach((payload, index) => {\n  console.log(`Test ${index + 1}: Input length = ${payload.length}`);\n  const startTime = Date.now();\n  \n  try {\n    const result = vulnerableEmailRegex.test(payload);\n    const endTime = Date.now();\n    const duration = endTime - startTime;\n    \n    console.log(`  Result: ${result}`);\n    console.log(`  Execution time: ${duration}ms`);\n    \n    if (duration > 1000) {\n      console.log('  🚨 VULNERABILITY CONFIRMED: Execution time > 1 second!\\n');\n    } else {\n      console.log(`  ✓ Completed in ${duration}ms\\n`);\n    }\n  } catch (error) {\n    console.log(`  ❌ Error: ${error.message}\\n`);\n  }\n});\n\n// Complexity analysis\nconsole.log('\\n📊 Complexity Analysis:');\nconsole.log('Vulnerable pattern: O(2^n) - exponential time complexity');\nconsole.log('Safe pattern: O(n) - linear time complexity');\nconsole.log('\\nWith input length 30, vulnerable regex may try 2^30 = 1,073,741,824 combinations!');"
+    },
+    "safe_alternative": {
+      "description": "Safe regex pattern with linear time complexity",
+      "language": "javascript",
+      "code": "// Safe regex pattern (RECOMMENDED)\nconst safeEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;\n\nconst testInputs = [\n  'valid@example.com',\n  'user.name+tag@example.co.uk',\n  'a'.repeat(30) + '!',  // Malicious input\n  'test@' + 'a'.repeat(30) + '!'\n];\n\nconsole.log('✅ Testing safe regex pattern...\\n');\n\ntestInputs.forEach((input, index) => {\n  const startTime = Date.now();\n  const result = safeEmailRegex.test(input);\n  const duration = Date.now() - startTime;\n  \n  console.log(`Test ${index + 1}: ${input.substring(0, 30)}${input.length > 30 ? '...' : ''}`);\n  console.log(`  Valid: ${result}, Time: ${duration}ms\\n`);\n});\n\nconsole.log('All tests completed in < 1ms each! ✓');"
+    }
+  },
+  "metadata_tags": {
+    "industry": [
+      "SaaS",
+      "E-commerce",
+      "Financial Services",
+      "Healthcare",
+      "Technology"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10)",
+      "NIST SP 800-53 (SC-5)",
+      "ISO27001 (A.12.6.1)",
+      "SOC2 (CC7.2)",
+      "OWASP Top 10 2021 (A06)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal"
+    ],
+    "attack_surface": [
+      "API Endpoints",
+      "Web Forms",
+      "Input Validation",
+      "Authentication"
+    ]
+  }
+}

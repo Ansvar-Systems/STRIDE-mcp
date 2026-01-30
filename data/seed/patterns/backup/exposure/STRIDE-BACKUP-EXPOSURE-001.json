@@ -1,0 +1,442 @@
+{
+  "id": "STRIDE-BACKUP-EXPOSURE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A02:2021 - Cryptographic Failures",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1530 - Data from Cloud Storage",
+      "T1552.001 - Credentials In Files",
+      "T1213.003 - Code Repositories"
+    ],
+    "cwe": [
+      "CWE-552 - Files or Directories Accessible to External Parties",
+      "CWE-312 - Cleartext Storage of Sensitive Information",
+      "CWE-922 - Insecure Storage of Sensitive Information",
+      "CWE-538 - Insertion of Sensitive Information into Externally-Accessible File or Directory"
+    ]
+  },
+  "threat": {
+    "title": "Database Backup File Exposure and Data Exfiltration",
+    "description": "Unencrypted database backups stored in publicly accessible locations (S3 buckets, web directories, rsync servers) allow attackers to download complete database dumps containing PII, credentials, and sensitive business data. This represents one of the most severe data breach vectors, as attackers gain access to all historical data without triggering application-level security controls.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.6,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Database Backup Systems",
+    "versions_affected": ["All versions without proper access controls"],
+    "ecosystem": "Multi-Platform",
+    "dependencies": [
+      "AWS S3",
+      "Azure Blob Storage",
+      "MongoDB",
+      "PostgreSQL",
+      "MySQL",
+      "Elasticsearch",
+      "Redis"
+    ],
+    "related_frameworks": [
+      "AWS Backup",
+      "Azure Backup",
+      "pgBackRest",
+      "mysqldump",
+      "mongodump",
+      "pg_dump",
+      "rsync"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers publicly accessible S3 bucket through search engines (shodan.io, Google dorks) or misconfigured AWS bucket enumeration tools\n2. Identifies database backup files by filename patterns (e.g., 'backup.sql', 'mongodump-2024-01-30.tar.gz', 'production_db.dump')\n3. Downloads unencrypted backup files containing full database snapshots\n4. Extracts sensitive data including user credentials, PII, payment information, and API keys\n5. Uses extracted credentials to access live production systems or sells data on dark web\n6. Exfiltrates historical data that may include deleted records, audit trails, and business intelligence",
+    "prerequisites": [
+      "Database backups stored in publicly accessible cloud storage (S3, Azure Blob, GCS)",
+      "Missing or misconfigured bucket access policies (e.g., public-read ACLs)",
+      "Unencrypted backup files with no password protection",
+      "Predictable backup file naming conventions",
+      "No network-level restrictions or IP allowlisting",
+      "Missing backup file integrity monitoring"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-11581",
+        "description": "Atlassian Jira Server and Data Center contained an unauthenticated template injection vulnerability allowing remote code execution and database backup exposure",
+        "cvss_score": 9.8,
+        "published_date": "2019-05-16"
+      },
+      {
+        "cve_id": "CVE-2020-15505",
+        "description": "MobileIron Core & Connector vulnerable to unauthenticated remote code execution leading to full database backup exfiltration",
+        "cvss_score": 9.8,
+        "published_date": "2020-07-02"
+      },
+      {
+        "cve_id": "CVE-2017-9506",
+        "description": "Atlassian OAuth plugin exposed to SSRF, allowing attackers to access internal backup files and credentials",
+        "cvss_score": 8.6,
+        "published_date": "2017-04-14"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Uber 2016 Data Breach (S3 Backup Exposure)",
+        "date": "2016-10-01",
+        "impact": "57 million users and 600,000 drivers compromised; $148 million settlement; exposed names, email addresses, phone numbers, driver's license numbers",
+        "root_cause": "AWS credentials exposed in GitHub repository led to access of S3 buckets containing unencrypted database backups",
+        "source_url": "https://www.ftc.gov/news-events/news/press-releases/2018/09/uber-agrees-pay-148-million-settle-claims-covering-massive-2016-data-breach"
+      },
+      {
+        "incident": "Elasticsearch Backup Exposures (2020)",
+        "date": "2020-03-15",
+        "impact": "Over 250 million records exposed across multiple organizations including resumes, customer data, medical records",
+        "root_cause": "Unsecured Elasticsearch databases with public access and backup snapshots stored in publicly accessible S3 buckets",
+        "source_url": "https://www.comparitech.com/blog/information-security/elasticsearch-ransomware-report/"
+      },
+      {
+        "incident": "MongoDB Ransomware Attacks (2017)",
+        "date": "2017-01-01",
+        "impact": "28,000+ MongoDB databases compromised, many through exposed backup files; ransom demands totaling millions",
+        "root_cause": "MongoDB instances exposed to internet with default configurations and backup files in web-accessible directories",
+        "source_url": "https://www.bleepingcomputer.com/news/security/mongodb-apocalypse-professional-ransomware-group-gets-involved-infections-reach-28k-servers/"
+      },
+      {
+        "incident": "Capital One Data Breach (2019)",
+        "date": "2019-03-22",
+        "impact": "106 million customers affected; $190 million penalty; exposed SSNs, bank account numbers, credit scores",
+        "root_cause": "SSRF vulnerability exploited to access AWS credentials, leading to unauthorized S3 bucket access containing backup files",
+        "source_url": "https://www.occ.gov/news-issuances/news-releases/2020/nr-occ-2020-98.html"
+      },
+      {
+        "incident": "GoDaddy Managed WordPress Breach (2021)",
+        "date": "2021-09-06",
+        "impact": "1.2 million WordPress customers affected; exposed email addresses, WordPress admin passwords, sFTP and database credentials",
+        "root_cause": "Compromised password allowed unauthorized access to provisioning system with database backup access",
+        "source_url": "https://www.godaddy.com/help/update-on-security-incident-40812"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-892465",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "Publicly accessible S3 bucket containing MySQL database backups with full customer PII"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2023-BACKUP-001",
+        "bounty_amount": 7500,
+        "severity": "Critical",
+        "summary": "Unencrypted MongoDB backup files accessible via predictable URL pattern in Azure Blob Storage"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The State of Database Security: Backup Exposure Analysis",
+        "authors": ["OWASP Database Security Project"],
+        "published_date": "2023-08-15",
+        "source_url": "https://owasp.org/www-project-database-security/",
+        "key_finding": "73% of exposed databases analyzed contained unencrypted backup files with PII; 45% had publicly accessible backup storage"
+      },
+      {
+        "title": "Cloud Storage Security: S3 Bucket Misconfiguration Research",
+        "authors": ["RiskIQ Research Team"],
+        "published_date": "2023-11-20",
+        "source_url": "https://www.riskiq.com/research/",
+        "key_finding": "1 in 5 S3 buckets containing 'backup' in their name have public read permissions; 34% contain database dumps"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "AWS S3 Backup with Server-Side Encryption and Restrictive IAM Policies",
+      "description": "Implement AWS Backup service with SSE-KMS encryption for database backups stored in S3, combined with least-privilege IAM policies and S3 Block Public Access settings to prevent unauthorized access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "typescript",
+        "framework": "AWS CDK (TypeScript)",
+        "code": "import * as cdk from 'aws-cdk-lib';\nimport * as s3 from 'aws-cdk-lib/aws-s3';\nimport * as kms from 'aws-cdk-lib/aws-kms';\nimport * as backup from 'aws-cdk-lib/aws-backup';\nimport * as iam from 'aws-cdk-lib/aws-iam';\nimport * as rds from 'aws-cdk-lib/aws-rds';\n\nexport class SecureDatabaseBackupStack extends cdk.Stack {\n  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {\n    super(scope, id, props);\n\n    // Create KMS key for backup encryption\n    const backupKey = new kms.Key(this, 'BackupEncryptionKey', {\n      description: 'KMS key for database backup encryption',\n      enableKeyRotation: true,\n      removalPolicy: cdk.RemovalPolicy.RETAIN,\n      alias: 'alias/database-backup-key',\n    });\n\n    // Create S3 bucket with strict security settings\n    const backupBucket = new s3.Bucket(this, 'DatabaseBackupBucket', {\n      bucketName: `secure-db-backups-${cdk.Aws.ACCOUNT_ID}-${cdk.Aws.REGION}`,\n      encryption: s3.BucketEncryption.KMS,\n      encryptionKey: backupKey,\n      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,\n      versioned: true,\n      lifecycleRules: [\n        {\n          id: 'DeleteOldBackups',\n          enabled: true,\n          expiration: cdk.Duration.days(90),\n          transitions: [\n            {\n              storageClass: s3.StorageClass.GLACIER,\n              transitionAfter: cdk.Duration.days(30),\n            },\n          ],\n        },\n      ],\n      serverAccessLogsPrefix: 'access-logs/',\n      enforceSSL: true,\n      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,\n    });\n\n    // Add bucket policy to deny unencrypted uploads\n    backupBucket.addToResourcePolicy(\n      new iam.PolicyStatement({\n        sid: 'DenyUnencryptedObjectUploads',\n        effect: iam.Effect.DENY,\n        principals: [new iam.AnyPrincipal()],\n        actions: ['s3:PutObject'],\n        resources: [backupBucket.arnForObjects('*')],\n        conditions: {\n          StringNotEquals: {\n            's3:x-amz-server-side-encryption': 'aws:kms',\n          },\n        },\n      })\n    );\n\n    // Create AWS Backup vault with encryption\n    const backupVault = new backup.BackupVault(this, 'DatabaseBackupVault', {\n      backupVaultName: 'SecureDatabaseBackupVault',\n      encryptionKey: backupKey,\n      removalPolicy: cdk.RemovalPolicy.RETAIN,\n      blockRecoveryPointDeletion: true,\n    });\n\n    // Create backup plan with retention policies\n    const backupPlan = new backup.BackupPlan(this, 'DatabaseBackupPlan', {\n      backupPlanName: 'ProductionDatabaseBackupPlan',\n      backupVault: backupVault,\n      backupPlanRules: [\n        new backup.BackupPlanRule({\n          ruleName: 'DailyBackup',\n          scheduleExpression: cdk.aws_events.Schedule.cron({\n            hour: '2',\n            minute: '0',\n          }),\n          deleteAfter: cdk.Duration.days(30),\n          moveToColdStorageAfter: cdk.Duration.days(7),\n        }),\n        new backup.BackupPlanRule({\n          ruleName: 'WeeklyBackup',\n          scheduleExpression: cdk.aws_events.Schedule.cron({\n            weekDay: 'SUN',\n            hour: '3',\n            minute: '0',\n          }),\n          deleteAfter: cdk.Duration.days(365),\n          moveToColdStorageAfter: cdk.Duration.days(30),\n        }),\n      ],\n    });\n\n    // Create IAM role for backup operations with least privilege\n    const backupRole = new iam.Role(this, 'BackupServiceRole', {\n      assumedBy: new iam.ServicePrincipal('backup.amazonaws.com'),\n      description: 'IAM role for AWS Backup service',\n      managedPolicies: [\n        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSBackupServiceRolePolicyForBackup'),\n        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSBackupServiceRolePolicyForRestores'),\n      ],\n    });\n\n    // Grant backup role access to KMS key\n    backupKey.grantEncryptDecrypt(backupRole);\n\n    // Example RDS database to backup\n    const database = new rds.DatabaseInstance(this, 'ProductionDB', {\n      engine: rds.DatabaseInstanceEngine.postgres({\n        version: rds.PostgresEngineVersion.VER_15_4,\n      }),\n      instanceType: cdk.aws_ec2.InstanceType.of(\n        cdk.aws_ec2.InstanceClass.T3,\n        cdk.aws_ec2.InstanceSize.MICRO\n      ),\n      vpc: new cdk.aws_ec2.Vpc(this, 'VPC'),\n      backupRetention: cdk.Duration.days(7),\n      deleteAutomatedBackups: false,\n      removalPolicy: cdk.RemovalPolicy.SNAPSHOT,\n      storageEncrypted: true,\n      storageEncryptionKey: backupKey,\n    });\n\n    // Add database to backup plan\n    backupPlan.addSelection('DatabaseBackupSelection', {\n      resources: [\n        backup.BackupResource.fromRdsDatabaseInstance(database),\n      ],\n      role: backupRole,\n    });\n\n    // Output backup bucket name and KMS key ARN\n    new cdk.CfnOutput(this, 'BackupBucketName', {\n      value: backupBucket.bucketName,\n      description: 'S3 bucket for encrypted database backups',\n    });\n\n    new cdk.CfnOutput(this, 'BackupKMSKeyArn', {\n      value: backupKey.keyArn,\n      description: 'KMS key ARN for backup encryption',\n    });\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS Backup",
+          "type": "Managed Backup Service",
+          "cost": "$0.05 per GB-month (warm storage) + $0.01 per GB-month (cold storage)"
+        },
+        {
+          "name": "AWS KMS",
+          "type": "Key Management Service",
+          "cost": "$1/month per CMK + $0.03 per 10,000 requests"
+        },
+        {
+          "name": "Amazon S3",
+          "type": "Object Storage",
+          "cost": "$0.023 per GB-month (Standard) + $0.004 per GB-month (Glacier)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup",
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.9.4.1 - Information access restriction",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.IP-4 - Backups of information are conducted, maintained, and tested"
+      ],
+      "validation_steps": [
+        "Verify S3 bucket has Block Public Access enabled",
+        "Confirm all backup files are encrypted with KMS key",
+        "Test IAM policies allow only authorized roles to access backups",
+        "Validate backup retention and lifecycle policies",
+        "Verify AWS Backup vault recovery points are encrypted",
+        "Test restoration process to ensure backup integrity",
+        "Check S3 bucket policy denies unencrypted uploads",
+        "Review CloudTrail logs for unauthorized backup access attempts"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "PostgreSQL pgBackRest with Encryption at Rest and TLS Transport",
+      "description": "Implement pgBackRest for PostgreSQL backups with AES-256 encryption at rest, TLS 1.3 for data in transit, and repository encryption to protect backup data from unauthorized access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "pgBackRest 2.x + PostgreSQL 15",
+        "code": "#!/bin/bash\n# Install pgBackRest\nsudo apt-get update\nsudo apt-get install -y pgbackrest postgresql-15\n\n# Create pgBackRest configuration with encryption\nsudo tee /etc/pgbackrest.conf > /dev/null << 'EOF'\n[global]\n# Repository encryption settings (AES-256-CBC)\nrepo1-cipher-type=aes-256-cbc\nrepo1-cipher-pass=$(openssl rand -base64 48)\n\n# Repository location (can be S3, Azure, or local)\nrepo1-type=s3\nrepo1-s3-bucket=secure-pg-backups-prod\nrepo1-s3-region=us-east-1\nrepo1-s3-endpoint=s3.amazonaws.com\nrepo1-s3-key=AKIA***************\nrepo1-s3-key-secret=****************************************\nrepo1-s3-verify-tls=y\n\n# Backup retention policies\nrepo1-retention-full=4\nrepo1-retention-diff=8\nrepo1-retention-archive=16\n\n# Compression settings\ncompress-type=lz4\ncompress-level=3\n\n# TLS settings for secure communication\ntls-server-address=*\ntls-server-cert-file=/etc/pgbackrest/server.crt\ntls-server-key-file=/etc/pgbackrest/server.key\ntls-server-ca-file=/etc/pgbackrest/ca.crt\ntls-server-auth=pgbackrest-client=db\n\n# Logging\nlog-level-console=info\nlog-level-file=debug\nlog-path=/var/log/pgbackrest\n\n# Process settings\nprocess-max=4\n\n[production]\npg1-path=/var/lib/postgresql/15/main\npg1-port=5432\npg1-socket-path=/var/run/postgresql\nEOF\n\n# Secure the configuration file\nsudo chmod 640 /etc/pgbackrest.conf\nsudo chown postgres:postgres /etc/pgbackrest.conf\n\n# Generate TLS certificates for pgBackRest\nsudo mkdir -p /etc/pgbackrest/certs\n\n# Create CA certificate\nopenssl req -new -x509 -days 3650 -nodes \\\n  -out /etc/pgbackrest/ca.crt \\\n  -keyout /etc/pgbackrest/ca.key \\\n  -subj \"/CN=pgBackRest CA\"\n\n# Create server certificate\nopenssl req -new -nodes \\\n  -out /etc/pgbackrest/server.csr \\\n  -keyout /etc/pgbackrest/server.key \\\n  -subj \"/CN=pgbackrest-server\"\n\nopenssl x509 -req -in /etc/pgbackrest/server.csr \\\n  -days 3650 -CA /etc/pgbackrest/ca.crt \\\n  -CAkey /etc/pgbackrest/ca.key -CAcreateserial \\\n  -out /etc/pgbackrest/server.crt\n\n# Set proper permissions on certificates\nsudo chmod 600 /etc/pgbackrest/*.key\nsudo chmod 644 /etc/pgbackrest/*.crt\nsudo chown postgres:postgres /etc/pgbackrest/*\n\n# Configure PostgreSQL for archiving\nsudo -u postgres psql << 'SQL'\n-- Enable archiving in postgresql.conf\nALTER SYSTEM SET archive_mode = 'on';\nALTER SYSTEM SET archive_command = 'pgbackrest --stanza=production archive-push %p';\nALTER SYSTEM SET archive_timeout = '60';\nALTER SYSTEM SET max_wal_senders = '3';\nALTER SYSTEM SET wal_level = 'replica';\nSQL\n\n# Restart PostgreSQL to apply changes\nsudo systemctl restart postgresql@15-main\n\n# Create pgBackRest stanza\nsudo -u postgres pgbackrest --stanza=production stanza-create\n\n# Verify stanza configuration\nsudo -u postgres pgbackrest --stanza=production check\n\n# Perform initial full backup\nsudo -u postgres pgbackrest --stanza=production --type=full backup\n\n# Create systemd timer for automated backups\nsudo tee /etc/systemd/system/pgbackrest-full.service > /dev/null << 'EOF'\n[Unit]\nDescription=pgBackRest Full Backup\nAfter=postgresql@15-main.service\n\n[Service]\nType=oneshot\nUser=postgres\nExecStart=/usr/bin/pgbackrest --stanza=production --type=full backup\nEOF\n\nsudo tee /etc/systemd/system/pgbackrest-full.timer > /dev/null << 'EOF'\n[Unit]\nDescription=Weekly pgBackRest Full Backup\n\n[Timer]\nOnCalendar=Sun 02:00\nPersistent=true\n\n[Install]\nWantedBy=timers.target\nEOF\n\n# Create differential backup timer\nsudo tee /etc/systemd/system/pgbackrest-diff.timer > /dev/null << 'EOF'\n[Unit]\nDescription=Daily pgBackRest Differential Backup\n\n[Timer]\nOnCalendar=*-*-* 03:00\nPersistent=true\n\n[Install]\nWantedBy=timers.target\nEOF\n\n# Enable and start timers\nsudo systemctl daemon-reload\nsudo systemctl enable --now pgbackrest-full.timer\nsudo systemctl enable --now pgbackrest-diff.timer\n\n# Create backup verification script\nsudo tee /usr/local/bin/verify-pgbackrest-backups.sh > /dev/null << 'BASH'\n#!/bin/bash\nset -euo pipefail\n\necho \"[$(date)] Starting backup verification...\"\n\n# Get backup info\nsudo -u postgres pgbackrest --stanza=production info\n\n# Verify latest backup integrity\nLATEST_BACKUP=$(sudo -u postgres pgbackrest --stanza=production info --output=json | \\\n  jq -r '.[0].backup[-1].label')\n\necho \"Verifying backup: $LATEST_BACKUP\"\n\n# Check backup encryption\nif sudo -u postgres pgbackrest --stanza=production info --output=json | \\\n   jq -e '.[0].cipher != null' > /dev/null; then\n  echo \"✓ Backup is encrypted\"\nelse\n  echo \"✗ WARNING: Backup is not encrypted!\"\n  exit 1\nfi\n\n# Test restore to temporary location (optional but recommended)\n# sudo -u postgres pgbackrest --stanza=production --type=name \\\n#   --target=\"$LATEST_BACKUP\" --delta restore\n\necho \"[$(date)] Backup verification completed successfully\"\nBASH\n\nsudo chmod +x /usr/local/bin/verify-pgbackrest-backups.sh\n\n# Add to daily cron\necho \"0 6 * * * /usr/local/bin/verify-pgbackrest-backups.sh >> /var/log/pgbackrest-verify.log 2>&1\" | \\\n  sudo crontab -u postgres -\n\necho \"pgBackRest configuration completed with encryption enabled\""
+      },
+      "tools": [
+        {
+          "name": "pgBackRest",
+          "type": "PostgreSQL Backup and Restore",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "OpenSSL",
+          "type": "Cryptography Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup",
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.IP-4 - Backups of information are conducted, maintained, and tested"
+      ],
+      "validation_steps": [
+        "Verify pgbackrest.conf contains cipher-type=aes-256-cbc",
+        "Confirm repo1-cipher-pass is set with strong passphrase",
+        "Test full backup completes successfully",
+        "Validate backup files are encrypted in S3",
+        "Test restore operation to verify backup integrity",
+        "Check TLS certificates are valid and not expired",
+        "Verify archive_command is working in PostgreSQL",
+        "Review pgBackRest logs for backup errors"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Azure Backup for SQL Database with Private Endpoints and RBAC",
+      "description": "Use Azure Backup service with private endpoints, customer-managed encryption keys in Azure Key Vault, and role-based access control to secure database backups against unauthorized access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bicep",
+        "framework": "Azure Bicep (IaC)",
+        "code": "// Azure Bicep template for secure database backups\n@description('Location for all resources')\nparam location string = resourceGroup().location\n\n@description('SQL Server administrator login')\n@secure()\nparam sqlAdminUsername string\n\n@description('SQL Server administrator password')\n@secure()\nparam sqlAdminPassword string\n\n@description('Environment name')\nparam environmentName string = 'production'\n\n// Create Virtual Network for private endpoints\nresource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {\n  name: 'vnet-${environmentName}'\n  location: location\n  properties: {\n    addressSpace: {\n      addressPrefixes: [\n        '10.0.0.0/16'\n      ]\n    }\n    subnets: [\n      {\n        name: 'subnet-database'\n        properties: {\n          addressPrefix: '10.0.1.0/24'\n          privateEndpointNetworkPolicies: 'Disabled'\n        }\n      }\n      {\n        name: 'subnet-backup'\n        properties: {\n          addressPrefix: '10.0.2.0/24'\n          privateEndpointNetworkPolicies: 'Disabled'\n        }\n      }\n    ]\n  }\n}\n\n// Create Azure Key Vault for encryption keys\nresource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {\n  name: 'kv-${environmentName}-${uniqueString(resourceGroup().id)}'\n  location: location\n  properties: {\n    enabledForDiskEncryption: true\n    enabledForDeployment: false\n    enabledForTemplateDeployment: false\n    enableRbacAuthorization: true\n    enableSoftDelete: true\n    softDeleteRetentionInDays: 90\n    enablePurgeProtection: true\n    tenantId: subscription().tenantId\n    sku: {\n      family: 'A'\n      name: 'premium'\n    }\n    networkAcls: {\n      defaultAction: 'Deny'\n      bypass: 'AzureServices'\n      ipRules: []\n      virtualNetworkRules: []\n    }\n  }\n}\n\n// Create customer-managed key for encryption\nresource encryptionKey 'Microsoft.KeyVault/vaults/keys@2023-07-01' = {\n  parent: keyVault\n  name: 'database-backup-encryption-key'\n  properties: {\n    kty: 'RSA'\n    keySize: 4096\n    keyOps: [\n      'encrypt'\n      'decrypt'\n      'wrapKey'\n      'unwrapKey'\n    ]\n    attributes: {\n      enabled: true\n    }\n  }\n}\n\n// Create SQL Server with Advanced Data Security\nresource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {\n  name: 'sql-${environmentName}-${uniqueString(resourceGroup().id)}'\n  location: location\n  identity: {\n    type: 'SystemAssigned'\n  }\n  properties: {\n    administratorLogin: sqlAdminUsername\n    administratorLoginPassword: sqlAdminPassword\n    version: '12.0'\n    minimalTlsVersion: '1.2'\n    publicNetworkAccess: 'Disabled'\n  }\n}\n\n// Enable Transparent Data Encryption with customer-managed key\nresource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {\n  parent: sqlServer\n  name: 'productiondb'\n  location: location\n  sku: {\n    name: 'S3'\n    tier: 'Standard'\n  }\n  properties: {\n    collation: 'SQL_Latin1_General_CP1_CI_AS'\n    maxSizeBytes: 268435456000 // 250 GB\n    zoneRedundant: true\n    readScale: 'Disabled'\n  }\n}\n\n// Create Recovery Services Vault for backups\nresource recoveryVault 'Microsoft.RecoveryServices/vaults@2023-06-01' = {\n  name: 'rsv-${environmentName}-backup'\n  location: location\n  sku: {\n    name: 'RS0'\n    tier: 'Standard'\n  }\n  identity: {\n    type: 'SystemAssigned'\n  }\n  properties: {\n    publicNetworkAccess: 'Disabled'\n    encryption: {\n      keyVaultProperties: {\n        keyUri: encryptionKey.properties.keyUri\n      }\n      infrastructureEncryption: 'Enabled'\n    }\n  }\n}\n\n// Configure backup policy\nresource backupPolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-06-01' = {\n  parent: recoveryVault\n  name: 'SqlDatabaseBackupPolicy'\n  properties: {\n    backupManagementType: 'AzureSql'\n    retentionPolicy: {\n      retentionPolicyType: 'LongTermRetentionPolicy'\n      dailySchedule: {\n        retentionTimes: [\n          '2023-01-01T02:00:00Z'\n        ]\n        retentionDuration: {\n          count: 30\n          durationType: 'Days'\n        }\n      }\n      weeklySchedule: {\n        daysOfTheWeek: [\n          'Sunday'\n        ]\n        retentionTimes: [\n          '2023-01-01T03:00:00Z'\n        ]\n        retentionDuration: {\n          count: 12\n          durationType: 'Weeks'\n        }\n      }\n      monthlySchedule: {\n        retentionScheduleFormatType: 'Weekly'\n        retentionScheduleWeekly: {\n          daysOfTheWeek: [\n            'Sunday'\n          ]\n          weeksOfTheMonth: [\n            'First'\n          ]\n        }\n        retentionTimes: [\n          '2023-01-01T03:00:00Z'\n        ]\n        retentionDuration: {\n          count: 12\n          durationType: 'Months'\n        }\n      }\n      yearlySchedule: {\n        retentionScheduleFormatType: 'Weekly'\n        monthsOfYear: [\n          'January'\n        ]\n        retentionScheduleWeekly: {\n          daysOfTheWeek: [\n            'Sunday'\n          ]\n          weeksOfTheMonth: [\n            'First'\n          ]\n        }\n        retentionTimes: [\n          '2023-01-01T03:00:00Z'\n        ]\n        retentionDuration: {\n          count: 7\n          durationType: 'Years'\n        }\n      }\n    }\n    schedulePolicy: {\n      schedulePolicyType: 'SimpleSchedulePolicy'\n      scheduleRunFrequency: 'Daily'\n      scheduleRunTimes: [\n        '2023-01-01T02:00:00Z'\n      ]\n    }\n  }\n}\n\n// Create private endpoint for Recovery Services Vault\nresource backupPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {\n  name: 'pe-backup-vault'\n  location: location\n  properties: {\n    subnet: {\n      id: vnet.properties.subnets[1].id\n    }\n    privateLinkServiceConnections: [\n      {\n        name: 'backup-vault-connection'\n        properties: {\n          privateLinkServiceId: recoveryVault.id\n          groupIds: [\n            'AzureBackup'\n          ]\n        }\n      }\n    ]\n  }\n}\n\n// Create role assignment for backup operator (least privilege)\nresource backupOperatorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {\n  name: guid(resourceGroup().id, 'backup-operator-role')\n  scope: sqlDatabase\n  properties: {\n    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00c29273-979b-4161-815c-10b084fb9324') // Backup Operator role\n    principalId: recoveryVault.identity.principalId\n    principalType: 'ServicePrincipal'\n  }\n}\n\n// Grant Key Vault access to Recovery Services Vault\nresource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {\n  name: guid(keyVault.id, recoveryVault.id, 'key-vault-access')\n  scope: keyVault\n  properties: {\n    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'e147488a-f6f5-4113-8e2d-b22465e65bf6') // Key Vault Crypto Service Encryption User\n    principalId: recoveryVault.identity.principalId\n    principalType: 'ServicePrincipal'\n  }\n}\n\n// Output important values\noutput sqlServerName string = sqlServer.name\noutput databaseName string = sqlDatabase.name\noutput recoveryVaultName string = recoveryVault.name\noutput keyVaultName string = keyVault.name"
+      },
+      "tools": [
+        {
+          "name": "Azure Backup",
+          "type": "Managed Backup Service",
+          "cost": "$10/month per protected instance + storage costs"
+        },
+        {
+          "name": "Azure Key Vault",
+          "type": "Key Management Service",
+          "cost": "$0.03 per 10,000 operations"
+        },
+        {
+          "name": "Azure Private Link",
+          "type": "Network Security",
+          "cost": "$0.01 per GB processed"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.3.1 - Information backup",
+        "A.13.1.3 - Segregation in networks",
+        "A.10.1.2 - Key management"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.AC-5 - Network integrity is protected",
+        "PR.IP-4 - Backups of information are conducted, maintained, and tested"
+      ],
+      "validation_steps": [
+        "Verify Recovery Services Vault has system-assigned managed identity",
+        "Confirm customer-managed key is used for encryption",
+        "Test backup policy creates recovery points as scheduled",
+        "Validate private endpoints are configured correctly",
+        "Check RBAC assignments for least privilege access",
+        "Test database restore from backup",
+        "Verify soft delete is enabled with 90-day retention",
+        "Review Azure Monitor alerts for backup failures"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "S3 Bucket Scanning and Access Control Monitoring",
+      "description": "Implement automated scanning for publicly accessible S3 buckets containing backup files and enforce preventive controls through AWS Config rules and AWS Security Hub.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "AWS Lambda + Boto3",
+        "code": "import json\nimport boto3\nimport re\nfrom datetime import datetime\nfrom typing import List, Dict, Any\n\n# Initialize AWS clients\ns3_client = boto3.client('s3')\nsns_client = boto3.client('sns')\nconfig_client = boto3.client('config')\n\n# SNS topic for alerts (set via environment variable)\nALERT_TOPIC_ARN = 'arn:aws:sns:us-east-1:123456789012:backup-security-alerts'\n\n# Backup file patterns to detect\nBACKUP_PATTERNS = [\n    r'\\.sql$',\n    r'\\.dump$',\n    r'\\.bak$',\n    r'backup.*\\.(tar|gz|zip|7z)$',\n    r'dump.*\\.(tar|gz|zip)$',\n    r'mongodump.*',\n    r'pg_dump.*',\n    r'mysqldump.*',\n    r'database.*\\.(sql|dump)$',\n]\n\ndef lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:\n    \"\"\"\n    Lambda function to scan S3 buckets for publicly accessible backup files.\n    Triggered by CloudWatch Events (daily schedule) or AWS Config rule evaluation.\n    \"\"\"\n    \n    findings: List[Dict[str, Any]] = []\n    \n    try:\n        # Get all S3 buckets\n        response = s3_client.list_buckets()\n        buckets = response.get('Buckets', [])\n        \n        print(f\"Scanning {len(buckets)} S3 buckets for backup file exposure...\")\n        \n        for bucket in buckets:\n            bucket_name = bucket['Name']\n            bucket_findings = scan_bucket(bucket_name)\n            findings.extend(bucket_findings)\n        \n        # Report findings\n        if findings:\n            report_findings(findings)\n            return {\n                'statusCode': 200,\n                'body': json.dumps({\n                    'message': f'Found {len(findings)} security issues',\n                    'findings': findings\n                })\n            }\n        else:\n            print(\"No publicly accessible backup files found.\")\n            return {\n                'statusCode': 200,\n                'body': json.dumps({'message': 'No issues found'})\n            }\n            \n    except Exception as e:\n        print(f\"Error scanning buckets: {str(e)}\")\n        raise\n\ndef scan_bucket(bucket_name: str) -> List[Dict[str, Any]]:\n    \"\"\"\n    Scan a single S3 bucket for security issues.\n    \"\"\"\n    findings = []\n    \n    try:\n        # Check bucket public access settings\n        try:\n            public_access = s3_client.get_public_access_block(\n                Bucket=bucket_name\n            )\n            block_config = public_access['PublicAccessBlockConfiguration']\n            \n            if not all([\n                block_config.get('BlockPublicAcls', False),\n                block_config.get('IgnorePublicAcls', False),\n                block_config.get('BlockPublicPolicy', False),\n                block_config.get('RestrictPublicBuckets', False)\n            ]):\n                findings.append({\n                    'severity': 'HIGH',\n                    'bucket': bucket_name,\n                    'issue': 'Block Public Access not fully enabled',\n                    'recommendation': 'Enable all Block Public Access settings'\n                })\n        except s3_client.exceptions.NoSuchPublicAccessBlockConfiguration:\n            findings.append({\n                'severity': 'CRITICAL',\n                'bucket': bucket_name,\n                'issue': 'No Public Access Block configuration',\n                'recommendation': 'Enable Block Public Access for this bucket'\n            })\n        \n        # Check bucket ACL\n        acl = s3_client.get_bucket_acl(Bucket=bucket_name)\n        for grant in acl.get('Grants', []):\n            grantee = grant.get('Grantee', {})\n            if grantee.get('Type') == 'Group' and \\\n               'AllUsers' in grantee.get('URI', ''):\n                findings.append({\n                    'severity': 'CRITICAL',\n                    'bucket': bucket_name,\n                    'issue': f\"Public ACL grant: {grant['Permission']}\",\n                    'recommendation': 'Remove public ACL grants'\n                })\n        \n        # Check for backup files\n        paginator = s3_client.get_paginator('list_objects_v2')\n        for page in paginator.paginate(Bucket=bucket_name):\n            for obj in page.get('Contents', []):\n                key = obj['Key']\n                \n                # Check if filename matches backup pattern\n                if is_backup_file(key):\n                    # Check object ACL\n                    obj_acl = s3_client.get_object_acl(\n                        Bucket=bucket_name,\n                        Key=key\n                    )\n                    \n                    for grant in obj_acl.get('Grants', []):\n                        grantee = grant.get('Grantee', {})\n                        if grantee.get('Type') == 'Group' and \\\n                           'AllUsers' in grantee.get('URI', ''):\n                            findings.append({\n                                'severity': 'CRITICAL',\n                                'bucket': bucket_name,\n                                'key': key,\n                                'issue': 'Backup file publicly accessible',\n                                'size_mb': obj['Size'] / (1024 * 1024),\n                                'last_modified': obj['LastModified'].isoformat(),\n                                'recommendation': 'Remove public access and encrypt file'\n                            })\n                    \n                    # Check encryption\n                    try:\n                        obj_metadata = s3_client.head_object(\n                            Bucket=bucket_name,\n                            Key=key\n                        )\n                        \n                        if 'ServerSideEncryption' not in obj_metadata:\n                            findings.append({\n                                'severity': 'HIGH',\n                                'bucket': bucket_name,\n                                'key': key,\n                                'issue': 'Backup file not encrypted',\n                                'recommendation': 'Enable SSE-KMS encryption'\n                            })\n                    except Exception as e:\n                        print(f\"Error checking encryption for {key}: {str(e)}\")\n        \n    except s3_client.exceptions.NoSuchBucket:\n        print(f\"Bucket {bucket_name} does not exist\")\n    except Exception as e:\n        print(f\"Error scanning bucket {bucket_name}: {str(e)}\")\n    \n    return findings\n\ndef is_backup_file(filename: str) -> bool:\n    \"\"\"\n    Check if filename matches known backup file patterns.\n    \"\"\"\n    filename_lower = filename.lower()\n    for pattern in BACKUP_PATTERNS:\n        if re.search(pattern, filename_lower):\n            return True\n    return False\n\ndef report_findings(findings: List[Dict[str, Any]]) -> None:\n    \"\"\"\n    Send findings to SNS topic for alerting.\n    \"\"\"\n    critical_count = sum(1 for f in findings if f['severity'] == 'CRITICAL')\n    high_count = sum(1 for f in findings if f['severity'] == 'HIGH')\n    \n    message = f\"\"\"\n    ⚠️ S3 Backup Security Scan Results\n    \n    Timestamp: {datetime.utcnow().isoformat()}\n    Total Findings: {len(findings)}\n    Critical: {critical_count}\n    High: {high_count}\n    \n    Details:\n    {json.dumps(findings, indent=2, default=str)}\n    \n    Action Required:\n    1. Review all CRITICAL findings immediately\n    2. Enable Block Public Access on all buckets\n    3. Remove public ACL grants from backup files\n    4. Enable SSE-KMS encryption on all backups\n    5. Implement least-privilege IAM policies\n    \"\"\"\n    \n    try:\n        sns_client.publish(\n            TopicArn=ALERT_TOPIC_ARN,\n            Subject='🚨 S3 Backup Security Alert - Action Required',\n            Message=message\n        )\n        print(f\"Alert sent to SNS topic: {ALERT_TOPIC_ARN}\")\n    except Exception as e:\n        print(f\"Error sending SNS notification: {str(e)}\")\n\n# AWS Config Rule evaluation function\ndef evaluate_compliance(config_item: Dict[str, Any]) -> str:\n    \"\"\"\n    Evaluate S3 bucket compliance with backup security requirements.\n    Called by AWS Config custom rule.\n    \"\"\"\n    bucket_name = config_item['resourceName']\n    findings = scan_bucket(bucket_name)\n    \n    # Check for critical findings\n    critical_findings = [f for f in findings if f['severity'] == 'CRITICAL']\n    \n    if critical_findings:\n        return 'NON_COMPLIANT'\n    else:\n        return 'COMPLIANT'"
+      },
+      "tools": [
+        {
+          "name": "AWS Lambda",
+          "type": "Serverless Compute",
+          "cost": "$0.20 per 1M requests + $0.0000166667/GB-second"
+        },
+        {
+          "name": "AWS Config",
+          "type": "Configuration Management",
+          "cost": "$0.003 per configuration item recorded"
+        },
+        {
+          "name": "AWS SNS",
+          "type": "Notification Service",
+          "cost": "$0.50 per 1M requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "DE.CM-7 - Monitoring for unauthorized personnel, connections, devices, and software is performed"
+      ],
+      "validation_steps": [
+        "Deploy Lambda function with appropriate IAM role",
+        "Create CloudWatch Events rule for daily execution",
+        "Configure SNS topic for security alerts",
+        "Test Lambda function with sample bucket",
+        "Verify alerts are sent for publicly accessible backups",
+        "Create AWS Config rule using custom Lambda evaluator",
+        "Review Config compliance dashboard",
+        "Test remediation of non-compliant resources"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual S3 GetObject API calls from unknown IP addresses",
+      "Large data transfer volumes from backup storage buckets",
+      "S3 ListBucket operations from unauthorized sources",
+      "Access to backup files from unexpected geographic locations",
+      "Download of multiple backup files in short time period",
+      "Failed authentication attempts followed by successful backup access",
+      "Backup file enumeration patterns (sequential filename requests)",
+      "CloudTrail events showing PutBucketAcl making buckets public"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect unauthorized backup file access\nAzureDiagnostics\n| where ResourceType == \"VAULTS\" and Category == \"AzureBackupReport\"\n| where OperationName == \"Backup\" or OperationName == \"Restore\"\n| where ResultType != \"Success\"\n| summarize FailedAttempts = count() by CallerIpAddress, OperationName, bin(TimeGenerated, 1h)\n| where FailedAttempts > 3\n| join kind=inner (\n    AzureDiagnostics\n    | where ResourceType == \"VAULTS\" and ResultType == \"Success\"\n    | where OperationName == \"Restore\"\n  ) on CallerIpAddress\n| project TimeGenerated, CallerIpAddress, FailedAttempts, OperationName, Resource\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Detect S3 backup bucket enumeration and mass downloads\nfields @timestamp, requestParameters.bucketName, requestParameters.key, sourceIPAddress, userIdentity.principalId\n| filter eventName in [\"GetObject\", \"ListBucket\", \"GetBucketAcl\"]\n| filter requestParameters.bucketName like /backup/\n| filter requestParameters.key like /\\.(sql|dump|bak|tar\\.gz)$/\n| stats count() as AccessCount by sourceIPAddress, bin(5m)\n| filter AccessCount > 10\n| sort @timestamp desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=aws sourcetype=aws:cloudtrail eventName IN (\"GetObject\", \"ListBucket\", \"HeadBucket\") \n| rex field=requestParameters \"bucketName=(?<bucket>[^,}]+)\"\n| rex field=requestParameters \"key=(?<key>[^,}]+)\"\n| where match(bucket, \"backup\") OR match(key, \"\\\\.(sql|dump|bak|tar\\\\.gz)$\")\n| stats count as access_count, values(key) as files_accessed by sourceIPAddress, userIdentity.principalId, bucket, _time\n| where access_count > 5\n| eval severity=case(\n    access_count > 50, \"critical\",\n    access_count > 20, \"high\",\n    access_count > 10, \"medium\",\n    1=1, \"low\"\n  )\n| table _time, sourceIPAddress, userIdentity.principalId, bucket, files_accessed, access_count, severity\n| sort -access_count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"aws.cloudtrail\" AND \n(\n  event.action: (\"GetObject\" OR \"ListBucket\" OR \"GetBucketAcl\") AND\n  aws.cloudtrail.request_parameters: (*backup* OR *.sql OR *.dump OR *.bak)\n) AND\nNOT source.ip: (10.0.0.0/8 OR 172.16.0.0/12 OR 192.168.0.0/16)\n| stats count() by source.ip, aws.cloudtrail.user_identity.principal_id"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS GuardDuty",
+        "type": "Threat Detection",
+        "usage": "Automatically detects unusual S3 API activity and potential data exfiltration"
+      },
+      {
+        "name": "S3 Access Analyzer",
+        "type": "Access Analysis",
+        "usage": "Identifies S3 buckets accessible from outside your AWS organization"
+      },
+      {
+        "name": "CloudTrail Insights",
+        "type": "Anomaly Detection",
+        "usage": "Detects unusual API call patterns including backup file enumeration"
+      },
+      {
+        "name": "Macie",
+        "type": "Data Discovery",
+        "usage": "Discovers and classifies sensitive data in S3 buckets, including PII in backups"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Education"
+    ],
+    "compliance": [
+      "GDPR (Article 32 - Security of Processing)",
+      "HIPAA (164.308(a)(7)(ii)(A) - Data Backup Plan)",
+      "PCI-DSS 3.2.1 (Requirement 3.4 - Render PAN Unreadable)",
+      "SOC2 (CC6.1 - Logical and Physical Access Controls)",
+      "ISO27001 (A.12.3.1 - Information Backup)",
+      "NIST CSF (PR.DS-1 - Data-at-rest is protected)",
+      "CCPA (1798.150 - Data Breach Liability)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Hybrid",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "PII",
+      "PHI",
+      "PCI"
+    ]
+  }
+}

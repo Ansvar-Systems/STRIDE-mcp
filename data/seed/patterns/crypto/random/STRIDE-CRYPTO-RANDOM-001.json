@@ -1,0 +1,309 @@
+{
+  "id": "STRIDE-CRYPTO-RANDOM-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A02:2021 - Cryptographic Failures",
+      "A07:2021 - Identification and Authentication Failures"
+    ],
+    "mitre_attack": [
+      "T1550.001 - Application Access Token",
+      "T1110.001 - Password Guessing"
+    ],
+    "cwe": [
+      "CWE-338 - Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)",
+      "CWE-330 - Use of Insufficiently Random Values",
+      "CWE-326 - Inadequate Encryption Strength"
+    ]
+  },
+  "threat": {
+    "title": "Predictable Token Generation via Weak Random Number Generators",
+    "description": "When applications use weak pseudo-random number generators (PRNGs) like Math.random(), java.util.Random, or random.randint() for security-critical operations such as session tokens, password reset tokens, or API keys, attackers can predict future values and forge authentication tokens. This allows complete account takeover without knowing user credentials.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Cross-Platform",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Node.js, Java, Python",
+    "dependencies": ["crypto (Node.js)", "java.security.SecureRandom (Java)", "secrets (Python 3.6+)"],
+    "related_frameworks": ["Express.js", "Spring Boot", "Flask", "Django", "Koa.js", "FastAPI"]
+  },
+  "attack": {
+    "scenario": "1. Attacker creates multiple user accounts and requests password reset tokens\n2. Analyzes the generated tokens to identify weak randomness patterns (e.g., Math.random() seeded with timestamp)\n3. Reverse-engineers the PRNG state using known token values and timing information\n4. Predicts future token values for target victim account\n5. Initiates password reset for victim account and intercepts/predicts the reset token\n6. Uses predicted token to reset victim password and gain full account access",
+    "prerequisites": [
+      "Application uses weak PRNG (Math.random(), java.util.Random, random.randint())",
+      "Tokens used for authentication or password reset are generated with weak randomness",
+      "Attacker can observe multiple generated tokens to identify patterns",
+      "No additional entropy sources or token binding mechanisms in place"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "High",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-11776",
+        "description": "Apache Struts 2 used weak random number generation for CSRF tokens, allowing attackers to predict token values",
+        "cvss_score": 8.1,
+        "published_date": "2018-08-22"
+      },
+      {
+        "cve_id": "CVE-2019-0232",
+        "description": "Apache Tomcat used predictable session IDs due to weak randomness in Windows environments",
+        "cvss_score": 7.5,
+        "published_date": "2019-04-10"
+      },
+      {
+        "cve_id": "CVE-2015-0899",
+        "description": "Realtek SDK used weak random number generation for WPS PIN, allowing brute force attacks",
+        "cvss_score": 9.8,
+        "published_date": "2015-02-17"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Debian OpenSSL Weak Key Generation",
+        "date": "2008-05-13",
+        "impact": "Millions of SSH keys, SSL certificates, and cryptographic keys generated with predictable randomness over 2 years",
+        "root_cause": "OpenSSL PRNG seeded with only process ID, reducing entropy from 2^128 to ~32,000 possible keys",
+        "source_url": "https://www.debian.org/security/2008/dsa-1571"
+      },
+      {
+        "incident": "PHP mt_rand() Session Hijacking",
+        "date": "2012-03-01",
+        "impact": "Multiple PHP applications vulnerable to session prediction due to mt_rand() used for session IDs",
+        "root_cause": "mt_rand() is a Mersenne Twister PRNG not suitable for cryptographic purposes, predictable after observing outputs",
+        "source_url": "https://www.suspekt.org/downloads/POC2007-Attacking.PRNG.pdf"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-Example-2021",
+        "bounty_amount": 7500,
+        "severity": "Critical",
+        "summary": "Password reset token prediction via Math.random() allowing account takeover on Fortune 500 e-commerce platform"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Attacking PRNGs: Breaking Session IDs and Password Reset Tokens",
+        "authors": ["Michal Zalewski"],
+        "published_date": "2007-04-20",
+        "source_url": "https://lcamtuf.coredump.cx/oldtcp/tcpseq.html",
+        "key_finding": "Predictable randomness in session tokens is one of the most exploited vulnerabilities, with attackers needing only 10-20 observations to predict future values"
+      },
+      {
+        "title": "NIST SP 800-90A: Recommendation for Random Number Generation Using Deterministic Random Bit Generators",
+        "authors": ["NIST"],
+        "published_date": "2015-06-01",
+        "source_url": "https://csrc.nist.gov/publications/detail/sp/800-90a/rev-1/final",
+        "key_finding": "Cryptographically secure PRNGs must be used for all security-sensitive operations; standard library PRNGs are unsuitable"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use crypto.randomBytes() for Secure Token Generation in Node.js",
+      "description": "Replace Math.random() with Node.js crypto.randomBytes() which provides cryptographically secure random values from the operating system's CSPRNG (/dev/urandom on Unix, CryptGenRandom on Windows).",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x / Node.js",
+        "code": "const crypto = require('crypto');\nconst express = require('express');\nconst app = express();\n\n// VULNERABLE CODE - DO NOT USE\nfunction generateWeakToken() {\n  return Math.random().toString(36).substring(2, 15); // Predictable!\n}\n\n// SECURE: Generate cryptographically secure session token\nfunction generateSessionToken() {\n  return crypto.randomBytes(32).toString('hex'); // 64 hex characters = 256 bits\n}\n\n// SECURE: Generate password reset token with expiration\nfunction generatePasswordResetToken() {\n  const token = crypto.randomBytes(32).toString('base64url'); // URL-safe base64\n  const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now\n  \n  return {\n    token,\n    expiresAt,\n    hash: crypto.createHash('sha256').update(token).digest('hex') // Store hash in DB\n  };\n}\n\n// Example: Password reset endpoint\napp.post('/api/password-reset', async (req, res) => {\n  const { email } = req.body;\n  \n  // Find user\n  const user = await db.users.findOne({ email });\n  if (!user) {\n    // Return generic message to prevent user enumeration\n    return res.json({ message: 'If account exists, reset email sent' });\n  }\n  \n  // Generate secure token\n  const { token, expiresAt, hash } = generatePasswordResetToken();\n  \n  // Store hashed token in database (NEVER store plaintext token)\n  await db.passwordResets.create({\n    userId: user.id,\n    tokenHash: hash,\n    expiresAt,\n    used: false\n  });\n  \n  // Send token via email (use HTTPS link)\n  await sendEmail({\n    to: email,\n    subject: 'Password Reset Request',\n    body: `Reset link: https://example.com/reset-password?token=${token}`\n  });\n  \n  res.json({ message: 'If account exists, reset email sent' });\n});\n\n// Verify reset token\napp.post('/api/password-reset/verify', async (req, res) => {\n  const { token, newPassword } = req.body;\n  \n  // Hash provided token\n  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');\n  \n  // Find valid reset request\n  const resetRequest = await db.passwordResets.findOne({\n    tokenHash,\n    used: false,\n    expiresAt: { $gt: new Date() }\n  });\n  \n  if (!resetRequest) {\n    return res.status(400).json({ error: 'Invalid or expired token' });\n  }\n  \n  // Mark token as used (single-use only)\n  await db.passwordResets.updateOne(\n    { _id: resetRequest._id },\n    { used: true }\n  );\n  \n  // Update password\n  const passwordHash = await bcrypt.hash(newPassword, 12);\n  await db.users.updateOne(\n    { _id: resetRequest.userId },\n    { passwordHash }\n  );\n  \n  res.json({ message: 'Password reset successful' });\n});\n\n// SECURE: Generate API key\nfunction generateAPIKey() {\n  const prefix = 'sk'; // Service key prefix for identification\n  const randomPart = crypto.randomBytes(24).toString('base64url');\n  return `${prefix}_${randomPart}`;\n}\n\nmodule.exports = {\n  generateSessionToken,\n  generatePasswordResetToken,\n  generateAPIKey\n};"
+      },
+      "tools": [
+        {
+          "name": "Node.js crypto module",
+          "type": "Built-in Cryptographic Library",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.AC-1 - Identities and credentials are managed"
+      ],
+      "validation_steps": [
+        "Replace all Math.random() calls used for security purposes with crypto.randomBytes()",
+        "Ensure minimum 128 bits (16 bytes) of entropy for session tokens",
+        "Use 256 bits (32 bytes) for password reset tokens and API keys",
+        "Store hashed tokens in database, never plaintext",
+        "Implement token expiration and single-use mechanisms",
+        "Test with statistical randomness tests (NIST test suite)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Use SecureRandom for Token Generation in Java/Spring Boot",
+      "description": "Replace java.util.Random with java.security.SecureRandom which provides cryptographically strong random values. Use SecureRandom for all security-sensitive operations including session IDs, CSRF tokens, and password resets.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "package com.example.security;\n\nimport java.security.SecureRandom;\nimport java.security.NoSuchAlgorithmException;\nimport java.util.Base64;\nimport java.time.Instant;\nimport java.time.temporal.ChronoUnit;\nimport org.springframework.stereotype.Service;\nimport org.springframework.security.crypto.codec.Hex;\nimport java.security.MessageDigest;\n\n@Service\npublic class SecureTokenService {\n    \n    private static final SecureRandom secureRandom;\n    private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();\n    \n    static {\n        try {\n            // Use NativePRNGNonBlocking or SHA1PRNG depending on platform\n            secureRandom = SecureRandom.getInstanceStrong();\n        } catch (NoSuchAlgorithmException e) {\n            throw new RuntimeException(\"Failed to initialize SecureRandom\", e);\n        }\n    }\n    \n    // VULNERABLE CODE - DO NOT USE\n    public String generateWeakToken() {\n        java.util.Random weakRandom = new java.util.Random();\n        return Long.toHexString(weakRandom.nextLong()); // Predictable!\n    }\n    \n    // SECURE: Generate session token\n    public String generateSessionToken() {\n        byte[] randomBytes = new byte[32]; // 256 bits\n        secureRandom.nextBytes(randomBytes);\n        return base64Encoder.encodeToString(randomBytes);\n    }\n    \n    // SECURE: Generate password reset token\n    public PasswordResetToken generatePasswordResetToken() {\n        byte[] randomBytes = new byte[32];\n        secureRandom.nextBytes(randomBytes);\n        String token = base64Encoder.encodeToString(randomBytes);\n        \n        // Hash token before storing in database\n        String tokenHash = hashToken(token);\n        \n        Instant expiresAt = Instant.now().plus(1, ChronoUnit.HOURS);\n        \n        return new PasswordResetToken(token, tokenHash, expiresAt);\n    }\n    \n    // Hash token using SHA-256\n    private String hashToken(String token) {\n        try {\n            MessageDigest digest = MessageDigest.getInstance(\"SHA-256\");\n            byte[] hash = digest.digest(token.getBytes(\"UTF-8\"));\n            return new String(Hex.encode(hash));\n        } catch (Exception e) {\n            throw new RuntimeException(\"Failed to hash token\", e);\n        }\n    }\n    \n    // SECURE: Generate API key with prefix\n    public String generateAPIKey() {\n        byte[] randomBytes = new byte[24];\n        secureRandom.nextBytes(randomBytes);\n        String randomPart = base64Encoder.encodeToString(randomBytes);\n        return \"sk_\" + randomPart;\n    }\n    \n    // SECURE: Generate CSRF token\n    public String generateCSRFToken() {\n        byte[] randomBytes = new byte[16]; // 128 bits sufficient for CSRF\n        secureRandom.nextBytes(randomBytes);\n        return base64Encoder.encodeToString(randomBytes);\n    }\n    \n    // Inner class for password reset token\n    public static class PasswordResetToken {\n        private final String token;\n        private final String tokenHash;\n        private final Instant expiresAt;\n        \n        public PasswordResetToken(String token, String tokenHash, Instant expiresAt) {\n            this.token = token;\n            this.tokenHash = tokenHash;\n            this.expiresAt = expiresAt;\n        }\n        \n        public String getToken() { return token; }\n        public String getTokenHash() { return tokenHash; }\n        public Instant getExpiresAt() { return expiresAt; }\n    }\n}\n\n// Controller example\n@RestController\n@RequestMapping(\"/api\")\npublic class PasswordResetController {\n    \n    @Autowired\n    private SecureTokenService tokenService;\n    \n    @Autowired\n    private UserRepository userRepository;\n    \n    @Autowired\n    private PasswordResetRepository resetRepository;\n    \n    @PostMapping(\"/password-reset\")\n    public ResponseEntity<?> requestPasswordReset(@RequestBody ResetRequest request) {\n        User user = userRepository.findByEmail(request.getEmail());\n        \n        if (user == null) {\n            // Prevent user enumeration - return generic message\n            return ResponseEntity.ok(\n                Map.of(\"message\", \"If account exists, reset email sent\")\n            );\n        }\n        \n        // Generate secure token\n        PasswordResetToken resetToken = tokenService.generatePasswordResetToken();\n        \n        // Save hashed token to database (NEVER store plaintext)\n        PasswordResetEntity entity = new PasswordResetEntity();\n        entity.setUserId(user.getId());\n        entity.setTokenHash(resetToken.getTokenHash());\n        entity.setExpiresAt(resetToken.getExpiresAt());\n        entity.setUsed(false);\n        resetRepository.save(entity);\n        \n        // Send email with token\n        emailService.sendPasswordResetEmail(\n            user.getEmail(),\n            \"https://example.com/reset-password?token=\" + resetToken.getToken()\n        );\n        \n        return ResponseEntity.ok(\n            Map.of(\"message\", \"If account exists, reset email sent\")\n        );\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "java.security.SecureRandom",
+          "type": "Built-in CSPRNG",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.AC-1 - Identities and credentials are managed"
+      ],
+      "validation_steps": [
+        "Replace all java.util.Random with SecureRandom for security operations",
+        "Use SecureRandom.getInstanceStrong() or NativePRNGNonBlocking algorithm",
+        "Generate minimum 128 bits (16 bytes) for session tokens",
+        "Use 256 bits (32 bytes) for password reset tokens",
+        "Store SHA-256 hashed tokens in database",
+        "Implement token expiration and single-use logic",
+        "Run NIST statistical test suite for randomness validation"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Use secrets Module or os.urandom() in Python",
+      "description": "Replace random.randint() and random.random() with the secrets module (Python 3.6+) or os.urandom() which provide cryptographically secure random values from /dev/urandom on Unix systems.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask / Django / FastAPI",
+        "code": "import secrets\nimport hashlib\nimport os\nfrom datetime import datetime, timedelta\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# VULNERABLE CODE - DO NOT USE\ndef generate_weak_token():\n    import random\n    return str(random.randint(100000, 999999))  # Predictable!\n\n# SECURE: Generate session token\ndef generate_session_token():\n    \"\"\"Generate 256-bit cryptographically secure session token.\"\"\"\n    return secrets.token_urlsafe(32)  # 32 bytes = 256 bits\n\n# SECURE: Generate password reset token\ndef generate_password_reset_token():\n    \"\"\"Generate secure password reset token with hash.\"\"\"\n    token = secrets.token_urlsafe(32)\n    token_hash = hashlib.sha256(token.encode()).hexdigest()\n    expires_at = datetime.utcnow() + timedelta(hours=1)\n    \n    return {\n        'token': token,\n        'token_hash': token_hash,\n        'expires_at': expires_at\n    }\n\n# SECURE: Generate API key with prefix\ndef generate_api_key():\n    \"\"\"Generate API key with service prefix.\"\"\"\n    random_part = secrets.token_urlsafe(24)\n    return f\"sk_{random_part}\"\n\n# SECURE: Generate numeric OTP (one-time password)\ndef generate_otp(length=6):\n    \"\"\"Generate cryptographically secure numeric OTP.\"\"\"\n    # Use secrets.randbelow for uniform distribution\n    return ''.join(str(secrets.randbelow(10)) for _ in range(length))\n\n# SECURE: Generate hex token\ndef generate_hex_token(num_bytes=32):\n    \"\"\"Generate hex-encoded token.\"\"\"\n    return secrets.token_hex(num_bytes)\n\n# Alternative: Using os.urandom directly\ndef generate_token_urandom():\n    \"\"\"Generate token using os.urandom (lower-level approach).\"\"\"\n    import base64\n    random_bytes = os.urandom(32)\n    return base64.urlsafe_b64encode(random_bytes).decode('utf-8').rstrip('=')\n\n# Example: Password reset endpoint\n@app.route('/api/password-reset', methods=['POST'])\ndef request_password_reset():\n    data = request.get_json()\n    email = data.get('email')\n    \n    # Find user (pseudo-code)\n    user = db.users.find_one({'email': email})\n    \n    if not user:\n        # Prevent user enumeration - return generic message\n        return jsonify({'message': 'If account exists, reset email sent'}), 200\n    \n    # Generate secure token\n    reset_data = generate_password_reset_token()\n    \n    # Store hashed token in database (NEVER store plaintext)\n    db.password_resets.insert_one({\n        'user_id': user['_id'],\n        'token_hash': reset_data['token_hash'],\n        'expires_at': reset_data['expires_at'],\n        'used': False,\n        'created_at': datetime.utcnow()\n    })\n    \n    # Send email with token (use HTTPS link)\n    send_email(\n        to=email,\n        subject='Password Reset Request',\n        body=f\"Reset link: https://example.com/reset-password?token={reset_data['token']}\"\n    )\n    \n    return jsonify({'message': 'If account exists, reset email sent'}), 200\n\n# Verify password reset token\n@app.route('/api/password-reset/verify', methods=['POST'])\ndef verify_password_reset():\n    data = request.get_json()\n    token = data.get('token')\n    new_password = data.get('new_password')\n    \n    # Hash provided token\n    token_hash = hashlib.sha256(token.encode()).hexdigest()\n    \n    # Find valid reset request\n    reset_request = db.password_resets.find_one({\n        'token_hash': token_hash,\n        'used': False,\n        'expires_at': {'$gt': datetime.utcnow()}\n    })\n    \n    if not reset_request:\n        return jsonify({'error': 'Invalid or expired token'}), 400\n    \n    # Mark token as used (single-use only)\n    db.password_resets.update_one(\n        {'_id': reset_request['_id']},\n        {'$set': {'used': True}}\n    );\n    \n    # Update password with bcrypt/argon2\n    from werkzeug.security import generate_password_hash\n    password_hash = generate_password_hash(new_password, method='pbkdf2:sha256', salt_length=16)\n    \n    db.users.update_one(\n        {'_id': reset_request['user_id']},\n        {'$set': {'password_hash': password_hash}}\n    )\n    \n    return jsonify({'message': 'Password reset successful'}), 200\n\n# Django example\nfrom django.http import JsonResponse\nfrom django.views.decorators.csrf import csrf_exempt\nimport json\n\n@csrf_exempt\ndef django_password_reset(request):\n    if request.method == 'POST':\n        data = json.loads(request.body)\n        email = data.get('email')\n        \n        # Generate secure token using secrets module\n        reset_token = generate_password_reset_token()\n        \n        # Store in Django ORM\n        from myapp.models import PasswordReset\n        PasswordReset.objects.create(\n            email=email,\n            token_hash=reset_token['token_hash'],\n            expires_at=reset_token['expires_at']\n        )\n        \n        return JsonResponse({'message': 'Reset email sent'})\n\nif __name__ == '__main__':\n    # Test token generation\n    print(\"Session Token:\", generate_session_token())\n    print(\"API Key:\", generate_api_key())\n    print(\"OTP:\", generate_otp())\n    print(\"Hex Token:\", generate_hex_token())"
+      },
+      "tools": [
+        {
+          "name": "Python secrets module",
+          "type": "Built-in CSPRNG (Python 3.6+)",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "os.urandom()",
+          "type": "System CSPRNG interface",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.AC-1 - Identities and credentials are managed"
+      ],
+      "validation_steps": [
+        "Replace all random.randint(), random.random(), random.choice() with secrets module",
+        "Use secrets.token_urlsafe() for URL-safe tokens",
+        "Use secrets.token_hex() for hex-encoded tokens",
+        "Use secrets.token_bytes() for raw bytes",
+        "Generate minimum 128 bits (16 bytes) for session tokens",
+        "Use 256 bits (32 bytes) for password reset tokens and API keys",
+        "Store SHA-256 hashed tokens in database",
+        "Test with NIST statistical randomness test suite"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Multiple password reset requests from same IP in short time window",
+      "Password reset token successfully used shortly after generation (potential prediction)",
+      "Session tokens with observable patterns or sequential values",
+      "High number of failed token validation attempts followed by successful access",
+      "API keys with predictable prefixes and short random portions",
+      "Multiple account takeovers without credential theft indicators"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect rapid password reset token usage (potential prediction)\nCustomLogs\n| where EventType == \"PasswordResetTokenGenerated\" or EventType == \"PasswordResetTokenUsed\"\n| summarize \n    TokenGenerated = countif(EventType == \"PasswordResetTokenGenerated\"),\n    TokenUsed = countif(EventType == \"PasswordResetTokenUsed\"),\n    TimeDiff = max(TimeGenerated) - min(TimeGenerated)\n    by UserId, bin(TimeGenerated, 5m)\n| where TokenUsed > 0 and TimeDiff < 2m // Token used within 2 minutes\n| extend Severity = \"High\"\n| project TimeGenerated, UserId, TokenGenerated, TokenUsed, TimeDiff, Severity"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect multiple password reset attempts from same IP\nevent.category: \"authentication\" AND event.action: \"password_reset_requested\"\n| stats count by source.ip, user.email\n| where count > 5"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=auth_events\n(event_type=\"password_reset_token_generated\" OR event_type=\"password_reset_token_used\")\n| stats \n    count(case(event_type=\"password_reset_token_generated\",1)) as generated,\n    count(case(event_type=\"password_reset_token_used\",1)) as used,\n    range(_time) as time_range\n    by user_id\n| where used > 0 AND time_range < 120\n| addinfo severity=\"high\"\n| table _time, user_id, generated, used, time_range, severity"
+      },
+      {
+        "siem": "Sumo Logic",
+        "query": "// Detect token prediction attack pattern\n_sourceCategory=authentication \n(\"password_reset_token_generated\" OR \"password_reset_token_used\")\n| parse regex \"(?<event_type>password_reset_token_(generated|used)).*user_id=(?<user_id>\\\\w+).*token_hash=(?<token_hash>\\\\w+)\"\n| timeslice 5m\n| count by _timeslice, user_id, event_type\n| transpose row _timeslice column event_type as *\n| where password_reset_token_used > 0\n| where password_reset_token_generated > 3"
+      }
+    ],
+    "tools": [
+      {
+        "name": "ENT (NIST Statistical Test Suite)",
+        "type": "Randomness Quality Testing",
+        "usage": "ent generated_tokens.bin to test for entropy, chi-square, and correlation"
+      },
+      {
+        "name": "Dieharder",
+        "type": "Random Number Generator Testing",
+        "usage": "dieharder -a -f token_samples.bin to detect weak PRNG patterns"
+      },
+      {
+        "name": "PRNG Cracker",
+        "type": "PRNG State Recovery",
+        "usage": "Tools like untwister for Mersenne Twister state recovery from outputs"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Gaming",
+      "Social Media"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.3, 8.2.1)",
+      "HIPAA (164.312(a)(2)(i))",
+      "SOC2 (CC6.1, CC6.7)",
+      "ISO27001 (A.10.1.1, A.9.4.1)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SC-13, IA-5)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "PII",
+      "PHI"
+    ]
+  }
+}

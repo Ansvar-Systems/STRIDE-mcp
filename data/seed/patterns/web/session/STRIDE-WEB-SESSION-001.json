@@ -1,0 +1,317 @@
+{
+  "id": "STRIDE-WEB-SESSION-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1539 - Steal Web Session Cookie",
+      "T1550.004 - Web Session Cookie",
+      "T1185 - Browser Session Hijacking"
+    ],
+    "cwe": [
+      "CWE-384 - Session Fixation",
+      "CWE-346 - Origin Validation Error",
+      "CWE-613 - Insufficient Session Expiration"
+    ]
+  },
+  "threat": {
+    "title": "Session Fixation Attacks in Express.js and Spring Boot Applications",
+    "description": "Session fixation occurs when an attacker sets or predicts a user's session identifier before the user authenticates, then hijacks the session after authentication. Unlike session hijacking where attackers steal existing valid sessions, fixation attacks force victims to use attacker-controlled session IDs. This vulnerability is particularly prevalent in web applications that fail to regenerate session IDs upon authentication, allowing attackers to bypass authentication entirely and impersonate legitimate users.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Express.js / Spring Boot",
+    "versions_affected": [
+      "Express.js 3.x - 4.x",
+      "Spring Boot 2.x - 3.x",
+      "express-session < 1.17.0",
+      "Spring Security < 6.1.2"
+    ],
+    "ecosystem": "Node.js / Java",
+    "dependencies": [
+      "express-session",
+      "express-openid-connect",
+      "cookie-parser",
+      "Spring Security",
+      "Spring Session",
+      "spring-boot-starter-security"
+    ],
+    "related_frameworks": [
+      "Koa.js",
+      "Fastify",
+      "NestJS",
+      "Micronaut",
+      "Quarkus",
+      "Jakarta EE"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker visits target application and obtains a valid session ID (e.g., JSESSIONID=abc123 or connect.sid=xyz789)\n2. Attacker crafts a malicious link or form containing the session ID: https://victim-app.com/login?sessionid=abc123\n3. Victim clicks the malicious link or is redirected via XSS, accepting the attacker's session ID\n4. Victim successfully authenticates using their legitimate credentials while using the attacker's session ID\n5. Application fails to regenerate session ID after authentication, maintaining the same session ID\n6. Attacker uses the same session ID (abc123) to access the application as the authenticated victim, bypassing all authentication controls and accessing sensitive data, executing transactions, or modifying account settings",
+    "prerequisites": [
+      "Application accepts session IDs from URL parameters, cookies, or hidden form fields",
+      "Application does NOT regenerate session ID upon successful authentication",
+      "Session ID remains valid after authentication completes",
+      "Attacker can deliver session ID to victim (via phishing, XSS, or MITM)",
+      "No additional session validation (IP address binding, user-agent checking)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2021-41246",
+        "description": "Session fixation vulnerability in express-openid-connect (versions 2.3.0 - 2.5.1) - fails to regenerate session ID upon authentication",
+        "cvss_score": 7.5,
+        "published_date": "2021-10-06",
+        "affected_component": "express-openid-connect",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-41246"
+      },
+      {
+        "cve_id": "CVE-2023-34034",
+        "description": "Spring Security WebFlux authorization bypass using wildcard patterns - allows session security bypass",
+        "cvss_score": 9.1,
+        "published_date": "2023-07-19",
+        "affected_component": "Spring Security 5.6.0 - 6.1.1",
+        "source_url": "https://spring.io/security/cve-2023-34034/"
+      },
+      {
+        "cve_id": "CVE-2022-22978",
+        "description": "Authorization bypass in Spring Security RegexRequestMatcher - enables session security bypass",
+        "cvss_score": 8.2,
+        "published_date": "2022-05-16",
+        "affected_component": "Spring Security < 5.6.4",
+        "source_url": "https://spring.io/security/cve-2022-22978/"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Okta Support System Breach (Session Hijacking via HAR Files)",
+        "date": "2023-10-17",
+        "impact": "134 customers affected, session tokens from HAR files used to hijack 5 customer sessions including 1Password, BeyondTrust, and Cloudflare",
+        "root_cause": "Stolen session tokens from customer support HAR files used to bypass MFA and hijack authenticated sessions",
+        "source_url": "https://www.bleepingcomputer.com/news/security/okta-breach-134-customers-exposed-in-october-support-system-hack/"
+      },
+      {
+        "incident": "GitLab Session Hijacking Vulnerabilities",
+        "date": "2023-05-23",
+        "impact": "Users exposed to session hijacking due to short, persistent session tokens without expiration or RBAC",
+        "root_cause": "Session tokens susceptible to brute-force attacks, never expire, and lack role-based access control",
+        "source_url": "https://www.infosecurity-magazine.com/news/gitlab-vulns-session-hijacking"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "135797",
+        "bounty_amount": 1500,
+        "severity": "High",
+        "summary": "Session fixation vulnerability allowing account takeover via session ID manipulation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Reliable Protection Against Session Fixation Attacks",
+        "authors": ["Michael Kolsek", "Martin Johns"],
+        "published_date": "2006-01-01",
+        "source_url": "https://www.researchgate.net/publication/221002343_Reliable_protection_against_session_fixation_attacks",
+        "key_finding": "Session fixation can only be reliably prevented by regenerating session identifiers upon authentication and privilege escalation"
+      },
+      {
+        "title": "OWASP Session Fixation Attack",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-01-01",
+        "source_url": "https://owasp.org/www-community/attacks/Session_fixation",
+        "key_finding": "Session fixation is one of the most common session management vulnerabilities, affecting applications that accept session IDs from URL parameters or fail to regenerate session IDs after authentication"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Regenerate Session ID Upon Authentication (Express.js & Spring Boot)",
+      "description": "Always regenerate session identifiers immediately after successful authentication and any privilege level changes. This is the primary defense against session fixation attacks and MUST be implemented in all web applications handling authentication.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst session = require('express-session');\nconst app = express();\n\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  name: 'sessionId',\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    secure: true,\n    httpOnly: true,\n    sameSite: 'strict',\n    maxAge: 1800000\n  }\n}));\n\napp.post('/login', async (req, res) => {\n  const { username, password } = req.body;\n  \n  try {\n    const user = await authenticateUser(username, password);\n    \n    if (!user) {\n      return res.status(401).json({ error: 'Invalid credentials' });\n    }\n    \n    req.session.regenerate((err) => {\n      if (err) {\n        console.error('Session regeneration failed:', err);\n        return res.status(500).json({ error: 'Authentication failed' });\n      }\n      \n      req.session.userId = user.id;\n      req.session.username = user.username;\n      req.session.role = user.role;\n      req.session.authenticatedAt = Date.now();\n      \n      req.session.save((err) => {\n        if (err) {\n          console.error('Session save failed:', err);\n          return res.status(500).json({ error: 'Authentication failed' });\n        }\n        \n        res.json({ \n          success: true,\n          message: 'Login successful',\n          user: { username: user.username, role: user.role }\n        });\n      });\n    });\n  } catch (error) {\n    console.error('Login error:', error);\n    res.status(500).json({ error: 'Internal server error' });\n  }\n});\n\napp.post('/logout', (req, res) => {\n  req.session.destroy((err) => {\n    if (err) {\n      return res.status(500).json({ error: 'Logout failed' });\n    }\n    res.clearCookie('sessionId');\n    res.json({ success: true, message: 'Logged out successfully' });\n  });\n});"
+      },
+      "additional_code_examples": [
+        {
+          "language": "java",
+          "framework": "Spring Boot 3.x",
+          "code": "import org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;\nimport org.springframework.security.web.SecurityFilterChain;\n\n@Configuration\n@EnableWebSecurity\npublic class SecurityConfig {\n\n    @Bean\n    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {\n        http\n            .authorizeHttpRequests(authorize -> authorize\n                .requestMatchers(\"/login\", \"/public/**\").permitAll()\n                .anyRequest().authenticated()\n            )\n            .formLogin(form -> form\n                .loginPage(\"/login\")\n                .permitAll()\n            )\n            .logout(logout -> logout\n                .logoutUrl(\"/logout\")\n                .invalidateHttpSession(true)\n                .deleteCookies(\"JSESSIONID\")\n                .permitAll()\n            )\n            .sessionManagement(session -> session\n                .sessionFixation().newSession()\n                .maximumSessions(1)\n                .maxSessionsPreventsLogin(false)\n            );\n        \n        return http.build();\n    }\n}"
+        }
+      ],
+      "tools": [],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.9.4.3 - Password management system",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are issued, managed, verified, revoked, and audited",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Test that session ID changes after successful login",
+        "Verify old session ID becomes invalid after regeneration",
+        "Confirm session attributes are properly migrated",
+        "Test that failed login attempts do not regenerate session",
+        "Verify session regeneration occurs on privilege escalation"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Reject Session IDs from URL Parameters",
+      "description": "Configure applications to only accept session identifiers from HTTP-only cookies, never from URL parameters, hidden form fields, or other client-controllable sources.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst session = require('express-session');\nconst app = express();\n\napp.use((req, res, next) => {\n  if (req.query.sessionid || req.query.JSESSIONID || req.query.sid) {\n    console.warn('Session fixation attempt detected:', {\n      ip: req.ip,\n      url: req.originalUrl,\n      userAgent: req.headers['user-agent'],\n      timestamp: new Date().toISOString()\n    });\n    \n    return res.status(400).json({ \n      error: 'Invalid request',\n      message: 'Session identifiers in URL are not permitted'\n    });\n  }\n  next();\n});\n\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  name: 'sessionId',\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    secure: true,\n    httpOnly: true,\n    sameSite: 'strict',\n    maxAge: 1800000,\n    path: '/'\n  },\n  genid: (req) => {\n    return require('crypto').randomBytes(32).toString('hex');\n  }\n}));"
+      },
+      "additional_code_examples": [
+        {
+          "language": "java",
+          "framework": "Spring Boot 3.x",
+          "code": "import jakarta.servlet.*;\nimport jakarta.servlet.http.HttpServletRequest;\nimport jakarta.servlet.http.HttpServletResponse;\nimport org.springframework.stereotype.Component;\nimport org.springframework.web.filter.OncePerRequestFilter;\nimport java.io.IOException;\n\n@Component\npublic class SessionFixationPreventionFilter extends OncePerRequestFilter {\n\n    @Override\n    protected void doFilterInternal(\n            HttpServletRequest request,\n            HttpServletResponse response,\n            FilterChain filterChain\n    ) throws ServletException, IOException {\n        \n        String sessionIdParam = request.getParameter(\"jsessionid\");\n        String sessionIdParam2 = request.getParameter(\"JSESSIONID\");\n        String sessionIdParam3 = request.getParameter(\"sessionid\");\n        \n        if (sessionIdParam != null || sessionIdParam2 != null || sessionIdParam3 != null) {\n            logger.warn(String.format(\n                \"Session fixation attempt detected from IP: %s, URL: %s\",\n                request.getRemoteAddr(),\n                request.getRequestURL()\n            ));\n            \n            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);\n            response.setContentType(\"application/json\");\n            response.getWriter().write(\n                \"{\\\"error\\\":\\\"Invalid request\\\",\" +\n                \"\\\"message\\\":\\\"Session identifiers in URL are not permitted\\\"}\"\n            );\n            return;\n        }\n        \n        filterChain.doFilter(request, response);\n    }\n}"
+        }
+      ],
+      "tools": [],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Test that URLs containing sessionid parameters are rejected with 400 error",
+        "Verify session is only established via secure HTTP-only cookies",
+        "Confirm URL rewriting is disabled in servlet configuration",
+        "Test that application functions properly without URL-based session tracking"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Session Validation (IP and User-Agent Binding)",
+      "description": "Bind session identifiers to additional client properties like IP address ranges and User-Agent strings for defense-in-depth.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst session = require('express-session');\nconst crypto = require('crypto');\nconst app = express();\n\nfunction generateClientFingerprint(req) {\n  const ipAddress = req.ip || req.connection.remoteAddress;\n  const userAgent = req.headers['user-agent'] || '';\n  \n  const fingerprint = crypto\n    .createHash('sha256')\n    .update(ipAddress + userAgent)\n    .digest('hex');\n  \n  return fingerprint;\n}\n\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  name: 'sessionId',\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    secure: true,\n    httpOnly: true,\n    sameSite: 'strict',\n    maxAge: 1800000\n  }\n}));\n\napp.use((req, res, next) => {\n  if (req.path === '/login' || req.path.startsWith('/public')) {\n    return next();\n  }\n  \n  if (req.session && req.session.userId) {\n    const currentFingerprint = generateClientFingerprint(req);\n    \n    if (req.session.fingerprint !== currentFingerprint) {\n      console.warn('Session fingerprint mismatch:', {\n        userId: req.session.userId,\n        sessionId: req.sessionID,\n        originalIP: req.session.ipAddress,\n        currentIP: req.ip,\n        timestamp: new Date().toISOString()\n      });\n      \n      req.session.destroy();\n      return res.status(401).json({ \n        error: 'Session validation failed',\n        message: 'Please log in again'\n      });\n    }\n    \n    req.session.lastActivity = Date.now();\n  }\n  \n  next();\n});\n\napp.post('/login', async (req, res) => {\n  const { username, password } = req.body;\n  \n  try {\n    const user = await authenticateUser(username, password);\n    \n    if (!user) {\n      return res.status(401).json({ error: 'Invalid credentials' });\n    }\n    \n    req.session.regenerate((err) => {\n      if (err) {\n        return res.status(500).json({ error: 'Authentication failed' });\n      }\n      \n      req.session.userId = user.id;\n      req.session.username = user.username;\n      req.session.role = user.role;\n      req.session.authenticatedAt = Date.now();\n      req.session.lastActivity = Date.now();\n      req.session.fingerprint = generateClientFingerprint(req);\n      req.session.ipAddress = req.ip || req.connection.remoteAddress;\n      req.session.userAgent = req.headers['user-agent'];\n      \n      req.session.save((err) => {\n        if (err) {\n          return res.status(500).json({ error: 'Authentication failed' });\n        }\n        res.json({ success: true, user: { username: user.username, role: user.role } });\n      });\n    });\n  } catch (error) {\n    console.error('Login error:', error);\n    res.status(500).json({ error: 'Internal server error' });\n  }\n});"
+      },
+      "additional_code_examples": [
+        {
+          "language": "java",
+          "framework": "Spring Boot 3.x",
+          "code": "import jakarta.servlet.http.HttpServletRequest;\nimport jakarta.servlet.http.HttpSession;\nimport org.springframework.security.core.Authentication;\nimport org.springframework.security.web.authentication.AuthenticationSuccessHandler;\nimport org.springframework.stereotype.Component;\nimport java.nio.charset.StandardCharsets;\nimport java.security.MessageDigest;\nimport java.util.HexFormat;\n\n@Component\npublic class SessionFingerprintHandler implements AuthenticationSuccessHandler {\n\n    @Override\n    public void onAuthenticationSuccess(\n            HttpServletRequest request,\n            HttpServletResponse response,\n            Authentication authentication\n    ) throws IOException {\n        \n        HttpSession session = request.getSession();\n        \n        String fingerprint = generateFingerprint(request);\n        String ipAddress = getClientIP(request);\n        String userAgent = request.getHeader(\"User-Agent\");\n        \n        session.setAttribute(\"fingerprint\", fingerprint);\n        session.setAttribute(\"ipAddress\", ipAddress);\n        session.setAttribute(\"userAgent\", userAgent);\n        session.setAttribute(\"authenticatedAt\", System.currentTimeMillis());\n        \n        response.sendRedirect(\"/dashboard\");\n    }\n    \n    private String generateFingerprint(HttpServletRequest request) {\n        String ipAddress = getClientIP(request);\n        String userAgent = request.getHeader(\"User-Agent\");\n        \n        try {\n            MessageDigest digest = MessageDigest.getInstance(\"SHA-256\");\n            byte[] hash = digest.digest(\n                (ipAddress + userAgent).getBytes(StandardCharsets.UTF_8)\n            );\n            return HexFormat.of().formatHex(hash);\n        } catch (Exception e) {\n            throw new RuntimeException(\"SHA-256 algorithm not available\", e);\n        }\n    }\n    \n    private String getClientIP(HttpServletRequest request) {\n        String ip = request.getHeader(\"X-Forwarded-For\");\n        if (ip == null || ip.isEmpty()) {\n            ip = request.getRemoteAddr();\n        }\n        if (ip != null && ip.contains(\",\")) {\n            ip = ip.split(\",\")[0].trim();\n        }\n        return ip;\n    }\n}"
+        }
+      ],
+      "tools": [],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.12.4.1 - Event logging"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "DE.CM-1 - Network monitored to detect anomalous activity"
+      ],
+      "validation_steps": [
+        "Test that session is invalidated when accessing from different IP",
+        "Verify User-Agent changes trigger security alerts",
+        "Confirm audit logs capture session validation failures",
+        "Test with mobile users switching networks"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Multiple users accessing the same session ID from different IP addresses",
+      "Session ID does not change after successful authentication",
+      "Session IDs appearing in URL parameters or HTTP GET requests",
+      "Same session ID used before and after login events",
+      "Rapid session ID enumeration attempts from single IP",
+      "Session accessed from geographically distant locations within short timeframe",
+      "Session fingerprint mismatches (IP or User-Agent changes)",
+      "Authentication success followed by immediate access from different IP"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "let SessionEvents = \n    AppServiceHTTPLogs\n    | extend SessionId = extract(@\"sessionid=([^;\\\\s&]+)\", 1, CsCookie)\n    | where isnotempty(SessionId)\n    | extend IpAddress = CIp, Timestamp = TimeGenerated;\nSessionEvents\n| summarize \n    DistinctIPs = dcount(IpAddress),\n    IPs = make_set(IpAddress),\n    LoginEvents = countif(CsUriStem has \"/login\"),\n    RequestCount = count(),\n    FirstSeen = min(Timestamp),\n    LastSeen = max(Timestamp)\n    by SessionId\n| where DistinctIPs > 1 and LoginEvents > 0\n| extend SuspicionScore = DistinctIPs * 10 + LoginEvents * 5\n| where SuspicionScore > 15\n| order by SuspicionScore desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| rex field=cookie \"sessionid=(?<session_id>[^;\\\\s&]+)\"\n| where isnotnull(session_id)\n| stats \n    dc(clientip) as distinct_ips,\n    values(clientip) as ip_addresses,\n    count(match(uri_path, \"login\")) as login_count,\n    count as total_requests,\n    earliest(_time) as first_seen,\n    latest(_time) as last_seen\n    by session_id\n| where distinct_ips > 1 AND login_count > 0\n| table session_id, distinct_ips, ip_addresses, login_count, total_requests\n| sort -distinct_ips"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.request.method: \"GET\" AND (url.query: *sessionid=* OR url.query: *JSESSIONID=*) AND event.outcome: \"success\""
+      }
+    ],
+    "tools": [
+      {
+        "name": "OWASP ZAP",
+        "type": "Security Testing",
+        "usage": "Use Session Fixation scanner in Active Scan to detect vulnerable applications"
+      },
+      {
+        "name": "Burp Suite",
+        "type": "Security Testing",
+        "usage": "Test session management by obtaining session ID before auth and verifying if it changes after login"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10)",
+      "HIPAA (164.312(a)(2)(i))",
+      "SOC2 (CC6.1)",
+      "ISO27001 (A.9.4.2)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SC-23)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

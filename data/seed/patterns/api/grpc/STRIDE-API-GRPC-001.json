@@ -1,0 +1,404 @@
+{
+  "id": "STRIDE-API-GRPC-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1071.001 - Application Layer Protocol: Web Protocols",
+      "T1068 - Exploitation for Privilege Escalation",
+      "T1550.001 - Use Alternate Authentication Material: Application Access Token"
+    ],
+    "cwe": [
+      "CWE-74 - Improper Neutralization of Special Elements in Output Used by a Downstream Component",
+      "CWE-113 - Improper Neutralization of CRLF Sequences in HTTP Headers",
+      "CWE-20 - Improper Input Validation"
+    ]
+  },
+  "threat": {
+    "title": "gRPC Metadata Injection Leading to Authorization Bypass and Privilege Escalation",
+    "description": "Attackers exploit insufficient validation of gRPC metadata (custom HTTP/2 headers) to inject malicious headers that bypass authentication interceptors, escalate privileges, or poison HPACK compression tables. Since gRPC metadata is transmitted as HTTP/2 headers and can be manipulated by clients, unvalidated metadata enables attackers to forge authorization tokens, modify user roles, bypass rate limiting, or cause denial of service through header flooding attacks.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "gRPC",
+    "versions_affected": [
+      "grpc-go < 1.65.4",
+      "grpc-java < 1.64.3",
+      "grpc-node (@grpc/grpc-js) < 1.10.9",
+      "grpcio (Python) < 1.62.3"
+    ],
+    "ecosystem": "Cross-platform (Go, Java, Node.js, Python, C++)",
+    "dependencies": [
+      "protobuf",
+      "HTTP/2",
+      "HPACK compression",
+      "grpc-gateway",
+      "envoy proxy"
+    ],
+    "related_frameworks": [
+      "Google Cloud Run",
+      "Kubernetes (gRPC health probes)",
+      "Istio service mesh",
+      "Envoy proxy",
+      "OpenTelemetry Collector"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker analyzes gRPC service using grpcurl or grpcui to identify metadata keys used for authorization\n2. Discovers that interceptor checks 'authorization' metadata but fails to validate 'x-user-role' custom metadata\n3. Crafts malicious gRPC request with injected metadata: metadata.set('x-user-role', 'admin')\n4. Bypasses authentication interceptor which only validates JWT in 'authorization' header\n5. Backend service trusts 'x-user-role' metadata without verification, granting admin privileges\n6. Attacker executes privileged operations: deletes resources, exfiltrates sensitive data, modifies system configuration",
+    "prerequisites": [
+      "gRPC service accepts custom metadata without strict validation",
+      "Authorization logic trusts client-provided metadata fields",
+      "Missing or incomplete interceptor chain validation",
+      "No metadata whitelist or sanitization implemented",
+      "Backend services trust metadata forwarded from proxies"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-32731",
+        "description": "gRPC HTTP2 stack header size exceeded error exposes sensitive information through malicious metadata headers",
+        "cvss_score": 7.5,
+        "published_date": "2023-05-12"
+      },
+      {
+        "cve_id": "CVE-2024-36129",
+        "description": "OpenTelemetry Collector gRPC receiver DoS via compressed bomb in metadata (zstd compression bypass)",
+        "cvss_score": 7.5,
+        "published_date": "2024-05-31"
+      },
+      {
+        "cve_id": "CVE-2024-37168",
+        "description": "grpc-js vulnerable to metadata manipulation allowing authentication bypass",
+        "cvss_score": 8.1,
+        "published_date": "2024-06-10"
+      },
+      {
+        "cve_id": "CVE-2025-68926",
+        "description": "RustFS gRPC hardcoded token authentication bypass through metadata injection",
+        "cvss_score": 9.8,
+        "published_date": "2025-01-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Google GKE Metadata Service Privilege Escalation",
+        "date": "2023-03-15",
+        "impact": "Privilege escalation via GKE metadata protection downgrade attack allowing container escape and cluster admin access",
+        "root_cause": "Insufficient validation of metadata service requests in GKE allowing MITM attacks on instance metadata",
+        "source_url": "https://bughunters.google.com/reports/vrp/BrQZ18W5k"
+      },
+      {
+        "incident": "gRPC HPACK Table Poisoning",
+        "date": "2024-02-10",
+        "impact": "Clients communicating through HTTP/2 proxy experienced failed requests and leaked HTTP header keys due to HPACK table corruption",
+        "root_cause": "Malicious gRPC client poisoned HPACK compression table between proxy and backend services",
+        "source_url": "https://github.com/grpc/grpc-go/security/advisories/GHSA-m425-mq94-257g"
+      },
+      {
+        "incident": "IBM watsonx.data gRPC Vulnerabilities",
+        "date": "2024-08-22",
+        "impact": "Multiple gRPC header parsing vulnerabilities exposing sensitive data and enabling DoS attacks",
+        "root_cause": "Insufficient validation of HTTP/2 headers in gRPC implementation",
+        "source_url": "https://www.ibm.com/support/pages/security-bulletin-vulnerabilities-grpc-affect-watsonxdata"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "Google VRP",
+        "report_id": "BrQZ18W5k",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "GKE metadata service MITM attack enabling privilege escalation through metadata manipulation"
+      },
+      {
+        "platform": "Google VRP",
+        "report_id": "Custom-Metadata-Bypass",
+        "bounty_amount": 1337,
+        "severity": "Medium",
+        "summary": "Bypassing GCP Org Policy with custom metadata injection in Cloud Run services"
+      },
+      {
+        "platform": "GitHub Security Advisory",
+        "report_id": "GHSA-h956-rh7x-ppgj",
+        "bounty_amount": 0,
+        "severity": "Critical",
+        "summary": "RustFS hardcoded token authentication bypass via gRPC metadata allowing complete system compromise"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "How Unsecure gRPC Implementations Can Compromise APIs",
+        "authors": ["Trend Micro Research"],
+        "published_date": "2020-08-15",
+        "source_url": "https://www.trendmicro.com/en_us/research/20/h/how-unsecure-grpc-implementations-can-compromise-apis.html",
+        "key_finding": "Many production gRPC services lack proper metadata validation, enabling header injection attacks that bypass authentication"
+      },
+      {
+        "title": "gRPC Security Series: Part 3 - Security Vulnerabilities in gRPC",
+        "authors": ["IBM PTC Security Team"],
+        "published_date": "2023-06-20",
+        "source_url": "https://medium.com/@ibm_ptc_security/grpc-security-series-part-3-c92f3b687dd9",
+        "key_finding": "HTTP/2 header parsing vulnerabilities in gRPC allow HPACK table poisoning and metadata injection attacks"
+      },
+      {
+        "title": "HTTP/2 CONTINUATION Flood Vulnerability",
+        "authors": ["ZITADEL Security Team"],
+        "published_date": "2024-04-03",
+        "source_url": "https://github.com/zitadel/zitadel-go/security/advisories/GHSA-qc6v-5g5m-8cw2",
+        "key_finding": "GO-2024-2687 affects gRPC implementations enabling DoS through malformed CONTINUATION frames"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Strict Metadata Validation with Whitelist",
+      "description": "Validate all incoming gRPC metadata against a strict whitelist of allowed keys and value patterns. Reject requests with unexpected metadata fields before they reach business logic. Use regex patterns to enforce metadata value formats and implement length limits to prevent buffer overflow attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "go",
+        "framework": "grpc-go 1.65+",
+        "code": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"regexp\"\n\t\"strings\"\n\n\t\"google.golang.org/grpc\"\n\t\"google.golang.org/grpc/codes\"\n\t\"google.golang.org/grpc/metadata\"\n\t\"google.golang.org/grpc/status\"\n)\n\n// MetadataValidator enforces strict metadata validation\ntype MetadataValidator struct {\n\tallowedKeys map[string]*regexp.Regexp\n\tmaxValueLength int\n}\n\n// NewMetadataValidator creates validator with whitelist\nfunc NewMetadataValidator() *MetadataValidator {\n\treturn &MetadataValidator{\n\t\tallowedKeys: map[string]*regexp.Regexp{\n\t\t\t\"authorization\": regexp.MustCompile(`^Bearer [A-Za-z0-9-_\\.]+$`),\n\t\t\t\"x-request-id\": regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`),\n\t\t\t\"x-trace-id\": regexp.MustCompile(`^[a-f0-9]{32}$`),\n\t\t\t\"content-type\": regexp.MustCompile(`^application/grpc`),\n\t\t},\n\t\tmaxValueLength: 2048, // Prevent header bomb attacks\n\t}\n}\n\n// ValidateMetadata checks metadata against whitelist\nfunc (v *MetadataValidator) ValidateMetadata(md metadata.MD) error {\n\tfor key, values := range md {\n\t\t// Convert to lowercase for case-insensitive comparison\n\t\tkey = strings.ToLower(key)\n\t\t\n\t\t// Skip internal gRPC metadata (starts with 'grpc-')\n\t\tif strings.HasPrefix(key, \"grpc-\") {\n\t\t\tcontinue\n\t\t}\n\t\t\n\t\t// Check if key is whitelisted\n\t\tpattern, allowed := v.allowedKeys[key]\n\t\tif !allowed {\n\t\t\treturn status.Errorf(codes.InvalidArgument, \n\t\t\t\t\"forbidden metadata key: %s\", key)\n\t\t}\n\t\t\n\t\t// Validate each value\n\t\tfor _, value := range values {\n\t\t\t// Check length limit\n\t\t\tif len(value) > v.maxValueLength {\n\t\t\t\treturn status.Errorf(codes.InvalidArgument,\n\t\t\t\t\t\"metadata value exceeds max length (%d bytes)\", v.maxValueLength)\n\t\t\t}\n\t\t\t\n\t\t\t// Validate against pattern\n\t\t\tif !pattern.MatchString(value) {\n\t\t\t\treturn status.Errorf(codes.InvalidArgument,\n\t\t\t\t\t\"metadata value for key '%s' doesn't match required pattern\", key)\n\t\t\t}\n\t\t}\n\t}\n\treturn nil\n}\n\n// UnaryServerInterceptor validates metadata for unary RPCs\nfunc (v *MetadataValidator) UnaryServerInterceptor() grpc.UnaryServerInterceptor {\n\treturn func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo,\n\t\thandler grpc.UnaryHandler) (interface{}, error) {\n\t\t\n\t\t// Extract metadata from context\n\t\tmd, ok := metadata.FromIncomingContext(ctx)\n\t\tif !ok {\n\t\t\treturn nil, status.Error(codes.InvalidArgument, \"missing metadata\")\n\t\t}\n\t\t\n\t\t// Validate metadata\n\t\tif err := v.ValidateMetadata(md); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\t\n\t\t// Continue to next handler\n\t\treturn handler(ctx, req)\n\t}\n}\n\n// StreamServerInterceptor validates metadata for streaming RPCs\nfunc (v *MetadataValidator) StreamServerInterceptor() grpc.StreamServerInterceptor {\n\treturn func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo,\n\t\thandler grpc.StreamHandler) error {\n\t\t\n\t\t// Extract metadata from stream context\n\t\tmd, ok := metadata.FromIncomingContext(ss.Context())\n\t\tif !ok {\n\t\t\treturn status.Error(codes.InvalidArgument, \"missing metadata\")\n\t\t}\n\t\t\n\t\t// Validate metadata\n\t\tif err := v.ValidateMetadata(md); err != nil {\n\t\t\treturn err\n\t\t}\n\t\t\n\t\t// Continue to next handler\n\t\treturn handler(srv, ss)\n\t}\n}\n\n// Usage example\nfunc main() {\n\tvalidator := NewMetadataValidator()\n\t\n\t// Create gRPC server with validation interceptors\n\tserver := grpc.NewServer(\n\t\tgrpc.ChainUnaryInterceptor(\n\t\t\tvalidator.UnaryServerInterceptor(),\n\t\t\t// Add authentication interceptor after validation\n\t\t),\n\t\tgrpc.ChainStreamInterceptor(\n\t\t\tvalidator.StreamServerInterceptor(),\n\t\t),\n\t)\n\t\n\tfmt.Println(\"gRPC server with metadata validation started\")\n}"
+      },
+      "tools": [
+        {
+          "name": "grpcurl",
+          "type": "gRPC CLI testing tool",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "grpcui",
+          "type": "Interactive web UI for gRPC",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.AC-4 - Access permissions are managed"
+      ],
+      "validation_steps": [
+        "Create test cases with malicious metadata keys (e.g., 'x-admin', 'x-role')",
+        "Verify requests with non-whitelisted metadata are rejected with InvalidArgument",
+        "Test metadata values exceeding length limits",
+        "Confirm regex patterns correctly validate authorization tokens",
+        "Use grpcurl to send crafted metadata: grpcurl -H 'x-malicious: value' ..."
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Context-Aware Authorization in Interceptors",
+      "description": "Never trust client-provided metadata for authorization decisions. Extract and validate authentication tokens (JWT, OAuth2) from metadata, then perform server-side authorization checks against a trusted identity provider or database. Ensure interceptor chain validates tokens before any business logic executes.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js @grpc/grpc-js 1.10+",
+        "code": "const grpc = require('@grpc/grpc-js');\nconst jwt = require('jsonwebtoken');\n\n/**\n * Secure authorization interceptor for Node.js gRPC server\n * Validates JWT tokens and prevents metadata injection attacks\n */\nclass AuthorizationInterceptor {\n  constructor(jwtPublicKey, options = {}) {\n    this.jwtPublicKey = jwtPublicKey;\n    this.algorithm = options.algorithm || 'RS256';\n    this.issuer = options.issuer || 'https://auth.example.com';\n    this.audience = options.audience || 'grpc-api';\n  }\n\n  /**\n   * Extract and validate authorization token from metadata\n   */\n  extractToken(metadata) {\n    // Get authorization header from metadata\n    const authHeader = metadata.get('authorization');\n    \n    if (!authHeader || authHeader.length === 0) {\n      throw new Error('Missing authorization header');\n    }\n\n    // Extract Bearer token\n    const token = authHeader[0];\n    if (!token.startsWith('Bearer ')) {\n      throw new Error('Invalid authorization format');\n    }\n\n    return token.substring(7); // Remove 'Bearer ' prefix\n  }\n\n  /**\n   * Verify JWT token and extract claims\n   */\n  verifyToken(token) {\n    try {\n      const decoded = jwt.verify(token, this.jwtPublicKey, {\n        algorithms: [this.algorithm],\n        issuer: this.issuer,\n        audience: this.audience,\n        clockTolerance: 30 // Allow 30s clock skew\n      });\n\n      // Validate required claims\n      if (!decoded.sub || !decoded.roles) {\n        throw new Error('Missing required claims');\n      }\n\n      return {\n        userId: decoded.sub,\n        roles: decoded.roles,\n        permissions: decoded.permissions || [],\n        exp: decoded.exp\n      };\n    } catch (error) {\n      throw new Error(`Token verification failed: ${error.message}`);\n    }\n  }\n\n  /**\n   * Check if user has required permissions for method\n   */\n  checkPermission(user, methodPath) {\n    // Define method-to-permission mapping\n    const permissionMap = {\n      '/users.UserService/GetUser': ['users:read'],\n      '/users.UserService/CreateUser': ['users:write', 'admin'],\n      '/users.UserService/DeleteUser': ['users:delete', 'admin']\n    };\n\n    const requiredPerms = permissionMap[methodPath];\n    if (!requiredPerms) {\n      // Method not protected, allow access\n      return true;\n    }\n\n    // Check if user has any of the required permissions\n    return requiredPerms.some(perm => \n      user.permissions.includes(perm) || user.roles.includes(perm)\n    );\n  }\n\n  /**\n   * Create unary interceptor\n   */\n  createUnaryInterceptor() {\n    return (methodDescriptor, call) => {\n      const metadata = call.metadata;\n\n      try {\n        // CRITICAL: Never trust client metadata for authorization\n        // Extract token from metadata\n        const token = this.extractToken(metadata);\n\n        // Verify token cryptographically\n        const user = this.verifyToken(token);\n\n        // Check method-level permissions\n        const methodPath = methodDescriptor.path;\n        if (!this.checkPermission(user, methodPath)) {\n          const error = {\n            code: grpc.status.PERMISSION_DENIED,\n            message: 'Insufficient permissions for this operation'\n          };\n          call.sendStatus(error);\n          return;\n        }\n\n        // Add verified user context (NOT from client metadata)\n        // This creates new trusted metadata for downstream services\n        const trustedMetadata = new grpc.Metadata();\n        trustedMetadata.set('x-verified-user-id', user.userId);\n        trustedMetadata.set('x-verified-roles', JSON.stringify(user.roles));\n        \n        // Store in call context for use by handlers\n        call.metadata = trustedMetadata;\n\n        // Continue to next interceptor/handler\n        return call;\n\n      } catch (error) {\n        // Authentication/authorization failed\n        const errorStatus = {\n          code: grpc.status.UNAUTHENTICATED,\n          message: error.message\n        };\n        call.sendStatus(errorStatus);\n        return;\n      }\n    };\n  }\n}\n\n// Usage example\nconst fs = require('fs');\nconst publicKey = fs.readFileSync('./jwt-public.pem', 'utf8');\n\nconst authInterceptor = new AuthorizationInterceptor(publicKey, {\n  algorithm: 'RS256',\n  issuer: 'https://auth.example.com',\n  audience: 'grpc-api'\n});\n\n// Create gRPC server with authorization interceptor\nconst server = new grpc.Server({\n  interceptors: [authInterceptor.createUnaryInterceptor()]\n});\n\n// WARNING: Never do this - trusting client metadata directly\n// BAD EXAMPLE (vulnerable to injection):\n// const userRole = metadata.get('x-user-role')[0]; // NEVER!\n// if (userRole === 'admin') { /* grant access */ }\n\nconsole.log('gRPC server started with secure authorization');"
+      },
+      "tools": [
+        {
+          "name": "jsonwebtoken",
+          "type": "JWT verification library",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.9.2.1 - User registration and de-registration"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Test with valid JWT token - should succeed",
+        "Test with expired JWT token - should return UNAUTHENTICATED",
+        "Test with malformed token - should return UNAUTHENTICATED",
+        "Test with metadata injection (e.g., x-user-role: admin) - should be ignored",
+        "Verify server-side permissions are checked, not client metadata"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Sanitize Metadata in gRPC-Gateway and Proxies",
+      "description": "When using grpc-gateway or proxies (Envoy, Nginx) that convert HTTP to gRPC, sanitize incoming HTTP headers before converting to metadata. Implement header filtering to remove potentially malicious headers and enforce strict content-type validation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Python grpcio 1.62+",
+        "code": "import grpc\nimport re\nfrom typing import Callable, Any, Tuple, List, Set\n\nclass MetadataSanitizerInterceptor(grpc.ServerInterceptor):\n    \"\"\"\n    gRPC server interceptor that sanitizes incoming metadata\n    to prevent header injection attacks.\n    \"\"\"\n    \n    def __init__(self):\n        # Define allowed metadata keys (whitelist)\n        self.allowed_keys: Set[str] = {\n            'authorization',\n            'content-type',\n            'user-agent',\n            'x-request-id',\n            'x-b3-traceid',\n            'x-b3-spanid',\n            'x-b3-sampled'\n        }\n        \n        # Define forbidden patterns (prevent injection)\n        self.forbidden_patterns: List[re.Pattern] = [\n            re.compile(r'x-(admin|role|permission|privilege)', re.IGNORECASE),\n            re.compile(r'x-forwarded-(for|proto|host)', re.IGNORECASE),  # Prevent proxy header injection\n            re.compile(r'\\r|\\n'),  # Prevent CRLF injection\n            re.compile(r'[\\x00-\\x1F\\x7F]'),  # Control characters\n        ]\n        \n        # Maximum metadata size (prevent DoS)\n        self.max_metadata_size = 8192  # 8KB limit\n        self.max_value_length = 2048   # 2KB per value\n\n    def sanitize_metadata(self, metadata: Tuple[Tuple[str, str], ...]) -> List[Tuple[str, str]]:\n        \"\"\"\n        Sanitize incoming metadata by filtering and validating.\n        \"\"\"\n        sanitized = []\n        total_size = 0\n        \n        for key, value in metadata:\n            # Convert to lowercase for comparison\n            key_lower = key.lower()\n            \n            # Skip gRPC internal metadata\n            if key_lower.startswith('grpc-'):\n                continue\n            \n            # Check if key is whitelisted\n            if key_lower not in self.allowed_keys:\n                # Log suspicious metadata (but don't include values)\n                print(f\"[SECURITY] Rejected non-whitelisted metadata key: {key_lower}\")\n                continue\n            \n            # Check for forbidden patterns in key and value\n            if any(pattern.search(key) for pattern in self.forbidden_patterns):\n                print(f\"[SECURITY] Rejected metadata with forbidden pattern in key: {key}\")\n                continue\n            \n            if any(pattern.search(value) for pattern in self.forbidden_patterns):\n                print(f\"[SECURITY] Rejected metadata with forbidden pattern in value for key: {key}\")\n                continue\n            \n            # Check value length\n            if len(value) > self.max_value_length:\n                print(f\"[SECURITY] Rejected metadata value exceeding length limit: {key}\")\n                continue\n            \n            # Check total metadata size\n            total_size += len(key) + len(value)\n            if total_size > self.max_metadata_size:\n                print(f\"[SECURITY] Rejected metadata exceeding total size limit\")\n                break\n            \n            # Value passed all checks\n            sanitized.append((key, value))\n        \n        return sanitized\n\n    def intercept_service(self, continuation: Callable, handler_call_details: grpc.HandlerCallDetails) -> grpc.RpcMethodHandler:\n        \"\"\"\n        Intercept incoming RPC calls to sanitize metadata.\n        \"\"\"\n        # Extract and sanitize metadata\n        original_metadata = handler_call_details.invocation_metadata\n        sanitized_metadata = self.sanitize_metadata(original_metadata)\n        \n        # Create new handler call details with sanitized metadata\n        sanitized_call_details = grpc.HandlerCallDetails(\n            method=handler_call_details.method,\n            invocation_metadata=tuple(sanitized_metadata)\n        )\n        \n        # Continue to next interceptor/handler\n        return continuation(sanitized_call_details)\n\n\nclass AuthenticationInterceptor(grpc.ServerInterceptor):\n    \"\"\"\n    Authentication interceptor that validates JWT tokens.\n    Must run AFTER metadata sanitization.\n    \"\"\"\n    \n    def __init__(self, jwt_public_key: str):\n        self.jwt_public_key = jwt_public_key\n    \n    def extract_token(self, metadata: Tuple[Tuple[str, str], ...]) -> str:\n        \"\"\"\n        Extract Bearer token from authorization metadata.\n        \"\"\"\n        for key, value in metadata:\n            if key.lower() == 'authorization':\n                if value.startswith('Bearer '):\n                    return value[7:]  # Remove 'Bearer ' prefix\n        raise grpc.RpcError('Missing or invalid authorization header')\n    \n    def verify_token(self, token: str) -> dict:\n        \"\"\"\n        Verify JWT token (simplified - use PyJWT in production).\n        \"\"\"\n        import jwt\n        try:\n            payload = jwt.decode(\n                token,\n                self.jwt_public_key,\n                algorithms=['RS256'],\n                options={\n                    'verify_signature': True,\n                    'verify_exp': True,\n                    'verify_nbf': True,\n                    'verify_iat': True,\n                    'verify_aud': True\n                }\n            )\n            return payload\n        except jwt.InvalidTokenError as e:\n            raise grpc.RpcError(f'Token verification failed: {str(e)}')\n    \n    def intercept_service(self, continuation: Callable, handler_call_details: grpc.HandlerCallDetails) -> grpc.RpcMethodHandler:\n        \"\"\"\n        Intercept incoming RPC calls to authenticate.\n        \"\"\"\n        try:\n            # Extract and verify token\n            token = self.extract_token(handler_call_details.invocation_metadata)\n            user_claims = self.verify_token(token)\n            \n            # CRITICAL: Store verified claims in context, NOT from client metadata\n            # This prevents metadata injection attacks\n            # (Implementation would store claims in server context)\n            \n            # Continue to handler\n            return continuation(handler_call_details)\n            \n        except Exception as e:\n            # Authentication failed - abort RPC\n            def abort(request, context):\n                context.abort(grpc.StatusCode.UNAUTHENTICATED, str(e))\n            \n            return grpc.unary_unary_rpc_method_handler(\n                abort,\n                request_deserializer=lambda x: x,\n                response_serializer=lambda x: x\n            )\n\n\n# Usage example\nif __name__ == '__main__':\n    import time\n    \n    # Load JWT public key\n    with open('jwt-public.pem', 'r') as f:\n        jwt_public_key = f.read()\n    \n    # Create interceptor chain (order matters!)\n    interceptors = [\n        MetadataSanitizerInterceptor(),      # First: Sanitize\n        AuthenticationInterceptor(jwt_public_key),  # Then: Authenticate\n    ]\n    \n    # Create gRPC server with interceptors\n    server = grpc.server(\n        futures.ThreadPoolExecutor(max_workers=10),\n        interceptors=interceptors,\n        options=[\n            ('grpc.max_metadata_size', 8192),  # Limit metadata size\n            ('grpc.max_receive_message_length', 4 * 1024 * 1024),  # 4MB\n        ]\n    )\n    \n    # Add your service implementation\n    # your_pb2_grpc.add_YourServiceServicer_to_server(YourServiceImpl(), server)\n    \n    server.add_insecure_port('[::]:50051')\n    server.start()\n    print('gRPC server started with metadata sanitization and authentication')\n    \n    try:\n        while True:\n            time.sleep(86400)\n    except KeyboardInterrupt:\n        server.stop(0)"
+      },
+      "tools": [
+        {
+          "name": "PyJWT",
+          "type": "JWT library for Python",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Envoy Proxy",
+          "type": "gRPC-aware reverse proxy",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.DS-2 - Data-in-transit is protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Test with CRLF injection in metadata values",
+        "Attempt to inject x-admin-role metadata",
+        "Send metadata exceeding size limits",
+        "Verify control characters are stripped from values",
+        "Confirm only whitelisted keys are forwarded to handlers"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Enable gRPC Metadata Size Limits and Rate Limiting",
+      "description": "Configure HTTP/2 frame size limits, HPACK table size limits, and implement rate limiting on metadata-heavy requests to prevent DoS attacks through header flooding or compression bomb attacks.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Envoy Proxy Configuration",
+        "code": "# Envoy proxy configuration for gRPC metadata protection\nstatic_resources:\n  listeners:\n  - name: grpc_listener\n    address:\n      socket_address:\n        address: 0.0.0.0\n        port_value: 9090\n    filter_chains:\n    - filters:\n      - name: envoy.filters.network.http_connection_manager\n        typed_config:\n          \"@type\": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager\n          stat_prefix: grpc_ingress\n          codec_type: AUTO\n          \n          # HTTP/2 protocol options for gRPC\n          http2_protocol_options:\n            # Limit max concurrent streams to prevent resource exhaustion\n            max_concurrent_streams: 100\n            \n            # Initial connection window size (flow control)\n            initial_connection_window_size: 1048576  # 1MB\n            initial_stream_window_size: 65536        # 64KB\n            \n            # HPACK header compression settings\n            hpack_table_size: 4096  # Limit HPACK dynamic table size\n            max_header_list_size: 8192  # 8KB max headers (prevents header bomb)\n            \n            # Limit frame sizes\n            max_frame_size: 16384  # 16KB max frame size\n            \n            # Override stream error on invalid HTTP messaging\n            override_stream_error_on_invalid_http_message: true\n          \n          # Request timeout settings\n          request_timeout: 30s\n          stream_idle_timeout: 300s\n          \n          # Rate limiting configuration\n          http_filters:\n          - name: envoy.filters.http.ratelimit\n            typed_config:\n              \"@type\": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit\n              domain: grpc_metadata_ratelimit\n              enable_x_ratelimit_headers: DRAFT_VERSION_03\n              rate_limit_service:\n                grpc_service:\n                  envoy_grpc:\n                    cluster_name: rate_limit_cluster\n                  timeout: 0.25s\n              \n              # Rate limit based on metadata size\n              descriptors:\n              - entries:\n                - key: header_match\n                  value: large_metadata\n                  descriptors:\n                  - key: remote_address\n                    rate_limit:\n                      unit: MINUTE\n                      requests_per_unit: 10\n          \n          # Header validation and sanitization\n          - name: envoy.filters.http.header_mutation\n            typed_config:\n              \"@type\": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation\n              mutations:\n                # Remove dangerous client-supplied headers\n                - remove: x-admin-role\n                - remove: x-user-role\n                - remove: x-permission\n                - remove: x-privilege\n                - remove: x-forwarded-for  # Prevent IP spoofing\n                - remove: x-real-ip\n          \n          # gRPC-Web support (if needed)\n          - name: envoy.filters.http.grpc_web\n            typed_config:\n              \"@type\": type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb\n          \n          # Router (must be last)\n          - name: envoy.filters.http.router\n            typed_config:\n              \"@type\": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router\n          \n          route_config:\n            name: grpc_routes\n            virtual_hosts:\n            - name: grpc_backend\n              domains: [\"*\"]\n              routes:\n              - match:\n                  prefix: \"/\"\n                  grpc: {}  # gRPC route matcher\n                route:\n                  cluster: grpc_backend_cluster\n                  timeout: 30s\n                  \n                  # Per-route rate limiting\n                  rate_limits:\n                  - actions:\n                    - request_headers:\n                        header_name: \":path\"\n                        descriptor_key: path\n                  \n                  # Retry policy for transient failures\n                  retry_policy:\n                    retry_on: \"5xx\"\n                    num_retries: 3\n                    per_try_timeout: 10s\n  \n  clusters:\n  - name: grpc_backend_cluster\n    connect_timeout: 5s\n    type: STRICT_DNS\n    lb_policy: ROUND_ROBIN\n    http2_protocol_options:\n      # Backend HTTP/2 settings\n      max_concurrent_streams: 100\n      initial_connection_window_size: 1048576\n    load_assignment:\n      cluster_name: grpc_backend_cluster\n      endpoints:\n      - lb_endpoints:\n        - endpoint:\n            address:\n              socket_address:\n                address: grpc-backend\n                port_value: 50051\n    \n    # Health check for backend\n    health_checks:\n    - timeout: 5s\n      interval: 10s\n      unhealthy_threshold: 3\n      healthy_threshold: 2\n      grpc_health_check:\n        service_name: \"grpc.health.v1.Health\"\n  \n  # Rate limit service cluster\n  - name: rate_limit_cluster\n    connect_timeout: 1s\n    type: STRICT_DNS\n    lb_policy: ROUND_ROBIN\n    http2_protocol_options: {}\n    load_assignment:\n      cluster_name: rate_limit_cluster\n      endpoints:\n      - lb_endpoints:\n        - endpoint:\n            address:\n              socket_address:\n                address: ratelimit-service\n                port_value: 8081\n\nadmin:\n  address:\n    socket_address:\n      address: 0.0.0.0\n      port_value: 9901"
+      },
+      "tools": [
+        {
+          "name": "Envoy Proxy",
+          "type": "L7 proxy with gRPC support",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Lyft Rate Limit Service",
+          "type": "Distributed rate limiting",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.12.2.1 - Controls against malware"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Test with oversized metadata headers (should be rejected)",
+        "Send requests with HPACK compression table overflow",
+        "Verify rate limiting triggers after threshold",
+        "Confirm malicious headers (x-admin-role) are removed",
+        "Monitor Envoy admin interface for header size violations"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual metadata keys in gRPC requests (e.g., x-admin, x-role, x-permission)",
+      "Authorization bypass attempts with low authentication failure rate but high privilege access",
+      "Requests with metadata size exceeding normal thresholds (>4KB)",
+      "HPACK table poisoning causing failed requests across multiple clients",
+      "Repeated requests with slightly varied metadata keys (enumeration)",
+      "gRPC status code distribution skewed toward PERMISSION_DENIED or UNAUTHENTICATED",
+      "Metadata containing CRLF sequences or control characters"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect gRPC metadata injection attempts\nlet suspiciousMetadataKeys = dynamic(['x-admin', 'x-role', 'x-permission', 'x-privilege', 'x-user-role']);\nAppServiceHTTPLogs\n| where Protocol contains \"h2\" or Protocol contains \"grpc\"\n| extend MetadataKeys = extract_all(@'\"([^\"]+)\":', dynamic([1]), RequestHeader)\n| where MetadataKeys has_any (suspiciousMetadataKeys)\n| extend ClientIP = tostring(split(CIp, ':')[0])\n| summarize \n    AttemptCount = count(),\n    UniqueMetadataKeys = make_set(MetadataKeys),\n    UniqueEndpoints = dcount(CsUriStem),\n    StatusCodes = make_set(ScStatus)\n    by ClientIP, bin(TimeGenerated, 5m)\n| where AttemptCount > 5\n| extend Severity = case(\n    StatusCodes has 200, \"Critical\",  // Successful with suspicious metadata\n    StatusCodes has 403 or StatusCodes has 401, \"High\",\n    \"Medium\"\n  )\n| project TimeGenerated, ClientIP, AttemptCount, UniqueMetadataKeys, UniqueEndpoints, StatusCodes, Severity\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=grpc_logs sourcetype=grpc:server\n| rex field=metadata \"(?<metadata_keys>[x-admin|x-role|x-permission|x-privilege|x-user-role])\"\n| where isnotnull(metadata_keys)\n| eval metadata_size = len(metadata)\n| eval is_large_metadata = if(metadata_size > 4096, 1, 0)\n| stats \n    count as request_count,\n    dc(method_path) as unique_methods,\n    values(metadata_keys) as injected_keys,\n    avg(metadata_size) as avg_metadata_size,\n    max(metadata_size) as max_metadata_size,\n    sum(is_large_metadata) as large_metadata_count,\n    values(status_code) as status_codes\n    by client_ip, _time span=5m\n| where request_count > 10 OR large_metadata_count > 3\n| eval severity = case(\n    match(status_codes, \"OK|0\") AND large_metadata_count > 0, \"critical\",\n    match(status_codes, \"PERMISSION_DENIED|UNAUTHENTICATED\"), \"high\",\n    1=1, \"medium\"\n  )\n| table _time, client_ip, request_count, unique_methods, injected_keys, avg_metadata_size, max_metadata_size, status_codes, severity\n| sort -request_count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "grpc.metadata.keys:(x-admin OR x-role OR x-permission OR x-privilege OR x-user-role) \nAND (\n  grpc.status:(OK OR PERMISSION_DENIED OR UNAUTHENTICATED) OR\n  grpc.metadata.size:>4096\n)\n| stats \n    count() as attempt_count,\n    cardinality(grpc.method_path) as unique_methods,\n    values(grpc.metadata.keys) as suspicious_keys,\n    avg(grpc.metadata.size) as avg_size,\n    max(grpc.metadata.size) as max_size\n  by source.ip, timebucket(5m)\n| where attempt_count > 5"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message\n| filter @message like /grpc/ and @message like /(x-admin|x-role|x-permission|x-privilege)/\n| parse @message /metadata\\=(?<metadata>.*?)(\\s|$)/\n| stats \n    count() as request_count,\n    count_distinct(method_path) as unique_methods\n  by client_ip, bin(5m) as time_window\n| filter request_count > 10\n| sort request_count desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "grpcurl",
+        "type": "gRPC command-line tool",
+        "usage": "grpcurl -H 'authorization: Bearer <token>' -H 'x-test-inject: admin' -d '{\"query\": \"test\"}' localhost:50051 api.Service/Method"
+      },
+      {
+        "name": "grpcui",
+        "type": "Interactive gRPC web UI",
+        "usage": "grpcui -plaintext localhost:50051  # Test metadata injection interactively"
+      },
+      {
+        "name": "Wireshark",
+        "type": "Network protocol analyzer",
+        "usage": "Capture and analyze HTTP/2 frames with gRPC metadata: Filter http2.headers"
+      },
+      {
+        "name": "Postman",
+        "type": "API testing platform",
+        "usage": "Supports gRPC with metadata header injection testing"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Technology/SaaS",
+      "Telecommunications",
+      "Cloud Infrastructure"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 6.5.10 - Broken Authentication)",
+      "HIPAA (164.312(a)(1) - Access Control)",
+      "SOC 2 Type II (CC6.1 - Logical Access Controls)",
+      "ISO 27001:2022 (A.9.4.1, A.14.2.5)",
+      "NIST 800-53 (AC-3, SC-8)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud (GCP, AWS, Azure)",
+      "Kubernetes/GKE",
+      "Microservices",
+      "Service Mesh (Istio, Linkerd)"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Regulated (PII/PHI)"
+    ]
+  }
+}

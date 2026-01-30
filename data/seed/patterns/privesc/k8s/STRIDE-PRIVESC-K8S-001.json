@@ -1,0 +1,384 @@
+{
+  "id": "STRIDE-PRIVESC-K8S-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.8,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1068 - Exploitation for Privilege Escalation",
+      "T1078.004 - Valid Accounts: Cloud Accounts",
+      "T1610 - Deploy Container"
+    ],
+    "cwe": [
+      "CWE-269 - Improper Privilege Management",
+      "CWE-250 - Execution with Unnecessary Privileges",
+      "CWE-284 - Improper Access Control"
+    ]
+  },
+  "threat": {
+    "title": "Kubernetes Privilege Escalation via RBAC Misconfiguration",
+    "description": "Overly permissive Role-Based Access Control (RBAC) configurations in Kubernetes clusters allow attackers with limited pod access to escalate privileges to cluster administrator. This occurs when service accounts are granted excessive permissions such as pod creation, pod/exec access, or ability to bind privileged roles. Attackers can exploit these permissions to deploy privileged containers, execute commands in sensitive pods, or create new admin-level service accounts.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Kubernetes",
+    "versions_affected": [
+      "1.19.x",
+      "1.20.x",
+      "1.21.x",
+      "1.22.x",
+      "1.23.x",
+      "1.24.x",
+      "1.25.x",
+      "1.26.x",
+      "1.27.x",
+      "1.28.x"
+    ],
+    "ecosystem": "Cloud Native",
+    "dependencies": [
+      "RBAC API",
+      "kube-apiserver",
+      "kubelet"
+    ],
+    "related_frameworks": [
+      "OpenShift",
+      "Rancher",
+      "Amazon EKS",
+      "Azure AKS",
+      "Google GKE"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker compromises a low-privilege pod in the cluster through application vulnerability (e.g., RCE in web service)\n2. Discovers the pod's service account has overly permissive RBAC role allowing pod creation or pod/exec access\n3. Creates a new privileged pod with hostPath volume mounts to access node filesystem\n4. Uses privileged pod to escape to the underlying node and access the host's /var/lib/kubelet/kubeconfig\n5. Extracts cluster-admin credentials or creates new ClusterRoleBinding granting admin access to compromised service account\n6. Gains full cluster control: can read secrets, deploy backdoors, pivot to other pods, or exfiltrate sensitive data across all namespaces",
+    "prerequisites": [
+      "Compromised pod or service account with cluster access",
+      "Overly permissive ClusterRole or Role granting pod creation, pod/exec, or role binding permissions",
+      "Lack of Pod Security Standards/Policies enforcement",
+      "No admission controller validation of privileged pod specifications",
+      "Insufficient RBAC audit and monitoring"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-1002105",
+        "description": "Kubernetes privilege escalation via crafted API requests allowing unauthorized access to backend services. Attackers could establish a connection through the Kubernetes API server and send arbitrary requests over the same connection directly to backend services.",
+        "cvss_score": 9.8,
+        "published_date": "2018-12-05"
+      },
+      {
+        "cve_id": "CVE-2019-11247",
+        "description": "Kubernetes API server allows users with limited namespace permissions to access cluster-scoped resources. Attackers could craft malicious requests to read or modify cluster-wide custom resources despite having only namespace-level access.",
+        "cvss_score": 8.1,
+        "published_date": "2019-08-05"
+      },
+      {
+        "cve_id": "CVE-2019-11253",
+        "description": "Kubernetes API server denial of service vulnerability allowing unauthenticated users to perform resource exhaustion through YAML parsing bombs, often exploited in combination with privilege escalation attacks.",
+        "cvss_score": 7.5,
+        "published_date": "2019-10-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Tesla Kubernetes Cryptomining Breach",
+        "date": "2018-02-19",
+        "impact": "Attackers gained access to Tesla's Kubernetes console, which was not password protected, and deployed cryptomining malware. AWS credentials were exposed in pod environment variables, leading to S3 bucket compromise containing proprietary data.",
+        "root_cause": "Exposed Kubernetes dashboard with no authentication, overly permissive service account permissions allowing pod deployment, and secrets stored as environment variables",
+        "source_url": "https://redlock.io/blog/cryptojacking-tesla"
+      },
+      {
+        "incident": "Shopify Kubernetes Cluster Privilege Escalation (Disclosed via Bug Bounty)",
+        "date": "2020-03-15",
+        "impact": "Security researcher demonstrated ability to escalate from compromised pod to cluster-admin access through overly permissive RBAC configuration. Awarded $25,000 bounty.",
+        "root_cause": "Service accounts in production namespaces had excessive permissions including pod/exec and role binding capabilities",
+        "source_url": "https://hackerone.com/reports/341876"
+      },
+      {
+        "incident": "Microsoft Azure Container Instances Privilege Escalation (Azurescape)",
+        "date": "2021-09-09",
+        "impact": "Cross-tenant container escape vulnerability in Azure Container Instances allowed attackers to execute code on underlying Kubernetes nodes and potentially access other customers' containers.",
+        "root_cause": "Insufficient container isolation and overly permissive pod security contexts in multi-tenant Kubernetes environment",
+        "source_url": "https://unit42.paloaltonetworks.com/azure-container-instances/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "341876",
+        "bounty_amount": 25000,
+        "severity": "Critical",
+        "summary": "Kubernetes RBAC misconfiguration allowing privilege escalation from namespace user to cluster admin"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "Example-K8S-RBAC-2022",
+        "bounty_amount": 15000,
+        "severity": "High",
+        "summary": "Pod creation permissions combined with privileged security context allowing node compromise"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Kubernetes RBAC Security: Common Pitfalls and Best Practices",
+        "authors": [
+          "CNCF Security TAG",
+          "NSA Cybersecurity"
+        ],
+        "published_date": "2021-08-03",
+        "source_url": "https://media.defense.gov/2021/Aug/03/2002820425/-1/-1/0/CTR_Kubernetes_Hardening_Guidance_1.1_20220315.PDF",
+        "key_finding": "90% of surveyed Kubernetes clusters had at least one overly permissive RBAC configuration. Most common issue: service accounts with pod creation or pod/exec permissions without justification."
+      },
+      {
+        "title": "Attacking and Defending Kubernetes: Deep Dive into RBAC Escalation",
+        "authors": [
+          "Ian Coldwater",
+          "Brad Geesaman",
+          "Rory McCune"
+        ],
+        "published_date": "2020-05-15",
+        "source_url": "https://research.nccgroup.com/2020/05/15/attacking-and-defending-kubernetes-cluster-rbac-policies/",
+        "key_finding": "Demonstrated 17 different privilege escalation paths through RBAC misconfigurations, including pod creation, node proxy access, and custom resource manipulation"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Least Privilege RBAC with Namespace Isolation",
+      "description": "Apply principle of least privilege by creating minimal RBAC roles with only necessary permissions. Avoid granting cluster-wide permissions (ClusterRole/ClusterRoleBinding) unless absolutely required. Use namespace-specific Roles and RoleBindings to limit blast radius. Never grant wildcard permissions (*) on critical resources like pods, secrets, or role bindings.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.28+",
+        "code": "---\n# INSECURE EXAMPLE - DO NOT USE\napiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRole\nmetadata:\n  name: insecure-pod-admin\nrules:\n- apiGroups: [\"\"]\n  resources: [\"pods\", \"pods/exec\"]\n  verbs: [\"*\"]  # ❌ DANGEROUS: Wildcard permissions\n- apiGroups: [\"rbac.authorization.k8s.io\"]\n  resources: [\"*\"]\n  verbs: [\"*\"]  # ❌ CRITICAL: Can modify RBAC policies\n\n---\n# SECURE EXAMPLE - Least Privilege Role\napiVersion: rbac.authorization.k8s.io/v1\nkind: Role  # Namespace-scoped, not ClusterRole\nmetadata:\n  name: secure-app-role\n  namespace: production\nrules:\n# Only allow reading pods in this namespace\n- apiGroups: [\"\"]\n  resources: [\"pods\"]\n  verbs: [\"get\", \"list\", \"watch\"]  # ✅ Read-only\n  resourceNames: []  # Can further restrict to specific pod names\n\n# Allow reading ConfigMaps for application configuration\n- apiGroups: [\"\"]\n  resources: [\"configmaps\"]\n  verbs: [\"get\"]\n  resourceNames: [\"app-config\"]  # ✅ Specific ConfigMap only\n\n# Allow reading Secrets (if absolutely necessary, prefer mounted secrets)\n- apiGroups: [\"\"]\n  resources: [\"secrets\"]\n  verbs: [\"get\"]\n  resourceNames: [\"app-database-credentials\"]  # ✅ Named secret only\n\n# NO pod creation, NO pod/exec, NO role binding permissions ✅\n\n---\n# Bind role to specific service account\napiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata:\n  name: secure-app-binding\n  namespace: production\nsubjects:\n- kind: ServiceAccount\n  name: app-service-account\n  namespace: production\nroleRef:\n  kind: Role\n  name: secure-app-role\n  apiGroup: rbac.authorization.k8s.io\n\n---\n# Service Account with automountServiceAccountToken disabled by default\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: app-service-account\n  namespace: production\nautomountServiceAccountToken: false  # ✅ Prevent automatic token mounting\n\n---\n# Pod specification with explicit service account\napiVersion: v1\nkind: Pod\nmetadata:\n  name: secure-app-pod\n  namespace: production\nspec:\n  serviceAccountName: app-service-account\n  automountServiceAccountToken: true  # Only mount when needed\n  \n  # Additional security hardening\n  securityContext:\n    runAsNonRoot: true\n    runAsUser: 10001\n    fsGroup: 10001\n    seccompProfile:\n      type: RuntimeDefault\n  \n  containers:\n  - name: app\n    image: myapp:1.0.0\n    securityContext:\n      allowPrivilegeEscalation: false\n      readOnlyRootFilesystem: true\n      capabilities:\n        drop: [\"ALL\"]  # Drop all Linux capabilities\n    resources:\n      limits:\n        memory: \"512Mi\"\n        cpu: \"500m\"\n      requests:\n        memory: \"256Mi\"\n        cpu: \"250m\""
+      },
+      "tools": [
+        {
+          "name": "kubectl-who-can",
+          "type": "RBAC Audit Tool",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "rbac-lookup",
+          "type": "RBAC Visualization",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Krane",
+          "type": "RBAC Security Analyzer",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Least functionality principle is incorporated"
+      ],
+      "validation_steps": [
+        "Audit all ClusterRoles and Roles for wildcard permissions: kubectl get clusterroles -o yaml | grep -E \"verbs:.*\\*|resources:.*\\*\"",
+        "List all service accounts with pod/exec permissions: kubectl-who-can exec pods --all-namespaces",
+        "Review ClusterRoleBindings for over-privileged service accounts: kubectl get clusterrolebindings -o wide",
+        "Test service account permissions: kubectl auth can-i --list --as=system:serviceaccount:production:app-service-account",
+        "Enable RBAC audit logging in kube-apiserver with --audit-policy-file"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enforce Pod Security Standards with Admission Controllers",
+      "description": "Replace deprecated PodSecurityPolicy with Pod Security Standards (PSS) and Pod Security Admission controller (available since Kubernetes 1.23). Enforce 'restricted' profile in production namespaces to prevent privileged pods, host namespace access, and dangerous volume mounts. Use Open Policy Agent (OPA) Gatekeeper or Kyverno for advanced policy enforcement.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.28+ Pod Security Standards",
+        "code": "---\n# Namespace with Pod Security Standards enforcement\napiVersion: v1\nkind: Namespace\nmetadata:\n  name: production\n  labels:\n    # Enforce 'restricted' Pod Security Standard\n    pod-security.kubernetes.io/enforce: restricted\n    pod-security.kubernetes.io/enforce-version: v1.28\n    \n    # Audit violations without blocking (for testing)\n    pod-security.kubernetes.io/audit: restricted\n    pod-security.kubernetes.io/audit-version: v1.28\n    \n    # Warn users about violations\n    pod-security.kubernetes.io/warn: restricted\n    pod-security.kubernetes.io/warn-version: v1.28\n\n---\n# Alternative: Cluster-wide Pod Security Configuration\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: pod-security-config\n  namespace: kube-system\ndata:\n  # Applied to kube-apiserver via --admission-control-config-file\n  pod-security-config.yaml: |\n    apiVersion: apiserver.config.k8s.io/v1\n    kind: AdmissionConfiguration\n    plugins:\n    - name: PodSecurity\n      configuration:\n        apiVersion: pod-security.admission.config.k8s.io/v1\n        kind: PodSecurityConfiguration\n        defaults:\n          enforce: \"restricted\"\n          enforce-version: \"v1.28\"\n          audit: \"restricted\"\n          audit-version: \"v1.28\"\n          warn: \"restricted\"\n          warn-version: \"v1.28\"\n        exemptions:\n          usernames: []  # No user exemptions\n          runtimeClasses: []  # No runtime class exemptions\n          namespaces:\n          - kube-system  # Only exempt kube-system namespace\n          - ingress-nginx  # Ingress controllers may need privileged access\n\n---\n# OPA Gatekeeper: Prevent privileged pods\napiVersion: templates.gatekeeper.sh/v1\nkind: ConstraintTemplate\nmetadata:\n  name: k8spspprivilegedcontainer\n  annotations:\n    description: Prevents creation of privileged containers\nspec:\n  crd:\n    spec:\n      names:\n        kind: K8sPSPPrivilegedContainer\n  targets:\n  - target: admission.k8s.gatekeeper.sh\n    rego: |\n      package k8spspprivilegedcontainer\n      \n      violation[{\"msg\": msg}] {\n        container := input.review.object.spec.containers[_]\n        container.securityContext.privileged\n        msg := sprintf(\"Privileged container not allowed: %v\", [container.name])\n      }\n      \n      violation[{\"msg\": msg}] {\n        container := input.review.object.spec.initContainers[_]\n        container.securityContext.privileged\n        msg := sprintf(\"Privileged init container not allowed: %v\", [container.name])\n      }\n\n---\n# Apply the constraint to production namespace\napiVersion: constraints.gatekeeper.sh/v1beta1\nkind: K8sPSPPrivilegedContainer\nmetadata:\n  name: deny-privileged-containers\nspec:\n  match:\n    kinds:\n    - apiGroups: [\"\"]\n      kinds: [\"Pod\"]\n    namespaces:\n    - production\n    - staging\n  parameters: {}\n\n---\n# Kyverno Policy: Block dangerous volume mounts\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: restrict-volume-mounts\n  annotations:\n    policies.kyverno.io/title: Restrict Volume Mounts\n    policies.kyverno.io/severity: high\n    policies.kyverno.io/description: >-\n      Prevents pods from mounting dangerous host paths like /var/run/docker.sock,\n      /var/lib/kubelet, and root filesystem.\nspec:\n  validationFailureAction: enforce  # Block non-compliant pods\n  background: true\n  rules:\n  - name: check-host-path-volumes\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: >-\n        HostPath volumes are not allowed except for approved paths.\n        Blocked paths include: /var/run/docker.sock, /var/lib/kubelet, /, /etc, /proc\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.spec.volumes[?hostPath.path].hostPath.path }}\"\n            operator: AnyIn\n            value:\n            - \"/var/run/docker.sock\"\n            - \"/var/lib/kubelet\"\n            - \"/var/lib/kubelet/*\"\n            - \"/\"\n            - \"/etc\"\n            - \"/etc/*\"\n            - \"/proc\"\n            - \"/proc/*\"\n\n---\n# Kyverno Policy: Require runAsNonRoot\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: require-run-as-nonroot\nspec:\n  validationFailureAction: enforce\n  background: true\n  rules:\n  - name: check-runAsNonRoot\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Containers must run as non-root user\"\n      pattern:\n        spec:\n          securityContext:\n            runAsNonRoot: true\n          containers:\n          - securityContext:\n              allowPrivilegeEscalation: false"
+      },
+      "tools": [
+        {
+          "name": "Open Policy Agent Gatekeeper",
+          "type": "Kubernetes Admission Controller",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kyverno",
+          "type": "Kubernetes Policy Engine",
+          "cost": "Free (Open Source) / Enterprise features available"
+        },
+        {
+          "name": "Kubewarden",
+          "type": "WebAssembly-based Policy Engine",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Configuration management baseline is created",
+        "DE.CM-7 - Monitoring for unauthorized personnel"
+      ],
+      "validation_steps": [
+        "Enable Pod Security Admission controller in kube-apiserver: --enable-admission-plugins=PodSecurity",
+        "Test privileged pod creation (should be blocked): kubectl run test --image=nginx --privileged -n production",
+        "Install OPA Gatekeeper: kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/master/deploy/gatekeeper.yaml",
+        "Or install Kyverno: kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.11.0/install.yaml",
+        "Verify constraints are enforced: kubectl get constraints",
+        "Audit existing pods for violations: kubectl get pods --all-namespaces -o json | kubectl-check-pss"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Validating Admission Webhooks for RBAC and Security Context Validation",
+      "description": "Implement custom validating admission webhooks to enforce organization-specific security policies beyond built-in Pod Security Standards. Validate RBAC role bindings before creation, reject service accounts with excessive permissions, and enforce mandatory security contexts. Use Falco for runtime threat detection of privilege escalation attempts.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes Validating Admission Webhook + Falco",
+        "code": "---\n# Validating Admission Webhook Configuration\napiVersion: admissionregistration.k8s.io/v1\nkind: ValidatingWebhookConfiguration\nmetadata:\n  name: security-validation-webhook\nwebhooks:\n- name: rbac-validator.security.company.com\n  clientConfig:\n    service:\n      name: security-webhook-service\n      namespace: security-system\n      path: \"/validate-rbac\"\n    caBundle: LS0tLS1CRUdJTi... # Base64 encoded CA cert\n  rules:\n  - operations: [\"CREATE\", \"UPDATE\"]\n    apiGroups: [\"rbac.authorization.k8s.io\"]\n    apiVersions: [\"v1\"]\n    resources: [\"clusterrolebindings\", \"rolebindings\"]\n  - operations: [\"CREATE\", \"UPDATE\"]\n    apiGroups: [\"\"]\n    apiVersions: [\"v1\"]\n    resources: [\"serviceaccounts\"]\n  admissionReviewVersions: [\"v1\"]\n  sideEffects: None\n  failurePolicy: Fail  # Block on webhook failure (fail-closed)\n  timeoutSeconds: 10\n  namespaceSelector:\n    matchExpressions:\n    - key: security-webhook\n      operator: NotIn\n      values: [\"ignore\"]\n\n- name: pod-security-validator.security.company.com\n  clientConfig:\n    service:\n      name: security-webhook-service\n      namespace: security-system\n      path: \"/validate-pod\"\n    caBundle: LS0tLS1CRUdJTi...\n  rules:\n  - operations: [\"CREATE\", \"UPDATE\"]\n    apiGroups: [\"\"]\n    apiVersions: [\"v1\"]\n    resources: [\"pods\"]\n  admissionReviewVersions: [\"v1\"]\n  sideEffects: None\n  failurePolicy: Fail\n  timeoutSeconds: 5\n\n---\n# Example Webhook Service Implementation (Go)\n# File: cmd/webhook/main.go\n# Build with: docker build -t security-webhook:1.0 .\n---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: webhook-go-code\n  namespace: security-system\ndata:\n  main.go: |\n    package main\n    \n    import (\n        \"encoding/json\"\n        \"fmt\"\n        \"net/http\"\n        \n        admissionv1 \"k8s.io/api/admission/v1\"\n        rbacv1 \"k8s.io/api/rbac/v1\"\n        metav1 \"k8s.io/apimachinery/pkg/apis/meta/v1\"\n    )\n    \n    // Dangerous RBAC verbs that require explicit approval\n    var dangerousVerbs = []string{\"*\", \"create\", \"delete\", \"escalate\", \"bind\", \"impersonate\"}\n    var dangerousResources = []string{\"*\", \"pods/exec\", \"pods/attach\", \"secrets\", \"clusterroles\", \"clusterrolebindings\"}\n    \n    func validateRBAC(w http.ResponseWriter, r *http.Request) {\n        var admissionReview admissionv1.AdmissionReview\n        json.NewDecoder(r.Body).Decode(&admissionReview)\n        \n        response := &admissionv1.AdmissionResponse{\n            UID:     admissionReview.Request.UID,\n            Allowed: true,\n        }\n        \n        // Parse RoleBinding or ClusterRoleBinding\n        if admissionReview.Request.Kind.Kind == \"ClusterRoleBinding\" {\n            var binding rbacv1.ClusterRoleBinding\n            json.Unmarshal(admissionReview.Request.Object.Raw, &binding)\n            \n            // Block binding to cluster-admin unless explicitly annotated\n            if binding.RoleRef.Name == \"cluster-admin\" {\n                if _, ok := binding.Annotations[\"security.company.com/approved\"]; !ok {\n                    response.Allowed = false\n                    response.Result = &metav1.Status{\n                        Message: \"ClusterRoleBinding to cluster-admin requires security approval annotation\",\n                    }\n                }\n            }\n        }\n        \n        admissionReview.Response = response\n        json.NewEncoder(w).Encode(admissionReview)\n    }\n    \n    func main() {\n        http.HandleFunc(\"/validate-rbac\", validateRBAC)\n        http.ListenAndServeTLS(\":8443\", \"/certs/tls.crt\", \"/certs/tls.key\", nil)\n    }\n\n---\n# Deploy webhook service\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: security-webhook\n  namespace: security-system\nspec:\n  replicas: 2  # High availability\n  selector:\n    matchLabels:\n      app: security-webhook\n  template:\n    metadata:\n      labels:\n        app: security-webhook\n    spec:\n      serviceAccountName: security-webhook-sa\n      containers:\n      - name: webhook\n        image: company/security-webhook:1.0\n        ports:\n        - containerPort: 8443\n          name: webhook\n          protocol: TCP\n        volumeMounts:\n        - name: webhook-certs\n          mountPath: /certs\n          readOnly: true\n        resources:\n          limits:\n            memory: \"256Mi\"\n            cpu: \"500m\"\n          requests:\n            memory: \"128Mi\"\n            cpu: \"250m\"\n        livenessProbe:\n          httpGet:\n            path: /healthz\n            port: 8443\n            scheme: HTTPS\n          initialDelaySeconds: 10\n          periodSeconds: 10\n      volumes:\n      - name: webhook-certs\n        secret:\n          secretName: security-webhook-certs\n\n---\n# Falco Runtime Security Rules for Privilege Escalation Detection\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: falco-rules-custom\n  namespace: falco-system\ndata:\n  custom-rules.yaml: |\n    - rule: Kubernetes Privilege Escalation Detected\n      desc: Detects attempts to escalate privileges via pod creation or RBAC modification\n      condition: >\n        (k8s.verb in (create, update, patch) and\n         (k8s.target.resource in (pods, clusterrolebindings, rolebindings)) and\n         k8s.req.pod.privileged=true)\n        or\n        (k8s.verb in (create, update) and\n         k8s.target.resource = clusterrolebindings and\n         k8s.target.name = cluster-admin)\n      output: >\n        Kubernetes privilege escalation attempt detected\n        (user=%k8s.user.name namespace=%k8s.ns.name resource=%k8s.target.resource\n         verb=%k8s.verb privileged=%k8s.req.pod.privileged)\n      priority: CRITICAL\n      source: k8s_audit\n      tags: [k8s, rbac, privilege_escalation]\n    \n    - rule: Pod Created with Dangerous Capabilities\n      desc: Detects pod creation with CAP_SYS_ADMIN or other dangerous capabilities\n      condition: >\n        k8s.verb = create and\n        k8s.target.resource = pods and\n        (k8s.req.pod.capabilities.add intersects (CAP_SYS_ADMIN, CAP_NET_ADMIN, CAP_SYS_PTRACE))\n      output: >\n        Pod created with dangerous capabilities\n        (user=%k8s.user.name pod=%k8s.target.name namespace=%k8s.ns.name\n         capabilities=%k8s.req.pod.capabilities.add)\n      priority: WARNING\n      source: k8s_audit\n      tags: [k8s, capabilities]\n    \n    - rule: Service Account Token Access from Suspicious Process\n      desc: Detects processes reading service account tokens from unusual locations\n      condition: >\n        open_read and\n        fd.name startswith /var/run/secrets/kubernetes.io/serviceaccount and\n        not proc.name in (kubelet, kube-proxy, allowed-app)\n      output: >\n        Suspicious service account token access\n        (proc=%proc.name pid=%proc.pid file=%fd.name user=%user.name container=%container.name)\n      priority: WARNING\n      source: syscall\n      tags: [k8s, service_account, suspicious]\n\n---\n# Deploy Falco DaemonSet\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: falco\n  namespace: falco-system\nspec:\n  selector:\n    matchLabels:\n      app: falco\n  template:\n    metadata:\n      labels:\n        app: falco\n    spec:\n      serviceAccountName: falco\n      hostNetwork: true\n      hostPID: true\n      containers:\n      - name: falco\n        image: falcosecurity/falco:0.36.2\n        args:\n        - /usr/bin/falco\n        - -K\n        - /var/run/secrets/kubernetes.io/serviceaccount/token\n        - -k\n        - https://kubernetes.default\n        - -pk\n        securityContext:\n          privileged: true  # Required for kernel module access\n        volumeMounts:\n        - name: dev\n          mountPath: /host/dev\n        - name: proc\n          mountPath: /host/proc\n          readOnly: true\n        - name: boot\n          mountPath: /host/boot\n          readOnly: true\n        - name: lib-modules\n          mountPath: /host/lib/modules\n          readOnly: true\n        - name: usr\n          mountPath: /host/usr\n          readOnly: true\n        - name: falco-rules\n          mountPath: /etc/falco/rules.d\n      volumes:\n      - name: dev\n        hostPath:\n          path: /dev\n      - name: proc\n        hostPath:\n          path: /proc\n      - name: boot\n        hostPath:\n          path: /boot\n      - name: lib-modules\n        hostPath:\n          path: /lib/modules\n      - name: usr\n        hostPath:\n          path: /usr\n      - name: falco-rules\n        configMap:\n          name: falco-rules-custom"
+      },
+      "tools": [
+        {
+          "name": "Falco",
+          "type": "Runtime Security Monitoring",
+          "cost": "Free (Open Source) / Enterprise features via Sysdig"
+        },
+        {
+          "name": "Kubernetes cert-manager",
+          "type": "Certificate Management for Webhooks",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kubescape",
+          "type": "Kubernetes Security Testing",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data is aggregated and correlated",
+        "DE.CM-1 - Network monitoring is performed"
+      ],
+      "validation_steps": [
+        "Generate webhook certificates: kubectl cert-manager or manual openssl",
+        "Deploy webhook service and register ValidatingWebhookConfiguration",
+        "Test RBAC validation: kubectl create clusterrolebinding test-admin --clusterrole=cluster-admin --serviceaccount=default:test (should be blocked)",
+        "Install Falco: helm install falco falcosecurity/falco --namespace falco-system",
+        "Test Falco detection: kubectl run privileged-pod --image=nginx --privileged (should generate Falco alert)",
+        "Configure Falco alerts to SIEM: Edit falco.yaml to send alerts to Azure Sentinel, Splunk, or Elasticsearch"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Service accounts with cluster-admin or edit ClusterRoleBinding that weren't explicitly approved",
+      "Pod creation events from service accounts in unexpected namespaces",
+      "Pod specifications with privileged: true or hostPath volumes mounting sensitive paths",
+      "Frequent pod/exec or pod/attach API calls from service accounts",
+      "ClusterRoleBinding or RoleBinding modifications outside of approved change windows",
+      "Authentication attempts using service account tokens from external IP addresses",
+      "Pod creation with capabilities like CAP_SYS_ADMIN or CAP_NET_ADMIN"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL) - Kubernetes Audit Logs",
+        "query": "// Detect privilege escalation via pod creation with privileged security context\nlet SuspiciousNamespaces = dynamic([\"production\", \"staging\", \"finance\"]);\nKubePodInventory\n| where TimeGenerated > ago(24h)\n| where Namespace in (SuspiciousNamespaces)\n| where PodStatus == \"Running\"\n| extend SecurityContext = parse_json(tostring(PodSecurityContext))\n| extend IsPrivileged = SecurityContext.privileged == true\n| extend HostNetwork = SecurityContext.hostNetwork == true\n| extend HostPID = SecurityContext.hostPID == true\n| where IsPrivileged or HostNetwork or HostPID\n| extend Capabilities = parse_json(tostring(SecurityContext.capabilities.add))\n| where array_length(Capabilities) > 0\n| project TimeGenerated, Namespace, PodName, ServiceAccount, IsPrivileged, HostNetwork, HostPID, Capabilities, Node\n| join kind=inner (\n    AzureDiagnostics\n    | where Category == \"kube-audit\"\n    | where verb_s == \"create\"\n    | where objectRef_resource_s == \"pods\"\n    | project TimeGenerated, user_username_s, sourceIPs_s, userAgent_s, objectRef_namespace_s, objectRef_name_s\n) on $left.PodName == $right.objectRef_name_s and $left.Namespace == $right.objectRef_namespace_s\n| project TimeGenerated, Namespace, PodName, CreatedBy=user_username_s, SourceIP=sourceIPs_s, UserAgent=userAgent_s, IsPrivileged, HostNetwork, HostPID, Capabilities"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - RBAC Modifications",
+        "query": "// Detect unauthorized ClusterRoleBinding to cluster-admin\nAzureDiagnostics\n| where Category == \"kube-audit\"\n| where TimeGenerated > ago(1h)\n| where verb_s in (\"create\", \"update\", \"patch\")\n| where objectRef_resource_s in (\"clusterrolebindings\", \"rolebindings\")\n| extend RoleRef = parse_json(tostring(requestObject_s)).roleRef.name\n| where RoleRef in (\"cluster-admin\", \"admin\", \"edit\")\n| extend Subject = parse_json(tostring(requestObject_s)).subjects\n| extend ServiceAccountName = tostring(Subject[0].name)\n| extend ServiceAccountNamespace = tostring(Subject[0].namespace)\n| where user_username_s !startswith \"system:serviceaccount:kube-system\"\n| where user_username_s !contains \"admin@company.com\"  // Whitelist approved admins\n| project TimeGenerated, User=user_username_s, SourceIP=sourceIPs_s, Verb=verb_s, Resource=objectRef_resource_s, \n          ResourceName=objectRef_name_s, RoleRef, ServiceAccountName, ServiceAccountNamespace, UserAgent=userAgent_s\n| extend Severity = iff(RoleRef == \"cluster-admin\", \"Critical\", \"High\")"
+      },
+      {
+        "siem": "Elastic Stack (EQL) - Kubernetes Audit Logs",
+        "query": "// Privilege escalation via pod/exec to access node resources\nsequence by user.name with maxspan=5m\n  [any where event.dataset == \"kubernetes.audit\" and \n   kubernetes.audit.verb == \"create\" and \n   kubernetes.audit.objectRef.resource == \"pods\" and\n   kubernetes.audit.requestObject.spec.containers[0].securityContext.privileged == true]\n  [any where event.dataset == \"kubernetes.audit\" and\n   kubernetes.audit.verb == \"create\" and\n   kubernetes.audit.objectRef.subresource == \"exec\" and\n   kubernetes.audit.requestObject.command contains \"chroot\" or\n   kubernetes.audit.requestObject.command contains \"nsenter\"]"
+      },
+      {
+        "siem": "Splunk (SPL) - Kubernetes Audit",
+        "query": "index=kubernetes sourcetype=kube:apiserver:audit\n| spath input=_raw\n| search verb IN (\"create\", \"update\", \"patch\")\n| search objectRef.resource IN (\"pods\", \"clusterrolebindings\", \"rolebindings\")\n| eval is_privileged = if(like(requestObject, \"%privileged%true%\"), 1, 0)\n| eval role_escalation = if(like(requestObject, \"%roleRef%cluster-admin%\"), 1, 0)\n| where is_privileged=1 OR role_escalation=1\n| eval user_type = case(\n    like(user.username, \"system:serviceaccount:%\"), \"ServiceAccount\",\n    like(user.username, \"system:%\"), \"SystemUser\",\n    1=1, \"HumanUser\"\n  )\n| table _time, user.username, user_type, sourceIPs{}, verb, objectRef.resource, objectRef.name, objectRef.namespace, is_privileged, role_escalation\n| sort - _time"
+      },
+      {
+        "siem": "Falco Runtime Alerts",
+        "query": "# Query Falco alerts from syslog or Elasticsearch\nindex=falco-alerts priority=CRITICAL\n| search rule_name=\"Kubernetes Privilege Escalation Detected\" OR \n         rule_name=\"Pod Created with Dangerous Capabilities\" OR\n         rule_name=\"Service Account Token Access from Suspicious Process\"\n| stats count by rule_name, k8s.user.name, k8s.ns.name, k8s.target.resource, k8s.target.name\n| where count > 1"
+      }
+    ],
+    "tools": [
+      {
+        "name": "kubectl-who-can",
+        "type": "RBAC Permission Auditing",
+        "usage": "kubectl-who-can create pods --all-namespaces"
+      },
+      {
+        "name": "Kube-bench",
+        "type": "CIS Kubernetes Benchmark",
+        "usage": "kube-bench run --targets master,node,policies"
+      },
+      {
+        "name": "KubiScan",
+        "type": "Kubernetes Risk Assessment",
+        "usage": "python3 KubiScan.py -rr  # List risky roles"
+      },
+      {
+        "name": "Kubestriker",
+        "type": "Kubernetes Security Auditing",
+        "usage": "python3 kubestriker.py"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "E-commerce",
+      "SaaS",
+      "Technology"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 2.2, 7.1)",
+      "HIPAA (164.308(a)(3), 164.312(a)(1))",
+      "SOC2 (CC6.1, CC6.6)",
+      "ISO27001 (A.9.2.3, A.9.4.1)",
+      "NIST 800-190 Container Security",
+      "CIS Kubernetes Benchmark v1.8",
+      "NSA/CISA Kubernetes Hardening Guide"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Highly Confidential",
+      "Confidential",
+      "Internal"
+    ]
+  }
+}

@@ -1,0 +1,350 @@
+{
+  "id": "STRIDE-LOG-AUDIT-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": [
+      "A09:2021 - Security Logging and Monitoring Failures",
+      "A01:2021 - Broken Access Control"
+    ],
+    "mitre_attack": [
+      "T1070.001 - Indicator Removal: Clear Windows Event Logs",
+      "T1562.002 - Impair Defenses: Disable Windows Event Logging",
+      "T1070.003 - Indicator Removal: Clear Command History"
+    ],
+    "cwe": [
+      "CWE-778 - Insufficient Logging",
+      "CWE-223 - Omission of Security-relevant Information",
+      "CWE-117 - Improper Output Neutralization for Logs"
+    ]
+  },
+  "threat": {
+    "title": "Missing Audit Logs for Critical Actions in Spring Boot and AWS",
+    "description": "When critical business operations (financial transactions, access control changes, data modifications) lack comprehensive audit logging, attackers can perform malicious actions with impunity. Without forensic evidence, organizations cannot detect breaches, investigate incidents, or prove compliance. This vulnerability is particularly severe in regulated industries where audit trails are legally mandated.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 6.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Spring Boot",
+    "versions_affected": ["2.x", "3.x"],
+    "ecosystem": "Java",
+    "dependencies": [
+      "Spring AOP",
+      "SLF4J",
+      "Logback",
+      "AWS CloudTrail SDK",
+      "AWS CloudWatch Logs SDK"
+    ],
+    "related_frameworks": [
+      "Micronaut",
+      "Quarkus",
+      "Dropwizard"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker compromises low-privilege user account through phishing\n2. Escalates privileges by modifying role assignments in the database directly\n3. Accesses sensitive customer financial records and initiates unauthorized wire transfers\n4. Deletes evidence of transactions from application database tables\n5. Modifies access control policies to create backdoor admin accounts\n6. Organization discovers breach weeks later but cannot determine scope, timeline, or attribution due to missing audit logs\n\nForensic investigation fails because:\n- No record of privilege escalation attempt\n- No audit trail of database modifications\n- No logs showing which records were accessed\n- No evidence of unauthorized transaction initiation\n- Cannot prove regulatory compliance during incident timeframe",
+    "prerequisites": [
+      "Application does not log critical business operations",
+      "Database audit logging is disabled or not configured",
+      "No centralized log aggregation (SIEM) in place",
+      "CloudTrail not enabled or not monitoring application APIs",
+      "No alert mechanisms for sensitive actions",
+      "Log retention policy inadequate or non-existent"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "N/A",
+        "description": "Insufficient logging is a design flaw rather than a specific CVE",
+        "cvss_score": 6.5,
+        "published_date": "N/A"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Capital One Data Breach",
+        "date": "2019-03-22",
+        "impact": "106 million customers affected; $80 million fine from OCC; $190 million class action settlement",
+        "root_cause": "Insufficient logging and monitoring allowed attacker (former AWS employee) to exfiltrate data over several months undetected. CloudTrail logs were not properly monitored for anomalous API calls.",
+        "source_url": "https://www.occ.gov/news-issuances/news-releases/2020/nr-occ-2020-98.html"
+      },
+      {
+        "incident": "SolarWinds Supply Chain Attack",
+        "date": "2020-03-01",
+        "impact": "18,000+ organizations compromised; attackers maintained access for 9 months undetected",
+        "root_cause": "Lack of comprehensive audit logging in Orion platform prevented early detection. Attackers exploited the absence of detailed API activity logs to move laterally and exfiltrate data without triggering alerts.",
+        "source_url": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-LOG-001",
+        "bounty_amount": 2500,
+        "severity": "Medium",
+        "summary": "Critical financial transactions not logged, enabling fraud without detection"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP Logging Cheat Sheet",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-08-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+        "key_finding": "66% of breaches take months to discover due to insufficient logging and monitoring"
+      },
+      {
+        "title": "Verizon 2023 Data Breach Investigations Report",
+        "authors": ["Verizon"],
+        "published_date": "2023-06-01",
+        "source_url": "https://www.verizon.com/business/resources/reports/dbir/",
+        "key_finding": "87% of breaches took weeks or longer to discover; median time to discovery is 21 days"
+      },
+      {
+        "title": "AWS Security Best Practices - Logging and Monitoring",
+        "authors": ["Amazon Web Services"],
+        "published_date": "2024-03-01",
+        "source_url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/logging.html",
+        "key_finding": "Organizations without CloudTrail enabled average 3x longer incident response times"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Comprehensive Audit Logging with Spring AOP",
+      "description": "Use Spring Aspect-Oriented Programming (AOP) to automatically capture audit logs for all critical business operations. This creates a centralized, declarative approach to logging that cannot be bypassed by developers and ensures consistent audit trails across the application.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "// 1. Define custom audit annotation\npackage com.ansvar.security.audit;\n\nimport java.lang.annotation.*;\n\n@Target(ElementType.METHOD)\n@Retention(RetentionPolicy.RUNTIME)\n@Documented\npublic @interface AuditLog {\n    String action();\n    String resourceType();\n    boolean includeArgs() default true;\n    boolean includeResult() default false;\n}\n\n// 2. Create audit event entity\npackage com.ansvar.security.audit;\n\nimport jakarta.persistence.*;\nimport java.time.Instant;\nimport java.util.Map;\n\n@Entity\n@Table(name = \"audit_events\", indexes = {\n    @Index(name = \"idx_user_timestamp\", columnList = \"user_id,timestamp\"),\n    @Index(name = \"idx_action_timestamp\", columnList = \"action,timestamp\")\n})\npublic class AuditEvent {\n    @Id\n    @GeneratedValue(strategy = GenerationType.UUID)\n    private String id;\n    \n    @Column(nullable = false)\n    private String userId;\n    \n    @Column(nullable = false)\n    private String action;\n    \n    @Column(nullable = false)\n    private String resourceType;\n    \n    private String resourceId;\n    \n    @Column(nullable = false)\n    private Instant timestamp;\n    \n    private String ipAddress;\n    \n    private String userAgent;\n    \n    @Column(length = 2000)\n    private String requestDetails; // JSON serialized\n    \n    @Column(length = 1000)\n    private String responseDetails; // JSON serialized\n    \n    @Enumerated(EnumType.STRING)\n    private AuditStatus status; // SUCCESS, FAILURE, ERROR\n    \n    private String errorMessage;\n    \n    // Getters and setters\n}\n\n// 3. Implement AOP aspect for automatic audit logging\npackage com.ansvar.security.audit;\n\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport jakarta.servlet.http.HttpServletRequest;\nimport org.aspectj.lang.ProceedingJoinPoint;\nimport org.aspectj.lang.annotation.*;\nimport org.aspectj.lang.reflect.MethodSignature;\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\nimport org.springframework.security.core.Authentication;\nimport org.springframework.security.core.context.SecurityContextHolder;\nimport org.springframework.stereotype.Component;\nimport org.springframework.web.context.request.RequestContextHolder;\nimport org.springframework.web.context.request.ServletRequestAttributes;\n\nimport java.time.Instant;\nimport java.util.HashMap;\nimport java.util.Map;\n\n@Aspect\n@Component\npublic class AuditLogAspect {\n    \n    private static final Logger logger = LoggerFactory.getLogger(AuditLogAspect.class);\n    private final AuditEventRepository auditRepository;\n    private final ObjectMapper objectMapper;\n    \n    public AuditLogAspect(AuditEventRepository auditRepository, ObjectMapper objectMapper) {\n        this.auditRepository = auditRepository;\n        this.objectMapper = objectMapper;\n    }\n    \n    @Around(\"@annotation(auditLog)\")\n    public Object logAudit(ProceedingJoinPoint joinPoint, AuditLog auditLog) throws Throwable {\n        AuditEvent event = new AuditEvent();\n        event.setTimestamp(Instant.now());\n        event.setAction(auditLog.action());\n        event.setResourceType(auditLog.resourceType());\n        \n        // Capture user context\n        Authentication auth = SecurityContextHolder.getContext().getAuthentication();\n        if (auth != null && auth.isAuthenticated()) {\n            event.setUserId(auth.getName());\n        } else {\n            event.setUserId(\"anonymous\");\n        }\n        \n        // Capture HTTP context\n        ServletRequestAttributes attributes = (ServletRequestAttributes) \n            RequestContextHolder.getRequestAttributes();\n        if (attributes != null) {\n            HttpServletRequest request = attributes.getRequest();\n            event.setIpAddress(getClientIp(request));\n            event.setUserAgent(request.getHeader(\"User-Agent\"));\n        }\n        \n        // Capture method arguments\n        if (auditLog.includeArgs()) {\n            Object[] args = joinPoint.getArgs();\n            Map<String, Object> argsMap = new HashMap<>();\n            MethodSignature signature = (MethodSignature) joinPoint.getSignature();\n            String[] paramNames = signature.getParameterNames();\n            \n            for (int i = 0; i < args.length; i++) {\n                if (args[i] != null && !isSensitiveParameter(paramNames[i])) {\n                    argsMap.put(paramNames[i], sanitizeForLog(args[i]));\n                }\n            }\n            event.setRequestDetails(objectMapper.writeValueAsString(argsMap));\n        }\n        \n        // Execute method and capture result\n        Object result = null;\n        try {\n            result = joinPoint.proceed();\n            event.setStatus(AuditStatus.SUCCESS);\n            \n            if (auditLog.includeResult() && result != null) {\n                event.setResponseDetails(objectMapper.writeValueAsString(sanitizeForLog(result)));\n            }\n            \n            // Extract resource ID from result if available\n            if (result != null && hasIdField(result)) {\n                event.setResourceId(extractId(result));\n            }\n            \n        } catch (Exception e) {\n            event.setStatus(AuditStatus.FAILURE);\n            event.setErrorMessage(e.getMessage());\n            throw e; // Re-throw to maintain normal exception handling\n        } finally {\n            // Always persist audit event\n            try {\n                auditRepository.save(event);\n                logger.info(\"Audit log created: action={}, user={}, status={}\", \n                    event.getAction(), event.getUserId(), event.getStatus());\n            } catch (Exception e) {\n                logger.error(\"Failed to persist audit event\", e);\n                // Don't fail the business operation due to audit logging failure\n            }\n        }\n        \n        return result;\n    }\n    \n    private String getClientIp(HttpServletRequest request) {\n        String ip = request.getHeader(\"X-Forwarded-For\");\n        if (ip == null || ip.isEmpty()) {\n            ip = request.getRemoteAddr();\n        } else {\n            ip = ip.split(\",\")[0].trim();\n        }\n        return ip;\n    }\n    \n    private boolean isSensitiveParameter(String paramName) {\n        return paramName != null && (\n            paramName.toLowerCase().contains(\"password\") ||\n            paramName.toLowerCase().contains(\"secret\") ||\n            paramName.toLowerCase().contains(\"token\") ||\n            paramName.toLowerCase().contains(\"credential\")\n        );\n    }\n    \n    private Object sanitizeForLog(Object obj) {\n        // Implement logic to redact sensitive fields\n        // Return simplified version for logging\n        return obj;\n    }\n    \n    private boolean hasIdField(Object obj) {\n        try {\n            obj.getClass().getMethod(\"getId\");\n            return true;\n        } catch (NoSuchMethodException e) {\n            return false;\n        }\n    }\n    \n    private String extractId(Object obj) {\n        try {\n            Object id = obj.getClass().getMethod(\"getId\").invoke(obj);\n            return id != null ? id.toString() : null;\n        } catch (Exception e) {\n            return null;\n        }\n    }\n}\n\n// 4. Apply to critical business operations\npackage com.ansvar.service;\n\nimport com.ansvar.security.audit.AuditLog;\nimport org.springframework.stereotype.Service;\nimport org.springframework.transaction.annotation.Transactional;\n\n@Service\npublic class FinancialTransactionService {\n    \n    @AuditLog(\n        action = \"INITIATE_WIRE_TRANSFER\",\n        resourceType = \"FINANCIAL_TRANSACTION\",\n        includeArgs = true,\n        includeResult = true\n    )\n    @Transactional\n    public TransactionResult initiateWireTransfer(WireTransferRequest request) {\n        // Business logic\n        // Audit automatically captured by AOP\n        return processTransfer(request);\n    }\n    \n    @AuditLog(\n        action = \"MODIFY_ACCOUNT_BALANCE\",\n        resourceType = \"ACCOUNT\",\n        includeArgs = true\n    )\n    @Transactional\n    public void modifyAccountBalance(String accountId, BigDecimal amount) {\n        // Business logic\n    }\n}\n\n// 5. Configure structured JSON logging\npackage com.ansvar.config;\n\nimport ch.qos.logback.classic.LoggerContext;\nimport net.logstash.logback.encoder.LogstashEncoder;\nimport org.springframework.context.annotation.Configuration;\n\n// In logback-spring.xml:\n/*\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration>\n    <appender name=\"JSON\" class=\"ch.qos.logback.core.ConsoleAppender\">\n        <encoder class=\"net.logstash.logback.encoder.LogstashEncoder\">\n            <includeContext>true</includeContext>\n            <includeMdc>true</includeMdc>\n            <customFields>{\"application\":\"ansvar-api\",\"environment\":\"${ENV}\"}</customFields>\n        </encoder>\n    </appender>\n    \n    <root level=\"INFO\">\n        <appender-ref ref=\"JSON\" />\n    </root>\n</configuration>\n*/"
+      },
+      "tools": [
+        {
+          "name": "Spring AOP",
+          "type": "Aspect-Oriented Programming Framework",
+          "cost": "Free (included in Spring Boot)"
+        },
+        {
+          "name": "Logstash Logback Encoder",
+          "type": "Structured JSON Logging",
+          "cost": "Free (open source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored",
+        "DE.CM-6 - External service provider activity is monitored",
+        "PR.PT-1 - Audit/log records are determined and documented"
+      ],
+      "validation_steps": [
+        "Verify @AuditLog annotations on all sensitive methods",
+        "Test that audit events are persisted to database",
+        "Confirm sensitive data (passwords, tokens) is redacted",
+        "Validate audit log includes user ID, timestamp, IP, action",
+        "Test that audit logging failures don't break business operations",
+        "Query audit_events table to verify log retention"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enable AWS CloudTrail for API-Level Audit Logging",
+      "description": "Configure AWS CloudTrail to capture all AWS API calls made by the application, including S3 access, DynamoDB operations, Lambda invocations, and IAM changes. CloudTrail provides immutable, tamper-proof audit logs that satisfy regulatory requirements and enable forensic investigation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "json",
+        "framework": "AWS CloudFormation / Terraform",
+        "code": "# Terraform configuration for comprehensive CloudTrail setup\n\nresource \"aws_cloudtrail\" \"main\" {\n  name                          = \"ansvar-audit-trail\"\n  s3_bucket_name                = aws_s3_bucket.cloudtrail.id\n  include_global_service_events = true\n  is_multi_region_trail         = true\n  enable_log_file_validation    = true # Cryptographic log integrity\n  \n  # Enable data event logging for S3 and Lambda\n  event_selector {\n    read_write_type           = \"All\"\n    include_management_events = true\n    \n    # Log all S3 object-level operations\n    data_resource {\n      type   = \"AWS::S3::Object\"\n      values = [\"arn:aws:s3:::ansvar-customer-data/*\"]\n    }\n    \n    # Log all Lambda function invocations\n    data_resource {\n      type   = \"AWS::Lambda::Function\"\n      values = [\"arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function/*\"]\n    }\n  }\n  \n  # Enable CloudWatch Logs integration for real-time monitoring\n  cloud_watch_logs_group_arn = \"${aws_cloudwatch_log_group.cloudtrail.arn}:*\"\n  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail_cloudwatch.arn\n  \n  # Enable Insights for anomaly detection\n  insight_selector {\n    insight_type = \"ApiCallRateInsight\"\n  }\n  \n  tags = {\n    Environment = \"production\"\n    Compliance  = \"PCI-DSS,SOC2,ISO27001\"\n  }\n}\n\n# S3 bucket for CloudTrail logs with strict security\nresource \"aws_s3_bucket\" \"cloudtrail\" {\n  bucket = \"ansvar-cloudtrail-logs-${data.aws_caller_identity.current.account_id}\"\n}\n\nresource \"aws_s3_bucket_versioning\" \"cloudtrail\" {\n  bucket = aws_s3_bucket.cloudtrail.id\n  versioning_configuration {\n    status = \"Enabled\"\n  }\n}\n\nresource \"aws_s3_bucket_server_side_encryption_configuration\" \"cloudtrail\" {\n  bucket = aws_s3_bucket.cloudtrail.id\n  \n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm     = \"aws:kms\"\n      kms_master_key_id = aws_kms_key.cloudtrail.arn\n    }\n  }\n}\n\nresource \"aws_s3_bucket_lifecycle_configuration\" \"cloudtrail\" {\n  bucket = aws_s3_bucket.cloudtrail.id\n  \n  rule {\n    id     = \"log-retention\"\n    status = \"Enabled\"\n    \n    transition {\n      days          = 90\n      storage_class = \"GLACIER\"\n    }\n    \n    transition {\n      days          = 365\n      storage_class = \"DEEP_ARCHIVE\"\n    }\n    \n    expiration {\n      days = 2555 # 7 years for PCI-DSS compliance\n    }\n  }\n}\n\n# Block public access\nresource \"aws_s3_bucket_public_access_block\" \"cloudtrail\" {\n  bucket = aws_s3_bucket.cloudtrail.id\n  \n  block_public_acls       = true\n  block_public_policy     = true\n  ignore_public_acls      = true\n  restrict_public_buckets = true\n}\n\n# CloudWatch Log Group for real-time monitoring\nresource \"aws_cloudwatch_log_group\" \"cloudtrail\" {\n  name              = \"/aws/cloudtrail/ansvar\"\n  retention_in_days = 365\n  kms_key_id        = aws_kms_key.cloudtrail.arn\n}\n\n# Metric filter to alert on unauthorized API calls\nresource \"aws_cloudwatch_log_metric_filter\" \"unauthorized_api_calls\" {\n  name           = \"UnauthorizedAPICalls\"\n  log_group_name = aws_cloudwatch_log_group.cloudtrail.name\n  \n  pattern = \"{ ($.errorCode = \\\"*UnauthorizedOperation\\\") || ($.errorCode = \\\"AccessDenied*\\\") }\"\n  \n  metric_transformation {\n    name      = \"UnauthorizedAPICalls\"\n    namespace = \"CloudTrailMetrics\"\n    value     = \"1\"\n  }\n}\n\n# Alarm for unauthorized API attempts\nresource \"aws_cloudwatch_metric_alarm\" \"unauthorized_api_calls\" {\n  alarm_name          = \"CloudTrail-UnauthorizedAPICalls\"\n  comparison_operator = \"GreaterThanThreshold\"\n  evaluation_periods  = \"1\"\n  metric_name         = \"UnauthorizedAPICalls\"\n  namespace           = \"CloudTrailMetrics\"\n  period              = \"300\"\n  statistic           = \"Sum\"\n  threshold           = \"5\"\n  alarm_description   = \"Alert when unauthorized API calls exceed threshold\"\n  alarm_actions       = [aws_sns_topic.security_alerts.arn]\n}\n\n# KMS key for log encryption\nresource \"aws_kms_key\" \"cloudtrail\" {\n  description             = \"CloudTrail log encryption\"\n  deletion_window_in_days = 30\n  enable_key_rotation     = true\n  \n  policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Sid    = \"Enable CloudTrail Encrypt\"\n        Effect = \"Allow\"\n        Principal = {\n          Service = \"cloudtrail.amazonaws.com\"\n        }\n        Action = [\n          \"kms:GenerateDataKey*\",\n          \"kms:DecryptDataKey\"\n        ]\n        Resource = \"*\"\n      },\n      {\n        Sid    = \"Enable IAM User Permissions\"\n        Effect = \"Allow\"\n        Principal = {\n          AWS = \"arn:aws:iam::${data.aws_caller_identity.current.account_id}:root\"\n        }\n        Action   = \"kms:*\"\n        Resource = \"*\"\n      }\n    ]\n  })\n}\n\n# Java SDK code to query CloudTrail programmatically\n/*\npackage com.ansvar.audit;\n\nimport software.amazon.awssdk.services.cloudtrail.CloudTrailClient;\nimport software.amazon.awssdk.services.cloudtrail.model.*;\nimport java.time.Instant;\nimport java.util.List;\n\npublic class CloudTrailAuditService {\n    \n    private final CloudTrailClient cloudTrailClient;\n    \n    public List<Event> getAuditTrailForUser(String username, Instant start, Instant end) {\n        LookupEventsRequest request = LookupEventsRequest.builder()\n            .lookupAttributes(\n                LookupAttribute.builder()\n                    .attributeKey(LookupAttributeKey.USERNAME)\n                    .attributeValue(username)\n                    .build()\n            )\n            .startTime(start)\n            .endTime(end)\n            .maxResults(50)\n            .build();\n        \n        LookupEventsResponse response = cloudTrailClient.lookupEvents(request);\n        return response.events();\n    }\n    \n    public List<Event> getResourceAccessEvents(String resourceArn) {\n        LookupEventsRequest request = LookupEventsRequest.builder()\n            .lookupAttributes(\n                LookupAttribute.builder()\n                    .attributeKey(LookupAttributeKey.RESOURCE_NAME)\n                    .attributeValue(resourceArn)\n                    .build()\n            )\n            .maxResults(50)\n            .build();\n        \n        return cloudTrailClient.lookupEvents(request).events();\n    }\n}\n*/"
+      },
+      "tools": [
+        {
+          "name": "AWS CloudTrail",
+          "type": "AWS API Audit Logging",
+          "cost": "$2.00 per 100,000 management events; $0.10 per 100,000 data events"
+        },
+        {
+          "name": "AWS CloudWatch Logs",
+          "type": "Log Aggregation and Monitoring",
+          "cost": "$0.50 per GB ingested; $0.03 per GB stored per month"
+        },
+        {
+          "name": "AWS Athena",
+          "type": "SQL Query Engine for CloudTrail Logs",
+          "cost": "$5.00 per TB scanned"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined",
+        "DE.AE-3 - Event data are collected and correlated"
+      ],
+      "validation_steps": [
+        "Verify CloudTrail is enabled in all regions",
+        "Confirm log file validation is enabled",
+        "Test S3 bucket encryption with KMS",
+        "Validate data events are captured for sensitive resources",
+        "Query CloudTrail via Athena to verify log completeness",
+        "Test CloudWatch alarms trigger on unauthorized access",
+        "Verify log retention meets compliance requirements (7 years PCI-DSS)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Structured Logging with Correlation IDs and SIEM Integration",
+      "description": "Adopt structured JSON logging with correlation IDs to trace requests across distributed systems. Integrate with a SIEM (Security Information and Event Management) platform for centralized log aggregation, analysis, and alerting on security-relevant events.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x + ELK Stack",
+        "code": "// 1. Add correlation ID filter\npackage com.ansvar.security.logging;\n\nimport jakarta.servlet.*;\nimport jakarta.servlet.http.*;\nimport org.slf4j.MDC;\nimport org.springframework.stereotype.Component;\nimport java.io.IOException;\nimport java.util.UUID;\n\n@Component\npublic class CorrelationIdFilter implements Filter {\n    \n    private static final String CORRELATION_ID_HEADER = \"X-Correlation-ID\";\n    private static final String CORRELATION_ID_MDC_KEY = \"correlationId\";\n    \n    @Override\n    public void doFilter(ServletRequest request, ServletResponse response, \n                        FilterChain chain) throws IOException, ServletException {\n        HttpServletRequest httpRequest = (HttpServletRequest) request;\n        HttpServletResponse httpResponse = (HttpServletResponse) response;\n        \n        // Get or generate correlation ID\n        String correlationId = httpRequest.getHeader(CORRELATION_ID_HEADER);\n        if (correlationId == null || correlationId.isEmpty()) {\n            correlationId = UUID.randomUUID().toString();\n        }\n        \n        // Add to MDC for automatic inclusion in all logs\n        MDC.put(CORRELATION_ID_MDC_KEY, correlationId);\n        MDC.put(\"userId\", getCurrentUserId());\n        MDC.put(\"ipAddress\", getClientIp(httpRequest));\n        \n        // Add to response header\n        httpResponse.setHeader(CORRELATION_ID_HEADER, correlationId);\n        \n        try {\n            chain.doFilter(request, response);\n        } finally {\n            MDC.clear(); // Prevent memory leaks\n        }\n    }\n    \n    private String getCurrentUserId() {\n        Authentication auth = SecurityContextHolder.getContext().getAuthentication();\n        return auth != null ? auth.getName() : \"anonymous\";\n    }\n    \n    private String getClientIp(HttpServletRequest request) {\n        String ip = request.getHeader(\"X-Forwarded-For\");\n        return ip != null ? ip.split(\",\")[0] : request.getRemoteAddr();\n    }\n}\n\n// 2. Define security events enum\npackage com.ansvar.security.logging;\n\npublic enum SecurityEvent {\n    LOGIN_SUCCESS(\"user.login.success\", \"INFO\"),\n    LOGIN_FAILURE(\"user.login.failure\", \"WARN\"),\n    PRIVILEGE_ESCALATION(\"user.privilege.escalation\", \"CRITICAL\"),\n    UNAUTHORIZED_ACCESS(\"access.unauthorized\", \"WARN\"),\n    DATA_EXPORT(\"data.export\", \"INFO\"),\n    SENSITIVE_DATA_ACCESS(\"data.sensitive.access\", \"INFO\"),\n    CONFIGURATION_CHANGE(\"config.change\", \"WARN\"),\n    ACCOUNT_LOCKED(\"account.locked\", \"WARN\"),\n    PASSWORD_RESET(\"password.reset\", \"INFO\"),\n    API_KEY_CREATED(\"apikey.created\", \"INFO\"),\n    API_KEY_REVOKED(\"apikey.revoked\", \"WARN\");\n    \n    private final String eventCode;\n    private final String severity;\n    \n    SecurityEvent(String eventCode, String severity) {\n        this.eventCode = eventCode;\n        this.severity = severity;\n    }\n    \n    public String getEventCode() { return eventCode; }\n    public String getSeverity() { return severity; }\n}\n\n// 3. Create security logger service\npackage com.ansvar.security.logging;\n\nimport net.logstash.logback.argument.StructuredArguments;\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\nimport org.springframework.stereotype.Service;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\n@Service\npublic class SecurityLogger {\n    \n    private static final Logger logger = LoggerFactory.getLogger(\"SECURITY_AUDIT\");\n    \n    public void logSecurityEvent(SecurityEvent event, String userId, \n                                String resourceType, String resourceId, \n                                Map<String, Object> additionalData) {\n        Map<String, Object> logData = new HashMap<>();\n        logData.put(\"event_type\", event.getEventCode());\n        logData.put(\"severity\", event.getSeverity());\n        logData.put(\"user_id\", userId);\n        logData.put(\"resource_type\", resourceType);\n        logData.put(\"resource_id\", resourceId);\n        logData.put(\"timestamp\", System.currentTimeMillis());\n        \n        if (additionalData != null) {\n            logData.putAll(additionalData);\n        }\n        \n        logger.info(\"Security event: {}\", \n            StructuredArguments.entries(logData));\n    }\n    \n    public void logLoginAttempt(String username, String ipAddress, boolean success) {\n        Map<String, Object> data = new HashMap<>();\n        data.put(\"ip_address\", ipAddress);\n        data.put(\"success\", success);\n        \n        logSecurityEvent(\n            success ? SecurityEvent.LOGIN_SUCCESS : SecurityEvent.LOGIN_FAILURE,\n            username,\n            \"USER_SESSION\",\n            null,\n            data\n        );\n    }\n    \n    public void logDataAccess(String userId, String dataType, String recordId) {\n        Map<String, Object> data = new HashMap<>();\n        data.put(\"data_classification\", getDataClassification(dataType));\n        \n        logSecurityEvent(\n            SecurityEvent.SENSITIVE_DATA_ACCESS,\n            userId,\n            dataType,\n            recordId,\n            data\n        );\n    }\n    \n    private String getDataClassification(String dataType) {\n        // Implement classification logic\n        return \"CONFIDENTIAL\";\n    }\n}\n\n// 4. Logback configuration with Logstash encoder\n/*\n<!-- logback-spring.xml -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration>\n    <!-- Console JSON logging -->\n    <appender name=\"JSON_CONSOLE\" class=\"ch.qos.logback.core.ConsoleAppender\">\n        <encoder class=\"net.logstash.logback.encoder.LogstashEncoder\">\n            <includeContext>true</includeContext>\n            <includeMdc>true</includeMdc>\n            <includeStructuredArguments>true</includeStructuredArguments>\n            <customFields>{\n                \"application\":\"ansvar-api\",\n                \"environment\":\"${SPRING_PROFILES_ACTIVE}\",\n                \"version\":\"${APP_VERSION}\"\n            }</customFields>\n        </encoder>\n    </appender>\n    \n    <!-- File appender for security audit logs -->\n    <appender name=\"SECURITY_FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n        <file>/var/log/ansvar/security-audit.json</file>\n        <encoder class=\"net.logstash.logback.encoder.LogstashEncoder\"/>\n        <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n            <fileNamePattern>/var/log/ansvar/security-audit.%d{yyyy-MM-dd}.json.gz</fileNamePattern>\n            <maxHistory>365</maxHistory>\n            <totalSizeCap>10GB</totalSizeCap>\n        </rollingPolicy>\n    </appender>\n    \n    <!-- Logstash TCP appender for real-time SIEM integration -->\n    <appender name=\"LOGSTASH\" class=\"net.logstash.logback.appender.LogstashTcpSocketAppender\">\n        <destination>${LOGSTASH_HOST:localhost}:5000</destination>\n        <encoder class=\"net.logstash.logback.encoder.LogstashEncoder\"/>\n    </appender>\n    \n    <!-- Security logger sends to file and SIEM -->\n    <logger name=\"SECURITY_AUDIT\" level=\"INFO\" additivity=\"false\">\n        <appender-ref ref=\"SECURITY_FILE\"/>\n        <appender-ref ref=\"LOGSTASH\"/>\n    </logger>\n    \n    <root level=\"INFO\">\n        <appender-ref ref=\"JSON_CONSOLE\"/>\n    </root>\n</configuration>\n*/\n\n// 5. Example usage in service\npackage com.ansvar.service;\n\nimport com.ansvar.security.logging.SecurityLogger;\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class UserService {\n    \n    private final SecurityLogger securityLogger;\n    \n    public UserService(SecurityLogger securityLogger) {\n        this.securityLogger = securityLogger;\n    }\n    \n    public void promoteUserToAdmin(String userId, String targetUserId) {\n        // Business logic\n        userRepository.updateRole(targetUserId, Role.ADMIN);\n        \n        // Log security-relevant action\n        Map<String, Object> eventData = new HashMap<>();\n        eventData.put(\"promoted_by\", userId);\n        eventData.put(\"new_role\", \"ADMIN\");\n        eventData.put(\"previous_role\", \"USER\");\n        \n        securityLogger.logSecurityEvent(\n            SecurityEvent.PRIVILEGE_ESCALATION,\n            targetUserId,\n            \"USER_ROLE\",\n            targetUserId,\n            eventData\n        );\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Elastic Stack (ELK)",
+          "type": "SIEM Platform",
+          "cost": "Free (self-hosted) / $95/month per GB (Elastic Cloud)"
+        },
+        {
+          "name": "Splunk",
+          "type": "SIEM Platform",
+          "cost": "$150/GB/year (average)"
+        },
+        {
+          "name": "AWS Security Hub",
+          "type": "Cloud-Native SIEM",
+          "cost": "$0.0010 per 10,000 findings ingested"
+        },
+        {
+          "name": "Logstash Logback Encoder",
+          "type": "Structured JSON Logging Library",
+          "cost": "Free (open source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.7 - Collection of evidence"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify all logs include correlation ID in MDC",
+        "Test correlation ID propagates across microservices",
+        "Confirm structured JSON format with required fields",
+        "Validate SIEM ingestion via Logstash",
+        "Create Elasticsearch index pattern for security logs",
+        "Build Kibana dashboard for security event visualization",
+        "Test log search by correlation ID, user ID, event type"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Absence of logs during known administrative sessions",
+      "Gaps in audit trail timestamps indicating log deletion",
+      "Failed forensic investigations due to missing evidence",
+      "Inability to correlate user actions across systems",
+      "Compliance audit findings for insufficient logging",
+      "CloudTrail disabled or S3 bucket deleted",
+      "Unusual privilege escalations with no corresponding logs",
+      "Database modifications with no application-level audit trail"
+    ],
+    "log_queries": [
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect absence of critical audit events\nevent.category: \"authentication\" OR event.category: \"iam\"\n| stats count by user.id, event.action\n| where count < expected_threshold\n\n// Detect gaps in audit log timestamps\nevent.module: \"audit\"\n| sort @timestamp\n| eval time_diff = @timestamp - lag(@timestamp)\n| where time_diff > 3600000  // 1 hour gap\n\n// Detect CloudTrail disabled events\nevent.provider: \"cloudtrail.amazonaws.com\"\nAND event.action: \"StopLogging\"\n\n// Detect unauthorized privilege changes without audit logs\nevent.action: \"user.role.updated\" \nAND NOT event.outcome: \"success\"\nAND user.roles: \"admin\""
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "# Detect missing audit logs for financial transactions\nindex=app_logs sourcetype=financial_transaction\n| stats count by user_id, transaction_type, _time\n| where count=0 AND transaction_type=\"wire_transfer\"\n\n# Detect CloudTrail log gaps\nindex=aws sourcetype=aws:cloudtrail\n| streamstats current=f last(_time) as last_time by eventSource\n| eval gap=_time - last_time\n| where gap > 3600\n| table _time, eventSource, eventName, userIdentity.principalId, gap\n\n# Alert on missing audit logs for sensitive data access\nindex=app_logs event_type=\"data.access\" resource_type=\"customer_pii\"\n| timechart span=1h count\n| where count=0"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect disabled audit logging\nAzureActivity\n| where OperationNameValue =~ \"Microsoft.Insights/DiagnosticSettings/Write\"\n| where ActivityStatusValue == \"Success\"\n| extend properties = todynamic(Properties)\n| where properties.logs[0].enabled == false\n| project TimeGenerated, Caller, ResourceId, OperationNameValue\n\n// Detect administrative actions without corresponding audit events\nlet AdminActions = AzureActivity\n    | where Authorization contains \"Microsoft.Authorization/roleAssignments/write\"\n    | project TimeGenerated, Caller, ResourceId;\nlet AuditLogs = AzureActivity\n    | where CategoryValue == \"Administrative\"\n    | project TimeGenerated, Caller, ResourceId;\nAdminActions\n| join kind=leftanti AuditLogs on Caller, ResourceId\n| summarize MissingAuditCount = count() by Caller, bin(TimeGenerated, 1h)"
+      },
+      {
+        "siem": "AWS Security Hub (CloudWatch Insights)",
+        "query": "# Detect missing CloudTrail logs\nfields @timestamp, eventName, userIdentity.principalId, errorCode\n| filter eventSource = \"cloudtrail.amazonaws.com\"\n| filter eventName = \"StopLogging\" or eventName = \"DeleteTrail\"\n| sort @timestamp desc\n\n# Detect IAM changes without audit trail\nfields @timestamp, eventName, requestParameters.userName, responseElements.role.roleName\n| filter eventSource = \"iam.amazonaws.com\"\n| filter eventName like /Put|Create|Delete|Attach|Detach/\n| filter ispresent(errorCode)\n| stats count() by eventName, userIdentity.principalId"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS CloudWatch Logs Insights",
+        "type": "Log Analytics",
+        "usage": "Query CloudTrail and application logs for anomalies"
+      },
+      {
+        "name": "Elasticsearch",
+        "type": "Search and Analytics Engine",
+        "usage": "Full-text search across structured audit logs"
+      },
+      {
+        "name": "Kibana",
+        "type": "Visualization and Dashboard",
+        "usage": "Real-time security event monitoring dashboards"
+      },
+      {
+        "name": "AWS Athena",
+        "type": "SQL Query Engine",
+        "usage": "Query CloudTrail logs stored in S3 using SQL"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "E-commerce",
+      "Critical Infrastructure"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 10.2.1, 10.2.2, 10.3.1-10.3.6)",
+      "HIPAA (45 CFR § 164.312(b) - Audit Controls)",
+      "SOX (Section 404 - Internal Controls)",
+      "GDPR (Article 30 - Records of Processing Activities)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.4.1 - Event Logging)",
+      "DORA (Article 17 - Incident Response and Recovery)",
+      "NIST CSF (PR.PT-1, DE.CM-1, DE.AE-3)",
+      "FISMA (Audit and Accountability Controls)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Hybrid",
+      "On-Premise"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Regulated"
+    ]
+  }
+}

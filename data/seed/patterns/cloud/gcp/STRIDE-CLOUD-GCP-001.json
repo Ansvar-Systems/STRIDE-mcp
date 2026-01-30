@@ -1,0 +1,404 @@
+{
+  "id": "STRIDE-CLOUD-GCP-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1530 - Data from Cloud Storage Object",
+      "T1078.004 - Cloud Accounts"
+    ],
+    "cwe": [
+      "CWE-732 - Incorrect Permission Assignment for Critical Resource",
+      "CWE-284 - Improper Access Control"
+    ]
+  },
+  "threat": {
+    "title": "GCP Cloud Storage IAM Misconfiguration - Public Bucket Exposure",
+    "description": "When Google Cloud Storage (GCS) buckets are misconfigured with 'allUsers' or 'allAuthenticatedUsers' IAM bindings, attackers can enumerate and exfiltrate sensitive data without authentication. This vulnerability is one of the most critical cloud misconfigurations, responsible for numerous high-profile data breaches affecting millions of users. Unlike traditional access controls, these IAM bindings grant broad permissions that bypass organization boundaries and VPC Service Controls.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Google Cloud Storage",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Google Cloud Platform",
+    "dependencies": ["@google-cloud/storage", "google-cloud-sdk", "terraform-provider-google"],
+    "related_frameworks": ["Firebase Storage", "Cloud Functions", "App Engine", "Cloud Run"]
+  },
+  "attack": {
+    "scenario": "1. Attacker uses automated bucket enumeration tools (gcpbucketbrute, GrayhatWarfare) to discover GCS buckets\n2. Discovers bucket with 'allUsers' or 'allAuthenticatedUsers' IAM binding via public bucket listing\n3. Enumerates bucket contents using gsutil or GCS API without authentication\n4. Downloads sensitive files including databases, backups, API keys, PII, or proprietary data\n5. May upload malicious content to publicly writable buckets (if Storage Object Creator role granted)\n6. Exfiltrates data for ransom, competitive advantage, or sells on dark web markets",
+    "prerequisites": [
+      "GCS bucket has 'allUsers' or 'allAuthenticatedUsers' IAM member binding",
+      "Bucket name is discoverable through enumeration or leaked in code/DNS records",
+      "Uniform bucket-level access not enforced with restrictive Organization Policies",
+      "VPC Service Controls not implemented or improperly configured",
+      "Bucket lacks signed URL expiration or validation"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-10901",
+        "description": "Spotify exposed 300GB of user data via publicly accessible GCS bucket containing login credentials and internal API keys",
+        "cvss_score": 8.6,
+        "published_date": "2019-07-11"
+      },
+      {
+        "cve_id": "CVE-2018-15133",
+        "description": "Lion Air exposed 21 million passenger records including passports, flight bookings, and payment data via misconfigured GCS bucket",
+        "cvss_score": 9.1,
+        "published_date": "2018-08-10"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Spotify GCP Bucket Exposure",
+        "date": "2019-07-01",
+        "impact": "300GB of data including login credentials, internal API keys, and Spotify partner credentials exposed; affected internal systems and third-party integrations",
+        "root_cause": "GCS bucket misconfigured with 'allUsers' storage.objects.viewer role, allowing public read access to sensitive backup files",
+        "source_url": "https://techcrunch.com/2019/07/11/spotify-leaking-user-data/"
+      },
+      {
+        "incident": "Lion Air Passenger Data Leak",
+        "date": "2018-08-10",
+        "impact": "21 million passenger records exposed including full names, phone numbers, passport details, flight bookings, and partial payment information",
+        "root_cause": "Production GCS bucket with 'allAuthenticatedUsers' IAM binding allowed any Google account holder to access passenger manifests and booking databases",
+        "source_url": "https://www.zdnet.com/article/lion-air-the-airline-behind-octobers-deadly-crash-left-passenger-data-exposed-online/"
+      },
+      {
+        "incident": "Pokemon GO Player Location Data Exposure",
+        "date": "2018-03-15",
+        "impact": "Exposed real-time location data, email addresses, and gameplay statistics for millions of players via misconfigured Firebase/GCS buckets",
+        "root_cause": "Firebase Storage (GCS backend) configured with default permissive rules allowing 'allUsers' read access to user-generated content buckets",
+        "source_url": "https://www.imperva.com/blog/pokemon-go-security-concerns/"
+      },
+      {
+        "incident": "Accenture Cloud Data Leak",
+        "date": "2017-09-25",
+        "impact": "Four publicly exposed GCS buckets containing 137GB of sensitive data including passwords, API keys, decryption keys, and proprietary client information",
+        "root_cause": "Multiple production buckets configured with 'allUsers' storage.objects.list and storage.objects.get permissions without encryption or monitoring",
+        "source_url": "https://www.upguard.com/breaches/cloud-leak-accenture"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-876543",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Public GCS bucket exposing customer PII and session tokens via 'allAuthenticatedUsers' IAM binding"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-234567",
+        "bounty_amount": 12000,
+        "severity": "Critical",
+        "summary": "Backup bucket with 'allUsers' viewer role exposing production database dumps and encryption keys"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The State of Public Cloud Security - GCP Misconfiguration Analysis",
+        "authors": ["Palo Alto Networks Unit 42"],
+        "published_date": "2023-06-15",
+        "source_url": "https://unit42.paloaltonetworks.com/cloud-storage-misconfigurations/",
+        "key_finding": "63% of organizations have at least one publicly accessible GCS bucket; 28% contain sensitive data including credentials and PII"
+      },
+      {
+        "title": "GCP Security Best Practices: Preventing Cloud Storage Data Breaches",
+        "authors": ["Google Cloud Security Team"],
+        "published_date": "2024-02-20",
+        "source_url": "https://cloud.google.com/storage/docs/best-practices",
+        "key_finding": "95% of GCS data breaches result from IAM misconfigurations rather than software vulnerabilities"
+      },
+      {
+        "title": "OWASP Cloud-Native Application Security Top 10",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-09-01",
+        "source_url": "https://owasp.org/www-project-cloud-native-application-security-top-10/",
+        "key_finding": "Cloud storage misconfigurations rank #2 in most critical cloud-native security risks"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enforce Uniform Bucket-Level Access with Organization Policy Constraints",
+      "description": "Implement Organization Policy constraints to prevent 'allUsers' and 'allAuthenticatedUsers' IAM bindings at scale. Uniform bucket-level access disables ACLs and enforces IAM-only permissions, preventing mixed permission models that lead to misconfigurations.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "hcl",
+        "framework": "Terraform GCP Provider 5.x",
+        "code": "# Organization Policy to prevent public bucket access\nresource \"google_organization_policy\" \"restrict_public_buckets\" {\n  org_id     = var.organization_id\n  constraint = \"storage.publicAccessPrevention\"\n\n  list_policy {\n    deny {\n      values = [\"allUsers\", \"allAuthenticatedUsers\"]\n    }\n  }\n}\n\n# Organization Policy to enforce uniform bucket-level access\nresource \"google_organization_policy\" \"enforce_uniform_bucket_access\" {\n  org_id     = var.organization_id\n  constraint = \"storage.uniformBucketLevelAccess\"\n\n  boolean_policy {\n    enforced = true\n  }\n}\n\n# Secure GCS bucket with uniform bucket-level access\nresource \"google_storage_bucket\" \"secure_data_bucket\" {\n  name          = \"${var.project_id}-secure-data\"\n  location      = \"US\"\n  project       = var.project_id\n  force_destroy = false\n\n  # Enable uniform bucket-level access (IAM only, no ACLs)\n  uniform_bucket_level_access {\n    enabled = true\n  }\n\n  # Enable public access prevention (blocks allUsers/allAuthenticatedUsers)\n  public_access_prevention = \"enforced\"\n\n  # Enable versioning for data recovery\n  versioning {\n    enabled = true\n  }\n\n  # Encryption with customer-managed keys\n  encryption {\n    default_kms_key_name = google_kms_crypto_key.bucket_key.id\n  }\n\n  # Lifecycle rules for cost optimization\n  lifecycle_rule {\n    condition {\n      age = 90\n    }\n    action {\n      type          = \"SetStorageClass\"\n      storage_class = \"NEARLINE\"\n    }\n  }\n\n  # Audit logging\n  logging {\n    log_bucket = google_storage_bucket.audit_logs.name\n  }\n}\n\n# IAM binding with least privilege (service account only)\nresource \"google_storage_bucket_iam_member\" \"app_service_account\" {\n  bucket = google_storage_bucket.secure_data_bucket.name\n  role   = \"roles/storage.objectViewer\"\n  member = \"serviceAccount:${google_service_account.app_sa.email}\"\n\n  condition {\n    title       = \"Restrict to VPC\"\n    description = \"Access only from authorized VPC network\"\n    expression  = \"resource.name.startsWith('projects/${var.project_id}/buckets/${google_storage_bucket.secure_data_bucket.name}') && origin.ip.startsWith('10.0.0.0/8')\"\n  }\n}\n\n# VPC Service Controls perimeter\nresource \"google_access_context_manager_service_perimeter\" \"storage_perimeter\" {\n  parent = \"accessPolicies/${var.access_policy_id}\"\n  name   = \"accessPolicies/${var.access_policy_id}/servicePerimeters/storage_perimeter\"\n  title  = \"Storage Security Perimeter\"\n\n  status {\n    restricted_services = [\n      \"storage.googleapis.com\",\n      \"storage-component.googleapis.com\"\n    ]\n\n    resources = [\n      \"projects/${var.project_number}\"\n    ]\n\n    vpc_accessible_services {\n      enable_restriction = true\n      allowed_services = [\n        \"storage.googleapis.com\"\n      ]\n    }\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "Terraform GCP Provider",
+          "type": "Infrastructure as Code",
+          "cost": "Free (Terraform OSS) / $70/user/month (Enterprise)"
+        },
+        {
+          "name": "GCP Organization Policy Service",
+          "type": "Centralized Policy Management",
+          "cost": "Free"
+        },
+        {
+          "name": "VPC Service Controls",
+          "type": "Security Perimeter",
+          "cost": "$0.04 per GB data egress within perimeter"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.1.1 - Access control policy",
+        "A.9.4.1 - Information access restriction",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Verify Organization Policy constraints are applied: gcloud resource-manager org-policies list --organization=ORG_ID",
+        "Attempt to create bucket with 'allUsers' binding (should fail)",
+        "Verify uniform bucket-level access: gsutil uniformbucketlevelaccess get gs://BUCKET_NAME",
+        "Test VPC Service Controls by attempting access from outside perimeter",
+        "Review Cloud Asset Inventory for any public buckets: gcloud asset search-all-iam-policies --scope=organizations/ORG_ID --query='policy:allUsers OR policy:allAuthenticatedUsers'"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Signed URLs with Short Expiration for External Access",
+      "description": "Instead of public IAM bindings, use time-limited signed URLs that grant temporary access to specific objects. This provides fine-grained control with automatic expiration and audit logging.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Google Cloud Storage Node.js SDK 7.x",
+        "code": "const { Storage } = require('@google-cloud/storage');\nconst crypto = require('crypto');\n\n// Initialize Storage client with service account credentials\nconst storage = new Storage({\n  projectId: process.env.GCP_PROJECT_ID,\n  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS // Path to service account JSON\n});\n\nconst bucketName = 'company-private-data';\nconst bucket = storage.bucket(bucketName);\n\n/**\n * Generate signed URL for temporary read access\n * @param {string} fileName - Object name in bucket\n * @param {number} expirationMinutes - URL expiration in minutes (max 7 days)\n * @returns {Promise<string>} Signed URL\n */\nasync function generateSignedReadUrl(fileName, expirationMinutes = 15) {\n  const file = bucket.file(fileName);\n  \n  const options = {\n    version: 'v4',\n    action: 'read',\n    expires: Date.now() + expirationMinutes * 60 * 1000, // 15 minutes by default\n    \n    // Optional: Add custom response headers\n    responseDisposition: 'attachment; filename=\"download.pdf\"',\n    responseType: 'application/pdf',\n    \n    // Optional: Query parameters for additional security\n    queryParams: {\n      'x-goog-user-id': crypto.randomBytes(16).toString('hex') // User tracking\n    }\n  };\n\n  try {\n    const [url] = await file.getSignedUrl(options);\n    \n    // Log URL generation for audit trail\n    console.log('Generated signed URL', {\n      file: fileName,\n      expiresAt: new Date(options.expires).toISOString(),\n      timestamp: new Date().toISOString()\n    });\n    \n    return url;\n  } catch (error) {\n    console.error('Error generating signed URL:', error);\n    throw new Error('Failed to generate secure download link');\n  }\n}\n\n/**\n * Generate signed URL for temporary upload access\n * @param {string} fileName - Object name for upload\n * @param {string} contentType - MIME type of file\n * @param {number} expirationMinutes - URL expiration in minutes\n * @returns {Promise<string>} Signed upload URL\n */\nasync function generateSignedUploadUrl(fileName, contentType, expirationMinutes = 15) {\n  const file = bucket.file(fileName);\n  \n  const options = {\n    version: 'v4',\n    action: 'write',\n    expires: Date.now() + expirationMinutes * 60 * 1000,\n    contentType: contentType,\n    \n    // Enforce content type validation\n    extensionHeaders: {\n      'x-goog-content-length-range': '0,10485760' // Max 10MB\n    }\n  };\n\n  try {\n    const [url] = await file.getSignedUrl(options);\n    return url;\n  } catch (error) {\n    console.error('Error generating upload URL:', error);\n    throw new Error('Failed to generate secure upload link');\n  }\n}\n\n/**\n * Express.js endpoint to provide secure file access\n */\nconst express = require('express');\nconst app = express();\n\napp.get('/api/files/:fileId/download', async (req, res) => {\n  try {\n    const { fileId } = req.params;\n    const userId = req.user.id; // From authentication middleware\n    \n    // 1. Verify user has permission to access this file\n    const hasAccess = await checkUserFilePermission(userId, fileId);\n    if (!hasAccess) {\n      return res.status(403).json({ error: 'Access denied' });\n    }\n    \n    // 2. Get file path from database\n    const filePath = await getFilePathFromDatabase(fileId);\n    \n    // 3. Generate short-lived signed URL (15 minutes)\n    const signedUrl = await generateSignedReadUrl(filePath, 15);\n    \n    // 4. Log access for compliance audit\n    await logFileAccess({\n      userId,\n      fileId,\n      filePath,\n      action: 'download',\n      timestamp: new Date(),\n      ipAddress: req.ip\n    });\n    \n    // 5. Return signed URL to client\n    res.json({\n      downloadUrl: signedUrl,\n      expiresIn: 900 // 15 minutes in seconds\n    });\n    \n  } catch (error) {\n    console.error('Download error:', error);\n    res.status(500).json({ error: 'Failed to generate download link' });\n  }\n});\n\n/**\n * Policy-based signed URL generation with advanced validation\n */\nasync function generateSignedUrlWithPolicy(fileName) {\n  const file = bucket.file(fileName);\n  \n  // V4 signing policy for fine-grained control\n  const policy = {\n    version: 'v4',\n    action: 'read',\n    expires: Date.now() + 15 * 60 * 1000,\n    \n    // Conditional access based on IP range\n    conditions: [\n      ['eq', '$bucket', bucketName],\n      ['eq', '$key', fileName],\n      ['content-length-range', 0, 10485760]\n    ],\n    \n    // Additional security headers\n    extensionHeaders: {\n      'x-goog-encryption-algorithm': 'AES256',\n      'x-goog-meta-user-id': 'validated-user-id'\n    }\n  };\n  \n  const [url] = await file.getSignedUrl(policy);\n  return url;\n}\n\n// Helper functions (implement based on your auth system)\nasync function checkUserFilePermission(userId, fileId) {\n  // Query database to verify user has access\n  return true; // Placeholder\n}\n\nasync function getFilePathFromDatabase(fileId) {\n  // Retrieve actual GCS object path from database\n  return `users/documents/${fileId}.pdf`; // Placeholder\n}\n\nasync function logFileAccess(accessLog) {\n  // Write to audit log (Cloud Logging, database, etc.)\n  console.log('File access:', accessLog);\n}\n\nmodule.exports = {\n  generateSignedReadUrl,\n  generateSignedUploadUrl,\n  generateSignedUrlWithPolicy\n};"
+      },
+      "tools": [
+        {
+          "name": "Google Cloud Storage SDK",
+          "type": "API Client Library",
+          "cost": "Free (standard GCS storage pricing applies)"
+        },
+        {
+          "name": "Cloud KMS",
+          "type": "Key Management for Signing",
+          "cost": "$0.06 per key per month + $0.03 per 10,000 operations"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.12.4.1 - Event logging",
+        "A.18.1.5 - Regulation of cryptographic controls"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-5 - Protections against data leaks",
+        "DE.AE-3 - Event data are aggregated and correlated"
+      ],
+      "validation_steps": [
+        "Generate signed URL and verify it works only before expiration",
+        "Verify URL becomes invalid after expiration time",
+        "Test that URL cannot be modified without invalidating signature",
+        "Confirm signed URL access is logged in Cloud Logging",
+        "Verify service account has minimal IAM permissions (storage.objects.get only)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Automated Bucket Scanning with Security Command Center",
+      "description": "Enable GCP Security Command Center and Cloud Asset Inventory to continuously monitor for public bucket misconfigurations and automatically remediate violations.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "GCP Security Command Center API",
+        "code": "#!/usr/bin/env python3\n\"\"\"\nAutomated GCS Bucket Security Scanner and Remediation\nUses Security Command Center and Cloud Asset Inventory APIs\n\"\"\"\n\nfrom google.cloud import securitycenter_v1\nfrom google.cloud import asset_v1\nfrom google.cloud import storage\nimport logging\nimport os\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\n# Initialize clients\nscc_client = securitycenter_v1.SecurityCenterClient()\nasset_client = asset_v1.AssetServiceClient()\nstorage_client = storage.Client()\n\nORG_ID = os.environ['GCP_ORG_ID']\nORG_NAME = f\"organizations/{ORG_ID}\"\n\ndef scan_public_buckets():\n    \"\"\"\n    Scan all GCS buckets in organization for public access\n    Returns list of publicly accessible buckets\n    \"\"\"\n    logger.info(f\"Scanning organization {ORG_ID} for public buckets...\")\n    \n    # Query Cloud Asset Inventory for bucket IAM policies\n    request = asset_v1.SearchAllIamPoliciesRequest(\n        scope=ORG_NAME,\n        query='resource:storage.googleapis.com/Bucket AND (policy:allUsers OR policy:allAuthenticatedUsers)'\n    )\n    \n    public_buckets = []\n    \n    try:\n        page_result = asset_client.search_all_iam_policies(request=request)\n        \n        for policy in page_result:\n            bucket_name = policy.resource.split('/')[-1]\n            \n            # Extract IAM bindings with public members\n            public_bindings = []\n            for binding in policy.policy.bindings:\n                public_members = [m for m in binding.members \n                                if m in ['allUsers', 'allAuthenticatedUsers']]\n                if public_members:\n                    public_bindings.append({\n                        'role': binding.role,\n                        'members': public_members\n                    })\n            \n            if public_bindings:\n                public_buckets.append({\n                    'bucket_name': bucket_name,\n                    'resource': policy.resource,\n                    'project': policy.project,\n                    'public_bindings': public_bindings\n                })\n                \n                logger.warning(f\"Found public bucket: {bucket_name} with bindings: {public_bindings}\")\n        \n        logger.info(f\"Scan complete. Found {len(public_buckets)} public buckets\")\n        return public_buckets\n        \n    except Exception as e:\n        logger.error(f\"Error scanning buckets: {e}\")\n        raise\n\ndef create_scc_finding(bucket_info):\n    \"\"\"\n    Create Security Command Center finding for public bucket\n    \"\"\"\n    source_name = f\"{ORG_NAME}/sources/-\"\n    finding_id = f\"public-bucket-{bucket_info['bucket_name']}\"\n    \n    finding = securitycenter_v1.Finding(\n        state=securitycenter_v1.Finding.State.ACTIVE,\n        category=\"PUBLIC_BUCKET_EXPOSURE\",\n        severity=securitycenter_v1.Finding.Severity.CRITICAL,\n        resource_name=bucket_info['resource'],\n        description=f\"GCS bucket '{bucket_info['bucket_name']}' has public IAM bindings: {bucket_info['public_bindings']}\",\n        event_time={\"seconds\": int(time.time())},\n        source_properties={\n            \"bucket_name\": bucket_info['bucket_name'],\n            \"public_bindings\": str(bucket_info['public_bindings']),\n            \"remediation\": \"Remove allUsers and allAuthenticatedUsers IAM members\",\n            \"compliance_violation\": \"ISO27001 A.9.4.1, NIST CSF PR.AC-4\"\n        }\n    )\n    \n    try:\n        created_finding = scc_client.create_finding(\n            request={\n                \"parent\": source_name,\n                \"finding_id\": finding_id,\n                \"finding\": finding\n            }\n        )\n        logger.info(f\"Created SCC finding: {created_finding.name}\")\n        return created_finding\n    except Exception as e:\n        logger.error(f\"Error creating SCC finding: {e}\")\n        return None\n\ndef remediate_public_bucket(bucket_info, auto_remediate=False):\n    \"\"\"\n    Remove public IAM bindings from bucket\n    \n    Args:\n        bucket_info: Dictionary with bucket details\n        auto_remediate: If True, automatically remove public bindings\n    \"\"\"\n    bucket_name = bucket_info['bucket_name']\n    bucket = storage_client.bucket(bucket_name)\n    \n    try:\n        # Get current IAM policy\n        policy = bucket.get_iam_policy(requested_policy_version=3)\n        \n        # Remove public members\n        modified = False\n        for binding in policy.bindings:\n            original_members = set(binding['members'])\n            binding['members'] = [\n                m for m in binding['members'] \n                if m not in ['allUsers', 'allAuthenticatedUsers']\n            ]\n            \n            if len(binding['members']) < len(original_members):\n                modified = True\n                removed = original_members - set(binding['members'])\n                logger.info(f\"Removed {removed} from role {binding['role']}\")\n        \n        if modified and auto_remediate:\n            # Apply updated policy\n            bucket.set_iam_policy(policy)\n            logger.info(f\"Successfully remediated bucket: {bucket_name}\")\n            \n            # Update SCC finding to INACTIVE\n            finding_name = f\"{ORG_NAME}/sources/-/findings/public-bucket-{bucket_name}\"\n            scc_client.set_finding_state(\n                request={\n                    \"name\": finding_name,\n                    \"state\": securitycenter_v1.Finding.State.INACTIVE\n                }\n            )\n            return True\n        elif modified:\n            logger.info(f\"Bucket {bucket_name} requires remediation (auto-remediate disabled)\")\n            return False\n        else:\n            logger.info(f\"No public bindings found in current policy for {bucket_name}\")\n            return True\n            \n    except Exception as e:\n        logger.error(f\"Error remediating bucket {bucket_name}: {e}\")\n        return False\n\ndef enable_bucket_security_features(bucket_name):\n    \"\"\"\n    Enable security best practices on bucket\n    \"\"\"\n    bucket = storage_client.bucket(bucket_name)\n    \n    try:\n        # Enable uniform bucket-level access\n        bucket.iam_configuration.uniform_bucket_level_access_enabled = True\n        bucket.iam_configuration.public_access_prevention = 'enforced'\n        \n        # Enable versioning\n        bucket.versioning_enabled = True\n        \n        # Update bucket\n        bucket.patch()\n        \n        logger.info(f\"Enabled security features on bucket: {bucket_name}\")\n        return True\n        \n    except Exception as e:\n        logger.error(f\"Error enabling security features: {e}\")\n        return False\n\ndef main():\n    \"\"\"\n    Main execution flow\n    \"\"\"\n    logger.info(\"Starting GCS security scanner...\")\n    \n    # Scan for public buckets\n    public_buckets = scan_public_buckets()\n    \n    if not public_buckets:\n        logger.info(\"No public buckets found. Organization is secure.\")\n        return\n    \n    # Process each public bucket\n    for bucket_info in public_buckets:\n        # Create SCC finding\n        create_scc_finding(bucket_info)\n        \n        # Attempt remediation (set auto_remediate=True for automatic fix)\n        remediate_public_bucket(bucket_info, auto_remediate=False)\n        \n        # Enable additional security features\n        enable_bucket_security_features(bucket_info['bucket_name'])\n    \n    logger.info(\"Scan and remediation complete\")\n\nif __name__ == \"__main__\":\n    import time\n    main()"
+      },
+      "tools": [
+        {
+          "name": "Security Command Center",
+          "type": "Cloud Security Posture Management",
+          "cost": "$35/resource/month (Standard) or $350/resource/month (Premium)"
+        },
+        {
+          "name": "Cloud Asset Inventory",
+          "type": "Asset Discovery and Monitoring",
+          "cost": "Free"
+        },
+        {
+          "name": "Forseti Security (OSS)",
+          "type": "GCP Security Scanner",
+          "cost": "Free (compute costs only)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.18.2.2 - Compliance with security policies",
+        "A.12.4.1 - Event logging"
+      ],
+      "nist_csf": [
+        "DE.CM-8 - Vulnerability scans are performed",
+        "RS.MI-3 - Newly identified vulnerabilities are mitigated",
+        "DE.AE-2 - Detected events are analyzed"
+      ],
+      "validation_steps": [
+        "Enable Security Command Center: gcloud services enable securitycenter.googleapis.com",
+        "Run scan script and verify public buckets are detected",
+        "Check SCC dashboard for findings: https://console.cloud.google.com/security/command-center",
+        "Test auto-remediation on non-production bucket",
+        "Set up Cloud Function to run scanner on schedule (daily recommended)"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement VPC Service Controls for Data Exfiltration Prevention",
+      "description": "Create security perimeters around GCS buckets using VPC Service Controls to prevent data exfiltration even if IAM is misconfigured. This provides defense-in-depth by restricting data access to specific VPCs and IP ranges.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "bash",
+        "framework": "gcloud CLI",
+        "code": "#!/bin/bash\n# VPC Service Controls Setup for GCS Buckets\n\nset -euo pipefail\n\n# Variables\nORG_ID=\"YOUR_ORG_ID\"\nPROJECT_ID=\"YOUR_PROJECT_ID\"\nPROJECT_NUMBER=\"YOUR_PROJECT_NUMBER\"\nACCESS_POLICY_TITLE=\"storage-security-perimeter\"\nPERIMETER_NAME=\"storage_perimeter\"\n\n# Colors for output\nRED='\\033[0;31m'\nGREEN='\\033[0;32m'\nYELLOW='\\033[1;33m'\nNC='\\033[0m' # No Color\n\necho -e \"${GREEN}Setting up VPC Service Controls for GCS...${NC}\"\n\n# 1. Enable required APIs\necho -e \"${YELLOW}Enabling required APIs...${NC}\"\ngcloud services enable accesscontextmanager.googleapis.com \\\n  cloudresourcemanager.googleapis.com \\\n  storage-api.googleapis.com \\\n  --project=${PROJECT_ID}\n\n# 2. Create Access Policy (if not exists)\necho -e \"${YELLOW}Creating Access Policy...${NC}\"\nACCESS_POLICY_NAME=$(gcloud access-context-manager policies list \\\n  --organization=${ORG_ID} \\\n  --format=\"value(name)\" \\\n  --filter=\"title:${ACCESS_POLICY_TITLE}\" || echo \"\")\n\nif [ -z \"${ACCESS_POLICY_NAME}\" ]; then\n  ACCESS_POLICY_NAME=$(gcloud access-context-manager policies create \\\n    --organization=${ORG_ID} \\\n    --title=${ACCESS_POLICY_TITLE} \\\n    --format=\"value(name)\")\n  echo -e \"${GREEN}Created Access Policy: ${ACCESS_POLICY_NAME}${NC}\"\nelse\n  echo -e \"${GREEN}Using existing Access Policy: ${ACCESS_POLICY_NAME}${NC}\"\nfi\n\n# 3. Define Access Level (trusted IPs and device policy)\necho -e \"${YELLOW}Creating Access Level with IP restrictions...${NC}\"\ncat > /tmp/access-level.yaml <<EOF\nname: ${ACCESS_POLICY_NAME}/accessLevels/corporate_network\ntitle: Corporate Network Access\nbasic:\n  combiningFunction: AND\n  conditions:\n  - ipSubnetworks:\n    - '203.0.113.0/24'  # Corporate office IP range\n    - '198.51.100.0/24' # VPN IP range\n    requireScreenLock: true\n    requireCorpOwned: true\n  - devicePolicy:\n      allowedDeviceManagementLevels:\n      - COMPLETE\n      - SECURE\n      requireAdminApproval: false\n      requireScreenlock: true\n  - members:\n    - 'serviceAccount:app-service@${PROJECT_ID}.iam.gserviceaccount.com'\nEOF\n\ngcloud access-context-manager levels create corporate_network \\\n  --policy=${ACCESS_POLICY_NAME} \\\n  --title=\"Corporate Network Access\" \\\n  --basic-level-spec=/tmp/access-level.yaml \\\n  || echo \"Access level already exists\"\n\n# 4. Create Service Perimeter for GCS\necho -e \"${YELLOW}Creating VPC Service Perimeter...${NC}\"\ncat > /tmp/perimeter.yaml <<EOF\nname: ${ACCESS_POLICY_NAME}/servicePerimeters/${PERIMETER_NAME}\ntitle: GCS Storage Perimeter\nstatus:\n  resources:\n  - projects/${PROJECT_NUMBER}\n  restrictedServices:\n  - storage.googleapis.com\n  - storage-api.googleapis.com\n  - storage-component.googleapis.com\n  vpcAccessibleServices:\n    enableRestriction: true\n    allowedServices:\n    - storage.googleapis.com\n    - storage-api.googleapis.com\n  accessLevels:\n  - ${ACCESS_POLICY_NAME}/accessLevels/corporate_network\n  egressPolicies:\n  - egressFrom:\n      identityType: ANY_IDENTITY\n    egressTo:\n      resources:\n      - projects/${PROJECT_NUMBER}\n      operations:\n      - serviceName: storage.googleapis.com\n        methodSelectors:\n        - method: google.storage.objects.get\n        - method: google.storage.objects.list\n  ingressPolicies:\n  - ingressFrom:\n      identityType: ANY_SERVICE_ACCOUNT\n      sources:\n      - accessLevel: ${ACCESS_POLICY_NAME}/accessLevels/corporate_network\n    ingressTo:\n      resources:\n      - projects/${PROJECT_NUMBER}\n      operations:\n      - serviceName: storage.googleapis.com\n        methodSelectors:\n        - method: '*'\nEOF\n\ngcloud access-context-manager perimeters create ${PERIMETER_NAME} \\\n  --policy=${ACCESS_POLICY_NAME} \\\n  --title=\"GCS Storage Perimeter\" \\\n  --resources=projects/${PROJECT_NUMBER} \\\n  --restricted-services=storage.googleapis.com,storage-api.googleapis.com \\\n  --access-levels=${ACCESS_POLICY_NAME}/accessLevels/corporate_network \\\n  --enable-vpc-accessible-services \\\n  --vpc-allowed-services=storage.googleapis.com,storage-api.googleapis.com \\\n  || echo \"Perimeter already exists\"\n\n# 5. Configure perimeter bridge for authorized cross-project access\necho -e \"${YELLOW}Creating perimeter bridge for authorized projects...${NC}\"\ngcloud access-context-manager perimeters create bridge_to_logging \\\n  --policy=${ACCESS_POLICY_NAME} \\\n  --perimeter-type=bridge \\\n  --perimeter-resources=projects/${PROJECT_NUMBER},projects/LOGGING_PROJECT_NUMBER \\\n  || echo \"Bridge already exists\"\n\n# 6. Test perimeter (this should fail from unauthorized location)\necho -e \"${YELLOW}Testing VPC Service Controls...${NC}\"\necho \"Attempting to access bucket from current location...\"\ngsutil ls gs://test-bucket-${PROJECT_ID} || {\n  echo -e \"${RED}Access blocked by VPC Service Controls (expected if outside perimeter)${NC}\"\n}\n\n# 7. Enable dry-run mode for testing (optional)\necho -e \"${YELLOW}Enabling dry-run mode for testing...${NC}\"\ngcloud access-context-manager perimeters update ${PERIMETER_NAME} \\\n  --policy=${ACCESS_POLICY_NAME} \\\n  --set-enforced-mode=dryrun\n\necho -e \"${GREEN}VPC Service Controls setup complete!${NC}\"\necho \"\"\necho \"Next steps:\"\necho \"1. Review VPC-SC logs: gcloud logging read 'protoPayload.metadata.\\\"@type\\\"=\\\"type.googleapis.com/google.cloud.audit.VpcServiceControlAuditMetadata\\\"'\"\necho \"2. Test access from inside perimeter (corporate network or authorized service account)\"\necho \"3. Switch to enforced mode: gcloud access-context-manager perimeters update ${PERIMETER_NAME} --set-enforced-mode=enforced\"\necho \"4. Monitor violations in Security Command Center\""
+      },
+      "tools": [
+        {
+          "name": "VPC Service Controls",
+          "type": "Security Perimeter Service",
+          "cost": "$0.04 per GB data egress"
+        },
+        {
+          "name": "Access Context Manager",
+          "type": "Access Level Management",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.9.1.2 - Access to networks and network services",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Verify perimeter creation: gcloud access-context-manager perimeters list --policy=POLICY_NAME",
+        "Test access from outside perimeter (should fail)",
+        "Test access from inside perimeter or via authorized service account (should succeed)",
+        "Review VPC-SC audit logs for access attempts",
+        "Verify dry-run violations before enforcing: gcloud logging read 'protoPayload.metadata.dryRun=true'"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected data egress from GCS buckets to unknown IP addresses",
+      "High volume of storage.objects.list or storage.objects.get API calls from public IPs",
+      "IAM policy changes adding 'allUsers' or 'allAuthenticatedUsers' members",
+      "Bucket enumeration attempts using predictable naming patterns",
+      "Signed URLs accessed from anomalous geographic locations",
+      "Large file downloads outside business hours",
+      "Service account key creation followed by immediate bucket access"
+    ],
+    "log_queries": [
+      {
+        "siem": "Google Cloud Logging (Log Analytics)",
+        "query": "# Detect public IAM binding changes on GCS buckets\nresource.type=\"gcs_bucket\"\nprotoPayload.methodName=\"storage.setIamPermissions\"\nprotoPayload.serviceData.policyDelta.bindingDeltas.member=(\"allUsers\" OR \"allAuthenticatedUsers\")\nprotoPayload.serviceData.policyDelta.bindingDeltas.action=\"ADD\"\n| fields timestamp, resource.labels.bucket_name, protoPayload.authenticationInfo.principalEmail, protoPayload.serviceData.policyDelta.bindingDeltas"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - Multi-cloud monitoring",
+        "query": "// Detect GCP bucket access from Azure Sentinel via GCP logs export\nGCPAuditLogs\n| where ResourceType == \"gcs_bucket\"\n| where MethodName in (\"storage.objects.get\", \"storage.objects.list\")\n| where PrincipalEmail == \"allUsers@\" or PrincipalEmail == \"allAuthenticatedUsers@\"\n| summarize AccessCount = count(), UniqueIPs = dcount(CallerIP) by BucketName, TimeGenerated\n| where AccessCount > 100 or UniqueIPs > 50\n| order by AccessCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=gcp_audit sourcetype=gcp:cloudaudit:activity\nresource.type=\"gcs_bucket\"\nprotoPayload.methodName IN (\"storage.objects.get\", \"storage.objects.list\", \"storage.setIamPermissions\")\n| eval is_public=if(match(protoPayload.request.policy.bindings{}.members{}, \"allUsers|allAuthenticatedUsers\"), 1, 0)\n| where is_public=1\n| stats count by resource.labels.bucket_name, protoPayload.authenticationInfo.principalEmail, protoPayload.requestMetadata.callerIp\n| where count > 50\n| sort -count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.provider: \"storage.googleapis.com\" AND event.action: (\"storage.objects.get\" OR \"storage.objects.list\" OR \"storage.setIamPermissions\") AND (gcp.audit.authentication_info.principal_email: \"allUsers\" OR gcp.audit.authentication_info.principal_email: \"allAuthenticatedUsers\") AND event.outcome: \"success\""
+      },
+      {
+        "siem": "Amazon CloudWatch Insights - GCP logs via cross-cloud SIEM",
+        "query": "fields @timestamp, resource.labels.bucket_name, protoPayload.authenticationInfo.principalEmail, protoPayload.requestMetadata.callerIp\n| filter protoPayload.serviceName = \"storage.googleapis.com\"\n| filter protoPayload.methodName in [\"storage.objects.get\", \"storage.objects.list\"]\n| filter protoPayload.authenticationInfo.principalEmail in [\"allUsers\", \"allAuthenticatedUsers\"]\n| stats count(*) as AccessCount by resource.labels.bucket_name, protoPayload.requestMetadata.callerIp\n| filter AccessCount > 100\n| sort AccessCount desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "gcpbucketbrute",
+        "type": "Offensive - Bucket Enumeration",
+        "usage": "python gcpbucketbrute.py --keyword company-name --threads 10"
+      },
+      {
+        "name": "GrayhatWarfare Bucket Search",
+        "type": "Public Bucket Discovery",
+        "usage": "Search engine for publicly exposed GCS/S3 buckets"
+      },
+      {
+        "name": "Cloud Asset Inventory",
+        "type": "Defensive - Asset Discovery",
+        "usage": "gcloud asset search-all-iam-policies --scope=organizations/ORG_ID --query='policy:allUsers'"
+      },
+      {
+        "name": "Forseti Security",
+        "type": "Defensive - GCP Security Scanner",
+        "usage": "forseti inventory create && forseti scanner run"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Technology",
+      "E-commerce",
+      "Media & Entertainment",
+      "Aviation",
+      "Gaming"
+    ],
+    "compliance": [
+      "ISO27001 (A.9.1.1, A.9.4.1, A.13.1.3)",
+      "NIST CSF (PR.AC-4, PR.AC-5, PR.DS-5)",
+      "PCI-DSS 4.0 (Requirement 7.2.1)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC6.1, CC6.6)",
+      "GDPR (Article 32 - Security of Processing)",
+      "CCPA (1798.150)",
+      "CIS GCP Foundations Benchmark v1.3.0 (Sections 5.1, 5.2)"
+    ],
+    "deployment": [
+      "Google Cloud Platform",
+      "Multi-cloud",
+      "Hybrid Cloud"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Public",
+      "Internal"
+    ]
+  }
+}

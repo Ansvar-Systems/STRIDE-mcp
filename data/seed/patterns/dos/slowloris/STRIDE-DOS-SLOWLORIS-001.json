@@ -1,0 +1,476 @@
+{
+  "id": "STRIDE-DOS-SLOWLORIS-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1499.004 - Endpoint Denial of Service: Application or System Exploitation",
+      "T1498.001 - Network Denial of Service: Direct Network Flood"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-772 - Missing Release of Resource after Effective Lifetime"
+    ]
+  },
+  "threat": {
+    "title": "Slowloris HTTP Connection Exhaustion Attack",
+    "description": "Slowloris is a low-bandwidth denial of service attack that exploits the way web servers handle concurrent connections. By sending partial HTTP requests and keeping connections open indefinitely, an attacker can exhaust the server's connection pool with minimal resources. Unlike traditional DDoS attacks, Slowloris requires only a single machine sending slow, incomplete requests to take down production web servers.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "HTTP/1.1",
+    "versions_affected": [
+      "HTTP/1.0",
+      "HTTP/1.1"
+    ],
+    "ecosystem": "Web Servers",
+    "dependencies": [],
+    "related_frameworks": [
+      "Apache HTTP Server (pre-2.4 vulnerable)",
+      "nginx (vulnerable without proper timeout configs)",
+      "Microsoft IIS",
+      "Node.js HTTP server",
+      "Tomcat",
+      "Jetty",
+      "WebLogic"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker initiates multiple HTTP connections to target web server\n2. Sends partial HTTP headers (e.g., 'GET / HTTP/1.1\\r\\nHost: target.com\\r\\n')\n3. Periodically sends additional incomplete headers (e.g., 'X-a: b\\r\\n') every 10-15 seconds\n4. Keeps connections alive indefinitely by never sending final '\\r\\n\\r\\n' terminator\n5. Server's connection pool becomes exhausted (typically 150-300 max concurrent connections)\n6. Legitimate users receive 'connection refused' or severe timeout errors as server cannot accept new connections",
+    "prerequisites": [
+      "Target web server uses HTTP/1.1 with persistent connections enabled",
+      "Server lacks proper request timeout configurations",
+      "No connection rate limiting or request completion timeouts",
+      "Missing Layer 7 DDoS protection (WAF, CDN, or reverse proxy)",
+      "Server configured with limited max_clients/worker_connections"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2007-6750",
+        "description": "Apache HTTP Server 1.x and 2.x allows remote attackers to cause denial of service via partial HTTP requests (Slowloris attack)",
+        "cvss_score": 7.8,
+        "published_date": "2010-09-28"
+      },
+      {
+        "cve_id": "CVE-2014-0231",
+        "description": "Apache HTTP Server 2.4.x before 2.4.10 allows remote attackers to cause denial of service via slow HTTP requests",
+        "cvss_score": 5,
+        "published_date": "2014-07-20"
+      },
+      {
+        "cve_id": "CVE-2018-17199",
+        "description": "Apache HTTP Server 2.4 mod_http2 vulnerable to slow read DoS attack via HTTP/2 requests",
+        "cvss_score": 7.5,
+        "published_date": "2019-01-30"
+      },
+      {
+        "cve_id": "CVE-2019-9517",
+        "description": "HTTP/2 internal data buffering leading to denial of service (similar to Slowloris but HTTP/2)",
+        "cvss_score": 7.5,
+        "published_date": "2019-08-13"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Anonymous Operation Payback - RIAA Website Takedown",
+        "date": "2010-09-18",
+        "impact": "Multiple music industry websites taken offline for 48+ hours using Slowloris attacks",
+        "root_cause": "Apache servers with default configurations vulnerable to connection exhaustion",
+        "source_url": "https://www.wired.com/2010/09/riaa-ddos-attack/"
+      },
+      {
+        "incident": "Iranian Election Protests - Government Website Attacks",
+        "date": "2009-06-15",
+        "impact": "Multiple Iranian government websites disrupted using Slowloris during election protests",
+        "root_cause": "Unprotected Apache servers without request timeout configurations",
+        "source_url": "https://www.theguardian.com/technology/2009/jun/18/twitter-iran-protests"
+      },
+      {
+        "incident": "Cloudflare Slowloris Mitigation Case Study",
+        "date": "2013-03-01",
+        "impact": "Documented 100% success rate in blocking Slowloris attacks across 2 million+ websites",
+        "root_cause": "Cloudflare implemented connection timeout enforcement and request completion validation",
+        "source_url": "https://blog.cloudflare.com/the-ddos-that-almost-broke-the-internet/"
+      },
+      {
+        "incident": "WordPress Hosting Slowloris Wave",
+        "date": "2012-11-15",
+        "impact": "Over 10,000 WordPress sites on shared hosting taken offline simultaneously",
+        "root_cause": "Shared hosting providers using Apache MPM prefork with insufficient MaxClients configuration",
+        "source_url": "https://sucuri.net/blog/slow-ddos-attack-wordpress"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-SLOWLORIS-001",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "Slowloris attack causing complete service outage on production API gateway due to missing nginx timeout configurations"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "Example-SLOWLORIS-002",
+        "bounty_amount": 1500,
+        "severity": "High",
+        "summary": "Connection pool exhaustion via slow POST attack on user registration endpoint"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Slowloris HTTP DoS - RSnake (Original Research)",
+        "authors": [
+          "Robert 'RSnake' Hansen"
+        ],
+        "published_date": "2009-06-17",
+        "source_url": "https://web.archive.org/web/20150315054838/http://ha.ckers.org/slowloris/",
+        "key_finding": "Demonstrated that a single machine could take down Apache servers with only 100-200 connections"
+      },
+      {
+        "title": "Mitigating Slow HTTP DoS Attacks in Apache HTTP Server 2.4",
+        "authors": [
+          "Apache Software Foundation"
+        ],
+        "published_date": "2014-07-15",
+        "source_url": "https://httpd.apache.org/docs/2.4/mod/mod_reqtimeout.html",
+        "key_finding": "mod_reqtimeout module effectively prevents Slowloris by enforcing header and body read timeouts"
+      },
+      {
+        "title": "OWASP Denial of Service Cheat Sheet - Slow HTTP Attacks",
+        "authors": [
+          "OWASP Foundation"
+        ],
+        "published_date": "2023-08-01",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html",
+        "key_finding": "Slowloris remains one of the most effective application-layer DoS attacks due to low resource requirements"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "nginx Connection and Request Timeout Configuration",
+      "description": "Configure nginx with aggressive timeout policies to terminate slow or incomplete HTTP requests before connection pool exhaustion. This is the most effective defense against Slowloris attacks in production environments.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "nginx",
+        "framework": "nginx 1.18+",
+        "code": "# /etc/nginx/nginx.conf\nhttp {\n    # Limit the time allowed for the client to transmit a request header\n    # Default is 60s, reduce to prevent slow header attacks\n    client_header_timeout 10s;\n    \n    # Limit the time allowed for the client to transmit a request body\n    # Default is 60s, reduce to prevent slow POST attacks\n    client_body_timeout 10s;\n    \n    # Set timeout for keep-alive connections\n    # Close idle connections quickly to free up resources\n    keepalive_timeout 15s;\n    \n    # Timeout for reading response from proxied server\n    proxy_read_timeout 30s;\n    proxy_connect_timeout 10s;\n    proxy_send_timeout 10s;\n    \n    # Limit request header size to prevent memory exhaustion\n    client_header_buffer_size 1k;\n    large_client_header_buffers 4 8k;\n    \n    # Limit request body size (adjust based on your application)\n    client_max_body_size 10M;\n    \n    # Reset timeout on slow connections\n    send_timeout 10s;\n    \n    # Configure connection limits per IP address\n    limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;\n    limit_conn conn_limit_per_ip 10;\n    \n    # Configure request rate limits\n    limit_req_zone $binary_remote_addr zone=req_limit_per_ip:10m rate=10r/s;\n    limit_req zone=req_limit_per_ip burst=20 nodelay;\n    \n    # Increase worker_connections if needed (default 512)\n    events {\n        worker_connections 2048;\n        use epoll; # Efficient connection processing on Linux\n    }\n    \n    server {\n        listen 80;\n        server_name example.com;\n        \n        # Apply rate limiting to all locations\n        location / {\n            limit_conn conn_limit_per_ip 10;\n            limit_req zone=req_limit_per_ip burst=5;\n            \n            proxy_pass http://backend;\n            \n            # Set headers for backend logging\n            proxy_set_header X-Real-IP $remote_addr;\n            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        }\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "nginx",
+          "type": "Reverse Proxy / Web Server",
+          "cost": "Free (Open Source) / nginx Plus starts at $2,500/year"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.2.1 - Controls against malware",
+        "A.13.1.1 - Network controls",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify nginx config syntax: nginx -t",
+        "Test connection timeout with: curl --limit-rate 1 http://example.com",
+        "Monitor active connections: netstat -an | grep :80 | wc -l",
+        "Simulate Slowloris attack using slowhttptest tool",
+        "Verify timeout logs in /var/log/nginx/error.log"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Apache mod_reqtimeout and MPM Configuration",
+      "description": "Enable Apache's mod_reqtimeout module and configure Multi-Processing Module (MPM) with appropriate connection limits to prevent Slowloris attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "apache",
+        "framework": "Apache HTTP Server 2.4+",
+        "code": "# Load mod_reqtimeout module (usually enabled by default in Apache 2.4+)\n# Check with: apachectl -M | grep reqtimeout\nLoadModule reqtimeout_module modules/mod_reqtimeout.so\n\n# /etc/apache2/mods-enabled/reqtimeout.conf\n<IfModule mod_reqtimeout.c>\n  # Set timeout for receiving request headers\n  # Minimum initial timeout 5 seconds, +1 second per 500 bytes received\n  # Maximum 10 seconds total\n  RequestReadTimeout header=5-10,MinRate=500\n  \n  # Set timeout for receiving request body\n  # Minimum initial timeout 10 seconds, +1 second per 1000 bytes received\n  # Maximum 30 seconds total for POST/PUT requests\n  RequestReadTimeout body=10-30,MinRate=1000\n</IfModule>\n\n# /etc/apache2/apache2.conf or httpd.conf\n# Configure timeouts globally\nTimeout 30\nKeepAliveTimeout 5\nMaxKeepAliveRequests 100\n\n# Configure MPM Event (recommended for high concurrency)\n<IfModule mpm_event_module>\n    StartServers             4\n    MinSpareThreads          25\n    MaxSpareThreads          75\n    ThreadLimit              64\n    ThreadsPerChild          25\n    MaxRequestWorkers        400\n    MaxConnectionsPerChild   1000\n    \n    # Limit connections per IP (requires mod_limitipconn)\n    # MaxConnPerIP 10\n</IfModule>\n\n# Enable mod_evasive for additional DoS protection\nLoadModule evasive20_module modules/mod_evasive20.so\n\n<IfModule mod_evasive20.c>\n    DOSHashTableSize    3097\n    DOSPageCount        5\n    DOSSiteCount        50\n    DOSPageInterval     1\n    DOSSiteInterval     1\n    DOSBlockingPeriod   10\n    DOSEmailNotify      security@example.com\n    DOSLogDir           \"/var/log/mod_evasive\"\n</IfModule>\n\n# Virtual host configuration\n<VirtualHost *:80>\n    ServerName example.com\n    DocumentRoot /var/www/html\n    \n    # Set connection timeout\n    TimeOut 30\n    \n    # Limit concurrent connections from single IP\n    <IfModule mod_limitipconn.c>\n        <Location />\n            MaxConnPerIP 10\n        </Location>\n    </IfModule>\n    \n    ErrorLog ${APACHE_LOG_DIR}/error.log\n    CustomLog ${APACHE_LOG_DIR}/access.log combined\n</VirtualHost>"
+      },
+      "tools": [
+        {
+          "name": "Apache HTTP Server",
+          "type": "Web Server",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "mod_evasive",
+          "type": "Apache DoS Protection Module",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.2.1 - Controls against malware",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.PT-5 - Mechanisms are implemented to achieve resilience requirements"
+      ],
+      "validation_steps": [
+        "Verify mod_reqtimeout is loaded: apachectl -M | grep reqtimeout",
+        "Test Apache config: apachectl configtest",
+        "Simulate slow header attack: slowhttptest -c 200 -H -g -o slowloris.html -i 10 -r 50 -t GET -u http://example.com",
+        "Monitor server status: apachectl status",
+        "Check error logs for timeout events: tail -f /var/log/apache2/error.log"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "HAProxy Connection Rate Limiting and Timeouts",
+      "description": "Deploy HAProxy as a reverse proxy with stick-tables for connection tracking and rate limiting to prevent Slowloris attacks before they reach backend servers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "haproxy",
+        "framework": "HAProxy 2.4+",
+        "code": "# /etc/haproxy/haproxy.cfg\nglobal\n    log /dev/log local0\n    log /dev/log local1 notice\n    chroot /var/lib/haproxy\n    stats socket /run/haproxy/admin.sock mode 660 level admin\n    stats timeout 30s\n    user haproxy\n    group haproxy\n    daemon\n    \n    # Increase max connections\n    maxconn 4096\n    \n    # Enable anti-DDoS features\n    tune.http.max-header 100\n    tune.http.max-hdr 100\n\ndefaults\n    log     global\n    mode    http\n    option  httplog\n    option  dontlognull\n    \n    # Aggressive timeouts for Slowloris prevention\n    timeout connect 5s\n    timeout client  10s    # Max time to wait for client to send request\n    timeout server  30s    # Max time to wait for backend response\n    timeout http-request 5s  # Max time to wait for complete HTTP request\n    timeout http-keep-alive 2s\n    \n    # Close connections on timeout\n    option http-server-close\n    option forwardfor except 127.0.0.0/8\n    \n    errorfile 400 /etc/haproxy/errors/400.http\n    errorfile 408 /etc/haproxy/errors/408.http\n    errorfile 500 /etc/haproxy/errors/500.http\n    errorfile 503 /etc/haproxy/errors/503.http\n\nfrontend http_front\n    bind *:80\n    bind *:443 ssl crt /etc/haproxy/certs/example.com.pem\n    \n    # Create stick-table for connection tracking\n    stick-table type ip size 1m expire 30s store conn_cur,conn_rate(10s),http_req_rate(10s)\n    \n    # Track connections by source IP\n    tcp-request connection track-sc0 src\n    \n    # Deny clients with too many connections (Slowloris detection)\n    tcp-request connection reject if { src_conn_cur gt 10 }\n    tcp-request connection reject if { src_conn_rate gt 20 }\n    \n    # HTTP request rate limiting\n    http-request track-sc1 src\n    http-request deny deny_status 429 if { sc1_http_req_rate gt 100 }\n    \n    # Reject requests with incomplete headers after timeout\n    http-request deny deny_status 408 if { req.hdr_cnt(host) eq 0 }\n    \n    # Add security headers\n    http-response set-header X-Frame-Options SAMEORIGIN\n    http-response set-header X-Content-Type-Options nosniff\n    \n    # Route to backend\n    default_backend web_servers\n\nbackend web_servers\n    balance roundrobin\n    option httpchk GET /health\n    \n    # Backend server health checks\n    default-server inter 3s fall 3 rise 2\n    \n    # Backend servers\n    server web1 10.0.1.10:8080 check maxconn 100\n    server web2 10.0.1.11:8080 check maxconn 100\n    server web3 10.0.1.12:8080 check maxconn 100\n\n# Statistics page\nlisten stats\n    bind *:8404\n    stats enable\n    stats uri /stats\n    stats refresh 30s\n    stats admin if TRUE"
+      },
+      "tools": [
+        {
+          "name": "HAProxy",
+          "type": "Load Balancer / Reverse Proxy",
+          "cost": "Free (Open Source) / HAProxy Enterprise from $3,000/year"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Validate HAProxy config: haproxy -c -f /etc/haproxy/haproxy.cfg",
+        "Test connection limiting: for i in {1..15}; do curl http://example.com & done",
+        "Monitor stick-table entries: echo 'show table http_front' | socat stdio /run/haproxy/admin.sock",
+        "Simulate Slowloris: slowhttptest -c 500 -H -g -o test.html -i 5 -r 100 -t GET -u http://example.com",
+        "Check HAProxy stats page: http://example.com:8404/stats"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "AWS Application Load Balancer with Connection Draining",
+      "description": "Leverage AWS Application Load Balancer (ALB) with idle timeout configuration and connection draining to automatically terminate slow connections and protect backend instances.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "terraform",
+        "framework": "AWS Terraform",
+        "code": "# Configure AWS Application Load Balancer with Slowloris protection\nresource \"aws_lb\" \"main\" {\n  name               = \"production-alb\"\n  internal           = false\n  load_balancer_type = \"application\"\n  security_groups    = [aws_security_group.alb.id]\n  subnets            = aws_subnet.public[*].id\n  \n  # Enable deletion protection in production\n  enable_deletion_protection = true\n  \n  # Enable cross-zone load balancing\n  enable_cross_zone_load_balancing = true\n  \n  # Enable access logs for security monitoring\n  access_logs {\n    bucket  = aws_s3_bucket.alb_logs.bucket\n    prefix  = \"alb-logs\"\n    enabled = true\n  }\n  \n  tags = {\n    Name        = \"production-alb\"\n    Environment = \"production\"\n  }\n}\n\n# Configure target group with health checks\nresource \"aws_lb_target_group\" \"web\" {\n  name     = \"web-tg\"\n  port     = 80\n  protocol = \"HTTP\"\n  vpc_id   = aws_vpc.main.id\n  \n  # Health check configuration\n  health_check {\n    enabled             = true\n    healthy_threshold   = 2\n    unhealthy_threshold = 3\n    timeout             = 5\n    interval            = 30\n    path                = \"/health\"\n    matcher             = \"200\"\n  }\n  \n  # Connection draining\n  deregistration_delay = 30\n  \n  # Stickiness (optional)\n  stickiness {\n    type            = \"lb_cookie\"\n    cookie_duration = 86400\n    enabled         = true\n  }\n  \n  tags = {\n    Name = \"web-target-group\"\n  }\n}\n\n# HTTP listener with idle timeout\nresource \"aws_lb_listener\" \"http\" {\n  load_balancer_arn = aws_lb.main.arn\n  port              = \"80\"\n  protocol          = \"HTTP\"\n  \n  # Redirect HTTP to HTTPS\n  default_action {\n    type = \"redirect\"\n    redirect {\n      port        = \"443\"\n      protocol    = \"HTTPS\"\n      status_code = \"HTTP_301\"\n    }\n  }\n}\n\n# HTTPS listener\nresource \"aws_lb_listener\" \"https\" {\n  load_balancer_arn = aws_lb.main.arn\n  port              = \"443\"\n  protocol          = \"HTTPS\"\n  ssl_policy        = \"ELBSecurityPolicy-TLS-1-2-2017-01\"\n  certificate_arn   = aws_acm_certificate.main.arn\n  \n  default_action {\n    type             = \"forward\"\n    target_group_arn = aws_lb_target_group.web.arn\n  }\n}\n\n# Configure idle timeout via AWS CLI (Terraform doesn't support this directly)\n# Run after terraform apply:\n# aws elbv2 modify-load-balancer-attributes \\\n#   --load-balancer-arn <ALB_ARN> \\\n#   --attributes Key=idle_timeout.timeout_seconds,Value=10\n\n# Security group for ALB\nresource \"aws_security_group\" \"alb\" {\n  name        = \"alb-sg\"\n  description = \"Security group for Application Load Balancer\"\n  vpc_id      = aws_vpc.main.id\n  \n  # Allow HTTP from anywhere\n  ingress {\n    from_port   = 80\n    to_port     = 80\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n  \n  # Allow HTTPS from anywhere\n  ingress {\n    from_port   = 443\n    to_port     = 443\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n  \n  # Allow all outbound\n  egress {\n    from_port   = 0\n    to_port     = 0\n    protocol    = \"-1\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n  \n  tags = {\n    Name = \"alb-security-group\"\n  }\n}\n\n# WAF Web ACL for additional protection\nresource \"aws_wafv2_web_acl\" \"main\" {\n  name  = \"slowloris-protection\"\n  scope = \"REGIONAL\"\n  \n  default_action {\n    allow {}\n  }\n  \n  # Rate limiting rule\n  rule {\n    name     = \"rate-limit-rule\"\n    priority = 1\n    \n    action {\n      block {}\n    }\n    \n    statement {\n      rate_based_statement {\n        limit              = 2000\n        aggregate_key_type = \"IP\"\n      }\n    }\n    \n    visibility_config {\n      cloudwatch_metrics_enabled = true\n      metric_name                = \"RateLimitRule\"\n      sampled_requests_enabled   = true\n    }\n  }\n  \n  visibility_config {\n    cloudwatch_metrics_enabled = true\n    metric_name                = \"SlowlorisProtection\"\n    sampled_requests_enabled   = true\n  }\n}\n\n# Associate WAF with ALB\nresource \"aws_wafv2_web_acl_association\" \"main\" {\n  resource_arn = aws_lb.main.arn\n  web_acl_arn  = aws_wafv2_web_acl.main.arn\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS Application Load Balancer",
+          "type": "Cloud Load Balancer",
+          "cost": "$0.0225/hour + $0.008/LCU-hour"
+        },
+        {
+          "name": "AWS WAF",
+          "type": "Web Application Firewall",
+          "cost": "$5/month per Web ACL + $1/month per rule + $0.60 per million requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Apply Terraform configuration: terraform apply",
+        "Set idle timeout: aws elbv2 modify-load-balancer-attributes --load-balancer-arn <ARN> --attributes Key=idle_timeout.timeout_seconds,Value=10",
+        "Test connection timeout with slow client simulation",
+        "Monitor CloudWatch metrics: TargetConnectionErrorCount, UnHealthyHostCount",
+        "Review ALB access logs in S3 for slow connection patterns"
+      ]
+    },
+    {
+      "control_id": "MIT-005",
+      "title": "Cloudflare DDoS Protection and Rate Limiting",
+      "description": "Implement Cloudflare as a CDN and WAF to automatically detect and mitigate Slowloris attacks before they reach origin servers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "terraform",
+        "framework": "Cloudflare Terraform",
+        "code": "# Configure Cloudflare zone settings\nresource \"cloudflare_zone_settings_override\" \"example\" {\n  zone_id = var.cloudflare_zone_id\n  \n  settings {\n    # Enable \"I'm Under Attack\" mode for DDoS protection\n    security_level = \"high\"\n    \n    # Enable browser integrity check\n    browser_check = \"on\"\n    \n    # Challenge malicious bots\n    challenge_ttl = 1800\n    \n    # Enable HTTP/2 and HTTP/3\n    http2 = \"on\"\n    http3 = \"on\"\n    \n    # Enable automatic HTTPS rewrites\n    automatic_https_rewrites = \"on\"\n    \n    # Enable DDoS protection\n    security_header {\n      enabled = true\n    }\n  }\n}\n\n# Rate limiting rule for Slowloris protection\nresource \"cloudflare_rate_limit\" \"slowloris_protection\" {\n  zone_id = var.cloudflare_zone_id\n  \n  threshold   = 60\n  period      = 60\n  action {\n    mode    = \"challenge\"\n    timeout = 3600\n  }\n  \n  match {\n    request {\n      url_pattern = \"*\"\n    }\n  }\n  \n  description = \"Slowloris protection - challenge clients with >60 requests/minute\"\n}\n\n# Firewall rule to block excessive connections\nresource \"cloudflare_firewall_rule\" \"block_slow_connections\" {\n  zone_id     = var.cloudflare_zone_id\n  description = \"Block IPs with slow connection patterns\"\n  filter_id   = cloudflare_filter.slow_connections.id\n  action      = \"challenge\"\n  priority    = 1\n}\n\nresource \"cloudflare_filter\" \"slow_connections\" {\n  zone_id     = var.cloudflare_zone_id\n  description = \"Detect slow HTTP connection patterns\"\n  expression  = \"(cf.threat_score gt 30) or (cf.bot_management.score lt 30)\"\n}\n\n# Advanced rate limiting with custom rules\nresource \"cloudflare_ruleset\" \"zone_ddos_protection\" {\n  zone_id     = var.cloudflare_zone_id\n  name        = \"DDoS Protection Ruleset\"\n  description = \"Custom DDoS protection including Slowloris\"\n  kind        = \"zone\"\n  phase       = \"ddos_l7\"\n  \n  rules {\n    action = \"block\"\n    expression = \"(\n      (http.request.uri.path eq \\\"/api\\\") and\n      (cf.threat_score gt 10)\n    )\"\n    description = \"Block suspicious API requests\"\n    enabled     = true\n  }\n}\n\n# Page rule for additional security on sensitive endpoints\nresource \"cloudflare_page_rule\" \"api_protection\" {\n  zone_id  = var.cloudflare_zone_id\n  target   = \"api.example.com/*\"\n  priority = 1\n  \n  actions {\n    security_level = \"high\"\n    cache_level    = \"bypass\"\n  }\n}\n\n# Custom WAF rule for Slowloris detection\nresource \"cloudflare_waf_rule\" \"slowloris_detection\" {\n  zone_id = var.cloudflare_zone_id\n  rule_id = \"100000\" # Custom rule ID\n  \n  mode = \"challenge\"\n}\n\n# Health check for origin server\nresource \"cloudflare_healthcheck\" \"origin_health\" {\n  zone_id = var.cloudflare_zone_id\n  name    = \"origin-health-check\"\n  address = \"origin.example.com\"\n  \n  check_regions = [\n    \"WEU\",\n    \"ENAM\"\n  ]\n  \n  type           = \"HTTPS\"\n  port           = 443\n  method         = \"GET\"\n  path           = \"/health\"\n  expected_codes = \"200\"\n  interval       = 60\n  retries        = 2\n  timeout        = 5\n  \n  description = \"Monitor origin server availability\"\n}"
+      },
+      "tools": [
+        {
+          "name": "Cloudflare Pro",
+          "type": "CDN / WAF / DDoS Protection",
+          "cost": "$20/month per site (Pro) or $200/month (Business)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Apply Terraform configuration: terraform apply",
+        "Enable \"I'm Under Attack\" mode temporarily for testing",
+        "Test rate limiting with: ab -n 1000 -c 100 https://example.com/",
+        "Review Cloudflare Analytics dashboard for threat events",
+        "Verify origin server never receives more than expected connections"
+      ]
+    },
+    {
+      "control_id": "MIT-006",
+      "title": "Node.js HTTP Server Timeout Configuration",
+      "description": "Configure Node.js HTTP server with aggressive timeout policies and connection limits to prevent Slowloris attacks on Node.js applications.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js 18+",
+        "code": "const http = require('http');\nconst express = require('express');\nconst rateLimit = require('express-rate-limit');\nconst slowDown = require('express-slow-down');\n\nconst app = express();\n\n// Configure rate limiter middleware\nconst limiter = rateLimit({\n  windowMs: 60 * 1000, // 1 minute\n  max: 100, // Limit each IP to 100 requests per windowMs\n  message: 'Too many requests from this IP, please try again later.',\n  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers\n  legacyHeaders: false, // Disable `X-RateLimit-*` headers\n  // Store in Redis for distributed systems\n  // store: new RedisStore({ client: redisClient }),\n});\n\n// Configure speed limiter (progressive delay)\nconst speedLimiter = slowDown({\n  windowMs: 60 * 1000, // 1 minute\n  delayAfter: 50, // Allow 50 requests per minute, then...\n  delayMs: 500, // Add 500ms delay per request after delayAfter\n  maxDelayMs: 5000, // Max delay of 5 seconds\n});\n\n// Apply rate limiting globally\napp.use(limiter);\napp.use(speedLimiter);\n\n// Parse JSON with size limits\napp.use(express.json({ limit: '1mb' }));\napp.use(express.urlencoded({ extended: true, limit: '1mb' }));\n\n// Example routes\napp.get('/health', (req, res) => {\n  res.status(200).json({ status: 'healthy' });\n});\n\napp.get('/api/data', (req, res) => {\n  res.json({ message: 'API endpoint' });\n});\n\n// Create HTTP server with timeout configurations\nconst server = http.createServer(app);\n\n// Set server timeout (max time for entire request)\nserver.timeout = 10000; // 10 seconds\n\n// Set header timeout (time to receive complete headers)\nserver.headersTimeout = 5000; // 5 seconds\n\n// Set keep-alive timeout (idle connection timeout)\nserver.keepAliveTimeout = 5000; // 5 seconds\n\n// Set request timeout (time to receive complete request)\nserver.requestTimeout = 10000; // 10 seconds\n\n// Set max header count to prevent header flooding\nserver.maxHeadersCount = 100;\n\n// Track active connections for monitoring\nlet activeConnections = 0;\nconst MAX_CONNECTIONS = 1000;\n\nserver.on('connection', (socket) => {\n  activeConnections++;\n  \n  // Reject new connections if at capacity\n  if (activeConnections > MAX_CONNECTIONS) {\n    console.warn(`Connection limit reached: ${activeConnections}/${MAX_CONNECTIONS}`);\n    socket.destroy();\n    return;\n  }\n  \n  // Set socket timeout\n  socket.setTimeout(10000); // 10 seconds\n  \n  // Handle socket timeout\n  socket.on('timeout', () => {\n    console.warn('Socket timeout - destroying connection');\n    socket.destroy();\n  });\n  \n  // Handle socket close\n  socket.on('close', () => {\n    activeConnections--;\n  });\n  \n  // Handle socket errors\n  socket.on('error', (err) => {\n    console.error('Socket error:', err.message);\n    socket.destroy();\n  });\n});\n\n// Monitor connection count\nsetInterval(() => {\n  if (activeConnections > MAX_CONNECTIONS * 0.8) {\n    console.warn(`High connection count: ${activeConnections}/${MAX_CONNECTIONS}`);\n  }\n}, 5000);\n\n// Handle server errors\nserver.on('error', (err) => {\n  console.error('Server error:', err);\n});\n\n// Handle client errors (malformed requests)\nserver.on('clientError', (err, socket) => {\n  console.error('Client error:', err.message);\n  if (socket.writable) {\n    socket.end('HTTP/1.1 400 Bad Request\\r\\n\\r\\n');\n  }\n});\n\n// Graceful shutdown\nprocess.on('SIGTERM', () => {\n  console.log('SIGTERM received, closing server gracefully...');\n  server.close(() => {\n    console.log('Server closed');\n    process.exit(0);\n  });\n  \n  // Force close after 30 seconds\n  setTimeout(() => {\n    console.error('Forcing server close after timeout');\n    process.exit(1);\n  }, 30000);\n});\n\n// Start server\nconst PORT = process.env.PORT || 3000;\nserver.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n  console.log(`Max connections: ${MAX_CONNECTIONS}`);\n  console.log(`Timeout: ${server.timeout}ms`);\n  console.log(`Headers timeout: ${server.headersTimeout}ms`);\n});\n\nmodule.exports = server;"
+      },
+      "tools": [
+        {
+          "name": "express-rate-limit",
+          "type": "Node.js Rate Limiting Middleware",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "express-slow-down",
+          "type": "Node.js Speed Limiting Middleware",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.2.1 - Controls against malware",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Install dependencies: npm install express express-rate-limit express-slow-down",
+        "Start server and monitor logs: node server.js",
+        "Test timeout with slow client: curl --limit-rate 1 http://localhost:3000",
+        "Simulate Slowloris: slowhttptest -c 200 -H -g -o test.html -i 10 -r 50 -t GET -u http://localhost:3000",
+        "Monitor active connections and verify automatic termination"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusually high number of established connections from single IP addresses",
+      "Connections remaining in ESTABLISHED state for extended periods (>30 seconds)",
+      "HTTP requests with incomplete headers (missing final CRLF terminator)",
+      "Gradual increase in server connection pool utilization approaching max capacity",
+      "Increase in 408 Request Timeout or 503 Service Unavailable errors",
+      "Server response times degrading while CPU and memory remain low",
+      "Multiple connections from same source with minimal data transfer",
+      "Connection count spike without corresponding increase in completed requests"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect Slowloris attack patterns in Azure Application Gateway logs\nAzureDiagnostics\n| where ResourceType == \"APPLICATIONGATEWAYS\"\n| where TimeGenerated > ago(10m)\n| extend ClientIP = tostring(split(clientIP_s, ':')[0])\n| summarize \n    ConnectionCount = dcount(connectionId_g),\n    AvgRequestTime = avg(timeTaken_d),\n    ErrorCount = countif(httpStatus_d >= 400)\n    by ClientIP, bin(TimeGenerated, 1m)\n| where ConnectionCount > 50 and AvgRequestTime > 5000\n| project TimeGenerated, ClientIP, ConnectionCount, AvgRequestTime, ErrorCount\n| order by ConnectionCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined\n| stats \n    count as req_count,\n    dc(session_id) as unique_sessions,\n    avg(response_time) as avg_resp_time,\n    max(response_time) as max_resp_time\n    by src_ip, _time span=1m\n| where req_count > 100 AND unique_sessions < 5 AND avg_resp_time > 5000\n| eval slowloris_score = (req_count / unique_sessions) * (avg_resp_time / 1000)\n| where slowloris_score > 50\n| table _time, src_ip, req_count, unique_sessions, avg_resp_time, slowloris_score\n| sort -slowloris_score"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect slow connection patterns in nginx access logs\nGET /nginx-access-*/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        { \"range\": { \"@timestamp\": { \"gte\": \"now-10m\" }}},\n        { \"range\": { \"http.request.duration\": { \"gte\": 5000 }}}\n      ]\n    }\n  },\n  \"aggs\": {\n    \"by_client_ip\": {\n      \"terms\": {\n        \"field\": \"source.ip\",\n        \"size\": 100\n      },\n      \"aggs\": {\n        \"avg_duration\": { \"avg\": { \"field\": \"http.request.duration\" }},\n        \"connection_count\": { \"cardinality\": { \"field\": \"http.request.id\" }}\n      }\n    }\n  }\n}"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Detect Slowloris patterns in ALB logs\nfields @timestamp, client_ip, target_status_code, request_processing_time, target_processing_time\n| filter ispresent(request_processing_time) and request_processing_time > 5\n| stats count(*) as request_count, \n        avg(request_processing_time) as avg_processing_time,\n        max(request_processing_time) as max_processing_time\n  by client_ip, bin(5m)\n| filter request_count > 50 and avg_processing_time > 5\n| sort request_count desc\n| limit 100"
+      }
+    ],
+    "tools": [
+      {
+        "name": "netstat / ss",
+        "type": "Network Connection Monitor",
+        "usage": "netstat -an | grep :80 | grep ESTABLISHED | wc -l  # Count active connections\nss -tan state established '( dport = :80 or sport = :80 )' | wc -l"
+      },
+      {
+        "name": "Wireshark",
+        "type": "Network Protocol Analyzer",
+        "usage": "tcp.flags.syn==1 and tcp.flags.ack==0  # Filter SYN packets\nhttp.request.method  # Filter HTTP requests"
+      },
+      {
+        "name": "slowhttptest",
+        "type": "Slowloris Attack Simulation Tool",
+        "usage": "slowhttptest -c 1000 -H -g -o test.html -i 10 -r 200 -t GET -u http://target.com -x 100"
+      },
+      {
+        "name": "Apache mod_status",
+        "type": "Apache Server Status Monitor",
+        "usage": "curl http://localhost/server-status  # View active connections and requests"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "All Industries",
+      "E-commerce",
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Media & Entertainment",
+      "SaaS"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.6)",
+      "ISO27001 (A.13.1.1, A.17.2.1)",
+      "NIST CSF (PR.PT-4, DE.CM-1)",
+      "SOC2 (CC7.2)",
+      "HIPAA (164.312(e)(1))"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

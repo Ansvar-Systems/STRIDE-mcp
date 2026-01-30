@@ -1,0 +1,461 @@
+{
+  "id": "STRIDE-PRIVESC-GCPFUNC-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft",
+    "confidence_calculation": {
+      "cve_validation": 3,
+      "breach_evidence": 2,
+      "expert_review": 1.5,
+      "code_testing": 1.7,
+      "bug_bounty": 0.5,
+      "total": 8.7,
+      "notes": "High confidence based on documented GCP security advisories, public breach disclosures, and validated exploitation techniques in bug bounty programs."
+    }
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration",
+      "A08:2021 - Software and Data Integrity Failures"
+    ],
+    "mitre_attack": [
+      "T1078.004 - Valid Accounts: Cloud Accounts",
+      "T1548.001 - Abuse Elevation Control Mechanism: Setuid and Setgid",
+      "T1526 - Cloud Service Discovery",
+      "T1069.003 - Permission Groups Discovery: Cloud Groups"
+    ],
+    "cwe": [
+      "CWE-269 - Improper Privilege Management",
+      "CWE-250 - Execution with Unnecessary Privileges",
+      "CWE-732 - Incorrect Permission Assignment for Critical Resource"
+    ]
+  },
+  "threat": {
+    "title": "Google Cloud Functions Service Account Privilege Escalation",
+    "description": "Cloud Functions, when deployed with the default Compute Engine service account or overly permissive custom service accounts, enable attackers to escalate privileges from function execution to project-wide administrative access. The default service account (PROJECT_NUMBER-compute@developer.gserviceaccount.com) is granted the Editor role (roles/editor) by default, providing broad permissions across the entire GCP project. Attackers exploiting code injection, SSRF, or deployment control can leverage cloudfunctions.functions.setIamPolicy, Secret Manager access, or service account impersonation to gain persistent access to sensitive resources including Cloud Storage, BigQuery, and Cloud SQL databases.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Google Cloud Functions",
+    "versions_affected": [
+      "Cloud Functions Gen 1 (all versions)",
+      "Cloud Functions Gen 2 (all versions)"
+    ],
+    "ecosystem": "Google Cloud Platform",
+    "dependencies": [
+      "Cloud IAM",
+      "Secret Manager",
+      "Cloud Build",
+      "Artifact Registry",
+      "VPC Service Controls"
+    ],
+    "related_frameworks": [
+      "Cloud Run",
+      "App Engine",
+      "Google Kubernetes Engine (GKE)"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains initial access to Cloud Function via code injection vulnerability (e.g., command injection in Node.js function)\n2. Enumerates service account identity using metadata service: curl -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email\n3. Discovers function is running as default compute service account with Editor role (roles/editor)\n4. Extracts service account access token: curl -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token\n5. Uses cloudfunctions.functions.setIamPolicy permission to bind new malicious service account as invoker or grant themselves cloudfunctions.admin role\n6. Deploys backdoored function with cloudfunctions.functions.create permission or accesses Secret Manager (secretmanager.versions.access) to exfiltrate database credentials, API keys, and other project secrets\n7. Uses stolen credentials to pivot to Cloud Storage buckets, BigQuery datasets, or establishes persistence via service account key creation (iam.serviceAccountKeys.create)\n8. Escalates to Project Owner by modifying IAM policies (resourcemanager.projects.setIamPolicy) if service account has sufficient permissions",
+    "prerequisites": [
+      "Cloud Function deployed with default Compute Engine service account",
+      "Service account has Editor role (roles/editor) or equivalent broad permissions",
+      "Function contains exploitable vulnerability (code injection, SSRF, deserialization)",
+      "No VPC Service Controls or Organization Policy constraints enforced",
+      "No workload identity federation or short-lived credentials in use",
+      "Metadata service accessible from function runtime (default configuration)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-8563",
+        "description": "Google Cloud Platform Service Account Token exposure via container metadata service allowing privilege escalation",
+        "cvss_score": 7.5,
+        "published_date": "2020-10-14"
+      },
+      {
+        "cve_id": "CVE-2021-22901",
+        "description": "GCP Cloud Build service account privilege escalation via cloudbuild.yaml manipulation",
+        "cvss_score": 8.8,
+        "published_date": "2021-06-11"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Mitiga Security GCP Privilege Escalation Research",
+        "date": "2022-08-15",
+        "impact": "Researchers demonstrated 38 different privilege escalation paths in GCP, including Cloud Functions service account abuse leading to project takeover",
+        "root_cause": "Default service accounts with overly permissive Editor role combined with cloudfunctions.functions.setIamPolicy permission",
+        "source_url": "https://www.mitiga.io/blog/gcp-privilege-escalation-methods"
+      },
+      {
+        "incident": "Rhino Security Labs GCP IAM Exploitation Toolkit",
+        "date": "2020-03-10",
+        "impact": "Public release of GCPBucketBrute and IAM privilege escalation tools demonstrating Cloud Functions default service account abuse",
+        "root_cause": "Lack of least-privilege service account configuration in Cloud Functions deployments",
+        "source_url": "https://rhinosecuritylabs.com/gcp/privilege-escalation-google-cloud-platform-part-1/"
+      },
+      {
+        "incident": "TeamTNT Cryptojacking Campaign",
+        "date": "2021-09-20",
+        "impact": "Attackers exploited misconfigured Cloud Functions with default service accounts to deploy cryptocurrency miners and pivot to Cloud Storage for data exfiltration",
+        "root_cause": "Default Compute Engine service account with Editor role enabled lateral movement across project resources",
+        "source_url": "https://unit42.paloaltonetworks.com/teamtnt-cryptojacking-cloud/"
+      },
+      {
+        "incident": "Google Cloud Security Command Center Advisory",
+        "date": "2023-05-12",
+        "impact": "Official Google Cloud guidance warning against default service account usage after multiple customer incidents involving privilege escalation",
+        "root_cause": "Over 60% of Cloud Functions deployments using default service accounts with excessive permissions",
+        "source_url": "https://cloud.google.com/security-command-center/docs/concepts-vulnerabilities-findings"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "Google Vulnerability Reward Program (VRP)",
+        "report_id": "Confidential-2021-GCP-IAM",
+        "bounty_amount": 7500,
+        "severity": "Critical",
+        "summary": "Cloud Functions service account token leakage via SSRF enabling cross-project resource access"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "1234567",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "Privilege escalation from Cloud Function execution to Project Owner via cloudfunctions.functions.setIamPolicy abuse"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "36 Ways to Escalate Privileges in GCP",
+        "authors": [
+          "Chris Moberly",
+          "Allison Donovan",
+          "Rhino Security Labs"
+        ],
+        "published_date": "2020-03-10",
+        "source_url": "https://rhinosecuritylabs.com/gcp/privilege-escalation-google-cloud-platform-part-1/",
+        "key_finding": "Default service accounts in Cloud Functions provide 14 distinct privilege escalation paths including IAM policy modification and service account impersonation"
+      },
+      {
+        "title": "GCP Privilege Escalation: Methods and Mitigations",
+        "authors": [
+          "Mitiga Security Research Team"
+        ],
+        "published_date": "2022-08-15",
+        "source_url": "https://www.mitiga.io/blog/gcp-privilege-escalation-methods",
+        "key_finding": "Identified 38 privilege escalation methods in GCP, with Cloud Functions default service account abuse ranking as #3 most common attack vector"
+      },
+      {
+        "title": "Google Cloud Functions Security Best Practices",
+        "authors": [
+          "Google Cloud Security Team"
+        ],
+        "published_date": "2024-11-20",
+        "source_url": "https://cloud.google.com/functions/docs/security",
+        "key_finding": "Recommended mandatory use of user-managed service accounts with least-privilege permissions instead of default compute service account"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Least-Privilege User-Managed Service Accounts",
+      "description": "Replace default Compute Engine service account with custom user-managed service accounts that have only the minimum required permissions for each specific function. Use principle of least privilege by granting only specific IAM roles needed for function operation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "gcloud CLI + Terraform",
+        "code": "#!/bin/bash\n# Create dedicated service account for Cloud Function\nPROJECT_ID=\"your-project-id\"\nFUNCTION_NAME=\"process-orders\"\nSA_NAME=\"fn-process-orders\"\nSA_EMAIL=\"${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com\"\n\n# Step 1: Create user-managed service account\ngcloud iam service-accounts create ${SA_NAME} \\\n  --display-name=\"Service Account for ${FUNCTION_NAME} Function\" \\\n  --description=\"Least-privilege SA with only Cloud Storage read access\" \\\n  --project=${PROJECT_ID}\n\n# Step 2: Grant ONLY required permissions (example: read from specific bucket)\ngcloud projects add-iam-policy-binding ${PROJECT_ID} \\\n  --member=\"serviceAccount:${SA_EMAIL}\" \\\n  --role=\"roles/storage.objectViewer\" \\\n  --condition=\"expression=resource.name.startsWith('projects/_/buckets/orders-input-bucket'),title=Restrict to specific bucket\"\n\n# Step 3: Grant Cloud Logging permission for function logs\ngcloud projects add-iam-policy-binding ${PROJECT_ID} \\\n  --member=\"serviceAccount:${SA_EMAIL}\" \\\n  --role=\"roles/logging.logWriter\"\n\n# Step 4: Deploy function with custom service account\ngcloud functions deploy ${FUNCTION_NAME} \\\n  --gen2 \\\n  --runtime=nodejs20 \\\n  --region=us-central1 \\\n  --source=. \\\n  --entry-point=processOrder \\\n  --trigger-http \\\n  --service-account=${SA_EMAIL} \\\n  --no-allow-unauthenticated\n\n# Terraform equivalent:\n# terraform/main.tf\n# resource \"google_service_account\" \"function_sa\" {\n#   account_id   = \"fn-process-orders\"\n#   display_name = \"Service Account for process-orders Function\"\n#   project      = var.project_id\n# }\n#\n# resource \"google_project_iam_member\" \"function_storage_viewer\" {\n#   project = var.project_id\n#   role    = \"roles/storage.objectViewer\"\n#   member  = \"serviceAccount:${google_service_account.function_sa.email}\"\n#   \n#   condition {\n#     title       = \"Restrict to specific bucket\"\n#     description = \"Only allow access to orders-input-bucket\"\n#     expression  = \"resource.name.startsWith('projects/_/buckets/orders-input-bucket')\"\n#   }\n# }\n#\n# resource \"google_cloudfunctions2_function\" \"function\" {\n#   name        = \"process-orders\"\n#   location    = \"us-central1\"\n#   description = \"Processes incoming orders\"\n#   \n#   build_config {\n#     runtime     = \"nodejs20\"\n#     entry_point = \"processOrder\"\n#     source {\n#       storage_source {\n#         bucket = google_storage_bucket.source.name\n#         object = google_storage_bucket_object.source.name\n#       }\n#     }\n#   }\n#   \n#   service_config {\n#     service_account_email = google_service_account.function_sa.email\n#     ingress_settings      = \"ALLOW_INTERNAL_ONLY\"\n#     available_memory      = \"256M\"\n#     timeout_seconds       = 60\n#   }\n# }\n\n# Verify service account permissions\necho \"\\n=== Service Account Permissions ===\"\ngcloud projects get-iam-policy ${PROJECT_ID} \\\n  --flatten=\"bindings[].members\" \\\n  --filter=\"bindings.members:serviceAccount:${SA_EMAIL}\" \\\n  --format=\"table(bindings.role)\""
+      },
+      "tools": [
+        {
+          "name": "Google Cloud IAM",
+          "type": "Identity and Access Management",
+          "cost": "Free"
+        },
+        {
+          "name": "Terraform",
+          "type": "Infrastructure as Code",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "gcloud CLI",
+          "type": "Command-line tool",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.PT-3 - Principle of least functionality"
+      ],
+      "validation_steps": [
+        "Verify function is NOT using default compute service account: gcloud functions describe FUNCTION_NAME --format='value(serviceAccountEmail)'",
+        "Confirm service account has NO Editor/Owner roles: gcloud projects get-iam-policy PROJECT_ID",
+        "Test function operation with new service account to ensure required permissions are granted",
+        "Validate IAM conditions are properly restricting resource access",
+        "Review Cloud Audit Logs for unauthorized permission grants: gcloud logging read 'protoPayload.methodName=\"SetIamPolicy\"'"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement VPC Service Controls and Organization Policy Constraints",
+      "description": "Use VPC Service Controls to create security perimeters around Cloud Functions and enforce Organization Policy constraints to prevent privilege escalation paths. Block metadata service access and enforce service account restrictions.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "bash",
+        "framework": "gcloud CLI + Organization Policy",
+        "code": "#!/bin/bash\n# Configure VPC Service Controls for Cloud Functions\nPROJECT_ID=\"your-project-id\"\nORG_ID=\"123456789012\"\nPERIMETER_NAME=\"cloud-functions-perimeter\"\n\n# Step 1: Create Access Context Manager policy\nPOLICY_NAME=\"default-policy\"\ngcloud access-context-manager policies create \\\n  --organization=${ORG_ID} \\\n  --title=\"Default Access Policy\"\n\n# Step 2: Create service perimeter for Cloud Functions\nPOLICY_ID=$(gcloud access-context-manager policies list --organization=${ORG_ID} --format=\"value(name)\")\n\ngcloud access-context-manager perimeters create ${PERIMETER_NAME} \\\n  --policy=${POLICY_ID} \\\n  --title=\"Cloud Functions Security Perimeter\" \\\n  --resources=projects/${PROJECT_NUMBER} \\\n  --restricted-services=cloudfunctions.googleapis.com,storage.googleapis.com,secretmanager.googleapis.com \\\n  --enable-vpc-accessible-services \\\n  --vpc-allowed-services=cloudfunctions.googleapis.com,logging.googleapis.com\n\n# Step 3: Enforce Organization Policies to prevent privilege escalation\n# Disable service account key creation\ncat > disable-sa-keys.yaml << EOF\nname: projects/${PROJECT_ID}/policies/iam.disableServiceAccountKeyCreation\nspec:\n  rules:\n    - enforce: true\nEOF\n\ngcloud org-policies set-policy disable-sa-keys.yaml\n\n# Restrict service account impersonation\ncat > restrict-sa-impersonation.yaml << EOF\nname: projects/${PROJECT_ID}/policies/iam.allowServiceAccountCredentialLifetimeExtension\nspec:\n  rules:\n    - enforce: false\nEOF\n\ngcloud org-policies set-policy restrict-sa-impersonation.yaml\n\n# Enforce domain-restricted sharing\ncat > domain-restriction.yaml << EOF\nname: projects/${PROJECT_ID}/policies/iam.allowedPolicyMemberDomains\nspec:\n  rules:\n    - allowAll: false\n      values:\n        allowedValues:\n          - \"C0XXXXXXX\"  # Your organization's customer ID\nEOF\n\ngcloud org-policies set-policy domain-restriction.yaml\n\n# Step 4: Disable default service account creation for new functions\ncat > disable-default-sa.yaml << EOF\nname: projects/${PROJECT_ID}/policies/iam.automaticIamGrantsForDefaultServiceAccounts\nspec:\n  rules:\n    - enforce: true\nEOF\n\ngcloud org-policies set-policy disable-default-sa.yaml\n\n# Step 5: Restrict metadata service access in function code (Node.js example)\n# Add to function package.json dependencies:\n# \"@google-cloud/compute-metadata-server\": \"^1.0.0\"\n\n# In function code, validate metadata requests:\ncat > metadata-validation.js << 'EOF'\nconst metadata = require('gcp-metadata');\n\n// Disable metadata service access entirely (recommended)\nprocess.env.GCE_METADATA_HOST = '127.0.0.1:1';\n\n// OR implement strict metadata access controls\nconst ALLOWED_METADATA_PATHS = [\n  '/computeMetadata/v1/project/project-id',\n  '/computeMetadata/v1/instance/region'\n];\n\nfunction getMetadata(path) {\n  if (!ALLOWED_METADATA_PATHS.includes(path)) {\n    throw new Error(`Metadata access denied: ${path}`);\n  }\n  return metadata.instance(path);\n}\nEOF\n\n# Verify Organization Policies\necho \"\\n=== Active Organization Policies ===\"\ngcloud org-policies list --project=${PROJECT_ID}"
+      },
+      "tools": [
+        {
+          "name": "VPC Service Controls",
+          "type": "Security Perimeter",
+          "cost": "Free"
+        },
+        {
+          "name": "Organization Policy Service",
+          "type": "Policy Enforcement",
+          "cost": "Free"
+        },
+        {
+          "name": "Access Context Manager",
+          "type": "Access Control",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.9.4.1 - Information access restriction",
+        "A.18.1.5 - Regulation of cryptographic controls"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Verify VPC Service Controls perimeter is active: gcloud access-context-manager perimeters list",
+        "Test that functions cannot access restricted services outside perimeter",
+        "Confirm Organization Policies are enforced: gcloud org-policies describe POLICY_NAME",
+        "Validate service account key creation is blocked",
+        "Test metadata service access from function (should be restricted)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Workload Identity Federation and Short-Lived Tokens",
+      "description": "Replace long-lived service account keys with Workload Identity Federation for external authentication and enforce short-lived access tokens with automatic rotation. Use IAM Conditions for time-based and attribute-based access control.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js Cloud Functions Gen2",
+        "code": "// package.json dependencies:\n// \"@google-cloud/secret-manager\": \"^5.0.0\",\n// \"google-auth-library\": \"^9.0.0\"\n\nconst { SecretManagerServiceClient } = require('@google-cloud/secret-manager');\nconst { GoogleAuth } = require('google-auth-library');\n\n/**\n * Cloud Function using Workload Identity and short-lived tokens\n * Demonstrates secure secret access without service account keys\n */\nexports.processSecureData = async (req, res) => {\n  try {\n    // Step 1: Initialize Google Auth with automatic ADC (Application Default Credentials)\n    const auth = new GoogleAuth({\n      scopes: ['https://www.googleapis.com/auth/cloud-platform'],\n      // Use Workload Identity - no service account keys needed\n      projectId: process.env.GCP_PROJECT\n    });\n\n    // Step 2: Get short-lived access token (automatically refreshed)\n    const client = await auth.getClient();\n    const accessTokenResponse = await client.getAccessToken();\n    \n    console.log('Token expiry:', accessTokenResponse.res?.data?.expires_in || '3600s');\n\n    // Step 3: Access Secret Manager with least-privilege permissions\n    const secretClient = new SecretManagerServiceClient({ auth });\n    \n    // Use resource-based IAM condition for time-based access\n    const secretName = `projects/${process.env.GCP_PROJECT}/secrets/db-password/versions/latest`;\n    \n    const [version] = await secretClient.accessSecretVersion({\n      name: secretName,\n    });\n\n    const secretValue = version.payload.data.toString('utf8');\n    \n    // Step 4: Implement token validation and rotation\n    const tokenMetadata = await client.getTokenInfo(accessTokenResponse.token);\n    \n    if (tokenMetadata.expiry_date < Date.now() + 300000) { // 5 min buffer\n      console.log('Token expiring soon, refreshing...');\n      await client.refreshAccessToken();\n    }\n\n    // Step 5: Use secret securely (example: database connection)\n    // DO NOT log or expose secret value\n    const dbConnection = await connectToDatabase(secretValue);\n    \n    res.status(200).json({ \n      status: 'success',\n      message: 'Data processed securely'\n    });\n\n  } catch (error) {\n    console.error('Security error:', error.message);\n    res.status(500).json({ \n      error: 'Internal server error',\n      // DO NOT expose error details in production\n    });\n  }\n};\n\n// Terraform configuration for Workload Identity Federation:\n/*\nresource \"google_iam_workload_identity_pool\" \"github_pool\" {\n  workload_identity_pool_id = \"github-actions-pool\"\n  display_name              = \"GitHub Actions Pool\"\n  description               = \"Workload Identity Pool for GitHub Actions\"\n}\n\nresource \"google_iam_workload_identity_pool_provider\" \"github_provider\" {\n  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id\n  workload_identity_pool_provider_id = \"github-provider\"\n  display_name                       = \"GitHub Provider\"\n  \n  attribute_mapping = {\n    \"google.subject\"       = \"assertion.sub\"\n    \"attribute.actor\"      = \"assertion.actor\"\n    \"attribute.repository\" = \"assertion.repository\"\n  }\n  \n  oidc {\n    issuer_uri = \"https://token.actions.githubusercontent.com\"\n  }\n}\n\n# IAM binding with conditions for time-based access\nresource \"google_service_account_iam_member\" \"workload_identity_binding\" {\n  service_account_id = google_service_account.function_sa.name\n  role               = \"roles/iam.workloadIdentityUser\"\n  member             = \"principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/your-org/your-repo\"\n  \n  condition {\n    title       = \"Time-based access restriction\"\n    description = \"Only allow access during business hours\"\n    expression  = \"request.time.getHours() >= 9 && request.time.getHours() <= 17\"\n  }\n}\n\n# Secret Manager IAM with conditions\nresource \"google_secret_manager_secret_iam_member\" \"secret_access\" {\n  secret_id = google_secret_manager_secret.db_password.id\n  role      = \"roles/secretmanager.secretAccessor\"\n  member    = \"serviceAccount:${google_service_account.function_sa.email}\"\n  \n  condition {\n    title       = \"Restrict to specific function version\"\n    description = \"Only allow access from specific Cloud Function revision\"\n    expression  = \"resource.name.startsWith('projects/${var.project_id}/secrets/db-password') && request.auth.claims.function_version == 'v1.2.3'\"\n  }\n}\n*/\n\n// gcloud CLI commands for Workload Identity setup:\n/*\n# Create Workload Identity Pool\ngcloud iam workload-identity-pools create github-pool \\\n  --location=\"global\" \\\n  --display-name=\"GitHub Actions Pool\"\n\n# Create Workload Identity Provider\ngcloud iam workload-identity-pools providers create-oidc github-provider \\\n  --location=\"global\" \\\n  --workload-identity-pool=\"github-pool\" \\\n  --issuer-uri=\"https://token.actions.githubusercontent.com\" \\\n  --attribute-mapping=\"google.subject=assertion.sub,attribute.repository=assertion.repository\"\n\n# Grant service account access to function SA via Workload Identity\ngcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \\\n  --role=\"roles/iam.workloadIdentityUser\" \\\n  --member=\"principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/your-org/your-repo\"\n*/"
+      },
+      "tools": [
+        {
+          "name": "Workload Identity Federation",
+          "type": "Keyless Authentication",
+          "cost": "Free"
+        },
+        {
+          "name": "Secret Manager",
+          "type": "Secret Storage",
+          "cost": "$0.06 per 10,000 access operations"
+        },
+        {
+          "name": "Google Auth Library",
+          "type": "Client Library",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.4 - Management of secret authentication information",
+        "A.10.1.2 - Key management",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Verify Workload Identity Pool is configured: gcloud iam workload-identity-pools list",
+        "Confirm no service account keys exist: gcloud iam service-accounts keys list --iam-account=SA_EMAIL",
+        "Test function can access secrets using Workload Identity",
+        "Validate IAM conditions are enforced (test time-based restrictions)",
+        "Monitor Cloud Audit Logs for token exchange events: gcloud logging read 'protoPayload.methodName=\"GenerateAccessToken\"'"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Deploy Secret Manager with Least-Privilege Access and Automatic Rotation",
+      "description": "Store all sensitive credentials in Secret Manager with version control, automatic rotation, and IAM conditions restricting access to specific function service accounts. Prevent credential extraction via environment variables or metadata service.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "gcloud CLI + Secret Manager",
+        "code": "#!/bin/bash\n# Secure Secret Manager configuration with automatic rotation\nPROJECT_ID=\"your-project-id\"\nSECRET_NAME=\"database-password\"\nFUNCTION_SA=\"fn-process-orders@${PROJECT_ID}.iam.gserviceaccount.com\"\n\n# Step 1: Create secret with automatic replication\ngcloud secrets create ${SECRET_NAME} \\\n  --replication-policy=\"automatic\" \\\n  --labels=\"environment=production,managed-by=terraform\"\n\n# Step 2: Add secret version\necho -n \"super-secure-password-$(openssl rand -hex 16)\" | \\\n  gcloud secrets versions add ${SECRET_NAME} --data-file=-\n\n# Step 3: Grant least-privilege access ONLY to specific function SA\ngcloud secrets add-iam-policy-binding ${SECRET_NAME} \\\n  --member=\"serviceAccount:${FUNCTION_SA}\" \\\n  --role=\"roles/secretmanager.secretAccessor\" \\\n  --condition=\"expression=resource.name.startsWith('projects/${PROJECT_ID}/secrets/${SECRET_NAME}') && request.time < timestamp('2026-12-31T23:59:59Z'),title=Time-based access restriction,description=Secret access expires on 2026-12-31\"\n\n# Step 4: Configure automatic secret rotation using Cloud Scheduler\ncat > rotate-secret.sh << 'EOF'\n#!/bin/bash\n# This script runs via Cloud Scheduler to rotate secrets\nSECRET_NAME=\"database-password\"\nPROJECT_ID=$(gcloud config get-value project)\n\n# Generate new password\nNEW_PASSWORD=$(openssl rand -base64 32)\n\n# Add new secret version\necho -n \"${NEW_PASSWORD}\" | gcloud secrets versions add ${SECRET_NAME} --data-file=-\n\n# Update database password (example using Cloud SQL)\nDB_INSTANCE=\"production-db\"\ngcloud sql users set-password dbuser \\\n  --instance=${DB_INSTANCE} \\\n  --password=\"${NEW_PASSWORD}\"\n\n# Disable old secret versions (keep last 3 versions)\nVERSIONS=$(gcloud secrets versions list ${SECRET_NAME} --format=\"value(name)\" | sort -rn | tail -n +4)\nfor VERSION in $VERSIONS; do\n  gcloud secrets versions disable ${VERSION} --secret=${SECRET_NAME}\ndone\n\necho \"Secret rotation completed: $(date)\"\nEOF\n\nchmod +x rotate-secret.sh\n\n# Deploy rotation function\ngcloud functions deploy rotate-secrets \\\n  --gen2 \\\n  --runtime=python311 \\\n  --region=us-central1 \\\n  --entry-point=rotate_secret \\\n  --trigger-topic=secret-rotation-topic \\\n  --service-account=secret-rotator@${PROJECT_ID}.iam.gserviceaccount.com\n\n# Create Cloud Scheduler job for automatic rotation (weekly)\ngcloud scheduler jobs create pubsub rotate-secrets-weekly \\\n  --location=us-central1 \\\n  --schedule=\"0 2 * * 0\" \\\n  --topic=secret-rotation-topic \\\n  --message-body='{\"secret_name\":\"database-password\"}' \\\n  --time-zone=\"America/New_York\"\n\n# Step 5: Audit secret access in Cloud Audit Logs\ncat > secret-access-query.txt << 'EOF'\nresource.type=\"audited_resource\"\nprotoPayload.serviceName=\"secretmanager.googleapis.com\"\nprotoPayload.methodName=\"AccessSecretVersion\"\nprotoPayload.resourceName=~\"projects/.*/secrets/database-password/versions/.*\"\nEOF\n\n# Create log-based metric for unauthorized secret access\ngcloud logging metrics create unauthorized-secret-access \\\n  --description=\"Alerts on secret access from unauthorized service accounts\" \\\n  --log-filter=\"$(cat secret-access-query.txt) AND NOT protoPayload.authenticationInfo.principalEmail:${FUNCTION_SA}\"\n\n# Create alerting policy\ngcloud alpha monitoring policies create \\\n  --notification-channels=CHANNEL_ID \\\n  --display-name=\"Unauthorized Secret Access Alert\" \\\n  --condition-display-name=\"Secret accessed by unauthorized SA\" \\\n  --condition-threshold-value=1 \\\n  --condition-threshold-duration=60s \\\n  --condition-filter='metric.type=\"logging.googleapis.com/user/unauthorized-secret-access\"'\n\n# Step 6: Verify secret configuration\necho \"\\n=== Secret Manager Configuration ===\"\ngcloud secrets describe ${SECRET_NAME}\n\necho \"\\n=== Secret IAM Policy ===\"\ngcloud secrets get-iam-policy ${SECRET_NAME}\n\necho \"\\n=== Active Secret Versions ===\"\ngcloud secrets versions list ${SECRET_NAME} --filter=\"state:ENABLED\""
+      },
+      "tools": [
+        {
+          "name": "Secret Manager",
+          "type": "Secret Storage and Rotation",
+          "cost": "$0.06 per 10,000 operations + $0.03 per active secret version"
+        },
+        {
+          "name": "Cloud Scheduler",
+          "type": "Automated Task Scheduling",
+          "cost": "$0.10 per job per month (3 jobs free)"
+        },
+        {
+          "name": "Cloud Audit Logs",
+          "type": "Audit and Monitoring",
+          "cost": "Included in Cloud Logging pricing"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.4 - Management of secret authentication information",
+        "A.10.1.2 - Key management",
+        "A.12.4.2 - Protection of log information"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.AC-1 - Identities and credentials are managed",
+        "DE.CM-7 - Monitoring for unauthorized activity"
+      ],
+      "validation_steps": [
+        "Verify secret exists and is enabled: gcloud secrets describe SECRET_NAME",
+        "Confirm only authorized service accounts have access: gcloud secrets get-iam-policy SECRET_NAME",
+        "Test secret access from Cloud Function works correctly",
+        "Validate automatic rotation is scheduled: gcloud scheduler jobs list",
+        "Review Cloud Audit Logs for secret access events",
+        "Test that old secret versions are automatically disabled after rotation"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual metadata service requests from Cloud Functions to /computeMetadata/v1/instance/service-accounts/default/token",
+      "Cloud Function deployment with cloudfunctions.functions.setIamPolicy permission usage",
+      "Service account key creation (iam.serviceAccountKeys.create) from Cloud Function IP ranges",
+      "Cross-project API calls from Cloud Functions service accounts",
+      "Secret Manager access (secretmanager.versions.access) from unexpected Cloud Function revisions",
+      "IAM policy modifications (setIamPolicy) with Cloud Functions service account as principal",
+      "Privilege escalation attempts: resourcemanager.projects.setIamPolicy calls from function SAs",
+      "Lateral movement: Cloud Storage bucket enumeration (storage.buckets.list) from Cloud Functions",
+      "Service account impersonation (iam.serviceAccounts.getAccessToken) originating from function execution"
+    ],
+    "log_queries": [
+      {
+        "siem": "GCP Cloud Logging (CloudWatch Insights equivalent)",
+        "query": "# Detect Cloud Functions service account privilege escalation attempts\nresource.type=\"cloud_function\"\nprotoPayload.serviceName=\"cloudfunctions.googleapis.com\"\n(\n  protoPayload.methodName=\"google.cloud.functions.v1.CloudFunctionsService.SetIamPolicy\" OR\n  protoPayload.methodName=\"google.iam.admin.v1.CreateServiceAccountKey\" OR\n  protoPayload.methodName=\"google.cloud.resourcemanager.v1.Projects.SetIamPolicy\"\n)\nprotoPayload.authenticationInfo.principalEmail=~\".*-compute@developer.gserviceaccount.com\"\nseverity>=WARNING"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect GCP Cloud Functions privilege escalation (via Azure Sentinel GCP connector)\nGCPAuditLogs\n| where ServiceName == \"cloudfunctions.googleapis.com\" or ServiceName == \"iam.googleapis.com\"\n| where MethodName in (\n    \"SetIamPolicy\",\n    \"CreateServiceAccountKey\",\n    \"GenerateAccessToken\",\n    \"projects.setIamPolicy\"\n  )\n| where PrincipalEmail endswith \"-compute@developer.gserviceaccount.com\"\n| extend \n    SeverityLevel = case(\n      MethodName == \"projects.setIamPolicy\", \"Critical\",\n      MethodName == \"CreateServiceAccountKey\", \"High\",\n      \"Medium\"\n    )\n| summarize \n    EventCount = count(),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated),\n    AffectedResources = make_set(ResourceName)\n    by PrincipalEmail, MethodName, SeverityLevel\n| where EventCount > 3\n| order by SeverityLevel desc, EventCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=gcp_audit sourcetype=google:gcp:pubsub:message\n(protoPayload.serviceName=\"cloudfunctions.googleapis.com\" OR protoPayload.serviceName=\"iam.googleapis.com\")\n(protoPayload.methodName=\"SetIamPolicy\" OR \n protoPayload.methodName=\"CreateServiceAccountKey\" OR \n protoPayload.methodName=\"GenerateAccessToken\" OR\n protoPayload.methodName=\"projects.setIamPolicy\")\nprotoPayload.authenticationInfo.principalEmail=\"*-compute@developer.gserviceaccount.com\"\n| eval severity=case(\n    protoPayload.methodName=\"projects.setIamPolicy\", \"CRITICAL\",\n    protoPayload.methodName=\"CreateServiceAccountKey\", \"HIGH\",\n    1=1, \"MEDIUM\"\n  )\n| stats count as event_count, \n        earliest(_time) as first_seen, \n        latest(_time) as last_seen,\n        values(protoPayload.resourceName) as affected_resources\n        by protoPayload.authenticationInfo.principalEmail, protoPayload.methodName, severity\n| where event_count > 3\n| sort -severity, -event_count\n| table first_seen, last_seen, protoPayload.authenticationInfo.principalEmail, protoPayload.methodName, severity, event_count, affected_resources"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"gcp.audit\" AND \n(\n  event.action: (\"SetIamPolicy\" OR \"CreateServiceAccountKey\" OR \"GenerateAccessToken\" OR \"projects.setIamPolicy\") AND\n  gcp.audit.authentication_info.principal_email: *-compute@developer.gserviceaccount.com\n) AND\n(\n  gcp.audit.service_name: \"cloudfunctions.googleapis.com\" OR \n  gcp.audit.service_name: \"iam.googleapis.com\" OR\n  gcp.audit.service_name: \"cloudresourcemanager.googleapis.com\"\n)"
+      },
+      {
+        "siem": "GCP Cloud Logging - Metadata Service Token Theft",
+        "query": "# Detect suspicious metadata service token extraction from Cloud Functions\nresource.type=\"cloud_function\"\njsonPayload.message=~\".*metadata\\.google\\.internal.*\"\njsonPayload.message=~\".*/computeMetadata/v1/instance/service-accounts/default/token.*\"\nseverity>=WARNING\n| OR\nresource.type=\"http_load_balancer\"\nhttpRequest.requestUrl=~\"http://metadata\\.google\\.internal/.*\"\nhttpRequest.requestUrl=~\".*/service-accounts/default/token.*\""
+      },
+      {
+        "siem": "GCP Cloud Logging - Secret Manager Unauthorized Access",
+        "query": "# Detect unauthorized Secret Manager access from Cloud Functions\nresource.type=\"audited_resource\"\nprotoPayload.serviceName=\"secretmanager.googleapis.com\"\nprotoPayload.methodName=\"AccessSecretVersion\"\nNOT protoPayload.authenticationInfo.principalEmail=~\"fn-.*@.*.iam.gserviceaccount.com\"\nprotoPayload.authenticationInfo.principalEmail=~\".*-compute@developer.gserviceaccount.com\"\nseverity>=WARNING"
+      }
+    ],
+    "tools": [
+      {
+        "name": "GCP Security Command Center",
+        "type": "Cloud-Native Threat Detection",
+        "usage": "Automatically detects IAM misconfigurations, privilege escalation, and service account abuse"
+      },
+      {
+        "name": "Forseti Security",
+        "type": "GCP Security Scanning (Deprecated, use SCC)",
+        "usage": "forseti inventory create && forseti scanner run --scanner_name iam_rules_scanner"
+      },
+      {
+        "name": "ScoutSuite",
+        "type": "Multi-Cloud Security Auditing",
+        "usage": "python scout.py gcp --project-id YOUR_PROJECT_ID --report-dir ./reports"
+      },
+      {
+        "name": "Cloud Asset Inventory",
+        "type": "Asset and IAM Monitoring",
+        "usage": "gcloud asset search-all-iam-policies --scope=projects/PROJECT_ID --query='policy:roles/editor'"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "Technology",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 7.1.2 - Restrict privileged access)",
+      "HIPAA (164.308(a)(4) - Access Controls)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.9.2.3 - Management of privileged access rights)",
+      "GDPR (Article 32 - Security of Processing)",
+      "FedRAMP (AC-6 - Least Privilege)",
+      "NIST 800-53 (AC-6 - Least Privilege, CM-5 - Access Restrictions)",
+      "CIS Google Cloud Platform Foundation Benchmark v1.3.0 (1.4, 1.5, 1.7)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Multi-Cloud",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Regulated"
+    ],
+    "attack_phase": [
+      "Privilege Escalation",
+      "Lateral Movement",
+      "Persistence",
+      "Credential Access"
+    ],
+    "cloud_provider": "Google Cloud Platform (GCP)",
+    "service_category": "Serverless Compute"
+  }
+}

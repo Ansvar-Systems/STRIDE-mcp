@@ -1,0 +1,448 @@
+{
+  "id": "STRIDE-SUPPLY-NPM-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.0,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A08:2021 - Software and Data Integrity Failures",
+      "A06:2021 - Vulnerable and Outdated Components"
+    ],
+    "mitre_attack": [
+      "T1195.002 - Compromise Software Supply Chain",
+      "T1574.001 - DLL Side-Loading",
+      "T1036.005 - Match Legitimate Name or Location"
+    ],
+    "cwe": [
+      "CWE-494 - Download of Code Without Integrity Check",
+      "CWE-506 - Embedded Malicious Code",
+      "CWE-829 - Inclusion of Functionality from Untrusted Control Sphere"
+    ]
+  },
+  "threat": {
+    "title": "NPM Package Tampering and Supply Chain Injection",
+    "description": "Attackers compromise NPM packages through account hijacking, typosquatting, dependency confusion, or malicious maintainer actions to inject malicious code that executes during installation or runtime. This can lead to credential theft, cryptocurrency mining, backdoor installation, or data exfiltration affecting thousands of downstream applications.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.3,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "NPM (Node Package Manager)",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Node.js",
+    "dependencies": ["package.json", "package-lock.json", "npm-shrinkwrap.json"],
+    "related_frameworks": ["Yarn", "pnpm", "Bun"]
+  },
+  "attack": {
+    "scenario": "1. Attacker compromises maintainer account via phishing or credential stuffing (no 2FA)\n2. Publishes malicious version 2.0.1 of popular package with 50M weekly downloads\n3. Malicious postinstall script exfiltrates environment variables to attacker's server\n4. Developers run 'npm install' and unknowingly download compromised version\n5. Postinstall hook executes, stealing AWS keys, database credentials, API tokens\n6. Attacker pivots to cloud infrastructure using stolen credentials\n7. Deploys cryptominers, establishes persistence, exfiltrates production data",
+    "prerequisites": [
+      "Maintainer account lacks MFA/2FA protection",
+      "Package lacks npm provenance attestation and signature verification",
+      "Development environment has production credentials in .env files",
+      "No package integrity validation (npm audit, Snyk, Socket)",
+      "Automated CI/CD pipelines install packages without manual review"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-3721",
+        "description": "event-stream NPM package version 3.3.6 contained malicious code targeting Copay Bitcoin wallets, stealing private keys and cryptocurrency",
+        "cvss_score": 9.8,
+        "published_date": "2018-11-27"
+      },
+      {
+        "cve_id": "CVE-2021-23566",
+        "description": "ua-parser-js versions 0.7.29, 0.8.0, 1.0.0 were compromised with cryptomining and password-stealing trojans affecting 8M+ weekly downloads",
+        "cvss_score": 9.8,
+        "published_date": "2021-10-25"
+      },
+      {
+        "cve_id": "CVE-2022-21803",
+        "description": "noblox.js-proxy NPM package contained malicious code designed to steal Roblox credentials and game tokens",
+        "cvss_score": 9.1,
+        "published_date": "2022-01-14"
+      },
+      {
+        "cve_id": "CVE-2022-25878",
+        "description": "protobufjs package vulnerable to prototype pollution via malicious .proto files enabling RCE in supply chain attacks",
+        "cvss_score": 9.8,
+        "published_date": "2022-08-29"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "event-stream Bitcoin Wallet Theft",
+        "date": "2018-11-20",
+        "impact": "3.9M+ dependent projects compromised; Copay wallet private keys stolen; estimated $100K+ in cryptocurrency theft",
+        "root_cause": "Original maintainer transferred ownership to attacker who added malicious dependency 'flatmap-stream' targeting Bitcoin wallets",
+        "source_url": "https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident"
+      },
+      {
+        "incident": "UA-Parser-JS Cryptominer and Password Stealer",
+        "date": "2021-10-22",
+        "impact": "8M+ weekly downloads; 3 versions compromised; cryptominer deployed to Linux/Windows; password-stealing trojans installed",
+        "root_cause": "Maintainer's NPM account hijacked via credential theft; attacker published malicious versions 0.7.29, 0.8.0, 1.0.0",
+        "source_url": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w"
+      },
+      {
+        "incident": "colors.js and faker.js Sabotage",
+        "date": "2022-01-08",
+        "impact": "21M+ weekly downloads (colors.js), 2.8M+ (faker.js); infinite loop DoS in thousands of applications worldwide",
+        "root_cause": "Maintainer deliberately corrupted packages in protest; versions 1.4.1-1.4.2 (colors), 6.6.6 (faker) caused application crashes",
+        "source_url": "https://www.bleepingcomputer.com/news/security/dev-corrupts-npm-libs-colors-and-faker-breaking-thousands-of-apps/"
+      },
+      {
+        "incident": "eslint-scope Malicious Package",
+        "date": "2018-07-12",
+        "impact": "2M+ downloads; NPM credentials stolen from developer machines and sent to attacker",
+        "root_cause": "Maintainer account compromised; version 3.7.2 contained code to steal NPM tokens from ~/.npmrc files",
+        "source_url": "https://eslint.org/blog/2018/07/postmortem-for-malicious-package-publishes/"
+      },
+      {
+        "incident": "coa NPM Package Hijacking",
+        "date": "2021-11-04",
+        "impact": "9M+ weekly downloads; password-stealing trojan targeting Windows systems",
+        "root_cause": "Package version 2.0.3 and 2.1.3 compromised with malicious code via account takeover",
+        "source_url": "https://github.com/advisories/GHSA-73qr-pfmq-6rp8"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "1665788",
+        "bounty_amount": 30000,
+        "severity": "Critical",
+        "summary": "NPM dependency confusion attack allowing arbitrary package installation in GitHub Actions"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Backstabber's Knife Collection: A Review of Open Source Software Supply Chain Attacks",
+        "authors": ["Marc Ohm", "Henrik Plate", "Arnold Sykosch", "Michael Meier"],
+        "published_date": "2020-09-01",
+        "source_url": "https://arxiv.org/abs/2005.09535",
+        "key_finding": "Analysis of 174 malicious NPM packages shows 56% use typosquatting, 22% dependency confusion, 12% account takeover"
+      },
+      {
+        "title": "2024 State of the Software Supply Chain Report",
+        "authors": ["Sonatype"],
+        "published_date": "2024-10-15",
+        "source_url": "https://www.sonatype.com/state-of-the-software-supply-chain",
+        "key_finding": "245,000+ malicious NPM packages published in 2024 (156% increase); average attack sophistication increased 742%"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Package Integrity Verification with npm audit and Snyk",
+      "description": "Automatically scan all NPM dependencies for known vulnerabilities and malicious packages using npm audit, Snyk, or Socket Security. Integrate into CI/CD pipelines to block compromised packages before deployment.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "CI/CD Pipeline (GitHub Actions)",
+        "code": "# .github/workflows/security-audit.yml\nname: NPM Security Audit\n\non:\n  push:\n    branches: [ main, develop ]\n  pull_request:\n    branches: [ main, develop ]\n  schedule:\n    - cron: '0 0 * * *'  # Daily at midnight\n\njobs:\n  audit:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      \n      - name: Setup Node.js\n        uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n      \n      # NPM Audit (built-in)\n      - name: Run npm audit\n        run: |\n          npm audit --audit-level=moderate\n          if [ $? -ne 0 ]; then\n            echo \"Critical vulnerabilities found\"\n            npm audit fix --dry-run\n          fi\n      \n      # Snyk Security Scan\n      - name: Run Snyk to check for vulnerabilities\n        uses: snyk/actions/node@master\n        env:\n          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        with:\n          args: --severity-threshold=high --fail-on=upgradable\n      \n      # Socket Security for supply chain analysis\n      - name: Socket Security Supply Chain Scan\n        uses: SocketDev/socket-security-action@v1\n        with:\n          token: ${{ secrets.SOCKET_TOKEN }}\n          fail-on-risk: high\n      \n      # Generate SBOM (Software Bill of Materials)\n      - name: Generate SBOM\n        run: |\n          npm install -g @cyclonedx/cyclonedx-npm\n          cyclonedx-npm --output-file sbom.json\n      \n      - name: Upload SBOM artifact\n        uses: actions/upload-artifact@v4\n        with:\n          name: sbom\n          path: sbom.json"
+      },
+      "tools": [
+        {
+          "name": "npm audit",
+          "type": "Vulnerability Scanner (Built-in)",
+          "cost": "Free"
+        },
+        {
+          "name": "Snyk",
+          "type": "Supply Chain Security Platform",
+          "cost": "Free (OSS) / $52/dev/month (Team)"
+        },
+        {
+          "name": "Socket Security",
+          "type": "Real-time Supply Chain Protection",
+          "cost": "$49/dev/month"
+        },
+        {
+          "name": "CycloneDX",
+          "type": "SBOM Generator",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "ID.RA-1 - Asset vulnerabilities are identified",
+        "PR.DS-6 - Integrity checking mechanisms verify software integrity"
+      ],
+      "nist_ssdf": [
+        "PW.4.1 - Verify third-party software integrity",
+        "PW.4.4 - Monitor for vulnerabilities"
+      ],
+      "validation_steps": [
+        "Run 'npm audit' and verify it completes without critical findings",
+        "Test Snyk integration with 'snyk test' locally",
+        "Verify CI/CD pipeline fails when high-severity vulnerabilities detected",
+        "Confirm SBOM is generated and uploaded to artifact storage",
+        "Schedule weekly dependency update PRs with Dependabot/Renovate"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enable npm Provenance Attestation and Package Signing",
+      "description": "Use npm provenance to cryptographically verify package authenticity and build integrity. Provenance links published packages to source code repository commits, providing tamper-proof verification of package origins.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "NPM Publishing (GitHub Actions)",
+        "code": "# .github/workflows/publish.yml\nname: Publish to NPM with Provenance\n\non:\n  release:\n    types: [published]\n\njobs:\n  publish:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      id-token: write  # Required for provenance\n    steps:\n      - uses: actions/checkout@v4\n      \n      - name: Setup Node.js\n        uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n          registry-url: 'https://registry.npmjs.org'\n      \n      - name: Install dependencies\n        run: npm ci\n      \n      - name: Run tests\n        run: npm test\n      \n      - name: Build package\n        run: npm run build\n      \n      # Publish with provenance attestation\n      - name: Publish to NPM with Provenance\n        run: npm publish --provenance --access public\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}"
+      },
+      "tools": [
+        {
+          "name": "npm provenance",
+          "type": "Package Attestation (Built-in)",
+          "cost": "Free"
+        },
+        {
+          "name": "Sigstore",
+          "type": "Code Signing Infrastructure",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.2.1 - Controls against malware"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms verify software integrity"
+      ],
+      "nist_ssdf": [
+        "PW.4.1 - Verify third-party software integrity using signatures"
+      ],
+      "validation_steps": [
+        "Configure GitHub Actions with id-token: write permission",
+        "Publish package with --provenance flag",
+        "Verify provenance on npmjs.com package page",
+        "Run verification script to check all dependencies",
+        "Configure npm to require provenance for installs"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enforce Package Lock Files and Subresource Integrity",
+      "description": "Always commit package-lock.json to version control and use 'npm ci' instead of 'npm install' in CI/CD to ensure deterministic, reproducible builds. Enable subresource integrity checking to detect tampering.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js Build Pipeline",
+        "code": "// .npmrc configuration (commit to repo)\npackage-lock=true\nengine-strict=true\nsave-exact=true\n\n// package.json engines configuration\n{\n  \"engines\": {\n    \"node\": \">=20.0.0\",\n    \"npm\": \">=10.0.0\"\n  },\n  \"scripts\": {\n    \"preinstall\": \"node check-lockfile.js\",\n    \"install\": \"npm ci\",\n    \"postinstall\": \"npm run verify:integrity\",\n    \"verify:integrity\": \"node verify-integrity.js\"\n  }\n}\n\n// check-lockfile.js - Enforce lockfile usage\nconst fs = require('fs');\nconst path = require('path');\n\nconst lockfilePath = path.join(__dirname, 'package-lock.json');\n\nif (!fs.existsSync(lockfilePath)) {\n  console.error('ERROR: package-lock.json not found!');\n  console.error('This is required for reproducible builds.');\n  console.error('Run: npm install');\n  process.exit(1);\n}\n\n// Check if lockfile is up to date\nconst packageJson = require('./package.json');\nconst lockfileJson = require('./package-lock.json');\n\nif (packageJson.version !== lockfileJson.version) {\n  console.error('ERROR: package-lock.json is out of sync!');\n  console.error('Run: npm install --package-lock-only');\n  process.exit(1);\n}\n\nconsole.log('package-lock.json verified');\n\n// verify-integrity.js - Check package integrity\nconst crypto = require('crypto');\nconst fs = require('fs');\nconst path = require('path');\n\nfunction verifyPackageIntegrity() {\n  const lockfile = require('./package-lock.json');\n  const packages = lockfile.packages || {};\n  \n  let failures = 0;\n  \n  for (const [pkgPath, pkgData] of Object.entries(packages)) {\n    if (!pkgData.integrity) continue;\n    \n    const fullPath = path.join(__dirname, pkgPath);\n    const packageJsonPath = path.join(fullPath, 'package.json');\n    \n    if (!fs.existsSync(packageJsonPath)) continue;\n    \n    // Verify integrity hash matches\n    const expectedIntegrity = pkgData.integrity;\n    const algorithm = expectedIntegrity.split('-')[0];\n    \n    try {\n      const contents = fs.readFileSync(packageJsonPath, 'utf8');\n      const hash = crypto.createHash(algorithm.replace('sha', 'sha'));\n      hash.update(contents);\n      const actualIntegrity = `${algorithm}-${hash.digest('base64')}`;\n      \n      if (expectedIntegrity !== actualIntegrity) {\n        console.error(`INTEGRITY MISMATCH: ${pkgPath}`);\n        failures++;\n      }\n    } catch (error) {\n      console.warn(`Could not verify: ${pkgPath}`);\n    }\n  }\n  \n  if (failures > 0) {\n    console.error(`${failures} packages failed integrity check!`);\n    console.error('Possible tampering detected. Reinstall dependencies.');\n    process.exit(1);\n  }\n  \n  console.log('All packages passed integrity verification');\n}\n\nverifyPackageIntegrity();"
+      },
+      "tools": [
+        {
+          "name": "npm ci",
+          "type": "Deterministic Package Installer",
+          "cost": "Free (Built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.5.1 - Installation of software on operational systems"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms"
+      ],
+      "nist_ssdf": [
+        "PW.4.1 - Verify third-party software integrity"
+      ],
+      "validation_steps": [
+        "Commit package-lock.json to version control",
+        "Replace all 'npm install' with 'npm ci' in CI/CD",
+        "Test integrity verification script locally",
+        "Verify CI pipeline fails on lockfile mismatch",
+        "Configure git hooks to prevent lockfile deletion"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement Dependency Firewall and Private Registry",
+      "description": "Use a private NPM registry proxy (Verdaccio, Nexus, Artifactory) to cache vetted packages and block unknown/malicious packages. Implement allowlist-based dependency management.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Verdaccio Private Registry",
+        "code": "# docker-compose.yml - Private NPM Registry with Verdaccio\nversion: '3.8'\n\nservices:\n  verdaccio:\n    image: verdaccio/verdaccio:5\n    container_name: npm-proxy\n    ports:\n      - \"4873:4873\"\n    volumes:\n      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml\n      - ./verdaccio/storage:/verdaccio/storage\n      - ./verdaccio/plugins:/verdaccio/plugins\n    environment:\n      - VERDACCIO_PUBLIC_URL=https://npm.company.com\n\n# verdaccio/config.yaml\nstorage: /verdaccio/storage/data\nplugins: /verdaccio/plugins\n\n# Security settings\nsecurity:\n  api:\n    jwt:\n      sign:\n        expiresIn: 7d\n  web:\n    enable: true\n    title: Company NPM Registry\n\n# Uplink to public npm (with caching)\nuplinks:\n  npmjs:\n    url: https://registry.npmjs.org/\n    cache: true\n    timeout: 30s\n    maxage: 7d\n    max_fails: 3\n    fail_timeout: 10m\n\n# Package access control\npackages:\n  # Internal packages (scoped)\n  '@company/*':\n    access: $authenticated\n    publish: $authenticated\n    unpublish: $authenticated\n  \n  # Allowed external packages (allowlist)\n  'express':\n    access: $all\n    publish: $authenticated\n    proxy: npmjs\n  \n  'react':\n    access: $all\n    publish: $authenticated\n    proxy: npmjs\n  \n  # Block all other packages by default\n  '**':\n    access: $authenticated\n    publish: $authenticated\n    proxy: npmjs\n\n# Authentication\nauth:\n  htpasswd:\n    file: /verdaccio/storage/htpasswd\n    max_users: -1\n\nlogs:\n  - { type: stdout, format: pretty, level: info }"
+      },
+      "tools": [
+        {
+          "name": "Verdaccio",
+          "type": "Private NPM Registry (Self-hosted)",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "JFrog Artifactory",
+          "type": "Enterprise Registry Manager",
+          "cost": "$98/month (Pro) / $296/month (Enterprise)"
+        },
+        {
+          "name": "Sonatype Nexus",
+          "type": "Repository Manager",
+          "cost": "$99/month (Pro) / Custom (Enterprise)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.5.1 - Installation of software on operational systems",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-6 - Integrity checking mechanisms"
+      ],
+      "nist_ssdf": [
+        "PW.4.1 - Verify third-party software integrity",
+        "PS.3.1 - Store all forms of code in a repository"
+      ],
+      "validation_steps": [
+        "Deploy Verdaccio with Docker Compose",
+        "Configure client .npmrc to use private registry",
+        "Test package caching from public npm",
+        "Implement package approval workflow",
+        "Monitor registry logs for suspicious activity"
+      ]
+    },
+    {
+      "control_id": "MIT-005",
+      "title": "Mandatory 2FA/MFA for NPM Publishing Accounts",
+      "description": "Enforce two-factor authentication for all NPM accounts with publish permissions. Use organization-level settings to require 2FA for all members.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "NPM Account Security",
+        "code": "# Enable 2FA for your NPM account\nnpm profile enable-2fa auth-and-writes\n\n# Verify 2FA is enabled\nnpm profile get\n# Output should show: tfa: { mode: 'auth-and-writes', pending: false }\n\n# Organization-level 2FA enforcement\n# 1. Go to https://www.npmjs.com/settings/[org]/members\n# 2. Click \"Require two-factor authentication\"\n# 3. All members must enable 2FA within 7 days or lose publish access\n\n# Generate automation tokens (for CI/CD only)\nnpm token create --read-only --cidr=0.0.0.0/0\n# For publish tokens (use IP restrictions):\nnpm token create --cidr=52.206.0.0/16  # GitHub Actions IP range\n\n# List and audit all tokens\nnpm token list\n\n# Revoke compromised tokens immediately\nnpm token revoke <token_id>\n\n# Add to package.json for developer onboarding\n{\n  \"scripts\": {\n    \"setup:2fa\": \"echo 'Run: npm profile enable-2fa auth-and-writes'\",\n    \"verify:2fa\": \"npm profile get | grep -q 'auth-and-writes' && echo '2FA enabled' || echo '2FA not enabled'\"\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "npm 2FA",
+          "type": "Two-Factor Authentication (Built-in)",
+          "cost": "Free"
+        },
+        {
+          "name": "1Password",
+          "type": "TOTP Token Manager",
+          "cost": "$7.99/user/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.9.4.3 - Password management system"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed"
+      ],
+      "nist_ssdf": [
+        "PO.5.1 - Implement and maintain secure configurations"
+      ],
+      "validation_steps": [
+        "Enable 2FA on all maintainer accounts",
+        "Configure organization to require 2FA",
+        "Generate IP-restricted automation tokens",
+        "Document token rotation process",
+        "Audit token usage monthly"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual package update patterns (version published outside normal working hours)",
+      "Packages with obfuscated JavaScript or encoded strings",
+      "Postinstall/preinstall scripts making network requests",
+      "Packages requesting excessive file system permissions",
+      "Dependency versions changing without explicit updates",
+      "npm install triggering unexpected CPU/network activity",
+      "Environment variables being accessed by postinstall scripts",
+      "New package versions published immediately after account login from new IP"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect suspicious npm package installations\nDeviceProcessEvents\n| where ProcessCommandLine has \"npm install\" or ProcessCommandLine has \"npm i\"\n| where ProcessCommandLine has \"postinstall\" or ProcessCommandLine has \"preinstall\"\n| where ProcessCommandLine has_any (\"curl\", \"wget\", \"http://\", \"https://\")\n| extend SuspiciousActivity = case(\n    ProcessCommandLine has \"base64\", \"Base64 Encoding\",\n    ProcessCommandLine has \"eval\", \"Code Evaluation\",\n    ProcessCommandLine has \"$HOME/.ssh\", \"SSH Key Access\",\n    ProcessCommandLine has \"$HOME/.aws\", \"AWS Credentials Access\",\n    ProcessCommandLine contains \".env\", \"Environment File Access\",\n    \"Unknown\"\n  )\n| summarize Count = count(), Commands = make_set(ProcessCommandLine) by DeviceName, AccountName, SuspiciousActivity, bin(TimeGenerated, 1h)\n| where Count > 3\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=security_logs sourcetype=npm_audit\n| where (event_type=\"package_install\" OR event_type=\"package_update\")\n| where (package_name IN (\"event-stream\", \"ua-parser-js\", \"coa\", \"colors\", \"faker\") AND version IN (\"3.3.6\", \"0.7.29\", \"0.8.0\", \"2.0.3\", \"1.4.1\", \"6.6.6\"))\nOR (has_postinstall_script=true AND network_requests_detected=true)\nOR (package_age_days < 7 AND download_count < 1000)\n| stats count by package_name, version, user, src_ip, install_time\n| where count > 5\n| sort -count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"process\" AND process.name: (\"npm\" OR \"node\") AND process.command_line: (*postinstall* OR *preinstall*) AND (process.command_line: (*curl* OR *wget* OR *fetch*) OR network.direction: \"outbound\")\nAND NOT destination.ip: (10.0.0.0/8 OR 172.16.0.0/12 OR 192.168.0.0/16)"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message\n| filter @message like /npm (install|i|update)/\n| filter @message like /(postinstall|preinstall)/\n| filter @message like /(http|https|curl|wget|fetch)/\n| stats count() as installation_count by bin(5m) as time_window\n| filter installation_count > 10\n| sort time_window desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Socket Security",
+        "type": "Real-time Supply Chain Threat Detection",
+        "usage": "Monitors npm packages for malicious code, typosquatting, install scripts"
+      },
+      {
+        "name": "Snyk Advisor",
+        "type": "Package Health & Security Scoring",
+        "usage": "Provides security score, maintenance status, community trust metrics"
+      },
+      {
+        "name": "npm-audit-resolver",
+        "type": "Interactive Audit Remediation",
+        "usage": "Helps prioritize and resolve npm audit findings systematically"
+      },
+      {
+        "name": "OSV Scanner",
+        "type": "Vulnerability Database Scanner",
+        "usage": "Scans package-lock.json against Google's Open Source Vulnerabilities DB"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Technology",
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government"
+    ],
+    "compliance": [
+      "ISO 27001 (A.12.6.1, A.14.2.1)",
+      "NIST SSDF (PW.4.1, PW.4.4)",
+      "SOC 2 (CC8.1)",
+      "PCI-DSS 6.2",
+      "OWASP ASVS 14.2",
+      "GDPR Article 32"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "CI/CD"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential"
+    ]
+  }
+}

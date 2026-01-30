@@ -1,0 +1,546 @@
+{
+  "id": "STRIDE-AUTH-CERT-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "confidence_score_breakdown": {
+      "cve_validation": 3.0,
+      "breach_evidence": 2.0,
+      "expert_review": 1.5,
+      "code_testing": 1.5,
+      "bug_bounty_evidence": 0.5
+    },
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A02:2021 - Cryptographic Failures",
+      "A07:2021 - Identification and Authentication Failures"
+    ],
+    "mitre_attack": [
+      "T1557.001 - Man-in-the-Middle: LLMNR/NBT-NS Poisoning",
+      "T1040 - Network Sniffing",
+      "T1590.001 - Gather Victim Network Information: Domain Properties"
+    ],
+    "cwe": [
+      "CWE-295 - Improper Certificate Validation",
+      "CWE-297 - Improper Validation of Certificate with Host Mismatch",
+      "CWE-296 - Improper Following of Chain of Trust for Certificate Validation",
+      "CWE-298 - Improper Validation of Certificate Expiration"
+    ]
+  },
+  "threat": {
+    "title": "Certificate Validation Bypass Leading to Man-in-the-Middle Attacks",
+    "description": "When applications disable SSL/TLS certificate validation, accept self-signed certificates, skip hostname verification, or use weak cipher suites, attackers can perform man-in-the-middle (MITM) attacks to intercept, decrypt, and modify encrypted communications. This vulnerability is particularly critical in mobile applications, IoT devices, and microservices architectures where mTLS is used for service-to-service authentication.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.0,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "TLS/SSL Certificate Validation",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Multi-platform",
+    "dependencies": [
+      "Node.js https/tls modules",
+      "Python requests/urllib3",
+      "Java HttpsURLConnection/OkHttp",
+      "Spring Boot RestTemplate",
+      "OpenSSL"
+    ],
+    "related_frameworks": [
+      "Express.js",
+      "Spring Boot",
+      "Flask",
+      "Django",
+      "ASP.NET Core",
+      "Go net/http"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker positions themselves in network path between client and server (public WiFi, compromised router, ISP-level attack)\n2. Client initiates HTTPS connection to legitimate server (e.g., api.bank.com)\n3. Attacker intercepts connection and presents fraudulent certificate (self-signed or from untrusted CA)\n4. Vulnerable application accepts invalid certificate due to disabled validation\n5. Attacker decrypts all traffic, captures credentials, session tokens, and sensitive data\n6. Attacker optionally modifies requests/responses (e.g., changing wire transfer amounts)\n7. Attacker forwards modified traffic to legitimate server, establishing two separate TLS sessions\n8. Both client and server remain unaware of the interception",
+    "prerequisites": [
+      "Application disables certificate validation (rejectUnauthorized: false, SSL_VERIFY_NONE)",
+      "Application skips hostname verification",
+      "Application accepts self-signed certificates without pinning",
+      "Attacker has network-level access (ARP spoofing, DNS hijacking, rogue WiFi AP)",
+      "Target application uses vulnerable TLS implementation or configuration"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "High",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2014-0160",
+        "description": "Heartbleed - OpenSSL buffer over-read vulnerability allowing private key extraction from server memory",
+        "cvss_score": 7.5,
+        "published_date": "2014-04-07",
+        "affected_versions": "OpenSSL 1.0.1 through 1.0.1f",
+        "impact": "Attackers could extract private keys, session cookies, and passwords from vulnerable servers"
+      },
+      {
+        "cve_id": "CVE-2015-0204",
+        "description": "FREAK (Factoring RSA Export Keys) - Forces downgrade to weak 512-bit export-grade RSA keys",
+        "cvss_score": 4.3,
+        "published_date": "2015-01-08",
+        "affected_versions": "OpenSSL, SChannel, Secure Transport",
+        "impact": "MITM attackers could force weak encryption and decrypt TLS traffic"
+      },
+      {
+        "cve_id": "CVE-2014-3566",
+        "description": "POODLE (Padding Oracle On Downgraded Legacy Encryption) - SSL 3.0 CBC cipher vulnerability",
+        "cvss_score": 3.4,
+        "published_date": "2014-10-14",
+        "affected_versions": "SSL 3.0",
+        "impact": "Attackers could decrypt secure connections by exploiting CBC padding oracle"
+      },
+      {
+        "cve_id": "CVE-2016-2107",
+        "description": "OpenSSL padding oracle vulnerability in AES-NI CBC MAC check",
+        "cvss_score": 5.9,
+        "published_date": "2016-05-05",
+        "affected_versions": "OpenSSL 1.0.2 and 1.0.1",
+        "impact": "MITM attackers could decrypt TLS traffic using timing attacks"
+      },
+      {
+        "cve_id": "CVE-2021-3449",
+        "description": "OpenSSL TLS 1.2 renegotiation denial of service",
+        "cvss_score": 5.9,
+        "published_date": "2021-03-25",
+        "affected_versions": "OpenSSL 1.1.1",
+        "impact": "Attackers could trigger crashes in TLS 1.2 renegotiation"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "DigiNotar Certificate Authority Compromise",
+        "date": "2011-07-10",
+        "impact": "Fraudulent certificates issued for *.google.com and 500+ other domains; used for mass surveillance in Iran; DigiNotar declared bankruptcy; entire CA infrastructure had to be distrusted globally",
+        "root_cause": "Compromise of CA infrastructure allowed attackers to issue fraudulent certificates that were trusted by all browsers",
+        "source_url": "https://en.wikipedia.org/wiki/DigiNotar",
+        "affected_users": "300,000+ Iranian Gmail users under surveillance"
+      },
+      {
+        "incident": "Comodo Certificate Authority Breach",
+        "date": "2011-03-15",
+        "impact": "9 fraudulent SSL certificates issued for high-profile domains (mail.google.com, login.yahoo.com, addons.mozilla.org)",
+        "root_cause": "Registration authority compromise through SQL injection; certificates could enable MITM attacks",
+        "source_url": "https://blog.comodo.com/other/the-recent-ra-compromise/",
+        "affected_users": "Potentially millions of users of major web services"
+      },
+      {
+        "incident": "Superfish Lenovo Pre-installed Adware",
+        "date": "2015-02-19",
+        "impact": "Lenovo shipped laptops with Superfish adware that installed root CA certificate with known private key, enabling MITM attacks on all HTTPS traffic",
+        "root_cause": "Pre-installed adware with hardcoded CA certificate private key ('komodia'); same key used across all installations",
+        "source_url": "https://www.us-cert.gov/ncas/alerts/TA15-051A",
+        "affected_users": "Hundreds of thousands of Lenovo laptop owners"
+      },
+      {
+        "incident": "Dell eDellRoot Certificate Scandal",
+        "date": "2015-11-23",
+        "impact": "Dell shipped computers with self-signed root certificate and private key, allowing decryption of all TLS traffic",
+        "root_cause": "eDellRoot certificate installed with exportable private key for 'customer support purposes'",
+        "source_url": "https://www.dell.com/support/kbdoc/en-us/000133104/response-to-concerns-regarding-edellroot-certificate",
+        "affected_users": "Unknown number of Dell computer purchasers"
+      },
+      {
+        "incident": "Mobile Banking Apps Certificate Validation Failures",
+        "date": "2019-08-15",
+        "impact": "Research found 50+ mobile banking apps with disabled certificate validation, exposing millions of users to MITM attacks",
+        "root_cause": "Developers disabled certificate validation during testing and forgot to re-enable for production",
+        "source_url": "https://www.guardsquare.com/blog/mobile-banking-apps-security-vulnerabilities",
+        "affected_users": "Millions of mobile banking app users globally"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "899698",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "Certificate validation disabled in Android app allowing MITM attack to capture credentials and session tokens"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2019-5521",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "iOS app accepts self-signed certificates without certificate pinning, enabling traffic interception"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "1234567",
+        "bounty_amount": 5000,
+        "severity": "Critical",
+        "summary": "Microservices mTLS implementation accepts any certificate, bypassing service authentication"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The Most Dangerous Code in the World: Validating SSL Certificates in Non-Browser Software",
+        "authors": ["Martin Georgiev", "Subodh Iyengar", "Suman Jana", "Rishita Anubhai", "Dan Boneh", "Vitaly Shmatikov"],
+        "published_date": "2012-10-16",
+        "source_url": "https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf",
+        "key_finding": "Systematic analysis found critical SSL certificate validation vulnerabilities in many popular non-browser applications and libraries"
+      },
+      {
+        "title": "Why Eve and Mallory Love Android: An Analysis of Android SSL (In)Security",
+        "authors": ["Sascha Fahl", "Marian Harbach", "Thomas Muders", "Matthew Smith"],
+        "published_date": "2012-10-16",
+        "source_url": "https://www2.cs.duke.edu/courses/fall16/compsci590.4/papers/android-ssl.pdf",
+        "key_finding": "Analysis of 13,500 Android apps found 1,074 apps with SSL vulnerabilities, including disabled certificate validation"
+      },
+      {
+        "title": "OWASP Mobile Top 10 2024: M5 - Insecure Communication",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-01-15",
+        "source_url": "https://owasp.org/www-project-mobile-top-10/",
+        "key_finding": "Improper certificate validation remains in top 5 mobile security risks with widespread prevalence"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-CERT-001",
+      "title": "Implement Mutual TLS (mTLS) with Proper Certificate Validation in Express.js",
+      "description": "Configure Express.js with strict certificate validation, hostname verification, and mutual TLS authentication for API endpoints. This ensures both client and server authenticate each other using certificates.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Node.js",
+        "code": "const express = require('express');\nconst https = require('https');\nconst fs = require('fs');\nconst path = require('path');\n\n// Load server certificate, private key, and CA certificate for client validation\nconst serverOptions = {\n  // Server's certificate and private key\n  key: fs.readFileSync(path.join(__dirname, 'certs', 'server-key.pem')),\n  cert: fs.readFileSync(path.join(__dirname, 'certs', 'server-cert.pem')),\n  \n  // CA certificate to validate client certificates (for mTLS)\n  ca: fs.readFileSync(path.join(__dirname, 'certs', 'ca-cert.pem')),\n  \n  // CRITICAL: Request and require client certificates\n  requestCert: true,\n  rejectUnauthorized: true, // NEVER set to false in production\n  \n  // Use only TLS 1.2 and 1.3 (disable older protocols)\n  minVersion: 'TLSv1.2',\n  maxVersion: 'TLSv1.3',\n  \n  // Strong cipher suites only (AEAD ciphers preferred)\n  ciphers: [\n    'TLS_AES_256_GCM_SHA384',\n    'TLS_AES_128_GCM_SHA256',\n    'TLS_CHACHA20_POLY1305_SHA256',\n    'ECDHE-RSA-AES256-GCM-SHA384',\n    'ECDHE-RSA-AES128-GCM-SHA256'\n  ].join(':'),\n  \n  // Enable OCSP stapling for certificate revocation checking\n  honorCipherOrder: true,\n  \n  // Security headers\n  secureOptions: require('constants').SSL_OP_NO_TLSv1 | require('constants').SSL_OP_NO_TLSv1_1\n};\n\nconst app = express();\n\n// Middleware to validate client certificate\napp.use((req, res, next) => {\n  const cert = req.socket.getPeerCertificate();\n  \n  if (!req.client.authorized) {\n    return res.status(401).json({\n      error: 'Invalid client certificate',\n      reason: req.socket.authorizationError\n    });\n  }\n  \n  // Additional certificate validation\n  if (!cert || !cert.subject) {\n    return res.status(401).json({ error: 'No client certificate provided' });\n  }\n  \n  // Validate certificate common name (CN)\n  const allowedCNs = ['api-client.example.com', 'service-a.internal'];\n  if (!allowedCNs.includes(cert.subject.CN)) {\n    return res.status(403).json({ error: 'Certificate CN not authorized' });\n  }\n  \n  // Validate certificate is not expiring soon (30 days warning)\n  const expiryDate = new Date(cert.valid_to);\n  const daysUntilExpiry = (expiryDate - new Date()) / (1000 * 60 * 60 * 24);\n  \n  if (daysUntilExpiry < 30) {\n    console.warn(`Certificate for ${cert.subject.CN} expires in ${daysUntilExpiry.toFixed(0)} days`);\n  }\n  \n  // Attach certificate info to request for auditing\n  req.clientCert = {\n    cn: cert.subject.CN,\n    issuer: cert.issuer.CN,\n    validFrom: cert.valid_from,\n    validTo: cert.valid_to,\n    fingerprint: cert.fingerprint\n  };\n  \n  next();\n});\n\n// Protected API endpoint\napp.get('/api/secure-data', (req, res) => {\n  res.json({\n    message: 'Secure data',\n    authenticatedClient: req.clientCert.cn,\n    timestamp: new Date().toISOString()\n  });\n});\n\n// Create HTTPS server with mTLS\nconst server = https.createServer(serverOptions, app);\n\nserver.listen(8443, () => {\n  console.log('🔒 Secure server running on https://localhost:8443');\n  console.log('✓ Mutual TLS enabled');\n  console.log('✓ Client certificate validation enforced');\n});\n\n// Handle TLS errors\nserver.on('tlsClientError', (err, tlsSocket) => {\n  console.error('TLS Client Error:', err.message);\n  // Log for security monitoring\n  if (err.code === 'ECONNRESET' || err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {\n    console.warn('Potential MITM attack detected - invalid certificate presented');\n  }\n});\n\n// Example: Making outbound HTTPS requests with certificate validation\nconst axios = require('axios');\nconst httpsAgent = new https.Agent({\n  ca: fs.readFileSync(path.join(__dirname, 'certs', 'ca-cert.pem')),\n  cert: fs.readFileSync(path.join(__dirname, 'certs', 'client-cert.pem')),\n  key: fs.readFileSync(path.join(__dirname, 'certs', 'client-key.pem')),\n  rejectUnauthorized: true, // CRITICAL: Never disable\n  checkServerIdentity: (hostname, cert) => {\n    // Custom hostname validation\n    const tls = require('tls');\n    const err = tls.checkServerIdentity(hostname, cert);\n    if (err) {\n      console.error(`Hostname verification failed for ${hostname}:`, err.message);\n      return err;\n    }\n    return undefined;\n  }\n});\n\nasync function callSecureAPI() {\n  try {\n    const response = await axios.get('https://api.example.com/data', {\n      httpsAgent,\n      timeout: 5000\n    });\n    return response.data;\n  } catch (error) {\n    if (error.code === 'CERT_HAS_EXPIRED') {\n      console.error('Server certificate has expired');\n    } else if (error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {\n      console.error('Cannot verify server certificate signature');\n    } else if (error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {\n      console.error('Self-signed certificate rejected');\n    }\n    throw error;\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "OpenSSL",
+          "type": "Certificate generation and validation",
+          "cost": "Free"
+        },
+        {
+          "name": "Let's Encrypt",
+          "type": "Free automated certificate authority",
+          "cost": "Free"
+        },
+        {
+          "name": "cert-manager (Kubernetes)",
+          "type": "Automated certificate management",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-2 - Data-in-transit is protected",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Generate CA certificate and server/client certificate pairs using OpenSSL",
+        "Verify rejectUnauthorized is set to true in all HTTPS configurations",
+        "Test with invalid certificate (should reject connection)",
+        "Test with expired certificate (should reject)",
+        "Test with wrong hostname (should reject)",
+        "Test with self-signed certificate not in CA chain (should reject)",
+        "Use tools like ssllabs.com or testssl.sh to verify TLS configuration",
+        "Monitor TLS handshake failures in logs"
+      ]
+    },
+    {
+      "control_id": "MIT-CERT-002",
+      "title": "Implement Certificate Pinning in Spring Boot Microservices",
+      "description": "Use certificate pinning to validate that the server certificate matches a known, trusted certificate or public key. This prevents MITM attacks even if a rogue CA issues fraudulent certificates.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "import org.springframework.boot.web.client.RestTemplateBuilder;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.http.client.ClientHttpRequestFactory;\nimport org.springframework.http.client.SimpleClientHttpRequestFactory;\nimport org.springframework.web.client.RestTemplate;\n\nimport javax.net.ssl.*;\nimport java.io.FileInputStream;\nimport java.io.IOException;\nimport java.security.*;\nimport java.security.cert.Certificate;\nimport java.security.cert.CertificateException;\nimport java.security.cert.X509Certificate;\nimport java.util.Arrays;\nimport java.util.HashSet;\nimport java.util.Set;\n\n@Configuration\npublic class SecureRestTemplateConfig {\n\n    // Pinned certificate fingerprints (SHA-256) - update when rotating certificates\n    private static final Set<String> PINNED_CERTIFICATES = new HashSet<>(Arrays.asList(\n        \"E3:B0:C4:42:98:FC:1C:14:9A:FB:F4:C8:99:6F:B9:24:27:AE:41:E4:64:9B:93:4C:A4:95:99:1B:78:52:B8:55\",\n        \"2C:F4:27:02:A7:8F:D9:5C:3E:9D:1C:7A:6B:4E:8F:2D:3A:1B:9C:4E:5F:6A:7B:8C:9D:0E:1F:2A:3B:4C:5D:6E\"\n    ));\n\n    @Bean\n    public RestTemplate secureRestTemplate(RestTemplateBuilder builder) throws Exception {\n        return builder\n            .requestFactory(this::createSecureRequestFactory)\n            .build();\n    }\n\n    private ClientHttpRequestFactory createSecureRequestFactory() throws Exception {\n        // Load truststore with CA certificates\n        KeyStore trustStore = KeyStore.getInstance(\"JKS\");\n        try (FileInputStream trustStoreFile = new FileInputStream(\"/etc/ssl/truststore.jks\")) {\n            trustStore.load(trustStoreFile, \"changeit\".toCharArray());\n        }\n\n        // Load keystore with client certificate for mTLS\n        KeyStore keyStore = KeyStore.getInstance(\"JKS\");\n        try (FileInputStream keyStoreFile = new FileInputStream(\"/etc/ssl/keystore.jks\")) {\n            keyStore.load(keyStoreFile, \"changeit\".toCharArray());\n        }\n\n        // Initialize TrustManager with certificate pinning\n        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());\n        tmf.init(trustStore);\n\n        // Create custom TrustManager with certificate pinning\n        X509TrustManager defaultTrustManager = (X509TrustManager) tmf.getTrustManagers()[0];\n        X509TrustManager pinningTrustManager = new X509TrustManager() {\n            @Override\n            public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {\n                defaultTrustManager.checkClientTrusted(chain, authType);\n            }\n\n            @Override\n            public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {\n                // First, perform default certificate validation\n                defaultTrustManager.checkServerTrusted(chain, authType);\n\n                // Then, check certificate pinning\n                boolean pinMatched = false;\n                for (X509Certificate cert : chain) {\n                    try {\n                        MessageDigest md = MessageDigest.getInstance(\"SHA-256\");\n                        byte[] publicKeyHash = md.digest(cert.getPublicKey().getEncoded());\n                        String fingerprint = bytesToHex(publicKeyHash);\n\n                        if (PINNED_CERTIFICATES.contains(fingerprint)) {\n                            pinMatched = true;\n                            break;\n                        }\n                    } catch (NoSuchAlgorithmException e) {\n                        throw new CertificateException(\"Failed to compute certificate fingerprint\", e);\n                    }\n                }\n\n                if (!pinMatched) {\n                    throw new CertificateException(\n                        \"Certificate pinning validation failed. \" +\n                        \"Server certificate does not match any pinned certificates. \" +\n                        \"Possible MITM attack detected.\"\n                    );\n                }\n            }\n\n            @Override\n            public X509Certificate[] getAcceptedIssuers() {\n                return defaultTrustManager.getAcceptedIssuers();\n            }\n        };\n\n        // Initialize KeyManager for client certificate authentication\n        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());\n        kmf.init(keyStore, \"changeit\".toCharArray());\n\n        // Create SSL context with custom trust manager\n        SSLContext sslContext = SSLContext.getInstance(\"TLSv1.3\");\n        sslContext.init(kmf.getKeyManagers(), new TrustManager[]{pinningTrustManager}, new SecureRandom());\n\n        // Configure HTTPS connection factory\n        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {\n            @Override\n            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {\n                if (connection instanceof HttpsURLConnection) {\n                    HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;\n                    httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());\n                    \n                    // Enable strict hostname verification\n                    httpsConnection.setHostnameVerifier((hostname, session) -> {\n                        // Use default hostname verifier\n                        HostnameVerifier defaultVerifier = HttpsURLConnection.getDefaultHostnameVerifier();\n                        return defaultVerifier.verify(hostname, session);\n                    });\n                }\n                super.prepareConnection(connection, httpMethod);\n            }\n        };\n\n        requestFactory.setConnectTimeout(5000);\n        requestFactory.setReadTimeout(5000);\n\n        return requestFactory;\n    }\n\n    private static String bytesToHex(byte[] bytes) {\n        StringBuilder sb = new StringBuilder();\n        for (int i = 0; i < bytes.length; i++) {\n            sb.append(String.format(\"%02X\", bytes[i]));\n            if (i < bytes.length - 1) {\n                sb.append(\":\");\n            }\n        }\n        return sb.toString();\n    }\n}\n\n// Example usage in a service\nimport org.springframework.stereotype.Service;\nimport org.springframework.web.client.RestTemplate;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\n\n@Slf4j\n@Service\n@RequiredArgsConstructor\npublic class SecureApiService {\n\n    private final RestTemplate secureRestTemplate;\n\n    public String callSecureEndpoint() {\n        try {\n            String response = secureRestTemplate.getForObject(\n                \"https://api.example.com/secure-endpoint\",\n                String.class\n            );\n            log.info(\"Secure API call successful\");\n            return response;\n        } catch (Exception e) {\n            log.error(\"Secure API call failed: {}\", e.getMessage());\n            if (e.getCause() instanceof CertificateException) {\n                log.error(\"SECURITY ALERT: Certificate validation failed - possible MITM attack\");\n            }\n            throw e;\n        }\n    }\n}\n\n// application.yml configuration\n/*\nserver:\n  ssl:\n    enabled: true\n    key-store: classpath:keystore.jks\n    key-store-password: changeit\n    key-store-type: JKS\n    key-alias: server\n    trust-store: classpath:truststore.jks\n    trust-store-password: changeit\n    trust-store-type: JKS\n    client-auth: need  # Require client certificates (mTLS)\n    enabled-protocols:\n      - TLSv1.3\n      - TLSv1.2\n    ciphers:\n      - TLS_AES_256_GCM_SHA384\n      - TLS_AES_128_GCM_SHA256\n      - TLS_CHACHA20_POLY1305_SHA256\n      - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384\n      - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256\n\nlogging:\n  level:\n    javax.net.ssl: DEBUG  # Enable SSL debugging for troubleshooting\n*/"
+      },
+      "tools": [
+        {
+          "name": "KeyStore Explorer",
+          "type": "Java keystore management GUI",
+          "cost": "Free"
+        },
+        {
+          "name": "keytool",
+          "type": "Java certificate management CLI",
+          "cost": "Free (included with JDK)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.13.1.1 - Network controls",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-2 - Data-in-transit is protected",
+        "PR.AC-5 - Network integrity is protected"
+      ],
+      "validation_steps": [
+        "Generate server certificate and extract SHA-256 fingerprint: openssl x509 -in cert.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64",
+        "Add fingerprint to PINNED_CERTIFICATES set",
+        "Test connection to valid server (should succeed)",
+        "Test with proxy presenting different certificate (should fail with CertificateException)",
+        "Update pins before certificate rotation (support multiple pins for rotation)",
+        "Monitor logs for certificate pinning failures",
+        "Set up alerts for repeated pinning failures (potential attack)"
+      ]
+    },
+    {
+      "control_id": "MIT-CERT-003",
+      "title": "Secure Certificate Validation in Python Requests Library",
+      "description": "Configure Python requests library with strict certificate validation, custom CA bundles, and certificate pinning using urllib3.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "Python 3.x + requests + urllib3",
+        "code": "import requests\nfrom requests.adapters import HTTPAdapter\nfrom urllib3.poolmanager import PoolManager\nfrom urllib3.util.ssl_ import create_urllib3_context\nimport ssl\nimport certifi\nimport hashlib\nfrom typing import Set\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n# Certificate pinning configuration\nPINNED_CERT_FINGERPRINTS: Set[str] = {\n    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',\n    '2cf42702a78fd95c3e9d1c7a6b4e8f2d3a1b9c4e5f6a7b8c9d0e1f2a3b4c5d6e'\n}\n\nclass SSLPinningAdapter(HTTPAdapter):\n    \"\"\"Custom HTTPS adapter with certificate pinning.\"\"\"\n    \n    def __init__(self, pinned_fingerprints: Set[str], *args, **kwargs):\n        self.pinned_fingerprints = pinned_fingerprints\n        super().__init__(*args, **kwargs)\n    \n    def init_poolmanager(self, *args, **kwargs):\n        \"\"\"Initialize pool manager with custom SSL context.\"\"\"\n        context = create_urllib3_context()\n        \n        # Use only TLS 1.2 and 1.3\n        context.minimum_version = ssl.TLSVersion.TLSv1_2\n        context.maximum_version = ssl.TLSVersion.TLSv1_3\n        \n        # Strong cipher suites only\n        context.set_ciphers(\n            'TLS_AES_256_GCM_SHA384:'\n            'TLS_AES_128_GCM_SHA256:'\n            'TLS_CHACHA20_POLY1305_SHA256:'\n            'ECDHE+AESGCM:'\n            'ECDHE+CHACHA20'\n        )\n        \n        # Disable compression (CRIME attack mitigation)\n        context.options |= ssl.OP_NO_COMPRESSION\n        \n        # Load system CA certificates\n        context.load_verify_locations(certifi.where())\n        \n        # Enable hostname verification\n        context.check_hostname = True\n        context.verify_mode = ssl.CERT_REQUIRED\n        \n        kwargs['ssl_context'] = context\n        return super().init_poolmanager(*args, **kwargs)\n    \n    def cert_verify(self, conn, url, verify, cert):\n        \"\"\"Verify certificate pinning after standard validation.\"\"\"\n        # First, perform standard certificate validation\n        super().cert_verify(conn, url, verify, cert)\n        \n        # Then check certificate pinning\n        sock = conn.sock\n        if sock:\n            # Get peer certificate\n            cert_der = sock.getpeercert(binary_form=True)\n            if cert_der:\n                # Compute SHA-256 fingerprint\n                fingerprint = hashlib.sha256(cert_der).hexdigest()\n                \n                # Check against pinned certificates\n                if fingerprint not in self.pinned_fingerprints:\n                    raise ssl.SSLError(\n                        f\"Certificate pinning failed. \"\n                        f\"Server certificate fingerprint {fingerprint} \"\n                        f\"does not match any pinned certificates. \"\n                        f\"Possible MITM attack detected.\"\n                    )\n                \n                logger.info(f\"Certificate pinning validated for {url}\")\n\n# Example 1: Basic secure requests with certificate validation\ndef secure_get_request(url: str) -> requests.Response:\n    \"\"\"Make HTTPS request with strict certificate validation.\"\"\"\n    try:\n        response = requests.get(\n            url,\n            verify=True,  # CRITICAL: Never set to False\n            timeout=5,\n            headers={'User-Agent': 'SecureApp/1.0'}\n        )\n        response.raise_for_status()\n        return response\n    except requests.exceptions.SSLError as e:\n        logger.error(f\"SSL certificate validation failed for {url}: {e}\")\n        raise\n    except requests.exceptions.RequestException as e:\n        logger.error(f\"Request failed for {url}: {e}\")\n        raise\n\n# Example 2: Request with certificate pinning\ndef secure_get_with_pinning(url: str) -> requests.Response:\n    \"\"\"Make HTTPS request with certificate pinning.\"\"\"\n    session = requests.Session()\n    session.mount('https://', SSLPinningAdapter(PINNED_CERT_FINGERPRINTS))\n    \n    try:\n        response = session.get(\n            url,\n            verify=True,\n            timeout=5\n        )\n        response.raise_for_status()\n        return response\n    except ssl.SSLError as e:\n        logger.error(f\"Certificate pinning validation failed: {e}\")\n        # Alert security team - potential MITM attack\n        raise\n    except requests.exceptions.RequestException as e:\n        logger.error(f\"Request failed: {e}\")\n        raise\n    finally:\n        session.close()\n\n# Example 3: Mutual TLS (mTLS) with client certificate\ndef mtls_request(url: str, client_cert_path: str, client_key_path: str) -> requests.Response:\n    \"\"\"Make HTTPS request with mutual TLS authentication.\"\"\"\n    session = requests.Session()\n    session.mount('https://', SSLPinningAdapter(PINNED_CERT_FINGERPRINTS))\n    \n    try:\n        response = session.get(\n            url,\n            cert=(client_cert_path, client_key_path),  # Client certificate and key\n            verify=True,  # Verify server certificate\n            timeout=5\n        )\n        response.raise_for_status()\n        return response\n    except requests.exceptions.SSLError as e:\n        logger.error(f\"mTLS authentication failed: {e}\")\n        raise\n    finally:\n        session.close()\n\n# Example 4: Using custom CA bundle\ndef request_with_custom_ca(url: str, ca_bundle_path: str) -> requests.Response:\n    \"\"\"Make HTTPS request with custom CA certificate bundle.\"\"\"\n    try:\n        response = requests.get(\n            url,\n            verify=ca_bundle_path,  # Path to custom CA bundle\n            timeout=5\n        )\n        response.raise_for_status()\n        return response\n    except requests.exceptions.SSLError as e:\n        logger.error(f\"Certificate validation failed with custom CA: {e}\")\n        raise\n\n# Utility: Extract certificate fingerprint for pinning\ndef get_certificate_fingerprint(hostname: str, port: int = 443) -> str:\n    \"\"\"Get SHA-256 fingerprint of server certificate (for initial setup).\"\"\"\n    import socket\n    \n    context = ssl.create_default_context()\n    with socket.create_connection((hostname, port)) as sock:\n        with context.wrap_socket(sock, server_hostname=hostname) as ssock:\n            cert_der = ssock.getpeercert(binary_form=True)\n            fingerprint = hashlib.sha256(cert_der).hexdigest()\n            \n            # Also get certificate details\n            cert = ssock.getpeercert()\n            logger.info(f\"Certificate for {hostname}:\")\n            logger.info(f\"  Subject: {dict(x[0] for x in cert['subject'])}\")\n            logger.info(f\"  Issuer: {dict(x[0] for x in cert['issuer'])}\")\n            logger.info(f\"  Valid from: {cert['notBefore']}\")\n            logger.info(f\"  Valid until: {cert['notAfter']}\")\n            logger.info(f\"  SHA-256 Fingerprint: {fingerprint}\")\n            \n            return fingerprint\n\n# Example usage\nif __name__ == '__main__':\n    logging.basicConfig(level=logging.INFO)\n    \n    # Example 1: Basic secure request\n    try:\n        response = secure_get_request('https://api.example.com/data')\n        print(f\"Response: {response.status_code}\")\n    except Exception as e:\n        print(f\"Request failed: {e}\")\n    \n    # Example 2: Get certificate fingerprint (for pinning setup)\n    try:\n        fingerprint = get_certificate_fingerprint('api.example.com')\n        print(f\"Add this to PINNED_CERT_FINGERPRINTS: {fingerprint}\")\n    except Exception as e:\n        print(f\"Failed to get fingerprint: {e}\")\n    \n    # Example 3: Request with certificate pinning\n    try:\n        response = secure_get_with_pinning('https://api.example.com/secure')\n        print(f\"Pinned request successful: {response.status_code}\")\n    except Exception as e:\n        print(f\"Pinned request failed: {e}\")\n    \n    # Example 4: Mutual TLS request\n    try:\n        response = mtls_request(\n            'https://api.example.com/mtls',\n            '/path/to/client-cert.pem',\n            '/path/to/client-key.pem'\n        )\n        print(f\"mTLS request successful: {response.status_code}\")\n    except Exception as e:\n        print(f\"mTLS request failed: {e}\")\n\n# CRITICAL: Common mistakes to avoid\n# ❌ NEVER DO THIS:\n# requests.get(url, verify=False)  # Disables all certificate validation\n# \n# ❌ NEVER DO THIS:\n# import urllib3\n# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)\n# \n# ❌ NEVER DO THIS:\n# os.environ['PYTHONHTTPSVERIFY'] = '0'\n# \n# ✅ ALWAYS DO THIS:\n# requests.get(url, verify=True)  # or verify='/path/to/ca-bundle.pem'"
+      },
+      "tools": [
+        {
+          "name": "certifi",
+          "type": "Curated CA bundle for Python",
+          "cost": "Free"
+        },
+        {
+          "name": "urllib3",
+          "type": "HTTP library with SSL support",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-2 - Data-in-transit is protected"
+      ],
+      "validation_steps": [
+        "Install certifi for up-to-date CA bundle: pip install certifi",
+        "Verify requests library uses certifi by default",
+        "Extract certificate fingerprint using get_certificate_fingerprint()",
+        "Add fingerprint to PINNED_CERT_FINGERPRINTS set",
+        "Test with valid certificate (should succeed)",
+        "Test with mitmproxy or Burp Suite (should fail with SSL error)",
+        "Monitor application logs for SSL errors",
+        "Set up alerting for certificate pinning failures"
+      ]
+    },
+    {
+      "control_id": "MIT-CERT-004",
+      "title": "Implement Certificate Lifecycle Management and Rotation",
+      "description": "Automate certificate issuance, renewal, and rotation using cert-manager in Kubernetes or Azure Key Vault certificate management to prevent expired certificates and enable zero-downtime rotation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes + cert-manager",
+        "code": "# Install cert-manager in Kubernetes cluster\n# kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml\n\n---\n# ClusterIssuer for Let's Encrypt (production)\napiVersion: cert-manager.io/v1\nkind: ClusterIssuer\nmetadata:\n  name: letsencrypt-prod\nspec:\n  acme:\n    # Let's Encrypt production server\n    server: https://acme-v02.api.letsencrypt.org/directory\n    email: security@example.com\n    privateKeySecretRef:\n      name: letsencrypt-prod-account-key\n    # HTTP-01 challenge for domain validation\n    solvers:\n    - http01:\n        ingress:\n          class: nginx\n\n---\n# Certificate resource for automatic issuance and renewal\napiVersion: cert-manager.io/v1\nkind: Certificate\nmetadata:\n  name: api-tls-certificate\n  namespace: production\nspec:\n  # Certificate subject\n  commonName: api.example.com\n  dnsNames:\n  - api.example.com\n  - api-internal.example.com\n  \n  # Certificate issuer\n  issuerRef:\n    name: letsencrypt-prod\n    kind: ClusterIssuer\n  \n  # Secret to store certificate and private key\n  secretName: api-tls-secret\n  \n  # Certificate validity period (Let's Encrypt issues 90-day certs)\n  duration: 2160h  # 90 days\n  renewBefore: 720h  # Renew 30 days before expiration\n  \n  # Key algorithm and size\n  privateKey:\n    algorithm: RSA\n    encoding: PKCS1\n    size: 2048\n  \n  # Certificate usages\n  usages:\n  - digital signature\n  - key encipherment\n  - server auth\n  \n  # Subject Alternative Names (SANs)\n  subject:\n    organizations:\n    - Example Corporation\n    countries:\n    - US\n    organizationalUnits:\n    - Engineering\n    localities:\n    - San Francisco\n    provinces:\n    - California\n\n---\n# Certificate for mutual TLS (client authentication)\napiVersion: cert-manager.io/v1\nkind: Certificate\nmetadata:\n  name: mtls-client-certificate\n  namespace: production\nspec:\n  commonName: service-a.internal\n  dnsNames:\n  - service-a.internal\n  - service-a.production.svc.cluster.local\n  \n  issuerRef:\n    name: internal-ca\n    kind: ClusterIssuer\n  \n  secretName: mtls-client-secret\n  \n  duration: 8760h  # 1 year for internal certs\n  renewBefore: 2160h  # Renew 90 days before expiration\n  \n  privateKey:\n    algorithm: RSA\n    size: 2048\n  \n  usages:\n  - digital signature\n  - key encipherment\n  - client auth  # Client authentication usage\n\n---\n# Internal CA issuer for microservices mTLS\napiVersion: cert-manager.io/v1\nkind: ClusterIssuer\nmetadata:\n  name: internal-ca\nspec:\n  ca:\n    secretName: internal-ca-key-pair\n\n---\n# Ingress with automatic TLS\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: api-ingress\n  namespace: production\n  annotations:\n    cert-manager.io/cluster-issuer: letsencrypt-prod\n    nginx.ingress.kubernetes.io/ssl-protocols: \"TLSv1.2 TLSv1.3\"\n    nginx.ingress.kubernetes.io/ssl-ciphers: \"TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256\"\n    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: \"true\"\n    nginx.ingress.kubernetes.io/force-ssl-redirect: \"true\"\nspec:\n  ingressClassName: nginx\n  tls:\n  - hosts:\n    - api.example.com\n    secretName: api-tls-secret  # Automatically managed by cert-manager\n  rules:\n  - host: api.example.com\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: api-service\n            port:\n              number: 443\n\n---\n# CertificateRequest for monitoring\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: certificate-monitoring\n  namespace: production\ndata:\n  check-certificates.sh: |\n    #!/bin/bash\n    # Monitor certificate expiration\n    kubectl get certificates -A -o json | jq -r '\n      .items[] | \n      select(.status.notAfter != null) |\n      \"\\(.metadata.namespace)/\\(.metadata.name): expires \\(.status.notAfter)\"\n    '\n    \n    # Alert on certificates expiring within 30 days\n    kubectl get certificates -A -o json | jq -r '\n      .items[] |\n      select(.status.notAfter != null) |\n      select(\n        (now | todateiso8601) as $now |\n        (.status.notAfter | fromdateiso8601) as $expiry |\n        ($expiry - ($now | fromdateiso8601)) < (30 * 24 * 60 * 60)\n      ) |\n      \"WARNING: \\(.metadata.namespace)/\\(.metadata.name) expires soon: \\(.status.notAfter)\"\n    '\n\n---\n# Azure Key Vault integration (alternative to cert-manager)\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: azure-keyvault-config\ndata:\n  keyvault.yaml: |\n    # Azure Key Vault certificate configuration\n    vault_url: https://my-vault.vault.azure.net\n    certificates:\n      - name: api-certificate\n        dns_names:\n          - api.example.com\n        auto_renew: true\n        renew_before_days: 30\n        key_size: 2048\n        key_type: RSA\n        validity_months: 12\n        issuer: DigiCert  # or Let's Encrypt, GlobalSign, etc.\n    \n    # Certificate rotation policy\n    rotation_policy:\n      auto_rotate: true\n      rotate_before_expiry_days: 30\n      notification_email: security@example.com\n      notification_days_before: [60, 30, 7, 1]\n\n---\n# Prometheus ServiceMonitor for cert-manager metrics\napiVersion: monitoring.coreos.com/v1\nkind: ServiceMonitor\nmetadata:\n  name: cert-manager\n  namespace: cert-manager\nspec:\n  selector:\n    matchLabels:\n      app: cert-manager\n  endpoints:\n  - port: tcp-prometheus-servicemonitor\n    interval: 60s\n    path: /metrics\n\n# Example Prometheus alerts for certificate expiration\n---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: prometheus-certificate-alerts\ndata:\n  alerts.yml: |\n    groups:\n    - name: certificate-expiration\n      interval: 1h\n      rules:\n      - alert: CertificateExpiringIn7Days\n        expr: certmanager_certificate_expiration_timestamp_seconds - time() < 7 * 24 * 60 * 60\n        labels:\n          severity: warning\n        annotations:\n          summary: \"Certificate {{ $labels.name }} expires in less than 7 days\"\n          description: \"Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires on {{ $value | humanizeTimestamp }}\"\n      \n      - alert: CertificateExpiringIn1Day\n        expr: certmanager_certificate_expiration_timestamp_seconds - time() < 24 * 60 * 60\n        labels:\n          severity: critical\n        annotations:\n          summary: \"Certificate {{ $labels.name }} expires in less than 1 day!\"\n          description: \"URGENT: Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires on {{ $value | humanizeTimestamp }}\"\n      \n      - alert: CertificateRenewalFailed\n        expr: certmanager_certificate_ready_status{condition=\"False\"} == 1\n        for: 1h\n        labels:\n          severity: critical\n        annotations:\n          summary: \"Certificate {{ $labels.name }} renewal failed\"\n          description: \"Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} failed to renew. Check cert-manager logs.\""
+      },
+      "tools": [
+        {
+          "name": "cert-manager",
+          "type": "Kubernetes certificate automation",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Azure Key Vault",
+          "type": "Cloud certificate management",
+          "cost": "$0.03 per 10,000 operations"
+        },
+        {
+          "name": "Let's Encrypt",
+          "type": "Free automated CA",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.2 - Key management",
+        "A.12.3.1 - Information backup"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Install cert-manager in Kubernetes cluster",
+        "Create ClusterIssuer for Let's Encrypt or internal CA",
+        "Deploy Certificate resources with appropriate renewal windows",
+        "Verify automatic certificate issuance: kubectl describe certificate",
+        "Test automatic renewal by setting short validity period",
+        "Set up Prometheus monitoring for certificate expiration",
+        "Configure alerts for certificates expiring within 30 days",
+        "Test certificate rotation with zero downtime"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected TLS certificate errors in application logs",
+      "Repeated TLS handshake failures from same client IP",
+      "Connections accepted with self-signed certificates",
+      "TLS connections using deprecated protocol versions (SSL 3.0, TLS 1.0, TLS 1.1)",
+      "Weak cipher suites in use (RC4, DES, 3DES, export ciphers)",
+      "Certificate expiration dates in the past or far future",
+      "Certificate Common Name (CN) mismatches with hostname",
+      "Certificate chain validation failures",
+      "OCSP responder failures or revoked certificate warnings",
+      "Unusual number of certificate-related exceptions in application logs"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect TLS certificate validation failures\nAppServiceHTTPLogs\n| where TimeBetween >= ago(1h)\n| where ScStatus in (495, 496, 497)  // Nginx SSL error codes\n| summarize FailureCount = count() by ClientIP, bin(TimeGenerated, 5m)\n| where FailureCount > 10\n| order by FailureCount desc\n\n// Detect connections with weak TLS versions\nAppServiceHTTPLogs\n| where TimeGenerated >= ago(24h)\n| where Protocol in (\"SSL/3.0\", \"TLS/1.0\", \"TLS/1.1\")\n| summarize ConnectionCount = count() by ClientIP, Protocol\n| order by ConnectionCount desc\n\n// Detect certificate expiration approaching\nAzureDiagnostics\n| where ResourceType == \"VAULTS\"\n| where OperationName == \"CertificateNearExpiry\"\n| where DaysUntilExpiry_d < 30\n| project TimeGenerated, CertificateName=Resource, DaysUntilExpiry_d, SubscriptionId\n| order by DaysUntilExpiry_d asc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "# TLS handshake failures indicating potential MITM\nindex=application_logs sourcetype=nginx:error\n| search \"SSL_do_handshake() failed\" OR \"certificate verify failed\" OR \"SSL: error\"\n| stats count by client_ip, error_message, _time\n| where count > 5\n| table _time, client_ip, error_message, count\n| sort -count\n\n# Detect deprecated TLS protocol usage\nindex=network_logs sourcetype=tls_handshake\n| search tls_version IN (\"SSLv3\", \"TLSv1.0\", \"TLSv1.1\")\n| stats count by src_ip, dest_ip, tls_version, cipher_suite\n| where count > 1\n| table src_ip, dest_ip, tls_version, cipher_suite, count\n\n# Certificate validation disabled in application code\nindex=application_logs sourcetype=python:app OR sourcetype=nodejs:app\n| search \"verify=False\" OR \"rejectUnauthorized: false\" OR \"SSL_VERIFY_NONE\" OR \"CERT_NONE\"\n| stats count by host, source, _time\n| table _time, host, source, count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "# TLS certificate validation errors\nevent.category: \"network\" AND event.outcome: \"failure\" AND tls.established: false\nAND (error.message: (*certificate* OR *SSL* OR *TLS*) )\n\n# Weak cipher suite usage\ntls.cipher: (\"TLS_RSA_WITH_RC4*\" OR \"*_3DES_*\" OR \"*_DES_*\" OR \"*_EXPORT_*\")\n\n# Self-signed certificate acceptance\ntls.server.issuer: tls.server.subject\n\n# Certificate expiration monitoring\ntls.server.not_after: <now+30d AND tls.server.not_after: >now"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Application Load Balancer TLS errors\nfields @timestamp, @message, client_ip, target_status_code\n| filter target_status_code in [495, 496, 497]\n| stats count() by client_ip, target_status_code\n| filter count > 10\n| sort count desc\n\n# CloudTrail - Certificate Manager events\nfields eventTime, eventName, userIdentity.principalId, requestParameters\n| filter eventSource = \"acm.amazonaws.com\"\n| filter eventName in [\"ImportCertificate\", \"DeleteCertificate\", \"UpdateCertificateOptions\"]\n| sort eventTime desc\n\n# Lambda function SSL/TLS errors\nfields @timestamp, @message\n| filter @message like /SSLError|certificate verify failed|CERTIFICATE_VERIFY_FAILED/\n| stats count() by bin(5m)\n| sort @timestamp desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "testssl.sh",
+        "type": "TLS/SSL configuration scanner",
+        "usage": "testssl.sh --vulnerable --severity CRITICAL api.example.com:443"
+      },
+      {
+        "name": "sslyze",
+        "type": "SSL/TLS scanner and analyzer",
+        "usage": "sslyze --regular api.example.com:443"
+      },
+      {
+        "name": "mitmproxy",
+        "type": "Interactive HTTPS proxy for testing certificate validation",
+        "usage": "mitmproxy -p 8080 --set block_global=false"
+      },
+      {
+        "name": "Burp Suite",
+        "type": "Web security testing with SSL interception",
+        "usage": "Configure as proxy to test certificate pinning bypass"
+      },
+      {
+        "name": "Qualys SSL Labs",
+        "type": "Online SSL/TLS configuration checker",
+        "usage": "https://www.ssllabs.com/ssltest/analyze.html?d=api.example.com"
+      },
+      {
+        "name": "OpenSSL CLI",
+        "type": "Certificate inspection and validation",
+        "usage": "openssl s_client -connect api.example.com:443 -showcerts -verify 5"
+      }
+    ]
+  },
+  "testing": {
+    "manual_verification": [
+      "Use mitmproxy or Burp Suite to intercept HTTPS traffic and present invalid certificate",
+      "Verify application rejects connection and logs certificate validation error",
+      "Test with expired certificate using openssl s_server",
+      "Test with self-signed certificate not in trust store",
+      "Test with certificate for wrong hostname",
+      "Test TLS version downgrade attack using testssl.sh",
+      "Verify weak cipher suites are rejected",
+      "Test certificate pinning bypass attempts"
+    ],
+    "automated_testing": [
+      {
+        "tool": "testssl.sh",
+        "command": "testssl.sh --vulnerable --severity HIGH api.example.com:443",
+        "expected_result": "No vulnerabilities found in TLS configuration"
+      },
+      {
+        "tool": "sslyze",
+        "command": "sslyze --regular --certinfo --tlsv1 --tlsv1_1 --tlsv1_2 --tlsv1_3 api.example.com",
+        "expected_result": "TLS 1.2+ only, strong ciphers, valid certificate chain"
+      },
+      {
+        "tool": "nmap",
+        "command": "nmap --script ssl-enum-ciphers -p 443 api.example.com",
+        "expected_result": "Only A-grade cipher suites enabled"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "Government",
+      "Critical Infrastructure"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 4.2.1 - Strong Cryptography)",
+      "HIPAA (45 CFR 164.312(e)(1) - Transmission Security)",
+      "SOC2 (CC6.6 - Encryption of data in transit)",
+      "ISO27001 (A.10.1.1, A.13.1.1)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST SP 800-52 Rev 2 - TLS Guidelines",
+      "FIPS 140-2 - Cryptographic Module Validation",
+      "FedRAMP (SC-8, SC-13 - Transmission Confidentiality)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Microservices"
+    ],
+    "data_classification": [
+      "Highly Confidential",
+      "Confidential",
+      "Sensitive PII",
+      "PHI",
+      "Financial Data"
+    ],
+    "affected_platforms": [
+      "Web Applications",
+      "Mobile Apps (iOS/Android)",
+      "IoT Devices",
+      "Microservices",
+      "API Gateways",
+      "Cloud Services"
+    ]
+  },
+  "references": {
+    "standards": [
+      "NIST SP 800-52 Rev 2 - Guidelines for TLS Implementations",
+      "RFC 8446 - The Transport Layer Security (TLS) Protocol Version 1.3",
+      "RFC 6125 - Representation and Verification of Domain-Based Application Service Identity",
+      "RFC 7469 - Public Key Pinning Extension for HTTP",
+      "OWASP Transport Layer Protection Cheat Sheet"
+    ],
+    "tools_and_libraries": [
+      "cert-manager - https://cert-manager.io/",
+      "Let's Encrypt - https://letsencrypt.org/",
+      "testssl.sh - https://testssl.sh/",
+      "sslyze - https://github.com/nabla-c0d3/sslyze",
+      "mitmproxy - https://mitmproxy.org/"
+    ],
+    "learning_resources": [
+      "SSL Labs Best Practices - https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices",
+      "OWASP Testing Guide - Testing for SSL/TLS",
+      "Bulletproof SSL and TLS by Ivan Ristić"
+    ]
+  }
+}

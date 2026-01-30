@@ -1,0 +1,358 @@
+{
+  "id": "STRIDE-API-ENUM-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2023 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "owasp_api_security": [
+      "API1:2023 - Broken Object Level Authorization",
+      "API3:2023 - Broken Object Property Level Authorization",
+      "API9:2023 - Improper Inventory Management"
+    ],
+    "mitre_attack": [
+      "T1087 - Account Discovery",
+      "T1046 - Network Service Discovery",
+      "T1595.002 - Active Scanning: Vulnerability Scanning"
+    ],
+    "cwe": [
+      "CWE-639 - Authorization Bypass Through User-Controlled Key",
+      "CWE-862 - Missing Authorization",
+      "CWE-200 - Exposure of Sensitive Information to an Unauthorized Actor"
+    ]
+  },
+  "threat": {
+    "title": "API Endpoint Enumeration and Information Disclosure via Sequential Object IDs",
+    "description": "REST APIs that use sequential, predictable object identifiers (integers, incremental IDs) without proper authorization checks allow attackers to enumerate all resources by iterating through ID values. This vulnerability enables mass data harvesting, user enumeration, and exposure of sensitive information through systematic API requests. The attack exploits the combination of predictable IDs and missing object-level authorization controls.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 6.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "REST APIs",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Multi-framework",
+    "dependencies": ["Express.js", "FastAPI", "Spring Boot", "Django REST Framework", "ASP.NET Core"],
+    "related_frameworks": ["GraphQL", "gRPC", "SOAP APIs"]
+  },
+  "attack": {
+    "scenario": "1. Attacker authenticates with valid credentials and receives access to /api/v1/users/1234 (their own profile)\n2. Observes that user ID is a sequential integer in the API endpoint path\n3. Tests access to /api/v1/users/1233 and /api/v1/users/1235 without authorization checks\n4. Discovers API returns full user data (email, phone, address) for any valid user ID\n5. Develops automated script to enumerate all users from /api/v1/users/1 to /api/v1/users/50000\n6. Harvests 50,000 user records containing PII (names, emails, phone numbers, addresses) within 10 minutes\n7. Exports data for spam campaigns, phishing attacks, or sale on dark web marketplaces",
+    "prerequisites": [
+      "API uses sequential or predictable object identifiers (integers, incrementing values)",
+      "Missing or insufficient authorization checks on object-level access",
+      "API returns sensitive information without proper filtering",
+      "No rate limiting or enumeration protection mechanisms implemented"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "GHSA-q28v-664f-q6wj",
+        "description": "User enumeration via API endpoint in Indico - sequential user IDs allowed bulk disclosure of user details",
+        "cvss_score": 5.3,
+        "published_date": "2024-03-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Parler Social Network Data Scrape",
+        "date": "2021-01-10",
+        "impact": "70TB of data including posts, videos, and user information scraped via sequential post IDs",
+        "root_cause": "Sequential post IDs allowed systematic enumeration of all content without authorization",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+      },
+      {
+        "incident": "NASA Globe Application IDOR",
+        "date": "2024-04-04",
+        "impact": "Unauthorized team and organization creation via sequential numerical user IDs (e.g., 123231405)",
+        "root_cause": "Inadequate validation of userId parameters in POST requests combined with enumerable sequential IDs",
+        "source_url": "https://bugcrowd.com/disclosures/d8ed3e0d-923b-49a8-8a46-767d81fcd5c6/"
+      },
+      {
+        "incident": "WordPress REST API User Enumeration",
+        "date": "2024-06-15",
+        "impact": "Information disclosure vulnerability allowing remote enumeration of usernames via REST API",
+        "root_cause": "Publicly exposed /wp-json/wp/v2/users endpoint with sequential user IDs",
+        "source_url": "https://www.fortiguard.com/encyclopedia/ips/48072"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "1695454",
+        "bounty_amount": 2500,
+        "severity": "Medium",
+        "summary": "IDOR in API applications allowing enumeration and disclosure of user data via sequential IDs",
+        "source_url": "https://hackerone.com/reports/1695454"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "Reddit-Subreddit-Logs",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "Access to mod logs from any public or restricted subreddit via IDOR with sequential log IDs",
+        "source_url": "https://github.com/reddelexc/hackerone-reports/blob/master/tops_by_bug_type/TOPIDOR.md"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "PROSAMS-IDOR-2024",
+        "bounty_amount": 3000,
+        "severity": "High",
+        "summary": "IDOR allowing disclosure of Username, Email, PIN, FirstName, LastName, Phone for 1,700+ users via sequential IDs",
+        "source_url": "https://www.redpacketsecurity.com/bugcrowd-bugbounty-disclosure-idor-that-allows-disclosing-username-email-pin-firstname-lastname-uei-firmname-address-phonenumbers-etc-of-prosams-application-users/"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "API1:2023 Broken Object Level Authorization",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-07-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+        "key_finding": "BOLA is the #1 API security risk in 2023, present in ~40% of all API attacks. Sequential IDs combined with missing authorization enable systematic enumeration and mass data exposure."
+      },
+      {
+        "title": "REST Security Cheat Sheet",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-01-15",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
+        "key_finding": "Non-public REST services must perform access control at each API endpoint. Sequential identifiers significantly increase enumeration risk."
+      },
+      {
+        "title": "API Security in 2024: Beyond the Crystal Ball",
+        "authors": ["Dana Epp"],
+        "published_date": "2024-02-01",
+        "source_url": "https://danaepp.com/api-security-in-2024",
+        "key_finding": "API endpoint enumeration remains a fundamental step in assessing API attack surface. Proper inventory and authorization are critical defenses."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Rate Limiting and Enumeration Detection",
+      "description": "Deploy rate limiting at both application and infrastructure layers to detect and block systematic enumeration attempts. Configure progressive rate limits that become stricter as suspicious patterns emerge, and implement CAPTCHA challenges for repeated access patterns.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x with Redis",
+        "code": "const express = require('express');\nconst Redis = require('ioredis');\nconst app = express();\nconst redis = new Redis();\n\n// Advanced rate limiting middleware with enumeration detection\nasync function rateLimitMiddleware(req, res, next) {\n  const clientIp = req.ip;\n  const endpoint = req.route.path;\n  const userId = req.params.userId;\n  \n  // Track requests per IP\n  const ipKey = `ratelimit:ip:${clientIp}`;\n  const ipCount = await redis.incr(ipKey);\n  await redis.expire(ipKey, 60); // 1 minute window\n  \n  // Basic rate limit: 100 requests per minute per IP\n  if (ipCount > 100) {\n    return res.status(429).json({\n      error: 'Rate limit exceeded',\n      retryAfter: 60\n    });\n  }\n  \n  // Enumeration detection: Track unique user IDs accessed\n  const enumKey = `enum:ip:${clientIp}:${endpoint}`;\n  await redis.sadd(enumKey, userId);\n  await redis.expire(enumKey, 300); // 5 minute window\n  const uniqueUsersAccessed = await redis.scard(enumKey);\n  \n  // Alert if accessing more than 20 different user IDs in 5 minutes\n  if (uniqueUsersAccessed > 20) {\n    // Log security event\n    console.warn(`SECURITY: Enumeration detected from ${clientIp} - ${uniqueUsersAccessed} unique users accessed`);\n    \n    // Implement progressive throttling\n    await redis.setex(`block:${clientIp}`, 3600, 'enumeration'); // Block for 1 hour\n    \n    return res.status(403).json({\n      error: 'Suspicious activity detected. Access temporarily restricted.',\n      contact: 'security@example.com'\n    });\n  }\n  \n  // Check if IP is blocked\n  const isBlocked = await redis.get(`block:${clientIp}`);\n  if (isBlocked) {\n    return res.status(403).json({\n      error: 'Access denied due to previous policy violation'\n    });\n  }\n  \n  next();\n}\n\n// Apply to user endpoints\napp.get('/api/v1/users/:userId', rateLimitMiddleware, async (req, res) => {\n  // Authorization check (see MIT-003)\n  const requestingUserId = req.user.id;\n  const targetUserId = parseInt(req.params.userId);\n  \n  if (requestingUserId !== targetUserId && !req.user.isAdmin) {\n    return res.status(403).json({ error: 'Unauthorized' });\n  }\n  \n  // Return user data\n  const user = await getUserById(targetUserId);\n  res.json(user);\n});\n\n// Azure API Management Policy for rate limiting\n/*\n<policies>\n  <inbound>\n    <rate-limit-by-key calls=\"100\" renewal-period=\"60\" counter-key=\"@(context.Request.IpAddress)\" />\n    <quota-by-key calls=\"10000\" renewal-period=\"86400\" counter-key=\"@(context.Subscription.Id)\" />\n  </inbound>\n</policies>\n*/"
+      },
+      "tools": [
+        {
+          "name": "Redis",
+          "type": "In-memory data store for rate limiting",
+          "cost": "$0 (OSS) / Azure Cache for Redis from $0.008/hour"
+        },
+        {
+          "name": "Azure API Management",
+          "type": "API Gateway with built-in rate limiting",
+          "cost": "From $0.135/hour (Developer tier)"
+        },
+        {
+          "name": "express-rate-limit",
+          "type": "Node.js rate limiting middleware",
+          "cost": "$0 (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Deploy rate limiting with 100 req/min per IP baseline",
+        "Configure enumeration detection for 20+ unique resource accesses in 5 min",
+        "Test with enumeration script to verify blocking triggers",
+        "Verify legitimate users can access their own resources without issues",
+        "Monitor rate limit metrics in Application Insights or Azure Monitor"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Replace Sequential IDs with UUIDs or Non-Enumerable Identifiers",
+      "description": "Migrate from sequential integer IDs to UUIDs (Universally Unique Identifiers) or cryptographically random identifiers that cannot be predicted or enumerated. This eliminates the ability for attackers to systematically iterate through all resources.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js with PostgreSQL",
+        "code": "const express = require('express');\nconst { v4: uuidv4 } = require('uuid');\nconst { Pool } = require('pg');\n\nconst app = express();\nconst pool = new Pool();\n\n// Database migration: Add UUID column and populate existing records\n/*\nALTER TABLE users ADD COLUMN uuid UUID DEFAULT gen_random_uuid();\nUPDATE users SET uuid = gen_random_uuid() WHERE uuid IS NULL;\nCREATE UNIQUE INDEX idx_users_uuid ON users(uuid);\n*/\n\n// Create new user with UUID\napp.post('/api/v1/users', async (req, res) => {\n  const userId = uuidv4(); // Generate UUID: e.g., '550e8400-e29b-41d4-a716-446655440000'\n  const { name, email } = req.body;\n  \n  try {\n    const result = await pool.query(\n      'INSERT INTO users (id, name, email) VALUES ($1, $2, $3) RETURNING *',\n      [userId, name, email]\n    );\n    \n    res.status(201).json({\n      id: result.rows[0].id,\n      name: result.rows[0].name,\n      email: result.rows[0].email\n    });\n  } catch (error) {\n    res.status(500).json({ error: 'Failed to create user' });\n  }\n});\n\n// Get user by UUID (non-enumerable)\napp.get('/api/v1/users/:userId', async (req, res) => {\n  const { userId } = req.params;\n  \n  // Validate UUID format to prevent invalid requests\n  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n  if (!uuidRegex.test(userId)) {\n    return res.status(400).json({ error: 'Invalid user ID format' });\n  }\n  \n  try {\n    const result = await pool.query(\n      'SELECT id, name, email FROM users WHERE id = $1',\n      [userId]\n    );\n    \n    if (result.rows.length === 0) {\n      return res.status(404).json({ error: 'User not found' });\n    }\n    \n    // Still enforce authorization (see MIT-003)\n    if (req.user.id !== userId && !req.user.isAdmin) {\n      return res.status(403).json({ error: 'Unauthorized' });\n    }\n    \n    res.json(result.rows[0]);\n  } catch (error) {\n    res.status(500).json({ error: 'Failed to retrieve user' });\n  }\n});\n\n// Alternative: Use hashids for obfuscated sequential IDs\nconst Hashids = require('hashids');\nconst hashids = new Hashids('your-salt-here', 16); // Minimum length 16\n\nfunction encodeId(id) {\n  return hashids.encode(id); // 1 -> 'jR3kB7mN9qP2xY5w'\n}\n\nfunction decodeId(hash) {\n  const decoded = hashids.decode(hash);\n  return decoded.length > 0 ? decoded[0] : null;\n}\n\napp.get('/api/v1/orders/:orderId', async (req, res) => {\n  const decodedId = decodeId(req.params.orderId);\n  \n  if (!decodedId) {\n    return res.status(400).json({ error: 'Invalid order ID' });\n  }\n  \n  // Fetch order using decoded integer ID\n  const order = await getOrderById(decodedId);\n  res.json(order);\n});"
+      },
+      "tools": [
+        {
+          "name": "uuid (npm package)",
+          "type": "UUID generation library",
+          "cost": "$0 (OSS)"
+        },
+        {
+          "name": "hashids (npm package)",
+          "type": "Obfuscated ID generation",
+          "cost": "$0 (OSS)"
+        },
+        {
+          "name": "PostgreSQL gen_random_uuid()",
+          "type": "Database-level UUID generation",
+          "cost": "$0 (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.AC-4 - Access permissions and authorizations are managed"
+      ],
+      "validation_steps": [
+        "Add UUID column to database tables",
+        "Migrate existing records to include UUIDs",
+        "Update API endpoints to accept UUID parameters",
+        "Add UUID format validation to reject invalid IDs",
+        "Test enumeration attempts to verify UUIDs prevent systematic iteration",
+        "Update API documentation with new ID format",
+        "Monitor for 400 errors indicating UUID validation failures"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Object-Level Authorization Checks",
+      "description": "Enforce authorization validation for every API request to ensure users can only access resources they own or have explicit permission to view. Never rely solely on obscurity of IDs; always verify the requesting user has rights to the requested object.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js with JWT Auth",
+        "code": "const express = require('express');\nconst jwt = require('jsonwebtoken');\nconst app = express();\n\n// JWT authentication middleware\nfunction authenticateJWT(req, res, next) {\n  const token = req.headers.authorization?.split(' ')[1];\n  \n  if (!token) {\n    return res.status(401).json({ error: 'Authentication required' });\n  }\n  \n  try {\n    const decoded = jwt.verify(token, process.env.JWT_SECRET);\n    req.user = decoded; // Contains userId, role, etc.\n    next();\n  } catch (error) {\n    return res.status(403).json({ error: 'Invalid or expired token' });\n  }\n}\n\n// Object-level authorization middleware\nfunction authorizeUserAccess(req, res, next) {\n  const requestingUserId = req.user.id;\n  const targetUserId = req.params.userId;\n  const userRole = req.user.role;\n  \n  // Allow access if:\n  // 1. User is accessing their own resource\n  // 2. User has admin or support role\n  if (requestingUserId === targetUserId || ['admin', 'support'].includes(userRole)) {\n    return next();\n  }\n  \n  // Log unauthorized access attempt\n  console.warn(`SECURITY: Unauthorized access attempt by user ${requestingUserId} to user ${targetUserId}`);\n  \n  return res.status(403).json({\n    error: 'Access denied',\n    message: 'You do not have permission to access this resource'\n  });\n}\n\n// Apply both authentication and authorization\napp.get('/api/v1/users/:userId', authenticateJWT, authorizeUserAccess, async (req, res) => {\n  const user = await getUserById(req.params.userId);\n  \n  if (!user) {\n    return res.status(404).json({ error: 'User not found' });\n  }\n  \n  // Filter sensitive fields based on role\n  const filteredUser = filterUserData(user, req.user.role);\n  res.json(filteredUser);\n});\n\n// More complex authorization for resources with ownership\napp.get('/api/v1/orders/:orderId', authenticateJWT, async (req, res) => {\n  const order = await getOrderById(req.params.orderId);\n  \n  if (!order) {\n    return res.status(404).json({ error: 'Order not found' });\n  }\n  \n  // Verify the order belongs to the requesting user\n  if (order.userId !== req.user.id && !req.user.isAdmin) {\n    console.warn(`SECURITY: User ${req.user.id} attempted to access order ${req.params.orderId} belonging to user ${order.userId}`);\n    return res.status(403).json({ error: 'Access denied' });\n  }\n  \n  res.json(order);\n});\n\n// Authorization for related resources (e.g., user's documents)\napp.get('/api/v1/users/:userId/documents/:documentId', authenticateJWT, async (req, res) => {\n  const document = await getDocumentById(req.params.documentId);\n  \n  if (!document) {\n    return res.status(404).json({ error: 'Document not found' });\n  }\n  \n  // Verify document belongs to the user in the URL\n  if (document.userId !== req.params.userId) {\n    return res.status(404).json({ error: 'Document not found' }); // Don't reveal existence\n  }\n  \n  // Verify requesting user can access this user's documents\n  if (req.user.id !== req.params.userId && !req.user.isAdmin) {\n    return res.status(403).json({ error: 'Access denied' });\n  }\n  \n  res.json(document);\n});\n\nfunction filterUserData(user, role) {\n  // Admins see all fields\n  if (role === 'admin') {\n    return user;\n  }\n  \n  // Regular users see limited fields\n  return {\n    id: user.id,\n    name: user.name,\n    email: user.email,\n    createdAt: user.createdAt\n    // Exclude: phone, address, SSN, payment methods, etc.\n  };\n}"
+      },
+      "tools": [
+        {
+          "name": "CASL (Authorization library)",
+          "type": "Isomorphic authorization for Node.js",
+          "cost": "$0 (OSS)"
+        },
+        {
+          "name": "Azure AD B2C",
+          "type": "Identity and access management",
+          "cost": "First 50,000 MAU free, then $0.00325 per MAU"
+        },
+        {
+          "name": "Open Policy Agent (OPA)",
+          "type": "Policy-based authorization",
+          "cost": "$0 (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.2.3 - Management of privileged access rights"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions and authorizations are managed",
+        "PR.PT-3 - The principle of least functionality is incorporated"
+      ],
+      "validation_steps": [
+        "Add authorization checks to all API endpoints returning user data",
+        "Verify users cannot access other users' resources via direct ID manipulation",
+        "Test with different user roles (regular, admin, support)",
+        "Log all authorization failures for security monitoring",
+        "Implement automated tests for authorization logic",
+        "Review authorization logic during code reviews",
+        "Monitor for spikes in 403 Forbidden responses indicating attack attempts"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "High volume of 403 Forbidden responses from a single IP address",
+      "Sequential or incremental patterns in requested resource IDs from the same source",
+      "Rapid requests to the same endpoint with varying ID parameters",
+      "High ratio of 404 Not Found responses indicating ID probing",
+      "Access to resources outside of normal user behavior patterns",
+      "Single user/IP accessing resources belonging to multiple different users"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect API enumeration patterns\nApiManagementGatewayLogs\n| where TimeGenerated > ago(5m)\n| where Url contains \"/api/v1/users/\" or Url contains \"/api/v1/orders/\"\n| extend ResourceId = extract(@\"/users/(\\\\d+)\", 1, Url)\n| extend ClientIP = tostring(parse_json(RequestHeaders)[\"X-Forwarded-For\"])\n| summarize \n    RequestCount = count(),\n    UniqueResourceIds = dcount(ResourceId),\n    ForbiddenCount = countif(ResponseCode == 403),\n    NotFoundCount = countif(ResponseCode == 404)\n    by ClientIP, bin(TimeGenerated, 1m)\n| where UniqueResourceIds > 20 or (ForbiddenCount > 10) or (RequestCount > 100)\n| project TimeGenerated, ClientIP, RequestCount, UniqueResourceIds, ForbiddenCount, NotFoundCount\n| order by UniqueResourceIds desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect enumeration attempts\nhttp.response.status_code:(403 OR 404) AND url.path:/\\\\/api\\\\/v[0-9]+\\\\/(users|orders|documents)\\\\/[0-9]+/\n| stats count() as total_requests, \n        cardinality(url.path) as unique_resources,\n        sum(case(http.response.status_code == 403, 1, 0)) as forbidden_count\n        by source.ip, bucket(span=1m)\n| where unique_resources > 20 OR forbidden_count > 10 OR total_requests > 100"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=api_logs sourcetype=rest_api\n| rex field=url \"/api/v\\\\d+/(?<resource_type>users|orders|documents)/(?<resource_id>\\\\d+)\"\n| where isnotnull(resource_id)\n| stats count as total_requests,\n        dc(resource_id) as unique_resources,\n        count(where(status==403)) as forbidden_count,\n        count(where(status==404)) as not_found_count\n        by client_ip, resource_type\n| where unique_resources > 20 OR forbidden_count > 10 OR total_requests > 100\n| sort - unique_resources\n| addinfo\n| table _time, client_ip, resource_type, total_requests, unique_resources, forbidden_count, not_found_count"
+      },
+      {
+        "siem": "Azure Application Insights (KQL)",
+        "query": "requests\n| where timestamp > ago(5m)\n| where url matches regex @\"/api/v\\\\d+/(users|orders|documents)/(\\\\d+|[a-f0-9-]{36})\"\n| extend resource_type = extract(@\"/api/v\\\\d+/(\\\\w+)/\", 1, url)\n| extend resource_id = extract(@\"/(\\\\d+|[a-f0-9-]{36})$\", 1, url)\n| summarize \n    total_requests = count(),\n    unique_ids = dcount(resource_id),\n    forbidden = countif(resultCode == 403),\n    not_found = countif(resultCode == 404),\n    avg_duration = avg(duration)\n    by client_IP, resource_type, bin(timestamp, 1m)\n| where unique_ids > 20 or forbidden > 10\n| project timestamp, client_IP, resource_type, total_requests, unique_ids, forbidden, not_found, avg_duration\n| order by unique_ids desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Azure API Management Analytics",
+        "type": "Built-in API monitoring and analytics",
+        "usage": "Monitor request patterns, response codes, and anomalous behavior in real-time"
+      },
+      {
+        "name": "Burp Suite Intruder",
+        "type": "Testing tool for enumeration detection",
+        "usage": "Simulate enumeration attacks to test rate limiting and authorization controls"
+      },
+      {
+        "name": "Azure Sentinel",
+        "type": "SIEM for security event correlation",
+        "usage": "Create automated playbooks to block IPs exhibiting enumeration patterns"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Social Media",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.8 - Improper Access Control)",
+      "HIPAA (164.312(a)(1) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.9.4.1 - Information Access Restriction)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (AC-3 - Access Enforcement)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential",
+      "Restricted"
+    ]
+  }
+}

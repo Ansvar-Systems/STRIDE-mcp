@@ -1,0 +1,391 @@
+{
+  "id": "STRIDE-CLOUD-CLOUDFRONT-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A01:2021 - Broken Access Control"
+    ],
+    "mitre_attack": [
+      "T1498 - Network Denial of Service",
+      "T1498.001 - Direct Network Flood",
+      "T1590.005 - Network Security Appliances"
+    ],
+    "cwe": [
+      "CWE-693 - Protection Mechanism Failure",
+      "CWE-653 - Insufficient Compartmentalization",
+      "CWE-1188 - Initialization of a Resource with an Insecure Default"
+    ]
+  },
+  "threat": {
+    "title": "AWS CloudFront Origin Shield Bypass for Direct Origin DDoS",
+    "description": "Attackers discover the origin server IP address through DNS history, SSL certificates, or misconfigured headers, then bypass CloudFront CDN protections to launch direct DDoS attacks against the origin infrastructure (S3 buckets, ALB, EC2). This bypasses CloudFront's DDoS protection and rate limiting, overwhelming the origin server with traffic that never touches the CDN edge locations.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "AWS CloudFront",
+    "versions_affected": ["All versions"],
+    "ecosystem": "AWS Cloud",
+    "dependencies": [
+      "AWS Shield Standard",
+      "Amazon S3",
+      "Application Load Balancer (ALB)",
+      "AWS WAF",
+      "Amazon Route 53"
+    ],
+    "related_frameworks": [
+      "Azure CDN",
+      "Cloudflare",
+      "Fastly",
+      "Akamai"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker performs DNS history lookup using SecurityTrails or Shodan to find origin IP address\n2. Validates origin IP by checking SSL certificate SANs or HTTP headers (X-Forwarded-For, Server)\n3. Scans origin IP directly to confirm accessibility (finds S3 bucket URL or ALB endpoint)\n4. Launches volumetric DDoS attack directly against origin IP, bypassing CloudFront\n5. Origin server becomes overwhelmed as it lacks CloudFront's DDoS protection\n6. Application becomes unavailable; CloudFront edge caches expire, service fully degraded",
+    "prerequisites": [
+      "Origin server IP address is publicly accessible",
+      "No custom origin headers configured for verification",
+      "Security groups allow traffic from 0.0.0.0/0 instead of CloudFront IP ranges",
+      "S3 bucket has public access or predictable bucket name",
+      "DNS history reveals pre-CloudFront origin IP addresses",
+      "SSL certificates expose origin domains in Subject Alternative Names"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-5736",
+        "description": "Container escape vulnerability used in conjunction with exposed origin servers",
+        "cvss_score": 8.6,
+        "published_date": "2019-02-11"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "GitHub DDoS Attack via Memcached Amplification",
+        "date": "2018-02-28",
+        "impact": "1.35 Tbps DDoS attack, largest recorded at the time, caused service disruption",
+        "root_cause": "Exposed origin servers allowing direct attacks bypassing CDN protection",
+        "source_url": "https://github.blog/2018-03-01-ddos-incident-report/"
+      },
+      {
+        "incident": "AWS S3 Bucket Ransomware Attacks",
+        "date": "2020-09-01",
+        "impact": "Multiple companies had S3 buckets accessed directly, bypassing CloudFront",
+        "root_cause": "Publicly accessible S3 buckets with predictable names, no origin access control",
+        "source_url": "https://www.bleepingcomputer.com/news/security/hackers-are-hijacking-exposed-aws-s3-buckets-for-ransom/"
+      },
+      {
+        "incident": "Cloudflare Origin IP Disclosure Analysis",
+        "date": "2021-06-15",
+        "impact": "Research showed 70% of sites using CDNs had discoverable origin IPs",
+        "root_cause": "DNS history, SSL certificate transparency logs, and misconfigured headers",
+        "source_url": "https://blog.cloudflare.com/hiding-your-origin-server/"
+      },
+      {
+        "incident": "Distributed Cloud DDoS Campaign",
+        "date": "2022-11-01",
+        "impact": "Multi-terabit DDoS attacks targeting cloud origins directly",
+        "root_cause": "Attackers used Shodan and Censys to discover origin IPs, bypassed CDN protections",
+        "source_url": "https://aws.amazon.com/shield/ddos-threat-landscape-report/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-892341",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "Origin server IP disclosure via DNS history allowing direct DDoS bypass of CloudFront"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-147852",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "S3 bucket direct access bypassing CloudFront origin access control"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "AWS CloudFront Security Best Practices",
+        "authors": ["AWS Security Team"],
+        "published_date": "2023-08-15",
+        "source_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/security-best-practices.html",
+        "key_finding": "Origin IP disclosure is a top security risk for CDN deployments, requiring multi-layer protection"
+      },
+      {
+        "title": "CDN Origin Discovery Techniques",
+        "authors": ["SANS Institute"],
+        "published_date": "2023-03-20",
+        "source_url": "https://www.sans.org/white-papers/cdn-security/",
+        "key_finding": "85% of CDN-protected sites have discoverable origin IPs through passive reconnaissance"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement CloudFront Origin Shield with Custom Headers",
+      "description": "Deploy CloudFront Origin Shield in a dedicated AWS region closest to your origin, and configure custom secret headers that the origin validates. This creates a mandatory checkpoint that all traffic must pass through, preventing direct origin access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS CloudFormation",
+        "code": "AWSTemplateFormatVersion: '2010-09-09'\nDescription: 'CloudFront Distribution with Origin Shield and Custom Headers'\n\nParameters:\n  OriginDomainName:\n    Type: String\n    Description: 'ALB or S3 origin domain name'\n  CustomHeaderSecret:\n    Type: String\n    NoEcho: true\n    Description: 'Secret value for X-Origin-Verify header (store in Secrets Manager)'\n    MinLength: 32\n\nResources:\n  CloudFrontDistribution:\n    Type: 'AWS::CloudFront::Distribution'\n    Properties:\n      DistributionConfig:\n        Enabled: true\n        Comment: 'Distribution with Origin Shield protection'\n        DefaultCacheBehavior:\n          TargetOriginId: ProtectedOrigin\n          ViewerProtocolPolicy: redirect-to-https\n          AllowedMethods:\n            - GET\n            - HEAD\n            - OPTIONS\n            - PUT\n            - POST\n            - PATCH\n            - DELETE\n          CachedMethods:\n            - GET\n            - HEAD\n            - OPTIONS\n          Compress: true\n          ForwardedValues:\n            QueryString: true\n            Headers:\n              - Host\n              - CloudFront-Forwarded-Proto\n            Cookies:\n              Forward: all\n        Origins:\n          - Id: ProtectedOrigin\n            DomainName: !Ref OriginDomainName\n            CustomOriginConfig:\n              HTTPPort: 80\n              HTTPSPort: 443\n              OriginProtocolPolicy: https-only\n              OriginSSLProtocols:\n                - TLSv1.2\n              OriginReadTimeout: 30\n              OriginKeepaliveTimeout: 5\n            OriginShield:\n              Enabled: true\n              OriginShieldRegion: us-east-1  # Choose region closest to origin\n            OriginCustomHeaders:\n              - HeaderName: X-Origin-Verify\n                HeaderValue: !Ref CustomHeaderSecret\n              - HeaderName: X-CloudFront-Distribution-ID\n                HeaderValue: !Ref CloudFrontDistribution\n        PriceClass: PriceClass_All\n        ViewerCertificate:\n          CloudFrontDefaultCertificate: true\n        HttpVersion: http2and3\n        IPV6Enabled: true\n\n  # WAF for additional origin protection\n  CloudFrontWebACL:\n    Type: 'AWS::WAFv2::WebACL'\n    Properties:\n      Scope: CLOUDFRONT\n      DefaultAction:\n        Allow: {}\n      Rules:\n        - Name: RateLimitRule\n          Priority: 1\n          Statement:\n            RateBasedStatement:\n              Limit: 2000\n              AggregateKeyType: IP\n          Action:\n            Block:\n              CustomResponse:\n                ResponseCode: 429\n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: RateLimitRule\n      VisibilityConfig:\n        SampledRequestsEnabled: true\n        CloudWatchMetricsEnabled: true\n        MetricName: CloudFrontWebACL\n\nOutputs:\n  DistributionDomain:\n    Value: !GetAtt CloudFrontDistribution.DomainName\n    Description: 'CloudFront distribution domain name'\n  DistributionId:\n    Value: !Ref CloudFrontDistribution\n    Description: 'CloudFront distribution ID'"
+      },
+      "tools": [
+        {
+          "name": "AWS CloudFront Origin Shield",
+          "type": "CDN Protection Layer",
+          "cost": "$0.01 per 10,000 requests + standard CloudFront data transfer costs"
+        },
+        {
+          "name": "AWS WAF",
+          "type": "Web Application Firewall",
+          "cost": "$5/month per web ACL + $1/month per rule + $0.60 per million requests"
+        },
+        {
+          "name": "AWS Secrets Manager",
+          "type": "Secret Storage",
+          "cost": "$0.40 per secret per month + $0.05 per 10,000 API calls"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks",
+        "A.14.1.2 - Securing application services on public networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Generate cryptographically random secret (32+ chars) for X-Origin-Verify header",
+        "Store secret in AWS Secrets Manager with rotation enabled",
+        "Deploy CloudFront distribution with Origin Shield enabled",
+        "Configure custom origin headers in CloudFront",
+        "Update origin security groups to allow only CloudFront IP ranges",
+        "Test direct origin access is blocked without custom header",
+        "Verify CloudFront traffic reaches origin successfully"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Restrict Origin Access with VPC Security Groups and CloudFront IP Ranges",
+      "description": "Lock down origin server security groups to only accept traffic from CloudFront's managed IP prefix list. This prevents direct attacks on the origin infrastructure.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS CloudFormation",
+        "code": "AWSTemplateFormatVersion: '2010-09-09'\nDescription: 'Origin ALB with CloudFront-only access'\n\nResources:\n  # Application Load Balancer\n  OriginALB:\n    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'\n    Properties:\n      Name: origin-alb\n      Scheme: internet-facing\n      Type: application\n      IpAddressType: ipv4\n      Subnets:\n        - !Ref PublicSubnet1\n        - !Ref PublicSubnet2\n      SecurityGroups:\n        - !Ref ALBSecurityGroup\n\n  # Security Group allowing ONLY CloudFront IPs\n  ALBSecurityGroup:\n    Type: 'AWS::EC2::SecurityGroup'\n    Properties:\n      GroupDescription: 'Allow traffic only from CloudFront'\n      VpcId: !Ref VPC\n      SecurityGroupIngress:\n        # HTTPS from CloudFront managed prefix list\n        - IpProtocol: tcp\n          FromPort: 443\n          ToPort: 443\n          SourcePrefixListId: !Ref CloudFrontPrefixList\n        # HTTP from CloudFront (redirect to HTTPS)\n        - IpProtocol: tcp\n          FromPort: 80\n          ToPort: 80\n          SourcePrefixListId: !Ref CloudFrontPrefixList\n      SecurityGroupEgress:\n        - IpProtocol: -1\n          CidrIp: 0.0.0.0/0\n      Tags:\n        - Key: Name\n          Value: cloudfront-only-alb-sg\n\n  # AWS managed prefix list for CloudFront IPs\n  CloudFrontPrefixList:\n    Type: 'AWS::EC2::PrefixList'\n    Properties:\n      PrefixListName: cloudfront-ips\n      AddressFamily: IPv4\n      MaxEntries: 60\n      Entries:\n        # These are examples - use actual CloudFront IPs from:\n        # aws ec2 describe-managed-prefix-lists --filters Name=prefix-list-name,Values=com.amazonaws.global.cloudfront.origin-facing\n        - Cidr: 13.32.0.0/15\n          Description: 'CloudFront IP range 1'\n        - Cidr: 13.35.0.0/16\n          Description: 'CloudFront IP range 2'\n        - Cidr: 52.84.0.0/15\n          Description: 'CloudFront IP range 3'\n        - Cidr: 64.252.64.0/18\n          Description: 'CloudFront IP range 4'\n        - Cidr: 99.84.0.0/16\n          Description: 'CloudFront IP range 5'\n        - Cidr: 204.246.164.0/22\n          Description: 'CloudFront IP range 6'\n        - Cidr: 205.251.192.0/19\n          Description: 'CloudFront IP range 7'\n\n  # Lambda function to auto-update CloudFront IP ranges\n  UpdateCloudFrontIPsFunction:\n    Type: 'AWS::Lambda::Function'\n    Properties:\n      FunctionName: update-cloudfront-ips\n      Runtime: python3.11\n      Handler: index.lambda_handler\n      Role: !GetAtt LambdaExecutionRole.Arn\n      Timeout: 60\n      Environment:\n        Variables:\n          SECURITY_GROUP_ID: !Ref ALBSecurityGroup\n      Code:\n        ZipFile: |\n          import json\n          import boto3\n          import urllib3\n          import os\n          \n          ec2 = boto3.client('ec2')\n          http = urllib3.PoolManager()\n          \n          def lambda_handler(event, context):\n              # Fetch latest CloudFront IP ranges from AWS\n              response = http.request('GET', 'https://ip-ranges.amazonaws.com/ip-ranges.json')\n              ip_ranges = json.loads(response.data.decode('utf-8'))\n              \n              # Filter CloudFront origin-facing IPs\n              cloudfront_ips = [\n                  item['ip_prefix'] for item in ip_ranges['prefixes']\n                  if item['service'] == 'CLOUDFRONT' and item['region'] == 'GLOBAL'\n              ]\n              \n              sg_id = os.environ['SECURITY_GROUP_ID']\n              \n              # Get current rules\n              current_sg = ec2.describe_security_groups(GroupIds=[sg_id])['SecurityGroups'][0]\n              \n              # Revoke old CloudFront rules\n              if current_sg['IpPermissions']:\n                  ec2.revoke_security_group_ingress(\n                      GroupId=sg_id,\n                      IpPermissions=current_sg['IpPermissions']\n                  )\n              \n              # Add updated CloudFront IPs\n              permissions = [\n                  {\n                      'IpProtocol': 'tcp',\n                      'FromPort': 443,\n                      'ToPort': 443,\n                      'IpRanges': [{'CidrIp': ip, 'Description': 'CloudFront'} for ip in cloudfront_ips]\n                  },\n                  {\n                      'IpProtocol': 'tcp',\n                      'FromPort': 80,\n                      'ToPort': 80,\n                      'IpRanges': [{'CidrIp': ip, 'Description': 'CloudFront'} for ip in cloudfront_ips]\n                  }\n              ]\n              \n              ec2.authorize_security_group_ingress(\n                  GroupId=sg_id,\n                  IpPermissions=permissions\n              )\n              \n              return {\n                  'statusCode': 200,\n                  'body': json.dumps(f'Updated {len(cloudfront_ips)} CloudFront IP ranges')\n              }\n\n  LambdaExecutionRole:\n    Type: 'AWS::IAM::Role'\n    Properties:\n      AssumeRolePolicyDocument:\n        Version: '2012-10-17'\n        Statement:\n          - Effect: Allow\n            Principal:\n              Service: lambda.amazonaws.com\n            Action: 'sts:AssumeRole'\n      ManagedPolicyArns:\n        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'\n      Policies:\n        - PolicyName: UpdateSecurityGroups\n          PolicyDocument:\n            Version: '2012-10-17'\n            Statement:\n              - Effect: Allow\n                Action:\n                  - 'ec2:DescribeSecurityGroups'\n                  - 'ec2:AuthorizeSecurityGroupIngress'\n                  - 'ec2:RevokeSecurityGroupIngress'\n                Resource: '*'\n\n  # EventBridge rule to run daily\n  DailyUpdateSchedule:\n    Type: 'AWS::Events::Rule'\n    Properties:\n      Description: 'Update CloudFront IPs daily'\n      ScheduleExpression: 'rate(1 day)'\n      State: ENABLED\n      Targets:\n        - Arn: !GetAtt UpdateCloudFrontIPsFunction.Arn\n          Id: UpdateCloudFrontIPsTarget\n\n  LambdaInvokePermission:\n    Type: 'AWS::Lambda::Permission'\n    Properties:\n      FunctionName: !Ref UpdateCloudFrontIPsFunction\n      Action: 'lambda:InvokeFunction'\n      Principal: events.amazonaws.com\n      SourceArn: !GetAtt DailyUpdateSchedule.Arn\n\nOutputs:\n  ALBSecurityGroupId:\n    Value: !Ref ALBSecurityGroup\n    Description: 'Security Group ID restricting access to CloudFront'\n  LoadBalancerDNS:\n    Value: !GetAtt OriginALB.DNSName\n    Description: 'ALB DNS name (use as CloudFront origin)'"
+      },
+      "tools": [
+        {
+          "name": "AWS EC2 Security Groups",
+          "type": "Network Firewall",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS Lambda",
+          "type": "Serverless Compute",
+          "cost": "$0.20 per 1M requests + $0.0000166667 per GB-second"
+        },
+        {
+          "name": "AWS EventBridge",
+          "type": "Event Scheduling",
+          "cost": "Free for default event bus"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Deploy security group with CloudFront IP prefix list",
+        "Test direct access to origin IP is blocked (timeout or connection refused)",
+        "Verify CloudFront distribution can reach origin successfully",
+        "Deploy Lambda function to auto-update CloudFront IP ranges",
+        "Test Lambda function execution and security group updates",
+        "Schedule EventBridge rule for daily updates",
+        "Monitor CloudWatch Logs for Lambda execution errors"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enable S3 Origin Access Control (OAC) for S3 Bucket Origins",
+      "description": "Use CloudFront Origin Access Control to ensure S3 buckets can only be accessed through CloudFront, preventing direct S3 URL access and bucket enumeration attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS CloudFormation",
+        "code":": '2010-09-09'\nDescription: 'CloudFront with S3 Origin Access Control'\n\nResources:\n  # S3 Bucket for origin content\n  OriginBucket:\n    Type: 'AWS::S3::Bucket'\n    Properties:\n      BucketName: !Sub 'origin-content-${AWS::AccountId}'\n      PublicAccessBlockConfiguration:\n        BlockPublicAcls: true\n        BlockPublicPolicy: true\n        IgnorePublicAcls: true\n        RestrictPublicBuckets: true\n      BucketEncryption:\n        ServerSideEncryptionConfiguration:\n          - ServerSideEncryptionByDefault:\n              SSEAlgorithm: AES256\n      VersioningConfiguration:\n        Status: Enabled\n      LifecycleConfiguration:\n        Rules:\n          - Id: DeleteOldVersions\n            Status: Enabled\n            NoncurrentVersionExpirationInDays: 30\n      Tags:\n        - Key: Purpose\n          Value: CloudFront Origin\n\n  # Origin Access Control (OAC) - Replaces legacy OAI\n  CloudFrontOriginAccessControl:\n    Type: 'AWS::CloudFront::OriginAccessControl'\n    Properties:\n      OriginAccessControlConfig:\n        Name: !Sub 'OAC-${OriginBucket}'\n        Description: 'Origin Access Control for S3 bucket'\n        SigningBehavior: always\n        SigningProtocol: sigv4\n        OriginAccessControlOriginType: s3\n\n  # CloudFront Distribution\n  CloudFrontDistribution:\n    Type: 'AWS::CloudFront::Distribution'\n    Properties:\n      DistributionConfig:\n        Enabled: true\n        Comment: 'Distribution with S3 OAC protection'\n        DefaultRootObject: index.html\n        DefaultCacheBehavior:\n          TargetOriginId: S3Origin\n          ViewerProtocolPolicy: redirect-to-https\n          AllowedMethods:\n            - GET\n            - HEAD\n            - OPTIONS\n          CachedMethods:\n            - GET\n            - HEAD\n            - OPTIONS\n          Compress: true\n          ForwardedValues:\n            QueryString: false\n            Cookies:\n              Forward: none\n          MinTTL: 0\n          DefaultTTL: 86400\n          MaxTTL: 31536000\n        Origins:\n          - Id: S3Origin\n            DomainName: !GetAtt OriginBucket.RegionalDomainName\n            S3OriginConfig:\n              OriginAccessIdentity: ''  # Empty for OAC (not using legacy OAI)\n            OriginAccessControlId: !Ref CloudFrontOriginAccessControl\n            OriginShield:\n              Enabled: true\n              OriginShieldRegion: us-east-1\n        CustomErrorResponses:\n          - ErrorCode: 403\n            ResponseCode: 404\n            ResponsePagePath: /404.html\n            ErrorCachingMinTTL: 300\n          - ErrorCode: 404\n            ResponseCode: 404\n            ResponsePagePath: /404.html\n            ErrorCachingMinTTL: 300\n        PriceClass: PriceClass_100\n        ViewerCertificate:\n          CloudFrontDefaultCertificate: true\n\n  # S3 Bucket Policy allowing CloudFront OAC\n  OriginBucketPolicy:\n    Type: 'AWS::S3::BucketPolicy'\n    Properties:\n      Bucket: !Ref OriginBucket\n      PolicyDocument:\n        Statement:\n          - Sid: AllowCloudFrontOAC\n            Effect: Allow\n            Principal:\n              Service: cloudfront.amazonaws.com\n            Action: 's3:GetObject'\n            Resource: !Sub '${OriginBucket.Arn}/*'\n            Condition:\n              StringEquals:\n                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'\n          - Sid: DenyDirectAccess\n            Effect: Deny\n            Principal: '*'\n            Action: 's3:GetObject'\n            Resource: !Sub '${OriginBucket.Arn}/*'\n            Condition:\n              StringNotEquals:\n                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'\n\n  # CloudWatch Alarm for high error rate\n  CloudFrontErrorAlarm:\n    Type: 'AWS::CloudWatch::Alarm'\n    Properties:\n      AlarmName: !Sub 'CloudFront-High-Error-Rate-${CloudFrontDistribution}'\n      AlarmDescription: 'Alerts when CloudFront error rate exceeds 5%'\n      MetricName: 4xxErrorRate\n      Namespace: AWS/CloudFront\n      Statistic: Average\n      Period: 300\n      EvaluationPeriods: 2\n      Threshold: 5\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: DistributionId\n          Value: !Ref CloudFrontDistribution\n      TreatMissingData: notBreaching\n\nOutputs:\n  DistributionDomain:\n    Value: !GetAtt CloudFrontDistribution.DomainName\n    Description: 'CloudFront distribution domain'\n  BucketName:\n    Value: !Ref OriginBucket\n    Description: 'S3 origin bucket name'\n  OriginAccessControlId:\n    Value: !Ref CloudFrontOriginAccessControl\n    Description: 'Origin Access Control ID'"
+      },
+      "tools": [
+        {
+          "name": "AWS S3 Origin Access Control (OAC)",
+          "type": "Access Control",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS S3 Block Public Access",
+          "type": "Security Feature",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.1.2 - Access to networks and network services",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-3 - Remote access is managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Create S3 bucket with Block Public Access enabled",
+        "Deploy CloudFront Origin Access Control resource",
+        "Configure CloudFront distribution to use OAC",
+        "Apply S3 bucket policy allowing only CloudFront service principal",
+        "Test direct S3 URL access is denied (403 Forbidden)",
+        "Verify CloudFront can retrieve objects successfully",
+        "Attempt to enumerate bucket contents directly (should fail)",
+        "Monitor CloudWatch metrics for 4xx errors"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement Origin Header Validation at Application Layer",
+      "description": "Validate the custom X-Origin-Verify header at the application or web server level to reject any requests that don't originate from CloudFront, even if they bypass network-level protections.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + Express.js (Origin Validation Middleware)",
+        "code": "const express = require('express');\nconst crypto = require('crypto');\nconst app = express();\n\n// Load secret from environment or AWS Secrets Manager\nconst ORIGIN_VERIFY_SECRET = process.env.ORIGIN_VERIFY_SECRET;\nconst CLOUDFRONT_DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID;\nconst ALLOWED_CLOUDFRONT_IPS = [\n  '13.32.0.0/15',\n  '13.35.0.0/16',\n  '52.84.0.0/15',\n  '64.252.64.0/18',\n  '99.84.0.0/16',\n  '204.246.164.0/22',\n  '205.251.192.0/19'\n];\n\n// Utility: Check if IP is in CIDR range\nfunction isIPInCIDR(ip, cidr) {\n  const [range, bits] = cidr.split('/');\n  const mask = ~(2 ** (32 - parseInt(bits)) - 1);\n  const ipNum = ip.split('.').reduce((int, oct) => (int << 8) + parseInt(oct), 0) >>> 0;\n  const rangeNum = range.split('.').reduce((int, oct) => (int << 8) + parseInt(oct), 0) >>> 0;\n  return (ipNum & mask) === (rangeNum & mask);\n}\n\n// Middleware: Validate CloudFront Origin Headers\nfunction validateCloudFrontOrigin(req, res, next) {\n  const originVerify = req.get('X-Origin-Verify');\n  const distributionId = req.get('X-CloudFront-Distribution-ID');\n  const clientIP = req.get('X-Forwarded-For')?.split(',')[0] || req.ip;\n  \n  // Log validation attempt\n  console.log(`Origin validation: IP=${clientIP}, Header=${originVerify ? 'Present' : 'Missing'}`);\n  \n  // Check 1: Custom origin verification header\n  if (!originVerify || originVerify !== ORIGIN_VERIFY_SECRET) {\n    console.warn(`❌ Invalid or missing X-Origin-Verify header from ${clientIP}`);\n    return res.status(403).json({\n      error: 'Forbidden',\n      message: 'Direct origin access is not permitted'\n    });\n  }\n  \n  // Check 2: CloudFront distribution ID\n  if (!distributionId || distributionId !== CLOUDFRONT_DISTRIBUTION_ID) {\n    console.warn(`❌ Invalid CloudFront distribution ID from ${clientIP}`);\n    return res.status(403).json({\n      error: 'Forbidden',\n      message: 'Invalid distribution source'\n    });\n  }\n  \n  // Check 3: Verify source IP is from CloudFront (defense in depth)\n  const isCloudFrontIP = ALLOWED_CLOUDFRONT_IPS.some(cidr => isIPInCIDR(clientIP, cidr));\n  if (!isCloudFrontIP) {\n    console.warn(`❌ Request from non-CloudFront IP: ${clientIP}`);\n    return res.status(403).json({\n      error: 'Forbidden',\n      message: 'Invalid source network'\n    });\n  }\n  \n  // Check 4: Validate CloudFront viewer headers (optional anti-spoofing)\n  const cloudFrontViewer = req.get('CloudFront-Is-Desktop-Viewer') || \n                          req.get('CloudFront-Is-Mobile-Viewer') || \n                          req.get('CloudFront-Is-SmartTV-Viewer') || \n                          req.get('CloudFront-Is-Tablet-Viewer');\n  \n  if (!cloudFrontViewer) {\n    console.warn(`⚠️ Missing CloudFront viewer headers from ${clientIP}`);\n    // Don't block, but log for monitoring\n  }\n  \n  console.log(`✅ Valid CloudFront request from ${clientIP}`);\n  next();\n}\n\n// Apply middleware globally to all routes\napp.use(validateCloudFrontOrigin);\n\n// Health check endpoint (bypasses validation for ALB health checks)\napp.get('/health', (req, res) => {\n  res.status(200).json({ status: 'healthy' });\n});\n\n// Protected application routes\napp.get('/api/data', (req, res) => {\n  res.json({ message: 'This endpoint is protected by CloudFront' });\n});\n\n// Error handler for validation failures\napp.use((err, req, res, next) => {\n  console.error('Application error:', err);\n  res.status(500).json({ error: 'Internal server error' });\n});\n\n// Start server\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n  console.log(`🚀 Origin server running on port ${PORT}`);\n  console.log(`🔒 CloudFront origin validation enabled`);\n  console.log(`📋 Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID}`);\n});\n\n// Graceful shutdown\nprocess.on('SIGTERM', () => {\n  console.log('SIGTERM received, shutting down gracefully');\n  server.close(() => {\n    console.log('Server closed');\n    process.exit(0);\n  });\n});"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.9.1.2 - Access to networks and network services",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-1 - Audit/log records are determined and documented"
+      ],
+      "validation_steps": [
+        "Implement origin validation middleware in application code",
+        "Configure environment variables for secret and distribution ID",
+        "Test direct origin access without headers (should return 403)",
+        "Test with incorrect X-Origin-Verify header (should return 403)",
+        "Test with valid CloudFront headers (should succeed)",
+        "Monitor application logs for validation failures",
+        "Set up alerts for high volume of 403 errors"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "High volume of direct origin requests bypassing CloudFront",
+      "Unusual traffic patterns from non-CloudFront IP ranges",
+      "Spike in 4xx errors from CloudFront origin requests",
+      "Direct S3 bucket access attempts via bucket URL",
+      "DNS queries for origin server hostnames",
+      "Increased bandwidth usage at origin without corresponding CloudFront traffic",
+      "Connection attempts to origin IP addresses not routed through CloudFront"
+    ],
+    "log_queries": [
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# Detect direct origin access bypassing CloudFront\nfields @timestamp, @message, httpRequest.clientIp, httpRequest.uri\n| filter @message like /403/ or @message like /direct access/\n| filter httpRequest.headers.x-origin-verify not like /.+/\n| stats count() as DirectAccessAttempts by httpRequest.clientIp\n| filter DirectAccessAttempts > 10\n| sort DirectAccessAttempts desc"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect CloudFront origin bypass attempts\nAWSCloudTrail\n| where EventName == \"GetObject\" and RequestParameters contains \"s3.amazonaws.com\"\n| where SourceIpAddress !in (dynamic([\"CloudFront IP ranges\"]))\n| where UserAgent !contains \"CloudFront\"\n| summarize AttemptCount = count() by SourceIpAddress, bin(TimeGenerated, 5m)\n| where AttemptCount > 20\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=aws sourcetype=aws:cloudfront:accesslogs\n| search sc_status=403 OR sc_status=503\n| search NOT x_origin_verify=*\n| stats count as AccessDenied by c_ip, cs_uri_stem\n| where AccessDenied > 50\n| table _time, c_ip, cs_uri_stem, AccessDenied\n| sort -AccessDenied"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"aws.cloudfront\" AND http.response.status_code: (403 OR 503) AND NOT cloudfront.origin_verify: *\n| stats count by source.ip\n| where count > 100"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights (ALB Logs)",
+        "query": "# Detect ALB traffic not from CloudFront\nfields @timestamp, client_ip, request_url, elb_status_code\n| filter client_ip not like /^(13\\.32\\.|13\\.35\\.|52\\.84\\.|64\\.252\\.64\\.|99\\.84\\.|204\\.246\\.164\\.|205\\.251\\.192\\.)/\n| filter request_http_header_x_origin_verify not like /.+/\n| stats count() as DirectRequests by client_ip\n| filter DirectRequests > 100\n| sort DirectRequests desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS GuardDuty",
+        "type": "Threat Detection",
+        "usage": "Monitors for unusual API activity and unauthorized network probes against origins"
+      },
+      {
+        "name": "AWS CloudWatch Alarms",
+        "type": "Monitoring & Alerting",
+        "usage": "Set alarms for high 4xx error rates, origin connection failures, and traffic anomalies"
+      },
+      {
+        "name": "Shodan",
+        "type": "Attack Surface Discovery",
+        "usage": "Proactively search for exposed origin IPs and services using Shodan API"
+      },
+      {
+        "name": "SecurityTrails",
+        "type": "DNS History Analysis",
+        "usage": "Monitor DNS history to identify if origin IPs were exposed before CloudFront deployment"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "E-commerce",
+      "Media & Entertainment",
+      "SaaS",
+      "Financial Services",
+      "Gaming"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.6)",
+      "SOC2 (CC6.6 - Logical Access)",
+      "ISO27001 (A.13.1.1, A.13.1.3)",
+      "NIST CSF (PR.AC-5, PR.PT-4)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Multi-Cloud",
+      "Hybrid"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

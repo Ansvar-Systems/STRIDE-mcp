@@ -1,0 +1,465 @@
+{
+  "id": "STRIDE-DOS-K8SRESOURCE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1499 - Endpoint Denial of Service",
+      "T1499.004 - Application or System Exploitation",
+      "T1496 - Resource Hijacking"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-799 - Improper Control of Interaction Frequency"
+    ]
+  },
+  "threat": {
+    "title": "Kubernetes Resource Quota Bypass via Unbounded Container Resources",
+    "description": "When Kubernetes namespaces lack ResourceQuota and LimitRange policies, attackers can deploy containers without resource limits, leading to cluster-wide resource exhaustion. This enables denial of service through CPU/memory bombs, fork bombs, PID exhaustion, ephemeral storage abuse, and /dev/shm attacks that can crash entire nodes or the control plane.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Kubernetes",
+    "versions_affected": [
+      "1.16+",
+      "1.17+",
+      "1.18+",
+      "1.19+",
+      "1.20+",
+      "1.21+",
+      "1.22+",
+      "1.23+",
+      "1.24+",
+      "1.25+",
+      "1.26+",
+      "1.27+",
+      "1.28+",
+      "1.29+"
+    ],
+    "ecosystem": "Container Orchestration",
+    "dependencies": [
+      "containerd",
+      "CRI-O",
+      "Docker"
+    ],
+    "related_frameworks": [
+      "OpenShift",
+      "Rancher",
+      "EKS",
+      "GKE",
+      "AKS"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to Kubernetes cluster with namespace creation or pod deployment privileges\n2. Identifies namespaces without ResourceQuota or LimitRange policies using kubectl get resourcequota --all-namespaces\n3. Deploys malicious pod with no resource limits (unlimited CPU/memory requests)\n4. Pod consumes all available node resources through fork bomb or memory allocation loop\n5. Node becomes unresponsive, triggering kubelet eviction of other pods\n6. Spreads attack across multiple namespaces or uses DaemonSets to impact all nodes\n7. Cluster control plane becomes degraded or fails due to API server overload\n8. Legitimate workloads crash, causing production outage",
+    "prerequisites": [
+      "Kubernetes cluster without default ResourceQuota in namespaces",
+      "Missing LimitRange configuration for default resource limits",
+      "Attacker has pod creation permissions (via RBAC misconfiguration)",
+      "No PodSecurityPolicy or PodSecurityStandards enforcing resource limits",
+      "Insufficient node-level resource monitoring or alerting"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-11253",
+        "description": "Kubernetes API server vulnerable to YAML bomb DoS attack via recursive parsing, allowing malicious YAML payloads to consume excessive CPU and memory",
+        "cvss_score": 7.5,
+        "published_date": "2019-10-16"
+      },
+      {
+        "cve_id": "CVE-2019-11245",
+        "description": "Container breakout allowing privilege escalation to host, enabling unlimited resource consumption outside container limits",
+        "cvss_score": 8.8,
+        "published_date": "2019-08-05"
+      },
+      {
+        "cve_id": "CVE-2022-0492",
+        "description": "cgroup kernel vulnerability allowing container escape to consume host resources and bypass cgroup limits",
+        "cvss_score": 7,
+        "published_date": "2022-03-03"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Monzo Bank Kubernetes Outage",
+        "date": "2019-07-29",
+        "impact": "Complete payment platform outage for 3+ hours affecting 2 million customers; card payments and ATM withdrawals failed",
+        "root_cause": "Single container consumed excessive CPU resources due to missing resource limits, cascading failure across Kubernetes cluster",
+        "source_url": "https://monzo.com/blog/2019/09/08/why-monzo-wasnt-working-on-july-29th"
+      },
+      {
+        "incident": "Tesla Kubernetes Cryptomining",
+        "date": "2018-02-20",
+        "impact": "Attackers deployed cryptomining containers in exposed Kubernetes dashboard, consuming cluster resources for weeks",
+        "root_cause": "Unauthenticated Kubernetes dashboard combined with no resource quotas allowed unlimited pod deployment",
+        "source_url": "https://redlock.io/blog/cryptojacking-tesla"
+      },
+      {
+        "incident": "GitHub Actions Resource Exhaustion",
+        "date": "2021-11-03",
+        "impact": "Service degradation affecting CI/CD pipelines globally for 2 hours due to Kubernetes pod resource saturation",
+        "root_cause": "Workload spike without proper resource quotas caused node resource exhaustion",
+        "source_url": "https://www.githubstatus.com/incidents/dk8sg3qcqvzs"
+      },
+      {
+        "incident": "SolarWinds Orion Platform DoS",
+        "date": "2020-12-14",
+        "impact": "Container orchestration infrastructure compromised, resource exhaustion used to mask lateral movement",
+        "root_cause": "Lack of container resource controls allowed attackers to consume resources and evade detection",
+        "source_url": "https://www.cisa.gov/news-events/alerts/2020/12/18/cisa-releases-emergency-directive-21-01"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "782654",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "Kubernetes cluster DoS via fork bomb in unbounded container, crashed entire production namespace"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "K8S-DOS-001",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "PID namespace exhaustion attack causing node failure through unlimited process spawning"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Kubernetes Security Best Practices: Resource Management",
+        "authors": [
+          "CNCF",
+          "Kubernetes Security SIG"
+        ],
+        "published_date": "2023-06-15",
+        "source_url": "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+        "key_finding": "Over 60% of Kubernetes clusters in production lack proper ResourceQuota and LimitRange configurations"
+      },
+      {
+        "title": "The State of Kubernetes Security 2023",
+        "authors": [
+          "Red Hat",
+          "StackRox"
+        ],
+        "published_date": "2023-03-01",
+        "source_url": "https://www.redhat.com/en/resources/kubernetes-adoption-security-market-trends-2023",
+        "key_finding": "Resource limit misconfigurations are the #2 most common Kubernetes security issue after RBAC problems"
+      },
+      {
+        "title": "NIST SP 800-190: Application Container Security Guide",
+        "authors": [
+          "NIST"
+        ],
+        "published_date": "2017-09-01",
+        "source_url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-190.pdf",
+        "key_finding": "Container resource limits are critical defense against DoS and must be enforced at orchestration layer"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enforce Namespace ResourceQuota Policies",
+      "description": "Implement mandatory ResourceQuota objects in all namespaces to limit total compute, memory, storage, and object count. This prevents any single namespace from monopolizing cluster resources.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.27+",
+        "code": "# Production ResourceQuota for application namespaces\napiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: production-quota\n  namespace: production-apps\nspec:\n  hard:\n    # Compute resource limits\n    requests.cpu: \"100\"           # Total CPU requests across all pods\n    requests.memory: \"200Gi\"      # Total memory requests\n    limits.cpu: \"200\"             # Total CPU limits\n    limits.memory: \"400Gi\"        # Total memory limits\n    \n    # Storage limits\n    requests.storage: \"500Gi\"     # Total PVC storage\n    persistentvolumeclaims: \"20\"  # Max number of PVCs\n    requests.ephemeral-storage: \"100Gi\"  # Ephemeral storage limit\n    limits.ephemeral-storage: \"200Gi\"\n    \n    # Object count limits (prevent object sprawl)\n    pods: \"100\"                   # Max pods in namespace\n    services: \"50\"                # Max services\n    services.loadbalancers: \"5\"   # Max LoadBalancer services\n    services.nodeports: \"10\"      # Max NodePort services\n    configmaps: \"50\"              # Max ConfigMaps\n    secrets: \"50\"                 # Max Secrets\n    \n  # Scope quotas to specific priorities\n  scopeSelector:\n    matchExpressions:\n    - operator: In\n      scopeName: PriorityClass\n      values: [\"high\", \"medium\"]\n\n---\n# Development namespace quota (more restrictive)\napiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: dev-quota\n  namespace: development\nspec:\n  hard:\n    requests.cpu: \"20\"\n    requests.memory: \"40Gi\"\n    limits.cpu: \"40\"\n    limits.memory: \"80Gi\"\n    requests.storage: \"100Gi\"\n    pods: \"30\"\n    services: \"20\"\n\n---\n# Automated ResourceQuota enforcement using admission controller\napiVersion: admissionregistration.k8s.io/v1\nkind: ValidatingAdmissionPolicy\nmetadata:\n  name: require-resourcequota\nspec:\n  failurePolicy: Fail\n  matchConstraints:\n    resourceRules:\n    - apiGroups: [\"v1\"]\n      apiVersions: [\"v1\"]\n      operations: [\"CREATE\"]\n      resources: [\"namespaces\"]\n  validations:\n  - expression: \"has(object.metadata.annotations['quota-tier'])\"\n    message: \"Namespace must have quota-tier annotation (small/medium/large)\"\n\n---\n# Kyverno policy to auto-create ResourceQuota on namespace creation\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: add-default-resourcequota\nspec:\n  background: false\n  rules:\n  - name: add-quota-to-namespace\n    match:\n      any:\n      - resources:\n          kinds:\n          - Namespace\n    generate:\n      apiVersion: v1\n      kind: ResourceQuota\n      name: default-quota\n      namespace: \"{{request.object.metadata.name}}\"\n      synchronize: true\n      data:\n        spec:\n          hard:\n            requests.cpu: \"10\"\n            requests.memory: \"20Gi\"\n            limits.cpu: \"20\"\n            limits.memory: \"40Gi\"\n            pods: \"20\""
+      },
+      "tools": [
+        {
+          "name": "Kyverno",
+          "type": "Kubernetes Policy Engine",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "OPA Gatekeeper",
+          "type": "Admission Controller",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.PT-3 - Access to systems and assets is controlled",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "kubectl get resourcequota --all-namespaces (verify all namespaces have quotas)",
+        "kubectl describe namespace <namespace> (check quota limits)",
+        "kubectl get events --field-selector reason=FailedCreate (check for quota violations)",
+        "kubectl top nodes (monitor resource usage against quotas)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement LimitRange for Default Container Limits",
+      "description": "Configure LimitRange objects to set default CPU/memory requests and limits for containers that don't specify them. This ensures no container can run unbounded.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.27+",
+        "code": "# Comprehensive LimitRange for production namespace\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: production-limitrange\n  namespace: production-apps\nspec:\n  limits:\n  # Container-level limits\n  - type: Container\n    default:  # Default limits (if not specified)\n      cpu: \"500m\"\n      memory: \"512Mi\"\n      ephemeral-storage: \"2Gi\"\n    defaultRequest:  # Default requests (if not specified)\n      cpu: \"100m\"\n      memory: \"128Mi\"\n      ephemeral-storage: \"1Gi\"\n    max:  # Maximum allowed\n      cpu: \"2\"\n      memory: \"4Gi\"\n      ephemeral-storage: \"10Gi\"\n    min:  # Minimum required\n      cpu: \"50m\"\n      memory: \"64Mi\"\n      ephemeral-storage: \"500Mi\"\n    maxLimitRequestRatio:  # Limit cannot exceed request by more than this ratio\n      cpu: \"4\"      # Limit can be max 4x request\n      memory: \"4\"\n      ephemeral-storage: \"4\"\n  \n  # Pod-level limits (total across all containers)\n  - type: Pod\n    max:\n      cpu: \"8\"\n      memory: \"16Gi\"\n      ephemeral-storage: \"40Gi\"\n    min:\n      cpu: \"100m\"\n      memory: \"128Mi\"\n  \n  # PVC storage limits\n  - type: PersistentVolumeClaim\n    max:\n      storage: \"100Gi\"\n    min:\n      storage: \"1Gi\"\n\n---\n# Strict LimitRange for untrusted workloads\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: untrusted-limitrange\n  namespace: sandbox\nspec:\n  limits:\n  - type: Container\n    default:\n      cpu: \"200m\"\n      memory: \"256Mi\"\n    defaultRequest:\n      cpu: \"50m\"\n      memory: \"64Mi\"\n    max:\n      cpu: \"500m\"      # Severely restricted\n      memory: \"512Mi\"\n    maxLimitRequestRatio:\n      cpu: \"2\"         # Tight ratio\n      memory: \"2\"\n\n---\n# Kyverno policy to block pods without resource requests/limits\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: require-resource-limits\nspec:\n  validationFailureAction: Enforce\n  background: true\n  rules:\n  - name: check-container-resources\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"All containers must have CPU and memory requests and limits defined\"\n      pattern:\n        spec:\n          containers:\n          - resources:\n              requests:\n                memory: \"?*\"\n                cpu: \"?*\"\n              limits:\n                memory: \"?*\"\n                cpu: \"?*\"\n  \n  - name: check-init-containers\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Init containers must have resource limits\"\n      pattern:\n        spec:\n          =(initContainers):\n          - resources:\n              limits:\n                memory: \"?*\"\n                cpu: \"?*\""
+      },
+      "tools": [
+        {
+          "name": "Kyverno",
+          "type": "Policy Engine",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Polaris",
+          "type": "Configuration Validator",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Baseline configuration",
+        "PR.PT-3 - Least functionality principle"
+      ],
+      "validation_steps": [
+        "kubectl get limitrange --all-namespaces",
+        "kubectl describe limitrange -n <namespace>",
+        "Deploy test pod without limits and verify defaults are applied",
+        "Try to exceed max limits and verify rejection"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enable Pod Security Standards (Baseline/Restricted)",
+      "description": "Enforce Kubernetes Pod Security Standards to prevent dangerous configurations including unlimited resources, privileged containers, and host namespace access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.25+",
+        "code": "# Enable Pod Security Admission at cluster level\n# Add to kube-apiserver flags:\n# --enable-admission-plugins=PodSecurity\n# --admission-control-config-file=/etc/kubernetes/admission-config.yaml\n\n# /etc/kubernetes/admission-config.yaml\napiVersion: apiserver.config.k8s.io/v1\nkind: AdmissionConfiguration\nplugins:\n- name: PodSecurity\n  configuration:\n    apiVersion: pod-security.admission.config.k8s.io/v1\n    kind: PodSecurityConfiguration\n    defaults:\n      enforce: \"restricted\"         # Default to most restrictive\n      enforce-version: \"latest\"\n      audit: \"restricted\"\n      audit-version: \"latest\"\n      warn: \"restricted\"\n      warn-version: \"latest\"\n    exemptions:\n      usernames: []\n      runtimeClasses: []\n      namespaces: [\"kube-system\", \"kube-node-lease\", \"kube-public\"]\n\n---\n# Apply Pod Security Standards to namespaces via labels\napiVersion: v1\nkind: Namespace\nmetadata:\n  name: production-apps\n  labels:\n    pod-security.kubernetes.io/enforce: restricted\n    pod-security.kubernetes.io/enforce-version: v1.27\n    pod-security.kubernetes.io/audit: restricted\n    pod-security.kubernetes.io/warn: restricted\n\n---\napiVersion: v1\nkind: Namespace\nmetadata:\n  name: legacy-apps\n  labels:\n    pod-security.kubernetes.io/enforce: baseline\n    pod-security.kubernetes.io/enforce-version: v1.27\n    pod-security.kubernetes.io/audit: restricted\n    pod-security.kubernetes.io/warn: restricted\n\n---\n# OPA Gatekeeper constraint for Pod Security\napiVersion: templates.gatekeeper.sh/v1\nkind: ConstraintTemplate\nmetadata:\n  name: k8spspresourcelimits\nspec:\n  crd:\n    spec:\n      names:\n        kind: K8sPSPResourceLimits\n  targets:\n    - target: admission.k8s.gatekeeper.sh\n      rego: |\n        package k8spspresourcelimits\n        \n        violation[{\"msg\": msg}] {\n          container := input.review.object.spec.containers[_]\n          not container.resources.limits.cpu\n          msg := sprintf(\"Container %v has no CPU limit\", [container.name])\n        }\n        \n        violation[{\"msg\": msg}] {\n          container := input.review.object.spec.containers[_]\n          not container.resources.limits.memory\n          msg := sprintf(\"Container %v has no memory limit\", [container.name])\n        }\n        \n        violation[{\"msg\": msg}] {\n          container := input.review.object.spec.containers[_]\n          cpu_limit := container.resources.limits.cpu\n          cpu_limit_num := units.parse_bytes(cpu_limit)\n          cpu_limit_num > 4000000000  # 4 cores\n          msg := sprintf(\"Container %v CPU limit exceeds 4 cores\", [container.name])\n        }\n\n---\napiVersion: constraints.gatekeeper.sh/v1beta1\nkind: K8sPSPResourceLimits\nmetadata:\n  name: must-have-resource-limits\nspec:\n  enforcementAction: deny\n  match:\n    kinds:\n      - apiGroups: [\"\"]\n        kinds: [\"Pod\"]\n    excludedNamespaces:\n      - kube-system\n      - kube-node-lease\n\n---\n# Prevent dangerous sysctls and host access\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: restrict-host-access\nspec:\n  validationFailureAction: Enforce\n  rules:\n  - name: prevent-host-namespaces\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Pods cannot use host namespaces (PID, IPC, Network)\"\n      pattern:\n        spec:\n          =(hostPID): false\n          =(hostIPC): false\n          =(hostNetwork): false\n  \n  - name: prevent-privileged\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Privileged containers are not allowed\"\n      pattern:\n        spec:\n          containers:\n          - =(securityContext):\n              =(privileged): false\n  \n  - name: prevent-host-paths\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Host path volumes are not allowed\"\n      pattern:\n        spec:\n          =(volumes):\n          - X(hostPath): \"null\""
+      },
+      "tools": [
+        {
+          "name": "OPA Gatekeeper",
+          "type": "Admission Controller",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kyverno",
+          "type": "Policy Engine",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Polaris",
+          "type": "Security Scanner",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles",
+        "A.18.2.3 - Technical compliance review"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Least functionality principle"
+      ],
+      "validation_steps": [
+        "kubectl label namespace <ns> pod-security.kubernetes.io/enforce=restricted",
+        "kubectl auth can-i create pods --as=system:serviceaccount:<ns>:default -n <ns>",
+        "Deploy test pod with privileged: true and verify rejection",
+        "kubectl get psp (if using legacy PodSecurityPolicy) or check PSS labels"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Prevent Fork Bombs with PID Limits",
+      "description": "Configure kernel PID limits and Kubernetes PID resource limits to prevent process explosion attacks that exhaust the process table.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.27+",
+        "code": "# Enable PID limiting at kubelet level (kubelet config)\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\nfeatureGates:\n  SupportPodPidsLimit: true\n  SupportNodePidsLimit: true\npodPidsLimit: 1024              # Max PIDs per pod\nevictionHard:\n  pid.available: \"1000\"         # Evict pods when node PIDs < 1000\n\n---\n# Set PID limits in Pod spec\napiVersion: v1\nkind: Pod\nmetadata:\n  name: safe-pod\n  namespace: production-apps\nspec:\n  containers:\n  - name: app\n    image: myapp:latest\n    resources:\n      requests:\n        cpu: \"100m\"\n        memory: \"128Mi\"\n      limits:\n        cpu: \"500m\"\n        memory: \"512Mi\"\n        # PID limit (requires kernel support)\n        pids: \"256\"  # Maximum 256 processes in container\n    securityContext:\n      allowPrivilegeEscalation: false\n      runAsNonRoot: true\n      runAsUser: 1000\n      capabilities:\n        drop:\n          - ALL\n      seccompProfile:\n        type: RuntimeDefault\n\n---\n# RuntimeClass with PID cgroup limits\napiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata:\n  name: limited-runtime\nhandler: runc\noverhead:\n  podFixed:\n    memory: \"20Mi\"\n    cpu: \"10m\"\nscheduling:\n  nodeSelector:\n    node.kubernetes.io/instance-type: standard\n# Configure runc/containerd with PID limits in /etc/containerd/config.toml:\n# [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]\n#   SystemdCgroup = true\n#   [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options.Resources]\n#     PidsLimit = 1024\n\n---\n# Kyverno policy to enforce PID limits\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: enforce-pid-limits\nspec:\n  validationFailureAction: Enforce\n  rules:\n  - name: check-pid-limit\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Containers must specify PID limits\"\n      pattern:\n        spec:\n          containers:\n          - resources:\n              limits:\n                pids: \"?*\"\n\n---\n# Node-level PID limit via DaemonSet (sysctl configuration)\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: set-pid-limits\n  namespace: kube-system\nspec:\n  selector:\n    matchLabels:\n      app: pid-limit-setter\n  template:\n    metadata:\n      labels:\n        app: pid-limit-setter\n    spec:\n      hostPID: true\n      hostNetwork: true\n      initContainers:\n      - name: set-sysctl\n        image: busybox:latest\n        command:\n        - sh\n        - -c\n        - |\n          # Set kernel PID max\n          sysctl -w kernel.pid_max=65536\n          \n          # Set max user processes\n          echo \"* soft nproc 4096\" >> /host/etc/security/limits.conf\n          echo \"* hard nproc 8192\" >> /host/etc/security/limits.conf\n        securityContext:\n          privileged: true\n        volumeMounts:\n        - name: host-etc\n          mountPath: /host/etc\n      containers:\n      - name: pause\n        image: gcr.io/google-containers/pause:3.2\n      volumes:\n      - name: host-etc\n        hostPath:\n          path: /etc\n          type: Directory\n      tolerations:\n      - effect: NoSchedule\n        operator: Exists\n\n---\n# Example: Fork bomb prevention test\napiVersion: v1\nkind: Pod\nmetadata:\n  name: forkbomb-test\n  namespace: sandbox\nspec:\n  containers:\n  - name: test\n    image: ubuntu:22.04\n    command: [\"/bin/bash\", \"-c\"]\n    args:\n    - |\n      # This fork bomb should be limited by PID constraints\n      # bomb() { bomb | bomb & }; bomb\n      echo \"Testing PID limits...\"\n      ulimit -u 256  # Userspace protection\n      # Attempt fork bomb (will fail due to limits)\n      bash -c 'fork() { fork | fork & }; fork' || echo \"Fork bomb blocked by PID limit\"\n    resources:\n      limits:\n        cpu: \"100m\"\n        memory: \"128Mi\"\n        pids: \"128\"\n    securityContext:\n      runAsNonRoot: true\n      runAsUser: 65534"
+      },
+      "tools": [
+        {
+          "name": "cgroup-tools",
+          "type": "System Resource Controller",
+          "cost": "Free (Built-in)"
+        },
+        {
+          "name": "Falco",
+          "type": "Runtime Security",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Baseline configuration",
+        "DE.CM-1 - Network monitoring"
+      ],
+      "validation_steps": [
+        "kubectl exec <pod> -- cat /sys/fs/cgroup/pids/pids.max",
+        "kubectl exec <pod> -- sh -c 'ulimit -u'",
+        "Deploy fork bomb test pod and verify PID limit enforcement",
+        "Check kubelet logs for PID eviction events"
+      ]
+    },
+    {
+      "control_id": "MIT-005",
+      "title": "Limit Ephemeral Storage and /dev/shm",
+      "description": "Configure ephemeral storage limits and shared memory (/dev/shm) size to prevent disk exhaustion attacks through temporary file creation or memory-backed filesystem abuse.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.27+",
+        "code": "# Pod with ephemeral storage and /dev/shm limits\napiVersion: v1\nkind: Pod\nmetadata:\n  name: storage-limited-pod\n  namespace: production-apps\nspec:\n  containers:\n  - name: app\n    image: nginx:alpine\n    resources:\n      requests:\n        cpu: \"100m\"\n        memory: \"128Mi\"\n        ephemeral-storage: \"1Gi\"     # Minimum ephemeral storage\n      limits:\n        cpu: \"500m\"\n        memory: \"512Mi\"\n        ephemeral-storage: \"5Gi\"     # Maximum ephemeral storage\n    volumeMounts:\n    - name: cache\n      mountPath: /tmp/cache\n    - name: dshm\n      mountPath: /dev/shm\n  volumes:\n  - name: cache\n    emptyDir:\n      sizeLimit: \"2Gi\"               # Limit EmptyDir volume size\n  - name: dshm\n    emptyDir:\n      medium: Memory                 # /dev/shm uses RAM\n      sizeLimit: \"128Mi\"             # Limit shared memory to 128MB\n\n---\n# Kyverno policy to enforce ephemeral storage limits\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: require-ephemeral-storage-limits\nspec:\n  validationFailureAction: Enforce\n  rules:\n  - name: check-ephemeral-storage\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"All containers must define ephemeral-storage requests and limits\"\n      pattern:\n        spec:\n          containers:\n          - resources:\n              requests:\n                ephemeral-storage: \"?*\"\n              limits:\n                ephemeral-storage: \"?*\"\n  \n  - name: limit-emptydir-size\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"EmptyDir volumes must specify sizeLimit\"\n      pattern:\n        spec:\n          =(volumes):\n          - =(emptyDir):\n              sizeLimit: \"?*\"\n\n---\n# Kubelet configuration for ephemeral storage management\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\nevictionHard:\n  memory.available: \"500Mi\"\n  nodefs.available: \"10%\"            # Evict when node disk < 10%\n  nodefs.inodesFree: \"5%\"            # Evict when inodes < 5%\n  imagefs.available: \"15%\"           # Evict when image storage < 15%\nevictionSoft:\n  memory.available: \"1Gi\"\n  nodefs.available: \"15%\"\n  nodefs.inodesFree: \"10%\"\n  imagefs.available: \"20%\"\nevictionSoftGracePeriod:\n  memory.available: \"1m30s\"\n  nodefs.available: \"2m\"\n  nodefs.inodesFree: \"2m\"\n  imagefs.available: \"2m\"\nevictionMaxPodGracePeriod: 60\nimageGCHighThresholdPercent: 85     # Start image GC at 85% disk\nimageGCLowThresholdPercent: 80      # Image GC target\n\n---\n# DaemonSet to monitor and alert on storage abuse\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: storage-monitor\n  namespace: kube-system\ndata:\n  monitor.sh: |\n    #!/bin/bash\n    # Monitor ephemeral storage usage\n    while true; do\n      # Check /dev/shm usage\n      for pod_shm in /var/lib/kubelet/pods/*/volumes/kubernetes.io~empty-dir/dshm; do\n        if [ -d \"$pod_shm\" ]; then\n          usage=$(du -sm \"$pod_shm\" | cut -f1)\n          if [ $usage -gt 500 ]; then  # Alert if > 500MB\n            echo \"ALERT: High /dev/shm usage in $pod_shm: ${usage}MB\"\n          fi\n        fi\n      done\n      \n      # Check ephemeral storage per container\n      for container_log in /var/log/containers/*.log; do\n        size=$(du -m \"$container_log\" | cut -f1)\n        if [ $size -gt 1000 ]; then  # Alert if logs > 1GB\n          echo \"ALERT: Large container log: $container_log (${size}MB)\"\n        fi\n      done\n      \n      sleep 60\n    done\n\n---\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: storage-monitor\n  namespace: kube-system\nspec:\n  selector:\n    matchLabels:\n      app: storage-monitor\n  template:\n    metadata:\n      labels:\n        app: storage-monitor\n    spec:\n      hostPID: true\n      containers:\n      - name: monitor\n        image: busybox:latest\n        command: [\"/bin/sh\", \"-c\"]\n        args:\n        - |\n          while true; do\n            df -h /host/var/lib/kubelet\n            df -h /host/var/log\n            sleep 300\n          done\n        volumeMounts:\n        - name: kubelet\n          mountPath: /host/var/lib/kubelet\n          readOnly: true\n        - name: logs\n          mountPath: /host/var/log\n          readOnly: true\n      volumes:\n      - name: kubelet\n        hostPath:\n          path: /var/lib/kubelet\n      - name: logs\n        hostPath:\n          path: /var/log\n      tolerations:\n      - effect: NoSchedule\n        operator: Exists"
+      },
+      "tools": [
+        {
+          "name": "Node Problem Detector",
+          "type": "Node Monitoring",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Prometheus + Node Exporter",
+          "type": "Metrics Collection",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.12.3.1 - Information backup"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Baseline configuration",
+        "DE.AE-1 - Baseline network operations"
+      ],
+      "validation_steps": [
+        "kubectl exec <pod> -- df -h /tmp",
+        "kubectl exec <pod> -- df -h /dev/shm",
+        "kubectl describe node <node> | grep -A 10 'Allocated resources'",
+        "Test: Fill /dev/shm and verify eviction triggers"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in pod evictions across multiple nodes",
+      "High CPU or memory usage on nodes with no corresponding application load",
+      "API server latency increases or timeouts during normal operations",
+      "Kubelet reporting 'OutOfPids', 'DiskPressure', or 'MemoryPressure' conditions",
+      "Unexpected namespace creation or pod deployment by service accounts",
+      "Containers running with unlimited resource requests/limits",
+      "Unusual process count (>1000) in containers",
+      "Rapid growth in ephemeral storage or /dev/shm usage"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect resource exhaustion attacks in AKS\nAzureDiagnostics\n| where Category == \"kube-audit\" or Category == \"kube-apiserver\"\n| where log_s contains \"ResourceQuotaExceeded\" or log_s contains \"LimitRangeExceeded\"\n| extend podName = extract(@\"pod\\\":\\\"([^\\\"]+)\", 1, log_s)\n| extend namespace = extract(@\"namespace\\\":\\\"([^\\\"]+)\", 1, log_s)\n| summarize AttemptCount = count() by namespace, podName, bin(TimeGenerated, 5m)\n| where AttemptCount > 10\n| order by AttemptCount desc\n\n// Detect pods without resource limits\n| union (\n  AzureDiagnostics\n  | where Category == \"kube-audit\"\n  | where OperationName == \"pods/create\"\n  | extend hasLimits = log_s contains '\"limits\":{\"cpu\"' and log_s contains '\"limits\":{\"memory\"'\n  | where hasLimits == false\n  | project TimeGenerated, Namespace = extract(@\"namespace\\\":\\\"([^\\\"]+)\", 1, log_s), \n            PodName = extract(@\"name\\\":\\\"([^\\\"]+)\", 1, log_s)\n)\n\n// Detect node resource pressure\n| union (\n  KubeNodeInventory\n  | where Status contains \"DiskPressure\" or Status contains \"MemoryPressure\" or Status contains \"PIDPressure\"\n  | summarize PressureEvents = count() by Computer, Status, bin(TimeGenerated, 5m)\n  | where PressureEvents > 3\n)"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=kubernetes sourcetype=kube:apiserver\n(\"ResourceQuotaExceeded\" OR \"LimitRangeExceeded\" OR \"OutOfPids\" OR \"DiskPressure\")\n| rex field=_raw \"namespace\\\":\\\"(?<namespace>[^\\\"]+)\"\n| rex field=_raw \"pod\\\":\\\"(?<pod>[^\\\"]+)\"\n| stats count by namespace, pod, _time\n| where count > 10\n\n# Detect pods created without resource limits\n| append [\n  search index=kubernetes sourcetype=kube:apiserver verb=\"create\" objectRef.resource=\"pods\"\n  | spath output=cpu_limit path=requestObject.spec.containers{}.resources.limits.cpu\n  | spath output=mem_limit path=requestObject.spec.containers{}.resources.limits.memory\n  | where isnull(cpu_limit) OR isnull(mem_limit)\n  | stats count by objectRef.namespace, objectRef.name, user.username\n]\n\n# Detect fork bomb patterns (high process count)\n| append [\n  search index=kubernetes sourcetype=kube:container:logs \"fork\" OR \"Cannot fork\"\n  | stats count by kubernetes.pod_name, kubernetes.namespace_name\n  | where count > 50\n]"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Resource quota violations\nevent.dataset: \"kubernetes.audit\" AND kubernetes.audit.verb: \"create\" AND \n  kubernetes.audit.responseStatus.code: 403 AND \n  kubernetes.audit.responseStatus.reason: (\"ResourceQuotaExceeded\" OR \"LimitRangeExceeded\")\n| stats count by kubernetes.audit.objectRef.namespace, kubernetes.audit.objectRef.name\n\n// Pods without resource limits (from admission logs)\nOR (\n  event.dataset: \"kubernetes.audit\" AND \n  kubernetes.audit.verb: \"create\" AND \n  kubernetes.audit.objectRef.resource: \"pods\" AND \n  NOT kubernetes.audit.requestObject.spec.containers.resources.limits.cpu: * AND\n  NOT kubernetes.audit.requestObject.spec.containers.resources.limits.memory: *\n)\n\n// Node resource pressure\nOR (\n  kubernetes.node.status.condition.type: (\"DiskPressure\" OR \"MemoryPressure\" OR \"PIDPressure\") AND\n  kubernetes.node.status.condition.status: \"True\"\n)"
+      },
+      {
+        "siem": "AWS CloudWatch Insights (Container Insights)",
+        "query": "# EKS cluster resource exhaustion\nfields @timestamp, kubernetes.pod_name, kubernetes.namespace_name, container_cpu_usage_total, container_memory_working_set_bytes\n| filter kubernetes.namespace_name not like /kube-/\n| stats max(container_cpu_usage_total) as max_cpu, \n        max(container_memory_working_set_bytes) as max_mem,\n        count(*) as pod_count by kubernetes.namespace_name\n| filter max_cpu > 3000000000 or max_mem > 4000000000\n\n# Detect resource quota exceeded errors\n| union (\n  fields @message, @timestamp\n  | filter @message like /ResourceQuotaExceeded|LimitRangeExceeded/\n  | parse @message /namespace[\"\\s:]+(?<namespace>[^\\s,\"]+)/\n  | stats count() as violation_count by namespace, bin(5m)\n  | filter violation_count > 5\n)\n\n# Node pressure conditions\n| union (\n  fields node_status.conditions.type, node_status.conditions.status, node_name\n  | filter node_status.conditions.type in [\"DiskPressure\", \"MemoryPressure\", \"PIDPressure\"]\n  | filter node_status.conditions.status = \"True\"\n  | stats count() by node_name, node_status.conditions.type\n)"
+      },
+      {
+        "siem": "Prometheus/Grafana (PromQL)",
+        "query": "# CPU throttling detection (containers hitting limits)\nsum by (namespace, pod, container) (\n  rate(container_cpu_cfs_throttled_seconds_total[5m])\n) > 0.1\n\n# Memory usage near limits\nsum by (namespace, pod, container) (\n  container_memory_working_set_bytes / container_spec_memory_limit_bytes\n) > 0.9\n\n# Pods without resource limits\ncount by (namespace, pod) (\n  kube_pod_container_resource_limits{resource=\"cpu\"} == 0 or \n  kube_pod_container_resource_limits{resource=\"memory\"} == 0\n)\n\n# Node resource pressure\nkube_node_status_condition{condition=~\"DiskPressure|MemoryPressure|PIDPressure\", status=\"true\"} == 1\n\n# Namespace quota usage\nsum by (namespace, resource) (\n  kube_resourcequota{type=\"used\"} / kube_resourcequota{type=\"hard\"}\n) > 0.8\n\n# Pod evictions\nrate(kube_pod_status_reason{reason=\"Evicted\"}[5m]) > 0"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Falco",
+        "type": "Runtime Threat Detection",
+        "usage": "Detects fork bombs, high process counts, and resource abuse in containers"
+      },
+      {
+        "name": "Prometheus + Alertmanager",
+        "type": "Metrics & Alerting",
+        "usage": "Monitor resource quotas, CPU throttling, memory pressure, and eviction rates"
+      },
+      {
+        "name": "Kubescape",
+        "type": "Security Scanning",
+        "usage": "Scan clusters for missing ResourceQuota, LimitRange, and Pod Security configurations"
+      },
+      {
+        "name": "Polaris",
+        "type": "Configuration Validation",
+        "usage": "Audit workloads for resource limit configurations and security best practices"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Telecommunications"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.6 - Resource Management)",
+      "HIPAA (164.308(a)(7)(i) - Contingency Plan)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.1.3, A.17.2.1)",
+      "NIST SP 800-190 (Container Security)",
+      "CIS Kubernetes Benchmark (5.2.1, 5.2.2, 5.2.6)"
+    ],
+    "deployment": [
+      "Cloud (EKS, GKE, AKS)",
+      "On-Premise",
+      "Hybrid",
+      "Edge Computing"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

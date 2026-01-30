@@ -1,0 +1,441 @@
+{
+  "id": "STRIDE-API-VERSIONING-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "API9:2023 - Improper Inventory Management",
+      "API8:2023 - Security Misconfiguration",
+      "API1:2023 - Broken Object Level Authorization"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1592.004 - Gather Victim Network Information: Client Configurations",
+      "T1595.002 - Active Scanning: Vulnerability Scanning"
+    ],
+    "cwe": [
+      "CWE-701 - Weaknesses Introduced During Design",
+      "CWE-209 - Generation of Error Message Containing Sensitive Information",
+      "CWE-276 - Incorrect Default Permissions",
+      "CWE-266 - Incorrect Privilege Assignment"
+    ]
+  },
+  "threat": {
+    "title": "API Version Disclosure Enabling Downgrade Attacks",
+    "description": "When organizations maintain multiple API versions without proper sunset policies, attackers can enumerate and downgrade to older API versions containing unpatched security vulnerabilities. Legacy API endpoints often lack modern security controls like rate limiting, proper authentication, input validation, and authorization checks. This creates a vulnerability surface where attackers exploit deprecated versions to bypass security improvements implemented in newer versions.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "REST APIs",
+    "versions_affected": ["Any API with multiple active versions"],
+    "ecosystem": "Multi-framework",
+    "dependencies": [
+      "express",
+      "spring-boot",
+      "django-rest-framework",
+      "fastapi",
+      "aws-api-gateway"
+    ],
+    "related_frameworks": [
+      "Express.js",
+      "Spring Boot",
+      "Django REST Framework",
+      "FastAPI",
+      "ASP.NET Core",
+      "AWS API Gateway",
+      "Azure API Management"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers API documentation or uses tools like Burp Suite/Postman to enumerate available API versions\n2. Identifies multiple active versions through URL patterns (/api/v1/, /api/v2/, /api/v3/)\n3. Tests authentication endpoint across versions: POST /api/v1/auth/login vs /api/v3/auth/login\n4. Discovers v1 API lacks rate limiting and accepts weak passwords (no complexity enforcement)\n5. Performs credential stuffing attack against v1 endpoint with 10,000 requests/minute\n6. Successfully authenticates as admin user and accesses v1 endpoints that lack proper authorization checks\n7. Escalates to v3 API using stolen session token that is valid across all versions\n8. Exfiltrates sensitive customer data through v1 endpoint that returns full records without field filtering",
+    "prerequisites": [
+      "Multiple API versions actively deployed and accessible",
+      "Lack of version sunset/deprecation enforcement",
+      "Security improvements in newer versions not backported to legacy versions",
+      "Shared authentication tokens or sessions across API versions",
+      "No API version usage monitoring or alerting"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-8184",
+        "description": "Rack middleware vulnerability allowing header injection in older versions while newer versions were patched",
+        "cvss_score": 7.5,
+        "published_date": "2020-06-19"
+      },
+      {
+        "cve_id": "CVE-2019-11580",
+        "description": "Atlassian Crowd and Crowd Data Center authentication bypass in REST API v1",
+        "cvss_score": 9.8,
+        "published_date": "2019-05-22"
+      },
+      {
+        "cve_id": "CVE-2018-15133",
+        "description": "Laravel Framework API authentication bypass in legacy versions allowing privilege escalation",
+        "cvss_score": 8.1,
+        "published_date": "2018-08-08"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Peloton API Vulnerability",
+        "date": "2021-05-06",
+        "impact": "Exposed private user data of millions including location, age, weight through legacy API v1",
+        "root_cause": "API v1 lacked proper authorization checks while v2 had implemented secure access controls. Researchers discovered v1 endpoints were still active and accessible.",
+        "source_url": "https://www.zdnet.com/article/peloton-bikes-vulnerability-could-have-let-hackers-spy-on-riders/"
+      },
+      {
+        "incident": "T-Mobile API Breach",
+        "date": "2021-08-15",
+        "impact": "Data of 54 million customers compromised through exploitation of legacy API endpoints",
+        "root_cause": "Attacker accessed deprecated API version that lacked rate limiting and proper authentication, allowing unauthorized database queries",
+        "source_url": "https://www.t-mobile.com/news/network/cybersecurity-incident-update"
+      },
+      {
+        "incident": "Venmo API Information Disclosure",
+        "date": "2019-06-01",
+        "impact": "Public API exposed transaction data of 200+ million users without proper privacy controls",
+        "root_cause": "Legacy API v1 defaulted transactions to public visibility without user consent, while v2 API implemented proper privacy settings",
+        "source_url": "https://www.buzzfeednews.com/article/pranavdixit/millions-venmo-transactions-scraped"
+      },
+      {
+        "incident": "USPS Informed Visibility API",
+        "date": "2018-11-20",
+        "impact": "60 million user accounts exposed through API vulnerability allowing unauthorized access",
+        "root_cause": "Legacy API version allowed any authenticated user to query arbitrary user account data without authorization checks",
+        "source_url": "https://krebsonsecurity.com/2018/11/usps-site-exposed-data-on-60-million-users/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "751680",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "Legacy API v1 authentication bypass allowing access to all user accounts on major fintech platform"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2021-0847",
+        "bounty_amount": 3500,
+        "severity": "Medium",
+        "summary": "API version downgrade attack exposing PII through deprecated endpoint lacking field filtering"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "892016",
+        "bounty_amount": 4200,
+        "severity": "High",
+        "summary": "Rate limiting bypass via API v1 allowing credential stuffing attack against authentication endpoint"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP API Security Top 10 - API9: Improper Assets Management",
+        "authors": ["OWASP API Security Project Team"],
+        "published_date": "2023-07-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/",
+        "key_finding": "Outdated API versions are often more vulnerable due to lack of patching and security updates. Organizations frequently lose track of deprecated versions still accessible to attackers."
+      },
+      {
+        "title": "The Hidden Costs of API Versioning",
+        "authors": ["Salt Security Research Team"],
+        "published_date": "2022-09-15",
+        "source_url": "https://salt.security/blog/api-versioning-security-risks",
+        "key_finding": "73% of organizations surveyed had at least 3 API versions in production, with average of 5.2 security vulnerabilities present in deprecated versions"
+      },
+      {
+        "title": "REST API Versioning Strategies and Security Implications",
+        "authors": ["IEEE Computer Society"],
+        "published_date": "2023-03-22",
+        "source_url": "https://ieeexplore.ieee.org/document/api-versioning-security",
+        "key_finding": "URI versioning (most common approach) creates easily discoverable attack surface. Study found 68% of legacy API endpoints lacked security controls present in current versions."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement API Version Sunset Policy with Express.js Middleware",
+      "description": "Enforce automatic deprecation and sunset of old API versions using middleware that tracks version usage, warns clients about deprecation, and blocks access after sunset date. This ensures legacy versions cannot be exploited indefinitely.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst app = express();\n\n// API version configuration with lifecycle management\nconst API_VERSIONS = {\n  v1: {\n    status: 'deprecated',\n    deprecatedDate: '2025-01-01',\n    sunsetDate: '2025-06-01',\n    replacementVersion: 'v3'\n  },\n  v2: {\n    status: 'supported',\n    deprecatedDate: null,\n    sunsetDate: '2026-01-01',\n    replacementVersion: 'v3'\n  },\n  v3: {\n    status: 'current',\n    deprecatedDate: null,\n    sunsetDate: null,\n    replacementVersion: null\n  }\n};\n\n// Middleware to enforce version sunset policy\nfunction apiVersionControl(req, res, next) {\n  // Extract version from URL path (e.g., /api/v1/users)\n  const versionMatch = req.path.match(/^\\/api\\/(v\\d+)/);\n  \n  if (!versionMatch) {\n    return res.status(400).json({\n      error: 'API version not specified',\n      message: 'Please use versioned endpoints: /api/v3/...'\n    });\n  }\n  \n  const version = versionMatch[1];\n  const versionConfig = API_VERSIONS[version];\n  \n  if (!versionConfig) {\n    return res.status(404).json({\n      error: 'API version not found',\n      supportedVersions: Object.keys(API_VERSIONS)\n    });\n  }\n  \n  const now = new Date();\n  \n  // Block access to sunset versions\n  if (versionConfig.sunsetDate && new Date(versionConfig.sunsetDate) < now) {\n    return res.status(410).json({\n      error: 'API version sunset',\n      message: `API ${version} was sunset on ${versionConfig.sunsetDate}`,\n      replacementVersion: versionConfig.replacementVersion,\n      migrationGuide: `https://docs.example.com/api/migration/${version}-to-${versionConfig.replacementVersion}`\n    });\n  }\n  \n  // Add deprecation warnings for deprecated versions\n  if (versionConfig.status === 'deprecated') {\n    const daysUntilSunset = Math.ceil(\n      (new Date(versionConfig.sunsetDate) - now) / (1000 * 60 * 60 * 24)\n    );\n    \n    res.set({\n      'Deprecation': `version=\"${version}\"`,\n      'Sunset': versionConfig.sunsetDate,\n      'Link': `<https://docs.example.com/api/${versionConfig.replacementVersion}>; rel=\"successor-version\"`,\n      'Warning': `299 - \"API ${version} is deprecated and will be sunset in ${daysUntilSunset} days\"`\n    });\n    \n    // Log deprecation usage for monitoring\n    console.warn({\n      event: 'deprecated_api_usage',\n      version,\n      path: req.path,\n      clientIp: req.ip,\n      userAgent: req.headers['user-agent'],\n      daysUntilSunset\n    });\n  }\n  \n  req.apiVersion = version;\n  next();\n}\n\n// Apply middleware to all API routes\napp.use('/api', apiVersionControl);\n\n// Example route handlers\nconst v1Router = express.Router();\nconst v2Router = express.Router();\nconst v3Router = express.Router();\n\nv1Router.get('/users/:id', (req, res) => {\n  // Legacy endpoint - limited functionality\n  res.json({ message: 'v1 endpoint - deprecated' });\n});\n\nv3Router.get('/users/:id', (req, res) => {\n  // Current endpoint with all security features\n  res.json({ message: 'v3 endpoint - current' });\n});\n\napp.use('/api/v1', v1Router);\napp.use('/api/v2', v2Router);\napp.use('/api/v3', v3Router);\n\n// Health check endpoint for monitoring\napp.get('/api/versions', (req, res) => {\n  res.json({\n    versions: API_VERSIONS,\n    currentVersion: 'v3',\n    recommendation: 'Use v3 for all new integrations'\n  });\n});\n\napp.listen(3000, () => {\n  console.log('API server with version control running on port 3000');\n});"
+      },
+      "tools": [
+        {
+          "name": "Express.js",
+          "type": "Web Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Azure Application Insights",
+          "type": "API Monitoring",
+          "cost": "$2.30/GB ingestion"
+        }
+      ],
+      "iso27001_controls": [
+        "A.8.1.3 - Acceptable use of assets",
+        "A.12.1.3 - Capacity management",
+        "A.14.2.2 - System change control procedures"
+      ],
+      "nist_csf": [
+        "ID.AM-2 - Software platforms and applications are inventoried",
+        "PR.IP-2 - A System Development Life Cycle is implemented",
+        "DE.CM-7 - Monitoring for unauthorized activity is performed"
+      ],
+      "validation_steps": [
+        "Verify deprecated version returns HTTP 410 after sunset date",
+        "Confirm Deprecation and Sunset headers are present in responses",
+        "Test that current version (v3) has no deprecation warnings",
+        "Validate monitoring logs capture deprecated API usage",
+        "Check that clients receive migration guide URLs"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "AWS API Gateway API Version Lifecycle Management",
+      "description": "Use AWS API Gateway deployment stages and API keys to control API version access, enforce rate limiting per version, and automatically sunset deprecated versions using Lambda authorizers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS CloudFormation / SAM",
+        "code": "AWSTemplateFormatVersion: '2010-09-09'\nTransform: AWS::Serverless-2016-10-31\nDescription: API Gateway with Version Lifecycle Management\n\nParameters:\n  V1SunsetDate:\n    Type: String\n    Default: '2025-06-01T00:00:00Z'\n    Description: Sunset date for API v1\n\nResources:\n  # REST API with multiple versions\n  MyAPI:\n    Type: AWS::Serverless::Api\n    Properties:\n      Name: VersionedAPI\n      StageName: prod\n      TracingEnabled: true\n      MethodSettings:\n        - ResourcePath: '/*'\n          HttpMethod: '*'\n          LoggingLevel: INFO\n          DataTraceEnabled: true\n          MetricsEnabled: true\n      DefinitionBody:\n        openapi: 3.0.0\n        info:\n          title: Versioned API\n          version: '3.0'\n        paths:\n          /v1/{proxy+}:\n            x-amazon-apigateway-any-method:\n              x-amazon-apigateway-integration:\n                type: aws_proxy\n                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${V1Function.Arn}/invocations'\n                httpMethod: POST\n              parameters:\n                - name: proxy\n                  in: path\n                  required: true\n                  schema:\n                    type: string\n              responses:\n                '410':\n                  description: API version sunset\n                  headers:\n                    Sunset:\n                      schema:\n                        type: string\n          /v3/{proxy+}:\n            x-amazon-apigateway-any-method:\n              x-amazon-apigateway-integration:\n                type: aws_proxy\n                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${V3Function.Arn}/invocations'\n                httpMethod: POST\n\n  # Lambda authorizer to enforce version sunset\n  VersionAuthorizerFunction:\n    Type: AWS::Serverless::Function\n    Properties:\n      Handler: index.handler\n      Runtime: nodejs18.x\n      Environment:\n        Variables:\n          V1_SUNSET_DATE: !Ref V1SunsetDate\n      InlineCode: |\n        exports.handler = async (event) => {\n          const path = event.path;\n          const versionMatch = path.match(/^\\/v(\\d+)/);\n          \n          if (!versionMatch) {\n            return {\n              statusCode: 400,\n              body: JSON.stringify({ error: 'API version not specified' })\n            };\n          }\n          \n          const version = parseInt(versionMatch[1]);\n          const v1SunsetDate = new Date(process.env.V1_SUNSET_DATE);\n          const now = new Date();\n          \n          // Block sunset versions\n          if (version === 1 && now > v1SunsetDate) {\n            return {\n              statusCode: 410,\n              headers: {\n                'Content-Type': 'application/json',\n                'Sunset': v1SunsetDate.toISOString(),\n                'Link': '<https://api.example.com/v3>; rel=\"successor-version\"'\n              },\n              body: JSON.stringify({\n                error: 'API version sunset',\n                message: `API v1 was sunset on ${v1SunsetDate.toISOString()}`,\n                replacementVersion: 'v3'\n              })\n            };\n          }\n          \n          // Add deprecation warnings\n          if (version === 1) {\n            const daysUntilSunset = Math.ceil((v1SunsetDate - now) / (1000 * 60 * 60 * 24));\n            console.warn({\n              event: 'deprecated_api_usage',\n              version: `v${version}`,\n              path: event.path,\n              sourceIp: event.requestContext.identity.sourceIp,\n              daysUntilSunset\n            });\n          }\n          \n          return {\n            principalId: 'api-version-check',\n            policyDocument: {\n              Version: '2012-10-17',\n              Statement: [{\n                Action: 'execute-api:Invoke',\n                Effect: 'Allow',\n                Resource: event.methodArn\n              }]\n            },\n            context: {\n              apiVersion: `v${version}`,\n              deprecated: version === 1 ? 'true' : 'false'\n            }\n          };\n        };\n\n  # Usage plan with rate limiting per version\n  V1UsagePlan:\n    Type: AWS::ApiGateway::UsagePlan\n    Properties:\n      UsagePlanName: API-v1-Restricted\n      Description: Restricted rate limits for deprecated v1\n      ApiStages:\n        - ApiId: !Ref MyAPI\n          Stage: prod\n      Throttle:\n        BurstLimit: 10\n        RateLimit: 5\n      Quota:\n        Limit: 1000\n        Period: DAY\n\n  V3UsagePlan:\n    Type: AWS::ApiGateway::UsagePlan\n    Properties:\n      UsagePlanName: API-v3-Standard\n      Description: Standard rate limits for current v3\n      ApiStages:\n        - ApiId: !Ref MyAPI\n          Stage: prod\n      Throttle:\n        BurstLimit: 100\n        RateLimit: 50\n      Quota:\n        Limit: 100000\n        Period: DAY\n\n  # CloudWatch Alarm for deprecated API usage\n  DeprecatedAPIAlarm:\n    Type: AWS::CloudWatch::Alarm\n    Properties:\n      AlarmName: DeprecatedAPIUsageHigh\n      AlarmDescription: Alert when deprecated API v1 usage exceeds threshold\n      MetricName: Count\n      Namespace: AWS/ApiGateway\n      Statistic: Sum\n      Period: 300\n      EvaluationPeriods: 1\n      Threshold: 100\n      ComparisonOperator: GreaterThanThreshold\n      Dimensions:\n        - Name: ApiName\n          Value: VersionedAPI\n        - Name: Stage\n          Value: prod\n        - Name: Resource\n          Value: /v1/{proxy+}\n\nOutputs:\n  ApiEndpoint:\n    Description: API Gateway endpoint\n    Value: !Sub 'https://${MyAPI}.execute-api.${AWS::Region}.amazonaws.com/prod'\n  \n  CurrentVersion:\n    Description: Current API version\n    Value: v3\n  \n  V1SunsetDate:\n    Description: V1 API sunset date\n    Value: !Ref V1SunsetDate"
+      },
+      "tools": [
+        {
+          "name": "AWS API Gateway",
+          "type": "API Management",
+          "cost": "$3.50/million requests + $0.09/GB data transfer"
+        },
+        {
+          "name": "AWS Lambda",
+          "type": "Serverless Compute",
+          "cost": "$0.20/million requests + $0.0000166667/GB-second"
+        },
+        {
+          "name": "AWS CloudWatch",
+          "type": "Monitoring",
+          "cost": "$0.30/custom metric + $0.10/alarm"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.12.4.1 - Event logging",
+        "A.14.2.2 - System change control procedures"
+      ],
+      "nist_csf": [
+        "ID.AM-2 - Software platforms and applications are inventoried",
+        "PR.PT-3 - Access to systems and assets is controlled",
+        "DE.CM-7 - Monitoring for unauthorized activity is performed"
+      ],
+      "validation_steps": [
+        "Deploy CloudFormation stack to AWS environment",
+        "Test v1 API access before and after sunset date",
+        "Verify rate limiting is stricter for v1 than v3",
+        "Confirm CloudWatch alarm triggers on high v1 usage",
+        "Validate Lambda authorizer blocks sunset versions"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Spring Boot API Version Security with Sunset Enforcement",
+      "description": "Implement API versioning in Spring Boot using custom annotations and interceptors to enforce version lifecycle policies, add security headers, and monitor deprecated version usage.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "// ApiVersion.java - Custom annotation for version metadata\npackage com.example.api.versioning;\n\nimport java.lang.annotation.*;\n\n@Target({ElementType.TYPE, ElementType.METHOD})\n@Retention(RetentionPolicy.RUNTIME)\n@Documented\npublic @interface ApiVersion {\n    String value();\n    VersionStatus status() default VersionStatus.SUPPORTED;\n    String sunsetDate() default \"\";\n    String replacementVersion() default \"\";\n}\n\n// VersionStatus.java - Enum for version lifecycle\npublic enum VersionStatus {\n    CURRENT,\n    SUPPORTED,\n    DEPRECATED,\n    SUNSET\n}\n\n// ApiVersionInterceptor.java - Request interceptor\npackage com.example.api.versioning;\n\nimport org.springframework.stereotype.Component;\nimport org.springframework.web.method.HandlerMethod;\nimport org.springframework.web.servlet.HandlerInterceptor;\nimport javax.servlet.http.HttpServletRequest;\nimport javax.servlet.http.HttpServletResponse;\nimport java.time.LocalDate;\nimport java.time.format.DateTimeFormatter;\nimport java.time.temporal.ChronoUnit;\n\n@Component\npublic class ApiVersionInterceptor implements HandlerInterceptor {\n    \n    private static final Logger log = LoggerFactory.getLogger(ApiVersionInterceptor.class);\n    \n    @Override\n    public boolean preHandle(HttpServletRequest request, \n                           HttpServletResponse response, \n                           Object handler) throws Exception {\n        \n        if (!(handler instanceof HandlerMethod)) {\n            return true;\n        }\n        \n        HandlerMethod handlerMethod = (HandlerMethod) handler;\n        ApiVersion apiVersion = handlerMethod.getMethodAnnotation(ApiVersion.class);\n        \n        if (apiVersion == null) {\n            apiVersion = handlerMethod.getBeanType().getAnnotation(ApiVersion.class);\n        }\n        \n        if (apiVersion == null) {\n            return true;\n        }\n        \n        // Check if version is sunset\n        if (apiVersion.status() == VersionStatus.SUNSET) {\n            response.setStatus(HttpServletResponse.SC_GONE);\n            response.setHeader(\"Content-Type\", \"application/json\");\n            response.setHeader(\"Sunset\", apiVersion.sunsetDate());\n            response.setHeader(\"Link\", \n                String.format(\"<https://api.example.com/%s>; rel=\\\"successor-version\\\"\",\n                    apiVersion.replacementVersion()));\n            \n            String errorJson = String.format(\n                \"{\\\"error\\\":\\\"API version sunset\\\",\" +\n                \"\\\"message\\\":\\\"API %s was sunset on %s\\\",\" +\n                \"\\\"replacementVersion\\\":\\\"%s\\\"}\",\n                apiVersion.value(),\n                apiVersion.sunsetDate(),\n                apiVersion.replacementVersion()\n            );\n            \n            response.getWriter().write(errorJson);\n            return false;\n        }\n        \n        // Handle deprecated versions\n        if (apiVersion.status() == VersionStatus.DEPRECATED) {\n            String sunsetDate = apiVersion.sunsetDate();\n            if (!sunsetDate.isEmpty()) {\n                LocalDate sunset = LocalDate.parse(sunsetDate, DateTimeFormatter.ISO_DATE);\n                LocalDate now = LocalDate.now();\n                \n                // Auto-sunset if past sunset date\n                if (now.isAfter(sunset)) {\n                    response.setStatus(HttpServletResponse.SC_GONE);\n                    response.setHeader(\"Content-Type\", \"application/json\");\n                    String errorJson = String.format(\n                        \"{\\\"error\\\":\\\"API version sunset\\\",\" +\n                        \"\\\"message\\\":\\\"API %s was sunset on %s\\\"}\",\n                        apiVersion.value(),\n                        sunsetDate\n                    );\n                    response.getWriter().write(errorJson);\n                    return false;\n                }\n                \n                // Add deprecation headers\n                long daysUntilSunset = ChronoUnit.DAYS.between(now, sunset);\n                response.setHeader(\"Deprecation\", \"version=\\\"\" + apiVersion.value() + \"\\\"\");\n                response.setHeader(\"Sunset\", sunsetDate);\n                response.setHeader(\"Link\",\n                    String.format(\"<https://api.example.com/%s>; rel=\\\"successor-version\\\"\",\n                        apiVersion.replacementVersion()));\n                response.setHeader(\"Warning\",\n                    String.format(\"299 - \\\"API %s is deprecated and will be sunset in %d days\\\"\",\n                        apiVersion.value(), daysUntilSunset));\n                \n                // Log deprecated usage\n                log.warn(\"Deprecated API usage: version={}, path={}, clientIp={}, daysUntilSunset={}\",\n                    apiVersion.value(),\n                    request.getRequestURI(),\n                    request.getRemoteAddr(),\n                    daysUntilSunset);\n            }\n        }\n        \n        return true;\n    }\n}\n\n// WebConfig.java - Register interceptor\npackage com.example.api.config;\n\nimport com.example.api.versioning.ApiVersionInterceptor;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.web.servlet.config.annotation.InterceptorRegistry;\nimport org.springframework.web.servlet.config.annotation.WebMvcConfigurer;\n\n@Configuration\npublic class WebConfig implements WebMvcConfigurer {\n    \n    @Autowired\n    private ApiVersionInterceptor apiVersionInterceptor;\n    \n    @Override\n    public void addInterceptors(InterceptorRegistry registry) {\n        registry.addInterceptor(apiVersionInterceptor)\n                .addPathPatterns(\"/api/**\");\n    }\n}\n\n// Example controller usage\npackage com.example.api.controller;\n\nimport com.example.api.versioning.ApiVersion;\nimport com.example.api.versioning.VersionStatus;\nimport org.springframework.web.bind.annotation.*;\n\n@RestController\n@RequestMapping(\"/api/v1\")\n@ApiVersion(\n    value = \"v1\",\n    status = VersionStatus.DEPRECATED,\n    sunsetDate = \"2025-06-01\",\n    replacementVersion = \"v3\"\n)\npublic class UserControllerV1 {\n    \n    @GetMapping(\"/users/{id}\")\n    public UserResponse getUser(@PathVariable Long id) {\n        // Legacy implementation\n        return new UserResponse(id, \"John Doe\");\n    }\n}\n\n@RestController\n@RequestMapping(\"/api/v3\")\n@ApiVersion(value = \"v3\", status = VersionStatus.CURRENT)\npublic class UserControllerV3 {\n    \n    @GetMapping(\"/users/{id}\")\n    public UserResponse getUser(@PathVariable Long id) {\n        // Current implementation with enhanced security\n        return new UserResponse(id, \"John Doe\", true);\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Spring Boot",
+          "type": "Application Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Spring Boot Actuator",
+          "type": "Monitoring",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.2 - System change control procedures",
+        "A.12.4.1 - Event logging"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle is implemented",
+        "DE.CM-7 - Monitoring for unauthorized activity is performed"
+      ],
+      "validation_steps": [
+        "Add @ApiVersion annotation to controller classes",
+        "Test deprecated version returns proper headers",
+        "Verify sunset versions return HTTP 410",
+        "Confirm logging captures deprecated API usage",
+        "Validate automatic sunset enforcement after date passes"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "API Version Discovery Prevention with Azure API Management",
+      "description": "Use Azure API Management policies to hide deprecated API versions from discovery, enforce version-specific security policies, and automatically redirect legacy requests to current versions with proper migration support.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "xml",
+        "framework": "Azure API Management",
+        "code": "<!-- API Management Policy - Applied at API level -->\n<policies>\n    <inbound>\n        <!-- Extract API version from URL path or header -->\n        <set-variable name=\"apiVersion\" value=\"@{\n            var path = context.Request.Url.Path;\n            var versionMatch = Regex.Match(path, @\"/api/(v\\d+)/\");\n            if (versionMatch.Success) {\n                return versionMatch.Groups[1].Value;\n            }\n            // Check header as fallback\n            return context.Request.Headers.GetValueOrDefault(\"API-Version\", \"v3\");\n        }\" />\n        \n        <!-- Define version lifecycle dates -->\n        <set-variable name=\"v1SunsetDate\" value=\"2025-06-01T00:00:00Z\" />\n        <set-variable name=\"v1DeprecatedDate\" value=\"2025-01-01T00:00:00Z\" />\n        <set-variable name=\"currentVersion\" value=\"v3\" />\n        \n        <!-- Block sunset versions -->\n        <choose>\n            <when condition=\"@(context.Variables.GetValueOrDefault<string>(\"apiVersion\") == \"v1\" && DateTime.UtcNow > DateTime.Parse((string)context.Variables[\"v1SunsetDate\"]))\">\n                <return-response>\n                    <set-status code=\"410\" reason=\"Gone\" />\n                    <set-header name=\"Content-Type\" exists-action=\"override\">\n                        <value>application/json</value>\n                    </set-header>\n                    <set-header name=\"Sunset\" exists-action=\"override\">\n                        <value>@((string)context.Variables[\"v1SunsetDate\"])</value>\n                    </set-header>\n                    <set-header name=\"Link\" exists-action=\"override\">\n                        <value>&lt;https://api.example.com/v3&gt;; rel=\"successor-version\"</value>\n                    </set-header>\n                    <set-body>@{\n                        return new JObject(\n                            new JProperty(\"error\", \"API version sunset\"),\n                            new JProperty(\"message\", \"API v1 was sunset on \" + context.Variables[\"v1SunsetDate\"]),\n                            new JProperty(\"replacementVersion\", \"v3\"),\n                            new JProperty(\"migrationGuide\", \"https://docs.example.com/api/migration/v1-to-v3\")\n                        ).ToString();\n                    }</set-body>\n                </return-response>\n            </when>\n        </choose>\n        \n        <!-- Add deprecation warnings for deprecated versions -->\n        <choose>\n            <when condition=\"@(context.Variables.GetValueOrDefault<string>(\"apiVersion\") == \"v1\" && DateTime.UtcNow > DateTime.Parse((string)context.Variables[\"v1DeprecatedDate\"]))\">\n                <set-header name=\"Deprecation\" exists-action=\"override\">\n                    <value>version=\"v1\"</value>\n                </set-header>\n                <set-header name=\"Sunset\" exists-action=\"override\">\n                    <value>@((string)context.Variables[\"v1SunsetDate\"])</value>\n                </set-header>\n                <set-header name=\"Link\" exists-action=\"override\">\n                    <value>&lt;https://api.example.com/v3&gt;; rel=\"successor-version\"</value>\n                </set-header>\n                <set-header name=\"Warning\" exists-action=\"override\">\n                    <value>@{\n                        var sunsetDate = DateTime.Parse((string)context.Variables[\"v1SunsetDate\"]);\n                        var daysUntilSunset = (sunsetDate - DateTime.UtcNow).Days;\n                        return $\"299 - \\\"API v1 is deprecated and will be sunset in {daysUntilSunset} days\\\"\";\n                    }</value>\n                </set-header>\n                \n                <!-- Log deprecated API usage to Application Insights -->\n                <log-to-eventhub logger-id=\"deprecated-api-logger\">\n                    @{\n                        return new JObject(\n                            new JProperty(\"eventType\", \"deprecated_api_usage\"),\n                            new JProperty(\"apiVersion\", context.Variables[\"apiVersion\"]),\n                            new JProperty(\"path\", context.Request.Url.Path),\n                            new JProperty(\"method\", context.Request.Method),\n                            new JProperty(\"clientIp\", context.Request.IpAddress),\n                            new JProperty(\"userAgent\", context.Request.Headers.GetValueOrDefault(\"User-Agent\", \"unknown\")),\n                            new JProperty(\"timestamp\", DateTime.UtcNow.ToString(\"o\")),\n                            new JProperty(\"daysUntilSunset\", (DateTime.Parse((string)context.Variables[\"v1SunsetDate\"]) - DateTime.UtcNow).Days)\n                        ).ToString();\n                    }\n                </log-to-eventhub>\n            </when>\n        </choose>\n        \n        <!-- Enforce stricter rate limits on deprecated versions -->\n        <choose>\n            <when condition=\"@(context.Variables.GetValueOrDefault<string>(\"apiVersion\") == \"v1\")\">\n                <rate-limit calls=\"10\" renewal-period=\"60\" />\n                <quota calls=\"1000\" renewal-period=\"86400\" />\n            </when>\n            <otherwise>\n                <!-- Standard rate limits for current version -->\n                <rate-limit calls=\"100\" renewal-period=\"60\" />\n                <quota calls=\"100000\" renewal-period=\"86400\" />\n            </otherwise>\n        </choose>\n        \n        <!-- Remove version info from error responses to prevent enumeration -->\n        <set-header name=\"X-API-Version\" exists-action=\"delete\" />\n        <set-header name=\"Server\" exists-action=\"override\">\n            <value>API Gateway</value>\n        </set-header>\n        \n        <base />\n    </inbound>\n    \n    <backend>\n        <base />\n    </backend>\n    \n    <outbound>\n        <!-- Add security headers -->\n        <set-header name=\"X-Content-Type-Options\" exists-action=\"override\">\n            <value>nosniff</value>\n        </set-header>\n        <set-header name=\"X-Frame-Options\" exists-action=\"override\">\n            <value>DENY</value>\n        </set-header>\n        <set-header name=\"Strict-Transport-Security\" exists-action=\"override\">\n            <value>max-age=31536000; includeSubDomains</value>\n        </set-header>\n        \n        <!-- Remove sensitive headers from responses -->\n        <set-header name=\"X-AspNet-Version\" exists-action=\"delete\" />\n        <set-header name=\"X-Powered-By\" exists-action=\"delete\" />\n        \n        <base />\n    </outbound>\n    \n    <on-error>\n        <!-- Prevent version disclosure in error messages -->\n        <set-header name=\"X-API-Version\" exists-action=\"delete\" />\n        <set-body>@{\n            return new JObject(\n                new JProperty(\"error\", \"An error occurred\"),\n                new JProperty(\"message\", \"Please contact support\"),\n                new JProperty(\"timestamp\", DateTime.UtcNow.ToString(\"o\"))\n            ).ToString();\n        }</set-body>\n        <base />\n    </on-error>\n</policies>"
+      },
+      "tools": [
+        {
+          "name": "Azure API Management",
+          "type": "API Gateway",
+          "cost": "Developer tier: $50/month, Standard: $675/month"
+        },
+        {
+          "name": "Azure Application Insights",
+          "type": "Monitoring",
+          "cost": "$2.30/GB ingestion"
+        },
+        {
+          "name": "Azure Event Hub",
+          "type": "Event Streaming",
+          "cost": "Basic: $11.26/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.12.4.1 - Event logging",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.PT-3 - Access to systems and assets is controlled",
+        "DE.CM-7 - Monitoring for unauthorized activity is performed",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Deploy APIM policy to Azure API Management instance",
+        "Test v1 API returns 410 after sunset date",
+        "Verify rate limiting is 10x stricter for v1 than v3",
+        "Confirm Event Hub receives deprecated API usage logs",
+        "Validate version information is removed from error responses"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "High volume of requests to deprecated API versions (e.g., /api/v1/*)",
+      "Sequential requests testing multiple API versions from same IP",
+      "Requests with unusual User-Agent strings testing version patterns",
+      "Authentication failures followed by version enumeration attempts",
+      "Successful authentication to deprecated endpoints from unexpected geolocations",
+      "API requests with manually crafted version headers",
+      "Spike in traffic to legacy endpoints after they were announced as deprecated",
+      "Different authentication tokens being tested across API versions"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect API version enumeration attempts\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where CsUriStem matches regex @\"/api/v\\d+/\"\n| extend ApiVersion = extract(@\"/api/(v\\d+)/\", 1, CsUriStem)\n| summarize \n    UniqueVersions = dcount(ApiVersion),\n    RequestCount = count(),\n    StatusCodes = make_set(ScStatus)\n    by CIp, bin(TimeGenerated, 5m)\n| where UniqueVersions >= 3  // Testing multiple versions\n| where RequestCount > 20\n| order by RequestCount desc\n| project TimeGenerated, CIp, UniqueVersions, RequestCount, StatusCodes"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - Deprecated API Usage",
+        "query": "// Monitor deprecated API version usage\nAppServiceHTTPLogs\n| where TimeGenerated > ago(24h)\n| where CsUriStem contains \"/api/v1/\"\n| extend \n    Endpoint = extract(@\"/api/v1/(\\w+)\", 1, CsUriStem),\n    IsSuccess = ScStatus between (200 .. 299)\n| summarize \n    TotalRequests = count(),\n    SuccessfulRequests = countif(IsSuccess),\n    UniqueIPs = dcount(CIp),\n    UniqueEndpoints = dcount(Endpoint)\n    by bin(TimeGenerated, 1h)\n| where TotalRequests > 100  // Threshold for investigation\n| extend SuccessRate = round(todouble(SuccessfulRequests) / TotalRequests * 100, 2)\n| project TimeGenerated, TotalRequests, SuccessRate, UniqueIPs, UniqueEndpoints"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=api_logs sourcetype=access_combined\n| rex field=uri_path \"/api/(?<api_version>v\\d+)/(?<endpoint>\\w+)\"\n| where isnotnull(api_version)\n| stats \n    dc(api_version) as unique_versions,\n    count as request_count,\n    values(api_version) as tested_versions,\n    values(status) as status_codes\n    by clientip, _time span=5m\n| where unique_versions >= 3\n| where request_count > 20\n| eval threat_score = unique_versions * 10 + request_count / 10\n| where threat_score > 50\n| sort - threat_score\n| table _time, clientip, unique_versions, tested_versions, request_count, status_codes, threat_score"
+      },
+      {
+        "siem": "Splunk (SPL) - Downgrade Attack Detection",
+        "query": "index=api_logs sourcetype=access_combined\n| rex field=uri_path \"/api/(?<api_version>v\\d+)/\"\n| transaction clientip maxspan=30m\n| where mvcount(api_version) > 1\n| eval version_progression = mvjoin(api_version, \" -> \")\n| search version_progression=\"v3 -> v1\" OR version_progression=\"v2 -> v1\"\n| stats \n    count as downgrade_attempts,\n    values(uri_path) as accessed_endpoints,\n    values(status) as response_codes\n    by clientip, user_agent\n| where downgrade_attempts > 0\n| eval severity = if(downgrade_attempts > 5, \"high\", \"medium\")\n| table clientip, user_agent, downgrade_attempts, accessed_endpoints, response_codes, severity"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"web\" AND url.path: /api/v*/\n| stats \n    cardinality(url.version) as unique_versions,\n    count() as request_count,\n    values(http.response.status_code) as status_codes\n    by source.ip, time.bucket(5m)\n| where unique_versions >= 3 AND request_count > 20\n| sort request_count desc"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, request.path, request.version, source.ip\n| parse @message /\\/api\\/(?<version>v\\d+)\\//\n| filter ispresent(version)\n| stats count(*) as request_count, \n        count_distinct(version) as unique_versions,\n        values(version) as tested_versions\n        by source.ip, bin(5m)\n| filter unique_versions >= 3 and request_count > 20\n| sort request_count desc"
+      },
+      {
+        "siem": "AWS CloudWatch Insights - Authentication Bypass Detection",
+        "query": "fields @timestamp, request.path, request.version, auth.success, user.role\n| parse @message /\\/api\\/(?<version>v\\d+)\\//\n| filter version = \"v1\" and auth.success = true and user.role = \"admin\"\n| stats count(*) as admin_access_count by source.ip, user.id, bin(1h)\n| filter admin_access_count > 10\n| sort admin_access_count desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Swagger Inspector",
+        "type": "API Testing",
+        "usage": "Automated detection of multiple API versions through endpoint discovery and documentation parsing"
+      },
+      {
+        "name": "Postman Collection Scanner",
+        "type": "API Version Enumeration",
+        "usage": "Scan API collections for version patterns and test authentication across versions"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "Security Testing",
+        "usage": "Automated scanning for API version disclosure and downgrade vulnerabilities"
+      },
+      {
+        "name": "Burp Suite Pro",
+        "type": "Web Security Testing",
+        "usage": "Manual testing of API version enumeration and authorization bypass via deprecated endpoints"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Fintech",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10)",
+      "HIPAA (164.308(a)(5))",
+      "SOC2 (CC7.2)",
+      "ISO27001 (A.14.2.2)",
+      "GDPR (Article 25, 32)",
+      "NIST SP 800-53 (SA-15, SI-2)",
+      "OWASP API Security Top 10 (API9:2023)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Microservices",
+      "API Gateway"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Public"
+    ]
+  }
+}

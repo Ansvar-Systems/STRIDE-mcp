@@ -1,0 +1,410 @@
+{
+  "id": "STRIDE-DOS-WEBSOCKET-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1499 - Endpoint Denial of Service",
+      "T1499.002 - Service Exhaustion Flood",
+      "T1499.003 - Application Exhaustion Flood"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-920 - Improper Restriction of Power Consumption"
+    ]
+  },
+  "threat": {
+    "title": "WebSocket Connection Exhaustion Attack",
+    "description": "Attackers exploit WebSocket servers that lack proper connection limits, rate limiting, and timeout configurations to exhaust server resources through connection flooding, slowloris-style attacks, or message bombing. By opening hundreds or thousands of persistent WebSocket connections and sending minimal data (or no data), attackers can consume all available server resources, preventing legitimate users from connecting and causing complete service disruption.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "WebSocket Protocol",
+    "versions_affected": [
+      "RFC 6455"
+    ],
+    "ecosystem": "Real-time Web Applications",
+    "dependencies": [
+      "ws",
+      "socket.io",
+      "sockjs",
+      "uWebSockets",
+      "websocket-driver",
+      "spring-websocket",
+      "flask-socketio"
+    ],
+    "related_frameworks": [
+      "Express.js (ws library)",
+      "Spring Boot (STOMP over WebSocket)",
+      "Flask-SocketIO",
+      "Socket.IO",
+      "SignalR",
+      "Phoenix Channels"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Reconnaissance: Attacker identifies WebSocket endpoint (e.g., wss://api.example.com/ws) through browser DevTools or API documentation\n2. Connection Flooding: Attacker writes a script to open 10,000+ simultaneous WebSocket connections from distributed IP addresses\n3. Slowloris Attack: Each connection sends minimal data (e.g., one byte every 60 seconds) to keep connections alive without triggering timeouts\n4. Resource Exhaustion: Server exhausts available file descriptors, memory, and thread pool resources\n5. Service Degradation: Legitimate users unable to establish new connections; existing connections experience timeouts\n6. Complete Outage: Server becomes unresponsive; monitoring systems detect 100% connection pool utilization and application crashes",
+    "prerequisites": [
+      "WebSocket endpoint accessible without authentication OR weak authentication",
+      "No per-IP connection limits configured",
+      "Missing or insufficient rate limiting on connection establishment",
+      "No message size limits or message rate throttling",
+      "Lack of idle connection timeout or heartbeat mechanisms",
+      "Insufficient server resource allocation (connection pool size, memory)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-23672",
+        "description": "Apache Tomcat WebSocket DoS via incomplete cleanup during closure. Affects Tomcat 11.0.0-M1 to 11.0.0-M16, 10.1.0-M1 to 10.1.18, 9.0.0-M1 to 9.0.85, 8.5.0 to 8.5.98",
+        "cvss_score": 7.5,
+        "published_date": "2024-03-13"
+      },
+      {
+        "cve_id": "CVE-2024-37890",
+        "description": "Denial of Service in ws library when number of received headers exceeds server.maxHeadersCount threshold",
+        "cvss_score": 7.5,
+        "published_date": "2024-06-17"
+      },
+      {
+        "cve_id": "CVE-2025-36128",
+        "description": "IBM MQ vulnerable to Slowloris DoS attack due to improper enforcement of timeout on individual read operations",
+        "cvss_score": 7.5,
+        "published_date": "2025-01-15"
+      },
+      {
+        "cve_id": "CVE-2024-36387",
+        "description": "Apache HTTP Server: WebSocket protocol upgrades over HTTP/2 cause NULL pointer dereference leading to server crash",
+        "cvss_score": 7.5,
+        "published_date": "2024-07-01"
+      },
+      {
+        "cve_id": "CVE-2024-28854",
+        "description": "Azure IoT TLS Listener Slowloris DoS: malicious user can open 6.4 TcpStreams per second with 0 bytes, triggering DoS",
+        "cvss_score": 7.5,
+        "published_date": "2024-05-03"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Discord Widespread Outage",
+        "date": "2023-09-29",
+        "impact": "Major service disruption affecting millions of users globally for several hours",
+        "root_cause": "Unusual traffic spikes causing WebSocket connection exhaustion and service degradation",
+        "source_url": "https://techcrunch.com/2023/09/29/discord-working-resolve-widespread-outage-caused-unusual-traffic-spikes/"
+      },
+      {
+        "incident": "Gaming Platform WebSocket DoS Research",
+        "date": "2024-01-15",
+        "impact": "Proof-of-concept demonstrated complete service disruption of real-time gaming platforms through connection exhaustion",
+        "root_cause": "Lack of per-IP connection limits allowed single attacker to exhaust connection pools",
+        "source_url": "https://cqr.company/web-vulnerabilities/denial-of-service-dos-via-websockets/"
+      },
+      {
+        "incident": "Chat Application Message Flooding",
+        "date": "2023-11-20",
+        "impact": "Multiple chat applications vulnerable to message flooding attacks causing memory exhaustion",
+        "root_cause": "Missing message rate limiting and size restrictions on WebSocket frames",
+        "source_url": "https://ably.com/topic/websocket-security"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-WS-DOS-001",
+        "bounty_amount": 3500,
+        "severity": "High",
+        "summary": "WebSocket connection exhaustion allowing complete service disruption through unlimited connection establishment"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "WebSocket Security: Top 8 Vulnerabilities and How to Solve Them",
+        "authors": [
+          "Bright Security"
+        ],
+        "published_date": "2024-06-15",
+        "source_url": "https://brightsec.com/blog/websocket-security-top-vulnerabilities/",
+        "key_finding": "WebSocket DoS through connection exhaustion and message flooding ranked among top 3 WebSocket vulnerabilities"
+      },
+      {
+        "title": "OWASP WebSocket Security Cheat Sheet",
+        "authors": [
+          "OWASP Foundation"
+        ],
+        "published_date": "2024-01-10",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html",
+        "key_finding": "Rate limiting and connection throttling identified as critical controls for WebSocket security"
+      },
+      {
+        "title": "Slowloris DoS Countermeasure over WebSocket",
+        "authors": [
+          "ResearchGate"
+        ],
+        "published_date": "2023-08-05",
+        "source_url": "https://www.researchgate.net/publication/315858773_Slowloris_DoS_Countermeasure_over_WebSocket",
+        "key_finding": "Slowloris attacks easily disable WebSocket services by sending partial request packets slowly, making request buffers full"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Per-IP Connection Limits with Express.js ws Library",
+      "description": "Enforce strict per-IP connection limits to prevent any single client from exhausting server resources. This mitigation tracks active connections by IP address and rejects new connections when limits are exceeded.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x with ws library",
+        "code": "const express = require('express');\nconst { WebSocketServer } = require('ws');\nconst http = require('http');\n\nconst app = express();\nconst server = http.createServer(app);\nconst wss = new WebSocketServer({ server });\n\n// Configuration\nconst MAX_CONNECTIONS_PER_IP = 10;\nconst CONNECTION_TIMEOUT = 60000; // 60 seconds\nconst MAX_MESSAGE_SIZE = 64 * 1024; // 64KB\nconst MESSAGE_RATE_LIMIT = 100; // messages per minute\n\n// Track connections by IP\nconst connectionsByIP = new Map();\nconst messageCountByClient = new Map();\n\n// Helper: Extract client IP\nfunction getClientIP(req) {\n  return req.headers['x-forwarded-for']?.split(',')[0].trim() || \n         req.socket.remoteAddress;\n}\n\n// Helper: Check rate limit\nfunction checkRateLimit(clientId) {\n  const now = Date.now();\n  const clientData = messageCountByClient.get(clientId) || { count: 0, resetTime: now + 60000 };\n  \n  if (now > clientData.resetTime) {\n    clientData.count = 0;\n    clientData.resetTime = now + 60000;\n  }\n  \n  clientData.count++;\n  messageCountByClient.set(clientId, clientData);\n  \n  return clientData.count <= MESSAGE_RATE_LIMIT;\n}\n\n// WebSocket connection handler\nwss.on('connection', (ws, req) => {\n  const clientIP = getClientIP(req);\n  const clientId = `${clientIP}-${Date.now()}`;\n  \n  // Check per-IP connection limit\n  const ipConnections = connectionsByIP.get(clientIP) || [];\n  \n  if (ipConnections.length >= MAX_CONNECTIONS_PER_IP) {\n    console.warn(`Connection limit exceeded for IP: ${clientIP}`);\n    ws.close(1008, 'Connection limit exceeded');\n    return;\n  }\n  \n  // Add to tracking\n  ipConnections.push(ws);\n  connectionsByIP.set(clientIP, ipConnections);\n  \n  console.log(`New connection from ${clientIP} (${ipConnections.length}/${MAX_CONNECTIONS_PER_IP})`);\n  \n  // Set up idle timeout\n  let idleTimeout = setTimeout(() => {\n    console.log(`Closing idle connection from ${clientIP}`);\n    ws.close(1000, 'Idle timeout');\n  }, CONNECTION_TIMEOUT);\n  \n  // Heartbeat mechanism\n  ws.isAlive = true;\n  ws.on('pong', () => {\n    ws.isAlive = true;\n    clearTimeout(idleTimeout);\n    idleTimeout = setTimeout(() => {\n      ws.close(1000, 'Idle timeout');\n    }, CONNECTION_TIMEOUT);\n  });\n  \n  // Message handler with rate limiting\n  ws.on('message', (data) => {\n    // Reset idle timeout on activity\n    clearTimeout(idleTimeout);\n    idleTimeout = setTimeout(() => ws.close(1000, 'Idle timeout'), CONNECTION_TIMEOUT);\n    \n    // Check message size\n    if (data.length > MAX_MESSAGE_SIZE) {\n      console.warn(`Message too large from ${clientIP}: ${data.length} bytes`);\n      ws.close(1009, 'Message too large');\n      return;\n    }\n    \n    // Check rate limit\n    if (!checkRateLimit(clientId)) {\n      console.warn(`Rate limit exceeded for ${clientIP}`);\n      ws.send(JSON.stringify({ error: 'Rate limit exceeded' }));\n      return;\n    }\n    \n    // Process message\n    try {\n      const message = JSON.parse(data);\n      // Handle message...\n      ws.send(JSON.stringify({ status: 'received' }));\n    } catch (error) {\n      ws.send(JSON.stringify({ error: 'Invalid message format' }));\n    }\n  });\n  \n  // Cleanup on close\n  ws.on('close', () => {\n    clearTimeout(idleTimeout);\n    const connections = connectionsByIP.get(clientIP) || [];\n    const index = connections.indexOf(ws);\n    if (index > -1) {\n      connections.splice(index, 1);\n    }\n    if (connections.length === 0) {\n      connectionsByIP.delete(clientIP);\n    } else {\n      connectionsByIP.set(clientIP, connections);\n    }\n    messageCountByClient.delete(clientId);\n    console.log(`Connection closed for ${clientIP}`);\n  });\n  \n  ws.on('error', (error) => {\n    console.error(`WebSocket error for ${clientIP}:`, error);\n  });\n});\n\n// Heartbeat interval (30 seconds)\nconst heartbeatInterval = setInterval(() => {\n  wss.clients.forEach((ws) => {\n    if (ws.isAlive === false) {\n      return ws.terminate();\n    }\n    ws.isAlive = false;\n    ws.ping();\n  });\n}, 30000);\n\nwss.on('close', () => {\n  clearInterval(heartbeatInterval);\n});\n\nserver.listen(3000, () => {\n  console.log('WebSocket server running on port 3000');\n  console.log(`Max connections per IP: ${MAX_CONNECTIONS_PER_IP}`);\n  console.log(`Connection timeout: ${CONNECTION_TIMEOUT}ms`);\n});"
+      },
+      "tools": [
+        {
+          "name": "ws library",
+          "type": "WebSocket Implementation",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "rate-limiter-flexible",
+          "type": "Rate Limiting Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.6 - Secure development environment",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.PT-5 - Mechanisms are implemented to achieve resilience",
+        "PR.DS-4 - Adequate capacity to ensure availability is maintained",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Test connection limit by opening MAX_CONNECTIONS_PER_IP + 1 connections from same IP",
+        "Verify idle connections close after CONNECTION_TIMEOUT seconds",
+        "Send messages exceeding MAX_MESSAGE_SIZE and verify rejection",
+        "Flood with MESSAGE_RATE_LIMIT + 10 messages and verify throttling",
+        "Monitor server resources during stress test with 1000+ connections"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Spring Boot WebSocket STOMP Connection and Message Limits",
+      "description": "Configure Spring Boot WebSocket with STOMP to enforce connection limits, message size restrictions, and proper timeout handling to prevent resource exhaustion attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x with WebSocket STOMP",
+        "code": "import org.springframework.context.annotation.Configuration;\nimport org.springframework.messaging.simp.config.MessageBrokerRegistry;\nimport org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;\nimport org.springframework.web.socket.config.annotation.StompEndpointRegistry;\nimport org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;\nimport org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;\nimport org.springframework.web.socket.server.HandshakeInterceptor;\nimport org.springframework.http.server.ServerHttpRequest;\nimport org.springframework.http.server.ServerHttpResponse;\nimport org.springframework.web.socket.WebSocketHandler;\nimport java.util.Map;\nimport java.util.concurrent.ConcurrentHashMap;\nimport java.util.concurrent.atomic.AtomicInteger;\n\n@Configuration\n@EnableWebSocketMessageBroker\npublic class WebSocketConfig implements WebSocketMessageBrokerConfigurer {\n\n    private static final int MAX_CONNECTIONS_PER_IP = 10;\n    private static final Map<String, AtomicInteger> connectionsByIP = new ConcurrentHashMap<>();\n\n    @Override\n    public void configureMessageBroker(MessageBrokerRegistry config) {\n        config.enableSimpleBroker(\"/topic\", \"/queue\");\n        config.setApplicationDestinationPrefixes(\"/app\");\n    }\n\n    @Override\n    public void registerStompEndpoints(StompEndpointRegistry registry) {\n        registry.addEndpoint(\"/ws\")\n                .setAllowedOriginPatterns(\"https://yourdomain.com\")\n                .addInterceptors(new ConnectionLimitInterceptor())\n                .withSockJS();\n    }\n\n    @Override\n    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {\n        registration\n            // Maximum time (ms) allowed for sending messages\n            .setSendTimeLimit(15 * 1000)\n            // Maximum buffer size for sending (512 KB)\n            .setSendBufferSizeLimit(512 * 1024)\n            // Maximum size for incoming messages (64 KB)\n            .setMessageSizeLimit(64 * 1024)\n            // Time limit for receiving messages\n            .setTimeToFirstMessage(30 * 1000);\n    }\n\n    // Custom HandshakeInterceptor for connection limiting\n    public static class ConnectionLimitInterceptor implements HandshakeInterceptor {\n        \n        @Override\n        public boolean beforeHandshake(\n                ServerHttpRequest request,\n                ServerHttpResponse response,\n                WebSocketHandler wsHandler,\n                Map<String, Object> attributes) throws Exception {\n            \n            String clientIP = getClientIP(request);\n            AtomicInteger count = connectionsByIP.computeIfAbsent(\n                clientIP, \n                k -> new AtomicInteger(0)\n            );\n            \n            int currentConnections = count.get();\n            \n            if (currentConnections >= MAX_CONNECTIONS_PER_IP) {\n                System.out.println(\"Connection limit exceeded for IP: \" + clientIP);\n                response.setStatusCode(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS);\n                return false;\n            }\n            \n            count.incrementAndGet();\n            attributes.put(\"clientIP\", clientIP);\n            System.out.println(\"Connection accepted from \" + clientIP + \n                             \" (\" + count.get() + \"/\" + MAX_CONNECTIONS_PER_IP + \")\");\n            return true;\n        }\n\n        @Override\n        public void afterHandshake(\n                ServerHttpRequest request,\n                ServerHttpResponse response,\n                WebSocketHandler wsHandler,\n                Exception exception) {\n            // Post-handshake logic if needed\n        }\n        \n        private String getClientIP(ServerHttpRequest request) {\n            String xff = request.getHeaders().getFirst(\"X-Forwarded-For\");\n            if (xff != null && !xff.isEmpty()) {\n                return xff.split(\",\")[0].trim();\n            }\n            return request.getRemoteAddress().getAddress().getHostAddress();\n        }\n    }\n}\n\n// WebSocket Event Listener for cleanup\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Component;\nimport org.springframework.web.socket.messaging.SessionDisconnectEvent;\nimport org.springframework.web.socket.messaging.SessionConnectedEvent;\n\n@Component\npublic class WebSocketEventListener {\n\n    @EventListener\n    public void handleWebSocketConnectListener(SessionConnectedEvent event) {\n        System.out.println(\"New WebSocket connection: \" + \n                         event.getMessage().getHeaders());\n    }\n\n    @EventListener\n    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {\n        String clientIP = (String) event.getMessage()\n            .getHeaders()\n            .get(\"simpSessionAttributes\", Map.class)\n            .get(\"clientIP\");\n        \n        if (clientIP != null) {\n            AtomicInteger count = WebSocketConfig.connectionsByIP.get(clientIP);\n            if (count != null) {\n                int remaining = count.decrementAndGet();\n                System.out.println(\"Connection closed for \" + clientIP + \n                                 \" (\" + remaining + \" remaining)\");\n                if (remaining <= 0) {\n                    WebSocketConfig.connectionsByIP.remove(clientIP);\n                }\n            }\n        }\n    }\n}\n\n// application.properties\n/*\nserver.tomcat.websocket.max-text-message-buffer-size=65536\nserver.tomcat.websocket.max-binary-message-buffer-size=65536\nspring.websocket.messaging.stomp.message-size-limit=65536\nspring.task.scheduling.pool.size=5\n*/"
+      },
+      "tools": [
+        {
+          "name": "Spring WebSocket",
+          "type": "WebSocket Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Apache Tomcat",
+          "type": "Application Server",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.1 - Secure development policy",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.PT-5 - Mechanisms are implemented to achieve resilience",
+        "PR.DS-4 - Adequate capacity to ensure availability is maintained"
+      ],
+      "validation_steps": [
+        "Configure application.properties with message size limits",
+        "Test connection limit enforcement from single IP",
+        "Verify message size rejection for messages > 64KB",
+        "Monitor Tomcat thread pool under load",
+        "Test disconnect cleanup reduces connection count"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Flask-SocketIO Rate Limiting and Connection Management",
+      "description": "Implement comprehensive rate limiting for Flask-SocketIO applications including per-IP connection limits, message rate throttling, and automatic connection cleanup for idle clients.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask-SocketIO 5.x",
+        "code": "from flask import Flask, request\nfrom flask_socketio import SocketIO, emit, disconnect\nfrom functools import wraps\nimport time\nfrom collections import defaultdict\nfrom threading import Lock\n\napp = Flask(__name__)\napp.config['SECRET_KEY'] = 'your-secret-key-from-env'\nsocketio = SocketIO(app, cors_allowed_origins=\"https://yourdomain.com\")\n\n# Configuration\nMAX_CONNECTIONS_PER_IP = 10\nMESSAGE_RATE_WINDOW = 60  # seconds\nMAX_MESSAGES_PER_WINDOW = 100\nMAX_MESSAGE_SIZE = 64 * 1024  # 64KB\nIDLE_TIMEOUT = 60  # seconds\n\n# Connection tracking\nconnections_by_ip = defaultdict(list)\nconnection_lock = Lock()\nmessage_counts = defaultdict(lambda: {'count': 0, 'reset_time': time.time() + MESSAGE_RATE_WINDOW})\nlast_activity = {}\n\ndef get_client_ip():\n    \"\"\"Extract client IP from request\"\"\"\n    if request.headers.get('X-Forwarded-For'):\n        return request.headers.get('X-Forwarded-For').split(',')[0].strip()\n    return request.remote_addr\n\ndef check_connection_limit():\n    \"\"\"Check if client has exceeded connection limit\"\"\"\n    client_ip = get_client_ip()\n    with connection_lock:\n        if len(connections_by_ip[client_ip]) >= MAX_CONNECTIONS_PER_IP:\n            return False\n    return True\n\ndef rate_limit(event_name):\n    \"\"\"Decorator for rate limiting SocketIO events\"\"\"\n    def decorator(f):\n        @wraps(f)\n        def wrapped(*args, **kwargs):\n            client_ip = get_client_ip()\n            sid = request.sid\n            key = f\"{client_ip}-{sid}\"\n            \n            now = time.time()\n            client_data = message_counts[key]\n            \n            # Reset counter if window expired\n            if now > client_data['reset_time']:\n                client_data['count'] = 0\n                client_data['reset_time'] = now + MESSAGE_RATE_WINDOW\n            \n            # Check rate limit\n            if client_data['count'] >= MAX_MESSAGES_PER_WINDOW:\n                emit('error', {\n                    'message': 'Rate limit exceeded',\n                    'retry_after': int(client_data['reset_time'] - now)\n                })\n                return\n            \n            client_data['count'] += 1\n            last_activity[sid] = now\n            \n            return f(*args, **kwargs)\n        return wrapped\n    return decorator\n\ndef check_message_size(data):\n    \"\"\"Validate message size\"\"\"\n    if isinstance(data, str):\n        size = len(data.encode('utf-8'))\n    elif isinstance(data, bytes):\n        size = len(data)\n    else:\n        size = len(str(data).encode('utf-8'))\n    \n    return size <= MAX_MESSAGE_SIZE\n\n@socketio.on('connect')\ndef handle_connect():\n    \"\"\"Handle new WebSocket connections with rate limiting\"\"\"\n    client_ip = get_client_ip()\n    sid = request.sid\n    \n    # Check connection limit\n    if not check_connection_limit():\n        print(f\"Connection limit exceeded for IP: {client_ip}\")\n        return False  # Reject connection\n    \n    # Track connection\n    with connection_lock:\n        connections_by_ip[client_ip].append(sid)\n    \n    last_activity[sid] = time.time()\n    \n    print(f\"Client connected: {client_ip} (SID: {sid})\")\n    print(f\"Active connections from {client_ip}: {len(connections_by_ip[client_ip])}/{MAX_CONNECTIONS_PER_IP}\")\n    \n    emit('connection_success', {'message': 'Connected successfully'})\n\n@socketio.on('disconnect')\ndef handle_disconnect():\n    \"\"\"Handle disconnection and cleanup\"\"\"\n    client_ip = get_client_ip()\n    sid = request.sid\n    \n    # Remove from tracking\n    with connection_lock:\n        if sid in connections_by_ip[client_ip]:\n            connections_by_ip[client_ip].remove(sid)\n            if not connections_by_ip[client_ip]:\n                del connections_by_ip[client_ip]\n    \n    # Cleanup activity tracking\n    if sid in last_activity:\n        del last_activity[sid]\n    \n    # Cleanup message counts\n    key = f\"{client_ip}-{sid}\"\n    if key in message_counts:\n        del message_counts[key]\n    \n    print(f\"Client disconnected: {client_ip} (SID: {sid})\")\n\n@socketio.on('message')\n@rate_limit('message')\ndef handle_message(data):\n    \"\"\"Handle incoming messages with rate limiting and size validation\"\"\"\n    # Validate message size\n    if not check_message_size(data):\n        emit('error', {'message': f'Message too large. Max size: {MAX_MESSAGE_SIZE} bytes'})\n        return\n    \n    # Process message\n    try:\n        # Your message processing logic here\n        print(f\"Received message from {request.sid}: {data[:100]}...\")  # Log first 100 chars\n        emit('message_received', {'status': 'success', 'timestamp': time.time()})\n    except Exception as e:\n        print(f\"Error processing message: {e}\")\n        emit('error', {'message': 'Failed to process message'})\n\n@socketio.on('ping')\n@rate_limit('ping')\ndef handle_ping():\n    \"\"\"Handle ping messages for keepalive\"\"\"\n    last_activity[request.sid] = time.time()\n    emit('pong', {'timestamp': time.time()})\n\ndef check_idle_connections():\n    \"\"\"Background task to close idle connections\"\"\"\n    while True:\n        socketio.sleep(30)  # Check every 30 seconds\n        now = time.time()\n        \n        idle_connections = [\n            sid for sid, last_time in last_activity.items()\n            if now - last_time > IDLE_TIMEOUT\n        ]\n        \n        for sid in idle_connections:\n            print(f\"Closing idle connection: {sid}\")\n            socketio.emit('idle_timeout', \n                         {'message': 'Connection closed due to inactivity'},\n                         room=sid)\n            disconnect(sid=sid)\n\n# Start background task for idle connection cleanup\nsocketio.start_background_task(check_idle_connections)\n\nif __name__ == '__main__':\n    print(f\"Starting Flask-SocketIO server...\")\n    print(f\"Max connections per IP: {MAX_CONNECTIONS_PER_IP}\")\n    print(f\"Max messages per {MESSAGE_RATE_WINDOW}s: {MAX_MESSAGES_PER_WINDOW}\")\n    print(f\"Idle timeout: {IDLE_TIMEOUT}s\")\n    socketio.run(app, host='0.0.0.0', port=5000, debug=False)"
+      },
+      "tools": [
+        {
+          "name": "Flask-SocketIO",
+          "type": "WebSocket Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Redis (optional for scaling)",
+          "type": "Message Queue",
+          "cost": "$0.0125/hour (AWS ElastiCache)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.6 - Secure development environment"
+      ],
+      "nist_csf": [
+        "PR.PT-5 - Mechanisms are implemented to achieve resilience",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Test connection limit by spawning MAX_CONNECTIONS_PER_IP + 1 clients",
+        "Verify rate limiting triggers after MAX_MESSAGES_PER_WINDOW messages",
+        "Send message exceeding MAX_MESSAGE_SIZE and verify rejection",
+        "Test idle timeout by creating connection with no activity",
+        "Monitor memory usage during high connection load"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Infrastructure-Level DoS Protection with Azure Front Door and WAF",
+      "description": "Implement cloud-native DDoS protection and Web Application Firewall rules to detect and mitigate connection flooding attacks before they reach application servers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "Azure CLI",
+        "code": "#!/bin/bash\n# Azure Front Door and DDoS Protection Configuration\n\n# Variables\nRESOURCE_GROUP=\"myResourceGroup\"\nLOCATION=\"eastus\"\nFRONTDOOR_NAME=\"myFrontDoor\"\nWAF_POLICY_NAME=\"myWAFPolicy\"\nBACKEND_ADDRESS=\"myapp.azurewebsites.net\"\n\n# Create WAF Policy\naz network front-door waf-policy create \\\n  --resource-group $RESOURCE_GROUP \\\n  --name $WAF_POLICY_NAME \\\n  --mode Prevention \\\n  --disabled false\n\n# Configure rate limiting rule (10,000 requests per minute per IP)\naz network front-door waf-policy rule create \\\n  --policy-name $WAF_POLICY_NAME \\\n  --resource-group $RESOURCE_GROUP \\\n  --name RateLimitRule \\\n  --rule-type RateLimitRule \\\n  --action Block \\\n  --priority 100 \\\n  --rate-limit-duration-in-minutes 1 \\\n  --rate-limit-threshold 10000\n\n# Add custom rule to block excessive WebSocket connection attempts\naz network front-door waf-policy rule create \\\n  --policy-name $WAF_POLICY_NAME \\\n  --resource-group $RESOURCE_GROUP \\\n  --name WebSocketConnectionLimit \\\n  --rule-type MatchRule \\\n  --action Block \\\n  --priority 200 \\\n  --match-variable RequestHeader \\\n  --operator Equal \\\n  --match-values \"websocket\" \\\n  --transforms Lowercase \\\n  --selector \"Upgrade\"\n\n# Enable DDoS Protection Standard\naz network ddos-protection create \\\n  --resource-group $RESOURCE_GROUP \\\n  --name myDDoSProtection \\\n  --location $LOCATION\n\n# Create Front Door profile\naz afd profile create \\\n  --resource-group $RESOURCE_GROUP \\\n  --profile-name $FRONTDOOR_NAME \\\n  --sku Premium_AzureFrontDoor\n\n# Associate WAF policy with Front Door\naz afd security-policy create \\\n  --resource-group $RESOURCE_GROUP \\\n  --profile-name $FRONTDOOR_NAME \\\n  --security-policy-name mySecurityPolicy \\\n  --domains myendpoint.azurefd.net \\\n  --waf-policy $WAF_POLICY_NAME\n\n# Configure custom health probe for WebSocket endpoints\naz afd probe create \\\n  --resource-group $RESOURCE_GROUP \\\n  --profile-name $FRONTDOOR_NAME \\\n  --probe-name websocket-probe \\\n  --path \"/health\" \\\n  --probe-request-type GET \\\n  --interval-in-seconds 30\n\n# Enable diagnostic logs for monitoring\naz monitor diagnostic-settings create \\\n  --resource \"/subscriptions/{subscription-id}/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Network/frontDoors/$FRONTDOOR_NAME\" \\\n  --name FrontDoorDiagnostics \\\n  --logs '[{\"category\": \"FrontdoorAccessLog\", \"enabled\": true}, \n          {\"category\": \"FrontdoorWebApplicationFirewallLog\", \"enabled\": true}]' \\\n  --workspace \"/subscriptions/{subscription-id}/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.OperationalInsights/workspaces/myLogAnalytics\"\n\necho \"Azure Front Door and WAF configuration complete\"\necho \"Rate limiting: 10,000 requests/minute per IP\"\necho \"DDoS Protection: Enabled\"\necho \"WAF Mode: Prevention\""
+      },
+      "tools": [
+        {
+          "name": "Azure Front Door Premium",
+          "type": "CDN and WAF",
+          "cost": "$330/month + $0.02/GB data transfer"
+        },
+        {
+          "name": "Azure DDoS Protection Standard",
+          "type": "DDoS Mitigation",
+          "cost": "$2,944/month (protects all resources in VNet)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.AE-1 - A baseline of network operations is established"
+      ],
+      "validation_steps": [
+        "Verify WAF policy is in Prevention mode",
+        "Test rate limiting with load testing tool (e.g., Artillery, K6)",
+        "Review WAF logs in Azure Monitor for blocked requests",
+        "Simulate connection flood and verify automatic mitigation",
+        "Configure alerts for DDoS attack detection"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in WebSocket connection attempts from limited IP ranges",
+      "High number of connections with minimal or no message activity",
+      "Server CPU and memory usage increases without proportional user activity",
+      "Connection pool exhaustion warnings in application logs",
+      "Increase in connection timeouts and failed handshakes for legitimate users",
+      "Slowloris pattern: many connections sending data at very slow rate (1 byte per minute)",
+      "Single IP address with MAX_CONNECTIONS or more active connections",
+      "Message rate significantly below normal while connections remain open",
+      "Geographic anomalies: connections from unusual countries/regions"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect WebSocket connection exhaustion patterns\nlet threshold = 50; // connections per IP\nAzureDiagnostics\n| where ResourceType == \"FRONTDOOR\" or ResourceType == \"APPLICATIONGATEWAY\"\n| where requestUri_s contains \"/ws\" or requestUri_s contains \"websocket\"\n| extend ClientIP = coalesce(clientIP_s, remoteIP_s)\n| summarize \n    ConnectionCount = count(),\n    UniqueEndpoints = dcount(requestUri_s),\n    AvgResponseTime = avg(timeTaken_s),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n    by ClientIP, bin(TimeGenerated, 5m)\n| where ConnectionCount > threshold\n| extend Duration = datetime_diff('minute', LastSeen, FirstSeen)\n| where Duration > 5 // Sustained attack for 5+ minutes\n| project TimeGenerated, ClientIP, ConnectionCount, Duration, UniqueEndpoints, AvgResponseTime\n| order by ConnectionCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=websocket_logs sourcetype=ws_access\n| eval connection_time=_time\n| stats \n    count as connections,\n    earliest(connection_time) as first_connection,\n    latest(connection_time) as last_connection,\n    dc(session_id) as unique_sessions,\n    sum(message_count) as total_messages,\n    avg(message_count) as avg_messages\n    by client_ip\n| eval duration_minutes = (last_connection - first_connection) / 60\n| eval messages_per_connection = total_messages / connections\n| where connections > 50 \n    AND messages_per_connection < 5 \n    AND duration_minutes > 5\n| eval severity = case(\n    connections > 200, \"critical\",\n    connections > 100, \"high\",\n    connections > 50, \"medium\"\n  )\n| table client_ip, connections, duration_minutes, messages_per_connection, severity\n| sort - connections"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// WebSocket DoS detection\nevent.dataset: \"websocket.access\" AND event.action: \"connection\"\n| stats \n    count() as connection_count,\n    cardinality(session.id) as unique_sessions,\n    sum(websocket.message_count) as total_messages,\n    min(@timestamp) as first_seen,\n    max(@timestamp) as last_seen\n    by source.ip\n| where connection_count > 50\n| eval messages_per_connection = total_messages / connection_count\n| where messages_per_connection < 5\n| eval duration = (last_seen - first_seen) / 60000\n| where duration > 5\n| sort connection_count desc"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, sourceIP, @message\n| filter ispresent(websocket.connectionId)\n| stats \n    count() as connectionCount,\n    count_distinct(websocket.connectionId) as uniqueSessions,\n    sum(websocket.messageCount) as totalMessages,\n    min(@timestamp) as firstSeen,\n    max(@timestamp) as lastSeen\n    by sourceIP\n| filter connectionCount > 50\n| fields sourceIP, connectionCount, uniqueSessions, \n    (totalMessages / connectionCount) as messagesPerConnection,\n    ((lastSeen - firstSeen) / 60000) as durationMinutes\n| filter messagesPerConnection < 5 and durationMinutes > 5\n| sort connectionCount desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Wireshark",
+        "type": "Network Protocol Analyzer",
+        "usage": "Capture WebSocket traffic to identify slowloris patterns: wireshark -i eth0 -f 'tcp port 443' -w websocket_capture.pcap"
+      },
+      {
+        "name": "netstat",
+        "type": "Network Statistics",
+        "usage": "Monitor active WebSocket connections: netstat -an | grep :3000 | grep ESTABLISHED | wc -l"
+      },
+      {
+        "name": "Apache JMeter",
+        "type": "Load Testing",
+        "usage": "Simulate WebSocket connection floods for testing mitigation effectiveness"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Gaming",
+      "Financial Services (Real-time Trading)",
+      "Healthcare (Telemedicine)",
+      "E-commerce (Live Chat)",
+      "Social Media",
+      "Collaboration Tools",
+      "IoT Platforms"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10 - Broken authentication and session management)",
+      "HIPAA (164.308(a)(7) - Contingency plan)",
+      "SOC2 (CC7.1 - System operations)",
+      "ISO27001 (A.12.1.3, A.17.2.1)",
+      "GDPR (Article 32 - Security of processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Edge Computing",
+      "Containerized (Kubernetes)"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

@@ -1,0 +1,367 @@
+{
+  "id": "STRIDE-SPOOF-MFA-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1556.006 - Multi-Factor Authentication",
+      "T1528 - Steal Application Access Token",
+      "T1552.001 - Credentials In Files"
+    ],
+    "cwe": [
+      "CWE-287 - Improper Authentication",
+      "CWE-308 - Use of Single-factor Authentication",
+      "CWE-522 - Insufficiently Protected Credentials"
+    ]
+  },
+  "threat": {
+    "title": "Multi-Factor Authentication Bypass via Backup Codes Theft and Abuse",
+    "description": "Attackers exploit weakly protected MFA backup codes to bypass multi-factor authentication controls. Backup codes, intended as recovery mechanisms when primary MFA devices are unavailable, often lack the same security controls as primary authentication factors. When stored insecurely (plaintext in databases, exposed via API endpoints, or transmitted without encryption), these codes become high-value targets. Successful theft allows attackers to authenticate as legitimate users even when they cannot access TOTP tokens, push notifications, or hardware keys.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Multi-Framework",
+    "versions_affected": [
+      "All versions without proper backup code controls"
+    ],
+    "ecosystem": "Node.js, Java",
+    "dependencies": [
+      "speakeasy",
+      "otplib",
+      "google-authenticator",
+      "Spring Security"
+    ],
+    "related_frameworks": [
+      "Express.js",
+      "Spring Boot",
+      "Django",
+      "ASP.NET Core",
+      "Rails"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker conducts reconnaissance to identify target application's authentication mechanisms and discovers MFA with backup codes feature\n2. Exploits vulnerability (XSS, API exposure, database breach, or phishing) to steal victim's backup codes from insecure storage or transmission\n3. Alternatively, uses social engineering to trick user into revealing backup codes via fake support tickets or phishing campaigns\n4. Obtains valid username/password through credential stuffing, database leak, or phishing attack\n5. Attempts login with stolen credentials and selects 'Use backup code' option when prompted for MFA\n6. Successfully authenticates using stolen backup code, bypassing TOTP/hardware key requirements and gaining full account access",
+    "prerequisites": [
+      "Application implements MFA with backup codes feature",
+      "Backup codes stored insecurely (plaintext, weak encryption, or accessible via API)",
+      "No rate limiting on backup code validation attempts",
+      "Lack of notification when backup codes are used",
+      "No device fingerprinting or IP-based anomaly detection"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-40713",
+        "description": "Veeam Backup & Replication vulnerability allowing low-privileged users to alter MFA settings and bypass MFA controls",
+        "cvss_score": 8.8,
+        "published_date": "2024-09-04"
+      },
+      {
+        "cve_id": "CVE-2023-27532",
+        "description": "Veeam Backup & Replication access control vulnerability allowing unauthenticated credential theft over TCP port 9401",
+        "cvss_score": 7.5,
+        "published_date": "2023-03-08"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "LastPass MFA Database Breach",
+        "date": "2022-12-22",
+        "impact": "MFA/Federation database compromised containing LastPass Authenticator seeds, backup phone numbers, and K2 federation keys. Database was encrypted but decryption key was stolen, exposing Recovery One-Time Passwords for all users",
+        "root_cause": "DevOps engineer's corporate vault compromised via keylogger after MFA authentication; threat actor accessed cloud storage with MFA database backups and decryption keys",
+        "source_url": "https://blog.lastpass.com/2023/03/security-incident-update-recommended-actions/"
+      },
+      {
+        "incident": "Uber MFA Fatigue Attack",
+        "date": "2022-09-15",
+        "impact": "Complete compromise of corporate systems including AWS, Google Workspace, and privileged access management (Thycotic) affecting 57 million users; attacker bypassed MFA through push notification bombing",
+        "root_cause": "Stolen credentials from dark web combined with MFA fatigue attack and social engineering via WhatsApp impersonating IT support",
+        "source_url": "https://www.uber.com/newsroom/security-update/"
+      },
+      {
+        "incident": "Reddit Phishing Attack",
+        "date": "2023-02-05",
+        "impact": "Internal documents, source code, and employee data accessed after successful phishing of Reddit employee credentials and 2FA tokens",
+        "root_cause": "Sophisticated phishing campaign with fake intranet portal capturing credentials and 2FA tokens in real-time",
+        "source_url": "https://www.bleepingcomputer.com/news/security/reddit-announces-security-breach-after-hackers-bypassed-staffs-2fa/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-MFA-001",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "Backup codes exposed via unauthenticated API endpoint allowing account takeover without primary MFA device"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "Example-MFA-002",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "No rate limiting on backup code validation enabling brute-force attacks to enumerate valid codes"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Vulnerabilities in Multi-Factor Authentication",
+        "authors": [
+          "PortSwigger Web Security Academy"
+        ],
+        "published_date": "2024-01-15",
+        "source_url": "https://portswigger.net/web-security/authentication/multi-factor",
+        "key_finding": "Backup codes often lack security controls of primary MFA methods and are vulnerable to enumeration, brute-force, and insecure storage"
+      },
+      {
+        "title": "Understanding MFA Bypass: Trends, Tactics, and Solutions",
+        "authors": [
+          "Noorstream Security Research"
+        ],
+        "published_date": "2024-11-20",
+        "source_url": "https://noorstream.com/2025/09/10/real-world-mfa-bypass-techniques-in-recent-breaches-2024-2025/",
+        "key_finding": "MFA bypass techniques in 2024-2025 include backup code theft, session hijacking, AiTM attacks, and MFA fatigue; backup codes remain a weak link in authentication chains"
+      },
+      {
+        "title": "MFA Security Part 1: How Attackers Bypass Multi-Factor Authentication",
+        "authors": [
+          "Bugcrowd Security Team"
+        ],
+        "published_date": "2023-08-10",
+        "source_url": "https://www.bugcrowd.com/blog/mfa-security-part-1-how-attackers-bypass-multi-factor-authentication/",
+        "key_finding": "Backup codes are frequently targeted through CORS misconfigurations, XSS vulnerabilities, and API exposure allowing extraction without authentication"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Hardware Security Keys (FIDO2/WebAuthn) as Primary MFA",
+      "description": "Replace or supplement TOTP-based MFA with FIDO2/WebAuthn hardware security keys that use public-key cryptography and are phishing-resistant. Hardware keys eliminate the need for backup codes by providing a more secure, user-owned authentication factor that cannot be remotely stolen or phished.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + @simplewebauthn",
+        "code": "const express = require('express');\nconst {\n  generateRegistrationOptions,\n  verifyRegistrationResponse,\n  generateAuthenticationOptions,\n  verifyAuthenticationResponse\n} = require('@simplewebauthn/server');\nconst { isoBase64URL } = require('@simplewebauthn/server/helpers');\n\nconst app = express();\napp.use(express.json());\n\n// Configuration\nconst rpName = 'Ansvar Security Platform';\nconst rpID = 'app.ansvar.com';\nconst origin = `https://${rpID}`;\n\n// In-memory store (use database in production)\nconst users = new Map();\nconst challenges = new Map();\n\n// 1. Registration: Generate options for new hardware key\napp.post('/auth/webauthn/register/options', async (req, res) => {\n  const { userId, username, email } = req.session.user;\n  \n  // Get user's existing authenticators from database\n  const user = users.get(userId) || { \n    id: userId, \n    username, \n    email,\n    authenticators: [] \n  };\n  \n  const options = await generateRegistrationOptions({\n    rpName,\n    rpID,\n    userID: userId,\n    userName: username,\n    userDisplayName: email,\n    // Require resident key for passwordless authentication\n    authenticatorSelection: {\n      authenticatorAttachment: 'cross-platform', // USB keys\n      residentKey: 'required',\n      userVerification: 'required'\n    },\n    // Exclude already registered authenticators\n    excludeCredentials: user.authenticators.map(auth => ({\n      id: auth.credentialID,\n      type: 'public-key',\n      transports: auth.transports\n    })),\n    attestationType: 'none'\n  });\n  \n  // Store challenge for verification\n  challenges.set(userId, options.challenge);\n  \n  res.json(options);\n});\n\n// 2. Registration: Verify hardware key registration\napp.post('/auth/webauthn/register/verify', async (req, res) => {\n  const { userId } = req.session.user;\n  const { credential } = req.body;\n  \n  const expectedChallenge = challenges.get(userId);\n  if (!expectedChallenge) {\n    return res.status(400).json({ error: 'Challenge expired or not found' });\n  }\n  \n  try {\n    const verification = await verifyRegistrationResponse({\n      response: credential,\n      expectedChallenge,\n      expectedOrigin: origin,\n      expectedRPID: rpID,\n      requireUserVerification: true\n    });\n    \n    const { verified, registrationInfo } = verification;\n    \n    if (!verified || !registrationInfo) {\n      return res.status(400).json({ error: 'Registration verification failed' });\n    }\n    \n    const { credentialPublicKey, credentialID, counter } = registrationInfo;\n    \n    // Store authenticator in database\n    const user = users.get(userId) || { \n      id: userId, \n      authenticators: [] \n    };\n    \n    const newAuthenticator = {\n      credentialID: isoBase64URL.fromBuffer(credentialID),\n      credentialPublicKey: isoBase64URL.fromBuffer(credentialPublicKey),\n      counter,\n      transports: credential.response.transports || ['usb'],\n      registeredAt: new Date().toISOString()\n    };\n    \n    user.authenticators.push(newAuthenticator);\n    users.set(userId, user);\n    \n    // Clear challenge\n    challenges.delete(userId);\n    \n    // Disable backup codes when hardware key is registered\n    await disableBackupCodes(userId);\n    \n    res.json({ \n      verified: true,\n      message: 'Hardware security key registered successfully. Backup codes have been disabled.' \n    });\n    \n  } catch (error) {\n    console.error('WebAuthn registration error:', error);\n    res.status(500).json({ error: 'Registration failed' });\n  }\n});\n\n// 3. Authentication: Generate challenge for hardware key\napp.post('/auth/webauthn/authenticate/options', async (req, res) => {\n  const { username } = req.body;\n  \n  // Find user and their authenticators\n  const user = Array.from(users.values()).find(u => u.username === username);\n  \n  if (!user || !user.authenticators.length) {\n    return res.status(404).json({ error: 'No hardware keys registered for this user' });\n  }\n  \n  const options = await generateAuthenticationOptions({\n    rpID,\n    allowCredentials: user.authenticators.map(auth => ({\n      id: isoBase64URL.toBuffer(auth.credentialID),\n      type: 'public-key',\n      transports: auth.transports\n    })),\n    userVerification: 'required'\n  });\n  \n  // Store challenge\n  challenges.set(user.id, options.challenge);\n  \n  res.json(options);\n});\n\n// 4. Authentication: Verify hardware key assertion\napp.post('/auth/webauthn/authenticate/verify', async (req, res) => {\n  const { username, credential } = req.body;\n  \n  const user = Array.from(users.values()).find(u => u.username === username);\n  if (!user) {\n    return res.status(404).json({ error: 'User not found' });\n  }\n  \n  const expectedChallenge = challenges.get(user.id);\n  if (!expectedChallenge) {\n    return res.status(400).json({ error: 'Challenge expired' });\n  }\n  \n  // Find the authenticator being used\n  const credentialIDBuffer = isoBase64URL.toBuffer(credential.id);\n  const authenticator = user.authenticators.find(auth => \n    auth.credentialID === isoBase64URL.fromBuffer(credentialIDBuffer)\n  );\n  \n  if (!authenticator) {\n    return res.status(400).json({ error: 'Authenticator not registered' });\n  }\n  \n  try {\n    const verification = await verifyAuthenticationResponse({\n      response: credential,\n      expectedChallenge,\n      expectedOrigin: origin,\n      expectedRPID: rpID,\n      authenticator: {\n        credentialID: isoBase64URL.toBuffer(authenticator.credentialID),\n        credentialPublicKey: isoBase64URL.toBuffer(authenticator.credentialPublicKey),\n        counter: authenticator.counter\n      },\n      requireUserVerification: true\n    });\n    \n    const { verified, authenticationInfo } = verification;\n    \n    if (!verified) {\n      return res.status(400).json({ error: 'Authentication verification failed' });\n    }\n    \n    // Update counter\n    authenticator.counter = authenticationInfo.newCounter;\n    users.set(user.id, user);\n    \n    // Clear challenge\n    challenges.delete(user.id);\n    \n    // Create session\n    req.session.user = {\n      userId: user.id,\n      username: user.username,\n      email: user.email,\n      mfaVerified: true,\n      authMethod: 'webauthn'\n    };\n    \n    res.json({ \n      verified: true,\n      message: 'Authentication successful' \n    });\n    \n  } catch (error) {\n    console.error('WebAuthn authentication error:', error);\n    res.status(500).json({ error: 'Authentication failed' });\n  }\n});\n\nfunction disableBackupCodes(userId) {\n  // Disable backup codes in database when hardware key is active\n  // Implementation depends on your database schema\n  return Promise.resolve();\n}\n\napp.listen(3000, () => {\n  console.log('WebAuthn server running on port 3000');\n});"
+      },
+      "tools": [
+        {
+          "name": "@simplewebauthn/server",
+          "type": "WebAuthn Server Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "YubiKey 5 Series",
+          "type": "Hardware Security Key",
+          "cost": "$45-70 per key"
+        },
+        {
+          "name": "Titan Security Key",
+          "type": "Hardware Security Key (Google)",
+          "cost": "$30-35 per key"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.9.4.3 - Password management system"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "PR.AC-7 - Users, devices, and other assets are authenticated"
+      ],
+      "validation_steps": [
+        "Test hardware key registration flow with multiple key types (YubiKey, Titan, etc.)",
+        "Verify user verification (PIN/biometric) is required during authentication",
+        "Confirm backup codes are disabled when hardware key is active",
+        "Test key removal and re-registration process",
+        "Validate that phishing sites cannot intercept WebAuthn credentials (origin binding)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Strict Backup Code Usage Controls and Monitoring",
+      "description": "Apply comprehensive security controls to backup codes including: one-time use enforcement, automatic regeneration after use, rate limiting, device fingerprinting, IP-based anomaly detection, and immediate user notification. Store backup codes using bcrypt or Argon2 hashing, never in plaintext.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x + Spring Security",
+        "code": "package com.ansvar.security.mfa;\n\nimport org.springframework.security.crypto.argon2.Argon2PasswordEncoder;\nimport org.springframework.stereotype.Service;\nimport org.springframework.transaction.annotation.Transactional;\nimport jakarta.servlet.http.HttpServletRequest;\nimport java.security.SecureRandom;\nimport java.time.LocalDateTime;\nimport java.time.temporal.ChronoUnit;\nimport java.util.*;\nimport java.util.stream.Collectors;\n\n@Service\npublic class BackupCodeService {\n    \n    private final BackupCodeRepository backupCodeRepository;\n    private final UserRepository userRepository;\n    private final NotificationService notificationService;\n    private final AuditLogService auditLogService;\n    private final Argon2PasswordEncoder passwordEncoder;\n    private final RateLimitService rateLimitService;\n    \n    private static final int CODE_LENGTH = 10;\n    private static final int CODE_COUNT = 10;\n    private static final int MAX_ATTEMPTS_PER_HOUR = 3;\n    private static final String CHARACTERS = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\";\n    \n    public BackupCodeService(\n            BackupCodeRepository backupCodeRepository,\n            UserRepository userRepository,\n            NotificationService notificationService,\n            AuditLogService auditLogService) {\n        this.backupCodeRepository = backupCodeRepository;\n        this.userRepository = userRepository;\n        this.notificationService = notificationService;\n        this.auditLogService = auditLogService;\n        // Argon2 with secure parameters for backup code hashing\n        this.passwordEncoder = new Argon2PasswordEncoder(\n            16,    // salt length\n            32,    // hash length\n            1,     // parallelism\n            65536, // memory (64 MB)\n            3      // iterations\n        );\n        this.rateLimitService = new RateLimitService();\n    }\n    \n    /**\n     * Generate new backup codes for a user\n     * IMPORTANT: Only call when user has verified their primary MFA\n     */\n    @Transactional\n    public BackupCodeGenerationResult generateBackupCodes(Long userId) {\n        User user = userRepository.findById(userId)\n            .orElseThrow(() -> new UserNotFoundException(\"User not found\"));\n        \n        // Invalidate all existing backup codes\n        backupCodeRepository.invalidateAllForUser(userId);\n        \n        SecureRandom random = new SecureRandom();\n        List<String> plaintextCodes = new ArrayList<>();\n        List<BackupCode> backupCodes = new ArrayList<>();\n        \n        for (int i = 0; i < CODE_COUNT; i++) {\n            // Generate cryptographically secure random code\n            String code = generateSecureCode(random);\n            plaintextCodes.add(code);\n            \n            // Hash code before storing (NEVER store plaintext)\n            String hashedCode = passwordEncoder.encode(code);\n            \n            BackupCode backupCode = BackupCode.builder()\n                .userId(userId)\n                .codeHash(hashedCode)\n                .createdAt(LocalDateTime.now())\n                .expiresAt(LocalDateTime.now().plusMonths(6))\n                .used(false)\n                .usedAt(null)\n                .usedFromIp(null)\n                .usedFromDeviceFingerprint(null)\n                .build();\n            \n            backupCodes.add(backupCode);\n        }\n        \n        backupCodeRepository.saveAll(backupCodes);\n        \n        auditLogService.log(\n            AuditEvent.BACKUP_CODES_GENERATED,\n            userId,\n            Map.of(\"count\", CODE_COUNT)\n        );\n        \n        // Send notification to user\n        notificationService.sendEmail(\n            user.getEmail(),\n            \"New Backup Codes Generated\",\n            \"New MFA backup codes have been generated for your account. \" +\n            \"If you did not request this, please contact security immediately.\"\n        );\n        \n        // Return plaintext codes ONLY once for user to save\n        return new BackupCodeGenerationResult(plaintextCodes);\n    }\n    \n    /**\n     * Validate a backup code with comprehensive security controls\n     */\n    @Transactional\n    public BackupCodeValidationResult validateBackupCode(\n            Long userId, \n            String code, \n            HttpServletRequest request) {\n        \n        User user = userRepository.findById(userId)\n            .orElseThrow(() -> new UserNotFoundException(\"User not found\"));\n        \n        String ipAddress = getClientIP(request);\n        String deviceFingerprint = extractDeviceFingerprint(request);\n        \n        // 1. Rate limiting - prevent brute force\n        String rateLimitKey = String.format(\"backup_code_attempt:%d:%s\", userId, ipAddress);\n        if (!rateLimitService.checkRateLimit(rateLimitKey, MAX_ATTEMPTS_PER_HOUR, 1, ChronoUnit.HOURS)) {\n            auditLogService.log(\n                AuditEvent.BACKUP_CODE_RATE_LIMIT_EXCEEDED,\n                userId,\n                Map.of(\"ip\", ipAddress)\n            );\n            \n            notificationService.sendSecurityAlert(\n                user.getEmail(),\n                \"Multiple Failed Backup Code Attempts\",\n                String.format(\"Multiple failed backup code attempts detected from IP: %s\", ipAddress)\n            );\n            \n            return BackupCodeValidationResult.rateLimitExceeded();\n        }\n        \n        // 2. Get active (unused) backup codes for user\n        List<BackupCode> activeCodes = backupCodeRepository\n            .findActiveByUserId(userId);\n        \n        if (activeCodes.isEmpty()) {\n            auditLogService.log(\n                AuditEvent.BACKUP_CODE_ATTEMPT_NO_ACTIVE_CODES,\n                userId,\n                Map.of(\"ip\", ipAddress)\n            );\n            return BackupCodeValidationResult.invalid();\n        }\n        \n        // 3. Check code against all active backup codes using constant-time comparison\n        BackupCode matchedCode = null;\n        for (BackupCode backupCode : activeCodes) {\n            // Check expiration\n            if (backupCode.getExpiresAt().isBefore(LocalDateTime.now())) {\n                continue;\n            }\n            \n            // Argon2 verify (constant-time comparison)\n            if (passwordEncoder.matches(code, backupCode.getCodeHash())) {\n                matchedCode = backupCode;\n                break;\n            }\n        }\n        \n        if (matchedCode == null) {\n            auditLogService.log(\n                AuditEvent.BACKUP_CODE_VALIDATION_FAILED,\n                userId,\n                Map.of(\"ip\", ipAddress, \"deviceFingerprint\", deviceFingerprint)\n            );\n            return BackupCodeValidationResult.invalid();\n        }\n        \n        // 4. IP-based anomaly detection\n        List<String> knownIPs = user.getKnownIpAddresses();\n        boolean suspiciousIP = !knownIPs.contains(ipAddress);\n        \n        // 5. Device fingerprint check\n        List<String> knownDevices = user.getKnownDeviceFingerprints();\n        boolean suspiciousDevice = !knownDevices.contains(deviceFingerprint);\n        \n        // 6. Mark code as used (one-time use enforcement)\n        matchedCode.setUsed(true);\n        matchedCode.setUsedAt(LocalDateTime.now());\n        matchedCode.setUsedFromIp(ipAddress);\n        matchedCode.setUsedFromDeviceFingerprint(deviceFingerprint);\n        backupCodeRepository.save(matchedCode);\n        \n        // 7. Check remaining codes\n        long remainingCodes = backupCodeRepository.countActiveByUserId(userId);\n        \n        // 8. Audit logging with full context\n        auditLogService.log(\n            AuditEvent.BACKUP_CODE_USED,\n            userId,\n            Map.of(\n                \"ip\", ipAddress,\n                \"deviceFingerprint\", deviceFingerprint,\n                \"suspiciousIP\", suspiciousIP,\n                \"suspiciousDevice\", suspiciousDevice,\n                \"remainingCodes\", remainingCodes\n            )\n        );\n        \n        // 9. Send immediate notification to user\n        notificationService.sendSecurityAlert(\n            user.getEmail(),\n            \"Backup Code Used for Authentication\",\n            String.format(\n                \"A backup code was used to access your account.\\n\\n\" +\n                \"Time: %s\\n\" +\n                \"IP Address: %s\\n\" +\n                \"Device: %s\\n\" +\n                \"Remaining codes: %d\\n\\n\" +\n                \"If this wasn't you, secure your account immediately.\",\n                LocalDateTime.now(),\n                ipAddress,\n                deviceFingerprint,\n                remainingCodes\n            )\n        );\n        \n        // 10. Trigger re-generation if running low\n        if (remainingCodes <= 2) {\n            notificationService.sendEmail(\n                user.getEmail(),\n                \"Low Backup Code Count\",\n                \"You have \" + remainingCodes + \" backup codes remaining. \" +\n                \"Please generate new codes to maintain account recovery options.\"\n            );\n        }\n        \n        return BackupCodeValidationResult.success(\n            remainingCodes,\n            suspiciousIP,\n            suspiciousDevice\n        );\n    }\n    \n    private String generateSecureCode(SecureRandom random) {\n        StringBuilder code = new StringBuilder(CODE_LENGTH);\n        for (int i = 0; i < CODE_LENGTH; i++) {\n            code.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));\n        }\n        // Format as XXXXX-XXXXX for readability\n        return code.substring(0, 5) + \"-\" + code.substring(5);\n    }\n    \n    private String getClientIP(HttpServletRequest request) {\n        String[] headers = {\n            \"X-Forwarded-For\",\n            \"X-Real-IP\",\n            \"Proxy-Client-IP\",\n            \"WL-Proxy-Client-IP\"\n        };\n        \n        for (String header : headers) {\n            String ip = request.getHeader(header);\n            if (ip != null && !ip.isEmpty() && !\"unknown\".equalsIgnoreCase(ip)) {\n                // X-Forwarded-For can contain multiple IPs\n                return ip.split(\",\")[0].trim();\n            }\n        }\n        \n        return request.getRemoteAddr();\n    }\n    \n    private String extractDeviceFingerprint(HttpServletRequest request) {\n        // Combine User-Agent, Accept-Language, and custom fingerprint header\n        String userAgent = request.getHeader(\"User-Agent\");\n        String acceptLanguage = request.getHeader(\"Accept-Language\");\n        String customFingerprint = request.getHeader(\"X-Device-Fingerprint\");\n        \n        if (customFingerprint != null && !customFingerprint.isEmpty()) {\n            return customFingerprint;\n        }\n        \n        // Fallback to basic fingerprint\n        return Base64.getEncoder().encodeToString(\n            (userAgent + \"|\" + acceptLanguage).getBytes()\n        );\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Spring Security",
+          "type": "Security Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Argon2 Password Encoder",
+          "type": "Password Hashing",
+          "cost": "Free (Built into Spring Security)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "DE.CM-1 - The network is monitored to detect anomalous events"
+      ],
+      "validation_steps": [
+        "Verify backup codes are hashed using Argon2 in database",
+        "Test rate limiting prevents brute-force attempts (max 3 per hour)",
+        "Confirm one-time use enforcement (code cannot be reused)",
+        "Validate email notification is sent when backup code is used",
+        "Test IP-based anomaly detection flags suspicious locations",
+        "Verify automatic expiration after 6 months",
+        "Confirm low code count warning when ≤2 codes remain"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enforce TOTP with Device Binding and Backup Code Restrictions",
+      "description": "Implement Time-based One-Time Password (TOTP) with device binding that ties authenticator apps to specific devices using device fingerprinting. Restrict backup code usage to require step-up authentication, limit to specific high-security operations, and enforce MFA re-enrollment after backup code use.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Speakeasy + Device Detector",
+        "code": "const express = require('express');\nconst speakeasy = require('speakeasy');\nconst QRCode = require('qrcode');\nconst crypto = require('crypto');\nconst DeviceDetector = require('device-detector-js');\nconst geoip = require('geoip-lite');\n\nconst app = express();\napp.use(express.json());\n\nconst deviceDetector = new DeviceDetector();\n\n// Database models (use your actual ORM)\nconst db = {\n  users: new Map(),\n  sessions: new Map(),\n  deviceBindings: new Map()\n};\n\n/**\n * Generate TOTP secret and bind to device\n */\napp.post('/auth/totp/setup', async (req, res) => {\n  const { userId } = req.session;\n  const deviceInfo = extractDeviceInfo(req);\n  \n  // Generate unique TOTP secret\n  const secret = speakeasy.generateSecret({\n    name: `Ansvar Security (${req.session.user.email})`,\n    issuer: 'Ansvar',\n    length: 32 // 256-bit secret\n  });\n  \n  // Create device binding fingerprint\n  const deviceFingerprint = generateDeviceFingerprint(deviceInfo);\n  \n  // Store TOTP secret with device binding\n  const user = db.users.get(userId);\n  user.totp = {\n    secret: secret.base32,\n    tempSecret: secret.base32, // Temporary until verified\n    verified: false,\n    deviceFingerprint,\n    deviceInfo: {\n      userAgent: deviceInfo.userAgent,\n      browser: deviceInfo.browser,\n      os: deviceInfo.os,\n      device: deviceInfo.device,\n      registeredAt: new Date().toISOString(),\n      lastUsedAt: null,\n      ipAddress: deviceInfo.ipAddress,\n      location: deviceInfo.location\n    }\n  };\n  \n  db.users.set(userId, user);\n  \n  // Generate QR code for authenticator app\n  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);\n  \n  res.json({\n    secret: secret.base32,\n    qrCode: qrCodeUrl,\n    otpauthUrl: secret.otpauth_url,\n    deviceBound: true,\n    message: 'TOTP will be bound to this device. Scan QR code with authenticator app.'\n  });\n});\n\n/**\n * Verify TOTP setup and finalize device binding\n */\napp.post('/auth/totp/verify-setup', async (req, res) => {\n  const { userId } = req.session;\n  const { token } = req.body;\n  const deviceInfo = extractDeviceInfo(req);\n  \n  const user = db.users.get(userId);\n  if (!user.totp || user.totp.verified) {\n    return res.status(400).json({ error: 'TOTP already verified or not initialized' });\n  }\n  \n  // Verify the token\n  const verified = speakeasy.totp.verify({\n    secret: user.totp.tempSecret,\n    encoding: 'base32',\n    token,\n    window: 1 // Allow 1 time step before/after for clock skew\n  });\n  \n  if (!verified) {\n    return res.status(400).json({ error: 'Invalid TOTP token' });\n  }\n  \n  // Confirm device binding matches\n  const currentFingerprint = generateDeviceFingerprint(deviceInfo);\n  if (currentFingerprint !== user.totp.deviceFingerprint) {\n    return res.status(403).json({ \n      error: 'Device mismatch. TOTP must be verified from the same device it was set up on.' \n    });\n  }\n  \n  // Finalize TOTP setup\n  user.totp.verified = true;\n  user.totp.secret = user.totp.tempSecret;\n  delete user.totp.tempSecret;\n  user.totp.deviceInfo.lastUsedAt = new Date().toISOString();\n  \n  // Generate backup codes with restrictions\n  const backupCodes = generateRestrictedBackupCodes(userId);\n  \n  db.users.set(userId, user);\n  \n  // Audit log\n  await auditLog({\n    event: 'TOTP_ENABLED',\n    userId,\n    deviceInfo,\n    timestamp: new Date()\n  });\n  \n  res.json({\n    verified: true,\n    backupCodes: backupCodes.codes,\n    backupCodeRestrictions: {\n      requiresStepUp: true,\n      limitedOperations: true,\n      forcesReenrollment: true,\n      message: 'Backup codes can only be used once and will require MFA re-enrollment after use'\n    }\n  });\n});\n\n/**\n * Authenticate with TOTP (with device binding check)\n */\napp.post('/auth/totp/verify', async (req, res) => {\n  const { username, password, token } = req.body;\n  const deviceInfo = extractDeviceInfo(req);\n  \n  // 1. Verify username/password\n  const user = Array.from(db.users.values()).find(u => u.username === username);\n  if (!user || !verifyPassword(password, user.passwordHash)) {\n    return res.status(401).json({ error: 'Invalid credentials' });\n  }\n  \n  if (!user.totp || !user.totp.verified) {\n    return res.status(400).json({ error: 'TOTP not enabled for this user' });\n  }\n  \n  // 2. Check device binding\n  const currentFingerprint = generateDeviceFingerprint(deviceInfo);\n  const deviceMismatch = currentFingerprint !== user.totp.deviceFingerprint;\n  \n  if (deviceMismatch) {\n    // Log suspicious activity\n    await auditLog({\n      event: 'TOTP_DEVICE_MISMATCH',\n      userId: user.id,\n      expected: user.totp.deviceInfo,\n      actual: deviceInfo,\n      timestamp: new Date()\n    });\n    \n    // Send security alert\n    await sendSecurityAlert(user, {\n      subject: 'TOTP Authentication from Unrecognized Device',\n      message: `An attempt was made to use your TOTP code from a different device.\\n\\n` +\n               `Expected: ${user.totp.deviceInfo.browser} on ${user.totp.deviceInfo.os}\\n` +\n               `Actual: ${deviceInfo.browser} on ${deviceInfo.os}\\n` +\n               `IP: ${deviceInfo.ipAddress}\\n` +\n               `Location: ${deviceInfo.location}`\n    });\n    \n    return res.status(403).json({ \n      error: 'Device mismatch detected. Please use backup code or contact support.',\n      allowBackupCode: true\n    });\n  }\n  \n  // 3. Verify TOTP token\n  const verified = speakeasy.totp.verify({\n    secret: user.totp.secret,\n    encoding: 'base32',\n    token,\n    window: 1\n  });\n  \n  if (!verified) {\n    await auditLog({\n      event: 'TOTP_VERIFICATION_FAILED',\n      userId: user.id,\n      deviceInfo,\n      timestamp: new Date()\n    });\n    \n    return res.status(400).json({ error: 'Invalid TOTP token' });\n  }\n  \n  // 4. Update device last used\n  user.totp.deviceInfo.lastUsedAt = new Date().toISOString();\n  db.users.set(user.id, user);\n  \n  // 5. Create authenticated session\n  req.session.user = {\n    userId: user.id,\n    username: user.username,\n    mfaVerified: true,\n    mfaMethod: 'totp',\n    deviceFingerprint: currentFingerprint\n  };\n  \n  await auditLog({\n    event: 'TOTP_AUTHENTICATION_SUCCESS',\n    userId: user.id,\n    deviceInfo,\n    timestamp: new Date()\n  });\n  \n  res.json({ \n    success: true,\n    message: 'Authentication successful' \n  });\n});\n\n/**\n * Use backup code with step-up authentication and re-enrollment\n */\napp.post('/auth/backup-code/verify', async (req, res) => {\n  const { username, password, backupCode } = req.body;\n  const deviceInfo = extractDeviceInfo(req);\n  \n  const user = Array.from(db.users.values()).find(u => u.username === username);\n  if (!user || !verifyPassword(password, user.passwordHash)) {\n    return res.status(401).json({ error: 'Invalid credentials' });\n  }\n  \n  // Find and verify backup code\n  const codeIndex = user.backupCodes?.findIndex(bc => \n    bc.code === hashBackupCode(backupCode) && !bc.used\n  );\n  \n  if (codeIndex === -1) {\n    return res.status(400).json({ error: 'Invalid or used backup code' });\n  }\n  \n  // Mark code as used\n  user.backupCodes[codeIndex].used = true;\n  user.backupCodes[codeIndex].usedAt = new Date().toISOString();\n  user.backupCodes[codeIndex].usedFromIp = deviceInfo.ipAddress;\n  \n  // Clear TOTP - force re-enrollment\n  const previousTotp = user.totp;\n  user.totp = null;\n  \n  db.users.set(user.id, user);\n  \n  // Send security alert\n  await sendSecurityAlert(user, {\n    subject: 'Backup Code Used - MFA Re-enrollment Required',\n    message: `A backup code was used to access your account. For security, you must re-enroll in MFA.\\n\\n` +\n             `Time: ${new Date().toISOString()}\\n` +\n             `IP: ${deviceInfo.ipAddress}\\n` +\n             `Location: ${deviceInfo.location}`\n  });\n  \n  await auditLog({\n    event: 'BACKUP_CODE_USED',\n    userId: user.id,\n    deviceInfo,\n    previousMfaMethod: 'totp',\n    mfaCleared: true,\n    timestamp: new Date()\n  });\n  \n  // Create limited session requiring MFA re-enrollment\n  req.session.user = {\n    userId: user.id,\n    username: user.username,\n    mfaVerified: false,\n    requiresMfaReenrollment: true,\n    restrictedAccess: true\n  };\n  \n  res.json({ \n    success: true,\n    warning: 'You must re-enroll in MFA to restore full account access',\n    requiresMfaReenrollment: true,\n    restrictedOperations: ['transfer', 'settings', 'sensitive_data']\n  });\n});\n\n// Helper functions\nfunction extractDeviceInfo(req) {\n  const userAgent = req.headers['user-agent'];\n  const device = deviceDetector.parse(userAgent);\n  const ipAddress = req.ip || req.connection.remoteAddress;\n  const geo = geoip.lookup(ipAddress);\n  \n  return {\n    userAgent,\n    browser: device.client?.name || 'Unknown',\n    browserVersion: device.client?.version || 'Unknown',\n    os: device.os?.name || 'Unknown',\n    osVersion: device.os?.version || 'Unknown',\n    device: device.device?.type || 'desktop',\n    ipAddress,\n    location: geo ? `${geo.city}, ${geo.country}` : 'Unknown'\n  };\n}\n\nfunction generateDeviceFingerprint(deviceInfo) {\n  const fingerprintData = [\n    deviceInfo.browser,\n    deviceInfo.os,\n    deviceInfo.device,\n    deviceInfo.userAgent\n  ].join('|');\n  \n  return crypto\n    .createHash('sha256')\n    .update(fingerprintData)\n    .digest('hex');\n}\n\nfunction generateRestrictedBackupCodes(userId) {\n  const codes = [];\n  const hashedCodes = [];\n  \n  for (let i = 0; i < 10; i++) {\n    const code = crypto.randomBytes(8).toString('hex').toUpperCase();\n    codes.push(code);\n    hashedCodes.push({\n      code: hashBackupCode(code),\n      used: false,\n      createdAt: new Date().toISOString()\n    });\n  }\n  \n  const user = db.users.get(userId);\n  user.backupCodes = hashedCodes;\n  db.users.set(userId, user);\n  \n  return { codes, restrictions: true };\n}\n\nfunction hashBackupCode(code) {\n  return crypto\n    .createHash('sha256')\n    .update(code)\n    .digest('hex');\n}\n\nfunction verifyPassword(password, hash) {\n  // Use bcrypt or similar in production\n  return true; // Placeholder\n}\n\nasync function auditLog(event) {\n  console.log('AUDIT:', JSON.stringify(event, null, 2));\n}\n\nasync function sendSecurityAlert(user, alert) {\n  console.log(`Email to ${user.email}: ${alert.subject}`);\n}\n\napp.listen(3000, () => {\n  console.log('TOTP with device binding server running on port 3000');\n});"
+      },
+      "tools": [
+        {
+          "name": "speakeasy",
+          "type": "TOTP Library for Node.js",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "device-detector-js",
+          "type": "Device Detection Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Google Authenticator",
+          "type": "TOTP Authenticator App",
+          "cost": "Free"
+        },
+        {
+          "name": "Authy",
+          "type": "TOTP Authenticator App",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.2 - Secure log-on procedures",
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are managed",
+        "DE.AE-3 - Event data are collected and correlated",
+        "RS.CO-2 - Incidents are reported"
+      ],
+      "validation_steps": [
+        "Verify TOTP secret is bound to device fingerprint during setup",
+        "Test device mismatch detection blocks authentication",
+        "Confirm security alerts are sent for device mismatches",
+        "Validate backup code usage clears TOTP and forces re-enrollment",
+        "Test restricted session after backup code use",
+        "Verify audit logs capture all MFA events with device context"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Multiple backup code validation attempts from single IP address",
+      "Backup code usage from IP address or geographic location different from user's normal pattern",
+      "Backup code usage from device with different fingerprint than registered MFA device",
+      "Multiple backup codes used in rapid succession (potential compromise)",
+      "Backup code validation attempts after hours or during unusual time periods",
+      "API requests attempting to enumerate or retrieve backup codes",
+      "Database queries attempting to access backup code table without proper authorization",
+      "Backup code usage immediately after password change or account recovery"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect suspicious backup code usage patterns\nlet BackupCodeEvents = SecurityEvents\n| where EventType == \"BackupCodeValidation\"\n| extend UserId = tostring(UserId), IP = tostring(ClientIP), Result = tostring(Result);\n// Multiple failed attempts\nlet FailedAttempts = BackupCodeEvents\n| where Result == \"Failed\"\n| summarize FailedCount = count(), IPs = make_set(IP) by UserId, bin(TimeGenerated, 5m)\n| where FailedCount >= 3;\n// Backup code use from new location\nlet UnusualLocation = BackupCodeEvents\n| where Result == \"Success\"\n| join kind=leftanti (\n    SecurityEvents\n    | where EventType in (\"Login\", \"MFASuccess\")\n    | summarize by UserId, ClientIP\n  ) on UserId, $left.IP == $right.ClientIP\n| project TimeGenerated, UserId, IP, Message = \"Backup code used from new IP\";\n// Multiple backup codes used rapidly\nlet RapidUse = BackupCodeEvents\n| where Result == \"Success\"\n| summarize CodeCount = count() by UserId, bin(TimeGenerated, 1h)\n| where CodeCount >= 3\n| project TimeGenerated, UserId, CodeCount, Message = \"Multiple backup codes used in short time\";\n// Combine alerts\nunion FailedAttempts, UnusualLocation, RapidUse\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_security sourcetype=mfa_events event_type=\"backup_code_*\"\n| eval is_failed=if(result=\"failed\", 1, 0)\n| eval is_success=if(result=\"success\", 1, 0)\n| stats \n    sum(is_failed) as failed_attempts,\n    sum(is_success) as successful_uses,\n    dc(src_ip) as unique_ips,\n    dc(device_fingerprint) as unique_devices,\n    values(src_ip) as ip_addresses,\n    values(geo_location) as locations,\n    earliest(_time) as first_attempt,\n    latest(_time) as last_attempt\n    by user_id\n| eval time_window_minutes=round((last_attempt - first_attempt) / 60, 2)\n| where \n    failed_attempts >= 3 OR \n    successful_uses >= 2 OR \n    (successful_uses >= 1 AND unique_ips > 1) OR\n    (successful_uses >= 1 AND unique_devices > 1)\n| eval risk_score=case(\n    failed_attempts >= 5, \"CRITICAL\",\n    successful_uses >= 3, \"HIGH\",\n    (successful_uses >= 1 AND unique_ips > 1), \"HIGH\",\n    failed_attempts >= 3, \"MEDIUM\",\n    1=1, \"LOW\"\n  )\n| table user_id, risk_score, failed_attempts, successful_uses, unique_ips, unique_devices, ip_addresses, locations, time_window_minutes\n| sort - risk_score, - failed_attempts"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by user.id with maxspan=1h\n  [authentication where event.action == \"backup_code_failed\" and event.outcome == \"failure\"]\n  [authentication where event.action == \"backup_code_failed\" and event.outcome == \"failure\"]\n  [authentication where event.action == \"backup_code_success\" and event.outcome == \"success\"]"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"authentication\" AND \n  event.action: \"backup_code_validation\" AND \n  (\n    (event.outcome: \"failure\" AND event.reason: \"rate_limit_exceeded\") OR\n    (event.outcome: \"success\" AND threat.indicator.ip: * AND NOT user.geo.country_name: \"United States\") OR\n    (event.outcome: \"success\" AND user.device.fingerprint_mismatch: true)\n  )\n| stats count() by user.id, source.ip, user.geo.city_name, event.outcome"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Falco",
+        "type": "Runtime Security Monitoring",
+        "usage": "falco -r /etc/falco/rules/mfa_backup_codes.yaml"
+      },
+      {
+        "name": "OSSEC",
+        "type": "Host Intrusion Detection",
+        "usage": "Monitor application logs for backup code validation patterns and anomalies"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Technology"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 8.3.1 - Multi-factor authentication)",
+      "HIPAA (45 CFR 164.312(a)(2)(i) - Unique User Identification)",
+      "SOC2 (CC6.1 - Logical and Physical Access Controls)",
+      "ISO27001 (A.9.4.2 - Secure log-on procedures)",
+      "NIST 800-63B (Authenticator Assurance Level 2)",
+      "GDPR (Article 32 - Security of processing)",
+      "FFIEC Authentication Guidance"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "SaaS"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Regulated"
+    ]
+  }
+}

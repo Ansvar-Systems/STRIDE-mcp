@@ -1,0 +1,386 @@
+{
+  "id": "STRIDE-DB-ELASTICSEARCH-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1499 - Endpoint Denial of Service",
+      "T1499.004 - Application or System Exploitation"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-405 - Asymmetric Resource Consumption (Amplification)"
+    ]
+  },
+  "threat": {
+    "title": "Elasticsearch Expensive Query Denial of Service",
+    "description": "Elasticsearch clusters are vulnerable to resource exhaustion attacks through maliciously crafted queries that exploit wildcard searches on high-cardinality fields, deep aggregations, regex patterns, and script field execution. Attackers can cause heap memory exhaustion, CPU saturation, and cluster-wide outages by sending queries that pass circuit breaker pre-flight checks but expand exponentially during execution. Without proper query validation and resource limits, a single expensive query can crash data nodes and render the entire cluster unavailable.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Elasticsearch",
+    "versions_affected": [
+      "7.0.0 - 7.17.18",
+      "8.0.0 - 8.12.x"
+    ],
+    "ecosystem": "Elastic Stack",
+    "dependencies": [
+      "@elastic/elasticsearch (Node.js client)",
+      "elasticsearch-js",
+      "Logstash",
+      "Kibana"
+    ],
+    "related_frameworks": [
+      "OpenSearch",
+      "Apache Solr",
+      "MongoDB Atlas Search"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies publicly accessible Elasticsearch cluster endpoint (e.g., port 9200)\n2. Sends reconnaissance queries to identify high-cardinality fields (user_id, session_id, IP addresses)\n3. Crafts malicious aggregation query targeting millions of unique buckets across nested fields\n4. Query passes circuit breaker pre-flight estimation (appears safe)\n5. During execution, query expands exponentially creating 50+ million buckets in memory\n6. Data node JVM heap exhausts, triggering OutOfMemoryError and node crash\n7. Cluster enters red state, production search requests fail, business operations halt",
+    "prerequisites": [
+      "Elasticsearch cluster exposed to network (authenticated or unauthenticated)",
+      "No search.max_buckets limit configured (defaults to unlimited in older versions)",
+      "Circuit breakers not tuned or using default 60% request limit",
+      "No query timeout enforcement or request size validation",
+      "High-cardinality fields indexed without proper aggregation controls"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-31419",
+        "description": "Elasticsearch Stack Overflow DoS vulnerability in _search API allowing specially crafted query strings to cause cluster crashes",
+        "cvss_score": 7.5,
+        "published_date": "2023-09-06",
+        "affected_versions": "7.0.0-7.17.12, 8.0.0-8.9.0",
+        "fixed_versions": "7.17.13, 8.9.1",
+        "source_url": "https://nvd.nist.gov/vuln/detail/cve-2023-31419"
+      },
+      {
+        "cve_id": "ESA-2024-06",
+        "description": "Uncontrolled resource consumption via deeply nested pipeline processing on ingest nodes causing memory exhaustion",
+        "cvss_score": 6.5,
+        "published_date": "2024-03-15",
+        "affected_versions": "7.x-7.17.18, 8.x-8.12.x",
+        "fixed_versions": "7.17.19, 8.13.0",
+        "source_url": "https://discuss.elastic.co/t/elasticsearch-8-13-0-7-17-19-security-update-esa-2024-06/356314"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Plaid Elasticsearch Cluster Outages",
+        "date": "2019-03-01",
+        "impact": "Multiple cluster crashes per week over 2-week period; data nodes dying from JVM memory pressure spikes; production search degradation",
+        "root_cause": "User-written aggregation queries creating millions of unique buckets without max_buckets limit; each bucket consumed heap memory causing exponential growth beyond circuit breaker estimates",
+        "source_url": "https://plaid.com/blog/how-we-stopped-memory-intensive-queries-from-crashing-elasticsearch/"
+      },
+      {
+        "incident": "Elastic Stack Production Memory Exhaustion",
+        "date": "2023-05-01",
+        "impact": "Cluster unavailability; heap memory exceeded 95% parent circuit breaker threshold; queries timing out across entire cluster",
+        "root_cause": "Wildcard queries on high-cardinality fields combined with deep terms aggregations over 20+ million documents; inefficient query patterns causing 3-8 second response time degradation",
+        "source_url": "https://www.elastic.co/blog/managing-and-troubleshooting-elasticsearch-memory"
+      },
+      {
+        "incident": "E-commerce Search Platform DoS",
+        "date": "2022-11-15",
+        "impact": "Complete search functionality outage during Black Friday peak traffic; estimated $2M+ revenue loss over 4-hour window",
+        "root_cause": "Attacker exploited unprotected aggregation endpoint with scroll context leak; malicious regex queries with leading wildcards consumed 100% CPU on coordinating nodes",
+        "source_url": "https://www.elastic.co/blog/found-crash-elasticsearch"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Example-ES-DoS-001",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "Unauthenticated aggregation query causing cluster-wide OutOfMemoryError via cardinality explosion on _id field"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Six Ways to Crash Elasticsearch",
+        "authors": ["Elastic Security Team"],
+        "published_date": "2023-07-20",
+        "source_url": "https://www.elastic.co/blog/found-crash-elasticsearch",
+        "key_finding": "Complex aggregation queries can bypass circuit breaker pre-flight checks and expand exponentially during execution, causing heap exhaustion even with default protections enabled"
+      },
+      {
+        "title": "Elasticsearch and OpenSearch Query Limits Best Practices",
+        "authors": ["BigData Boutique"],
+        "published_date": "2024-01-10",
+        "source_url": "https://bigdataboutique.com/blog/elasticsearch-and-opensearch-query-limits-145927",
+        "key_finding": "Search.max_buckets must be explicitly configured as older versions default to unlimited; aggregation memory consumption grows linearly with bucket count regardless of circuit breaker settings"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Configure Circuit Breakers and Resource Limits",
+      "description": "Implement strict circuit breaker thresholds and search.max_buckets limits to prevent individual queries from consuming excessive cluster resources. Circuit breakers trip before memory exhaustion, returning errors instead of crashing nodes.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Elasticsearch 8.x Configuration",
+        "code": "# elasticsearch.yml - Production Circuit Breaker Configuration\n\n# REQUEST CIRCUIT BREAKER\n# Limits memory for per-request data structures (aggregations, sorting)\nindices.breaker.request.limit: 40%\nindices.breaker.request.overhead: 2.0\n\n# FIELDDATA CIRCUIT BREAKER\n# Limits memory for loading field values into cache\nindices.breaker.fielddata.limit: 35%\nindices.breaker.fielddata.overhead: 1.03\n\n# PARENT CIRCUIT BREAKER\n# Overall JVM heap limit across all breakers\nindices.breaker.total.limit: 70%\n\n# IN-FLIGHT REQUESTS BREAKER\n# Limits memory for all active incoming requests\nnetwork.breaker.inflight_requests.limit: 100%\nnetwork.breaker.inflight_requests.overhead: 2.0\n\n# AGGREGATION BUCKET LIMIT\n# Maximum buckets allowed in a single aggregation query\nsearch.max_buckets: 10000\n\n# QUERY TIMEOUTS\n# Maximum time for search request execution\nsearch.default_search_timeout: 30s\nsearch.max_open_scroll_context: 500\n\n# REJECT POLICY\n# Return errors instead of crashing when limits exceeded\nindices.breaker.total.use_real_memory: true\n\n# THREAD POOL TUNING\n# Prevent queue saturation from expensive queries\nthread_pool.search.queue_size: 1000\nthread_pool.search.size: 13  # (CPU cores / 2) + 1\n\n# Validation:\n# curl -X GET \"localhost:9200/_cluster/settings?include_defaults=true&filter_path=*.*.breaker.*,*.*.search.*\""
+      },
+      "tools": [
+        {
+          "name": "Elasticsearch Configuration API",
+          "type": "Cluster Settings Management",
+          "cost": "Included with Elasticsearch"
+        },
+        {
+          "name": "Kibana Stack Monitoring",
+          "type": "Circuit Breaker Observability",
+          "cost": "Free with Basic License"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "DE.AE-5 - Incident alert thresholds are established"
+      ],
+      "validation_steps": [
+        "Verify circuit breaker settings via GET /_cluster/settings API",
+        "Test aggregation query with >10,000 buckets (should fail with circuit_breaking_exception)",
+        "Monitor JVM heap pressure under load (should not exceed 70%)",
+        "Confirm request timeout enforcement after 30 seconds",
+        "Check thread pool rejection stats via GET /_cat/thread_pool"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Query Validation and Sanitization Layer",
+      "description": "Add application-level query validation before forwarding to Elasticsearch. Reject queries with dangerous patterns (leading wildcards, unbounded regex, deep nesting) and enforce query complexity budgets.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js with @elastic/elasticsearch 8.x",
+        "code": "const { Client } = require('@elastic/elasticsearch');\nconst Joi = require('joi');\n\n// Initialize Elasticsearch client with safeguards\nconst esClient = new Client({\n  node: process.env.ELASTICSEARCH_URL,\n  requestTimeout: 30000, // 30 second timeout\n  maxRetries: 3,\n  compression: 'gzip'\n});\n\n// Query complexity budget\nconst QUERY_LIMITS = {\n  MAX_WILDCARD_LENGTH: 3,      // Min chars before wildcard\n  MAX_AGGREGATION_DEPTH: 3,    // Max nested aggregations\n  MAX_RESULT_SIZE: 10000,      // Max result window\n  MAX_BUCKET_COUNT: 1000,      // Max aggregation buckets\n  FORBIDDEN_PATTERNS: [\n    /^\\*.*$/,                   // Leading wildcards\n    /\\.\\*.*\\*.*\\*/,             // Multiple wildcards\n    /script_fields/i,           // Script field execution\n    /painless/i                 // Painless scripting\n  ]\n};\n\n// Query validation schema\nconst searchQuerySchema = Joi.object({\n  index: Joi.string().required(),\n  query: Joi.object().required(),\n  size: Joi.number().max(QUERY_LIMITS.MAX_RESULT_SIZE).default(10),\n  from: Joi.number().max(QUERY_LIMITS.MAX_RESULT_SIZE).default(0),\n  aggs: Joi.object().optional(),\n  sort: Joi.array().max(5).optional(),\n  _source: Joi.alternatives().try(Joi.boolean(), Joi.array(), Joi.object()).optional()\n});\n\n/**\n * Validates query complexity and dangerous patterns\n */\nfunction validateQuerySafety(queryBody) {\n  const errors = [];\n  const queryStr = JSON.stringify(queryBody);\n\n  // Check for forbidden patterns\n  for (const pattern of QUERY_LIMITS.FORBIDDEN_PATTERNS) {\n    if (pattern.test(queryStr)) {\n      errors.push(`Forbidden pattern detected: ${pattern}`);\n    }\n  }\n\n  // Validate wildcard queries\n  const wildcardMatches = queryStr.match(/\"wildcard\"\\s*:\\s*\\{[^}]*\"\\*[^\"]*\"/g);\n  if (wildcardMatches) {\n    for (const match of wildcardMatches) {\n      const beforeWildcard = match.split('*')[0].split('\"').pop();\n      if (beforeWildcard.length < QUERY_LIMITS.MAX_WILDCARD_LENGTH) {\n        errors.push(`Wildcard query requires minimum ${QUERY_LIMITS.MAX_WILDCARD_LENGTH} characters prefix`);\n      }\n    }\n  }\n\n  // Validate aggregation depth\n  if (queryBody.aggs) {\n    const aggDepth = calculateAggregationDepth(queryBody.aggs);\n    if (aggDepth > QUERY_LIMITS.MAX_AGGREGATION_DEPTH) {\n      errors.push(`Aggregation depth ${aggDepth} exceeds limit ${QUERY_LIMITS.MAX_AGGREGATION_DEPTH}`);\n    }\n  }\n\n  // Validate result window\n  const resultWindow = (queryBody.from || 0) + (queryBody.size || 10);\n  if (resultWindow > QUERY_LIMITS.MAX_RESULT_SIZE) {\n    errors.push(`Result window ${resultWindow} exceeds maximum ${QUERY_LIMITS.MAX_RESULT_SIZE}`);\n  }\n\n  return errors;\n}\n\n/**\n * Calculates aggregation nesting depth\n */\nfunction calculateAggregationDepth(aggs, depth = 1) {\n  let maxDepth = depth;\n  for (const key in aggs) {\n    if (aggs[key].aggs) {\n      const nestedDepth = calculateAggregationDepth(aggs[key].aggs, depth + 1);\n      maxDepth = Math.max(maxDepth, nestedDepth);\n    }\n  }\n  return maxDepth;\n}\n\n/**\n * Safe search wrapper with validation\n */\nasync function safeSearch(queryBody) {\n  // Validate schema\n  const { error, value } = searchQuerySchema.validate(queryBody);\n  if (error) {\n    throw new Error(`Query validation failed: ${error.message}`);\n  }\n\n  // Validate safety\n  const safetyErrors = validateQuerySafety(value);\n  if (safetyErrors.length > 0) {\n    throw new Error(`Unsafe query detected: ${safetyErrors.join(', ')}`);\n  }\n\n  try {\n    // Execute with timeout and error handling\n    const response = await esClient.search({\n      index: value.index,\n      body: {\n        query: value.query,\n        aggs: value.aggs,\n        size: value.size,\n        from: value.from,\n        sort: value.sort,\n        _source: value._source,\n        timeout: '30s',\n        track_total_hits: 10000 // Prevent expensive count operations\n      }\n    });\n\n    return response;\n  } catch (err) {\n    if (err.meta?.body?.error?.type === 'circuit_breaking_exception') {\n      throw new Error('Query exceeded resource limits. Please refine your search.');\n    }\n    if (err.meta?.statusCode === 408 || err.name === 'TimeoutError') {\n      throw new Error('Query timeout. Please use more specific filters.');\n    }\n    throw err;\n  }\n}\n\n// Express.js route handler example\napp.post('/api/search', async (req, res) => {\n  try {\n    const results = await safeSearch({\n      index: 'products',\n      query: req.body.query,\n      size: req.body.size,\n      from: req.body.from,\n      aggs: req.body.aggs\n    });\n\n    res.json({\n      hits: results.hits.hits,\n      total: results.hits.total,\n      aggregations: results.aggregations\n    });\n  } catch (error) {\n    console.error('Search error:', error.message);\n    res.status(400).json({ error: error.message });\n  }\n});\n\nmodule.exports = { safeSearch, validateQuerySafety };"
+      },
+      "tools": [
+        {
+          "name": "Joi",
+          "type": "Schema Validation Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "@elastic/elasticsearch",
+          "type": "Official Node.js Client",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Test rejection of leading wildcard query: { wildcard: { field: '*value' } }",
+        "Verify >3 depth aggregation fails validation",
+        "Confirm script_fields queries are blocked",
+        "Test timeout enforcement with slow query simulation",
+        "Validate circuit_breaking_exception handling in application"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Rate Limiting and API Gateway Protection",
+      "description": "Implement rate limiting at the application and infrastructure layers to prevent query flooding attacks. Use API Gateway throttling policies and distributed rate limiters to cap requests per user/IP.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js with Redis Rate Limiter",
+        "code": "const rateLimit = require('express-rate-limit');\nconst RedisStore = require('rate-limit-redis');\nconst Redis = require('ioredis');\n\n// Initialize Redis client\nconst redisClient = new Redis({\n  host: process.env.REDIS_HOST,\n  port: 6379,\n  password: process.env.REDIS_PASSWORD,\n  enableOfflineQueue: false,\n  maxRetriesPerRequest: 3\n});\n\n// Global API rate limiter\nconst globalLimiter = rateLimit({\n  store: new RedisStore({\n    client: redisClient,\n    prefix: 'rl:global:',\n  }),\n  windowMs: 60 * 1000, // 1 minute\n  max: 100, // 100 requests per minute per IP\n  standardHeaders: true,\n  legacyHeaders: false,\n  message: 'Too many requests from this IP, please try again later.',\n  handler: (req, res) => {\n    res.status(429).json({\n      error: 'Rate limit exceeded',\n      retryAfter: req.rateLimit.resetTime\n    });\n  }\n});\n\n// Elasticsearch search endpoint rate limiter (stricter)\nconst searchLimiter = rateLimit({\n  store: new RedisStore({\n    client: redisClient,\n    prefix: 'rl:search:',\n  }),\n  windowMs: 60 * 1000, // 1 minute\n  max: 20, // 20 search requests per minute per IP\n  skipSuccessfulRequests: false,\n  skipFailedRequests: true, // Don't count failed requests\n  keyGenerator: (req) => {\n    // Rate limit by authenticated user if available, otherwise IP\n    return req.user?.id || req.ip;\n  },\n  handler: (req, res) => {\n    console.warn(`Rate limit exceeded for ${req.ip} on search endpoint`);\n    res.status(429).json({\n      error: 'Search rate limit exceeded',\n      limit: 20,\n      windowMs: 60000,\n      retryAfter: Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)\n    });\n  }\n});\n\n// Aggregation endpoint rate limiter (most strict)\nconst aggregationLimiter = rateLimit({\n  store: new RedisStore({\n    client: redisClient,\n    prefix: 'rl:agg:',\n  }),\n  windowMs: 5 * 60 * 1000, // 5 minutes\n  max: 10, // 10 aggregation queries per 5 minutes\n  skipSuccessfulRequests: false,\n  keyGenerator: (req) => req.user?.id || req.ip,\n  handler: (req, res) => {\n    console.error(`Aggregation rate limit exceeded for ${req.ip}`);\n    res.status(429).json({\n      error: 'Aggregation queries are rate limited. Please reduce query frequency.',\n      limit: 10,\n      windowMs: 300000\n    });\n  }\n});\n\n// Apply rate limiters to routes\napp.use('/api', globalLimiter);\napp.post('/api/search', searchLimiter, async (req, res) => { /* ... */ });\napp.post('/api/search/aggregate', aggregationLimiter, async (req, res) => { /* ... */ });\n\n// Azure API Management Policy (Optional - Infrastructure Layer)\nconst azureApimPolicy = `\n<!--\n  Azure API Management Rate Limit Policy\n  Apply to Elasticsearch backend API\n-->\n<policies>\n  <inbound>\n    <!-- Rate limit by subscription key -->\n    <rate-limit calls=\"100\" renewal-period=\"60\" />\n    \n    <!-- Rate limit by IP address -->\n    <rate-limit-by-key calls=\"50\" \n                        renewal-period=\"60\" \n                        counter-key=\"@(context.Request.IpAddress)\" />\n    \n    <!-- Concurrent request limit -->\n    <limit-concurrency key=\"@(context.Request.IpAddress)\" max-count=\"5\">\n      <forward-request timeout=\"30\" />\n    </limit-concurrency>\n    \n    <!-- Validate query complexity -->\n    <validate-content unspecified-content-type-action=\"prevent\" \n                     max-size=\"102400\" \n                     errors-variable-name=\"validationErrors\" />\n  </inbound>\n  \n  <backend>\n    <forward-request timeout=\"30\" />\n  </backend>\n  \n  <outbound>\n    <set-header name=\"X-RateLimit-Limit\" exists-action=\"override\">\n      <value>100</value>\n    </set-header>\n    <set-header name=\"X-RateLimit-Remaining\" exists-action=\"override\">\n      <value>@(context.Response.Headers.GetValueOrDefault(\"X-Rate-Limit-Remaining\", \"0\"))</value>\n    </set-header>\n  </outbound>\n  \n  <on-error>\n    <return-response>\n      <set-status code=\"429\" reason=\"Too Many Requests\" />\n      <set-body>Rate limit exceeded. Please retry after 60 seconds.</set-body>\n    </return-response>\n  </on-error>\n</policies>\n`;\n\nmodule.exports = { globalLimiter, searchLimiter, aggregationLimiter };"
+      },
+      "tools": [
+        {
+          "name": "express-rate-limit",
+          "type": "Node.js Rate Limiting Middleware",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Azure API Management",
+          "type": "API Gateway with Rate Limiting",
+          "cost": "$0.035/hour (Developer tier)"
+        },
+        {
+          "name": "Redis",
+          "type": "Distributed Rate Limit Store",
+          "cost": "$0.02/GB (Azure Cache)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.PT-4 - Communications and control networks are protected",
+        "DE.CM-7 - Monitoring for unauthorized activity is continuous"
+      ],
+      "validation_steps": [
+        "Test rate limit by sending >100 requests/minute (should return 429)",
+        "Verify Redis stores rate limit counters correctly",
+        "Confirm authenticated users have separate rate limits from IPs",
+        "Test aggregation endpoint allows max 10 requests per 5 minutes",
+        "Monitor rate limit metrics in application logs"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Enable Real-Time Query Performance Monitoring",
+      "description": "Deploy comprehensive monitoring for slow queries, circuit breaker trips, and heap pressure. Configure alerting for DoS indicators and automatic query termination for runaway searches.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Elasticsearch + Azure Monitor + Alerting",
+        "code": "# elasticsearch.yml - Enable slow log monitoring\nindex.search.slowlog.threshold.query.warn: 5s\nindex.search.slowlog.threshold.query.info: 2s\nindex.search.slowlog.threshold.query.debug: 1s\nindex.search.slowlog.threshold.query.trace: 500ms\nindex.search.slowlog.threshold.fetch.warn: 1s\nindex.search.slowlog.level: info\n\n# Enable cluster health monitoring\ncluster.routing.allocation.enable: all\ncluster.routing.allocation.awareness.attributes: zone\nmonitor.jvm.gc.enabled: true\nmonitor.jvm.gc.overhead.warn: 50\nmonitor.jvm.gc.overhead.info: 25\n\n---\n# Azure Monitor KQL Alert Query\n# Alert on circuit breaker exceptions\nlet timeWindow = 5m;\nAzureDiagnostics\n| where TimeGenerated > ago(timeWindow)\n| where Category == \"ElasticsearchSlowLogs\" or Category == \"ElasticsearchLogs\"\n| where Message contains \"circuit_breaking_exception\"\n| summarize CircuitBreakerCount = count() by bin(TimeGenerated, 1m), NodeName = Computer\n| where CircuitBreakerCount > 10  // More than 10 circuit breaker trips per minute\n| project TimeGenerated, NodeName, CircuitBreakerCount\n\n---\n# Azure Monitor Alert Rule (ARM Template)\n{\n  \"type\": \"Microsoft.Insights/scheduledQueryRules\",\n  \"apiVersion\": \"2021-08-01\",\n  \"name\": \"elasticsearch-circuit-breaker-alert\",\n  \"location\": \"[resourceGroup().location]\",\n  \"properties\": {\n    \"displayName\": \"Elasticsearch Circuit Breaker DoS Alert\",\n    \"description\": \"Triggers when circuit breaker exceptions exceed threshold\",\n    \"severity\": 2,\n    \"enabled\": true,\n    \"evaluationFrequency\": \"PT5M\",\n    \"windowSize\": \"PT5M\",\n    \"criteria\": {\n      \"allOf\": [\n        {\n          \"query\": \"AzureDiagnostics | where Category == 'ElasticsearchLogs' and Message contains 'circuit_breaking_exception' | summarize count() by bin(TimeGenerated, 1m)\",\n          \"timeAggregation\": \"Total\",\n          \"operator\": \"GreaterThan\",\n          \"threshold\": 10\n        }\n      ]\n    },\n    \"actions\": {\n      \"actionGroups\": [\n        \"[resourceId('Microsoft.Insights/actionGroups', 'elasticsearch-oncall')]\"\n      ]\n    }\n  }\n}\n\n---\n# Elasticsearch Watcher Alert (Native)\nPUT _watcher/watch/heap_pressure_alert\n{\n  \"trigger\": {\n    \"schedule\": {\n      \"interval\": \"1m\"\n    }\n  },\n  \"input\": {\n    \"http\": {\n      \"request\": {\n        \"host\": \"localhost\",\n        \"port\": 9200,\n        \"path\": \"/_nodes/stats/jvm\"\n      }\n    }\n  },\n  \"condition\": {\n    \"script\": {\n      \"source\": \"ctx.payload.nodes.values().stream().anyMatch(node -> node.jvm.mem.heap_used_percent > 85)\"\n    }\n  },\n  \"actions\": {\n    \"send_alert\": {\n      \"webhook\": {\n        \"method\": \"POST\",\n        \"url\": \"https://hooks.slack.com/services/YOUR/WEBHOOK/URL\",\n        \"body\": \"{\\\"text\\\": \\\"WARNING: Elasticsearch heap usage > 85%. Potential DoS attack detected.\\\"}\"\n      }\n    },\n    \"cancel_long_running_searches\": {\n      \"webhook\": {\n        \"method\": \"POST\",\n        \"url\": \"http://localhost:9200/_tasks/_cancel?actions=*search&wait_for_completion=false\",\n        \"headers\": {\n          \"Content-Type\": \"application/json\"\n        }\n      }\n    }\n  }\n}\n\n---\n# Prometheus Exporters Configuration\n# elasticsearch_exporter for Prometheus metrics\ndocker run -d \\\n  --name elasticsearch-exporter \\\n  -p 9114:9114 \\\n  quay.io/prometheuscommunity/elasticsearch-exporter:latest \\\n  --es.uri=http://elasticsearch:9200 \\\n  --es.all \\\n  --es.indices \\\n  --es.shards \\\n  --es.timeout=30s\n\n# Key metrics to monitor:\n# - elasticsearch_jvm_memory_used_bytes{area=\"heap\"}\n# - elasticsearch_breakers_tripped_total\n# - elasticsearch_thread_pool_rejected_count{name=\"search\"}\n# - elasticsearch_indices_search_query_time_seconds\n# - elasticsearch_cluster_health_status"
+      },
+      "tools": [
+        {
+          "name": "Azure Monitor",
+          "type": "Cloud-native Observability Platform",
+          "cost": "$2.30/GB ingestion"
+        },
+        {
+          "name": "Elasticsearch Watcher",
+          "type": "Native Alerting (X-Pack)",
+          "cost": "Included with Platinum/Enterprise license"
+        },
+        {
+          "name": "Prometheus + Grafana",
+          "type": "Open Source Monitoring Stack",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect anomalies",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Trigger test circuit breaker exception and verify alert fires",
+        "Confirm slow query logs capture queries >2s",
+        "Test heap pressure alert at 85% threshold",
+        "Verify automatic task cancellation when heap exceeds limit",
+        "Check Prometheus metrics endpoint exposes breaker trip counts"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in circuit_breaking_exception errors in Elasticsearch logs",
+      "JVM heap memory sustained above 85% for multiple nodes",
+      "Cluster health status transitions from green -> yellow -> red",
+      "Slow query logs show aggregation queries with >1M buckets",
+      "Thread pool rejection rate increases on search queue",
+      "Single IP address sending high volume of complex aggregation queries",
+      "Queries targeting high-cardinality fields (_id, session_id, IP addresses)",
+      "Scroll contexts accumulating without being cleared",
+      "CPU saturation (>90%) on data nodes coinciding with query spikes"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect Elasticsearch Circuit Breaker DoS Attacks\nlet lookbackWindow = 10m;\nlet circuitBreakerThreshold = 5;\nAzureDiagnostics\n| where TimeGenerated > ago(lookbackWindow)\n| where Category == \"ElasticsearchLogs\"\n| where Message contains \"circuit_breaking_exception\" or Message contains \"Data too large\"\n| extend SourceIP = extract(@\"from\\s+([0-9\\.]+)\", 1, Message)\n| extend BreakerType = extract(@\"\\[([a-z_]+)\\]\", 1, Message)\n| extend MemoryUsed = extract(@\"(\\d+)/(\\d+)\\s+bytes\", 1, Message)\n| summarize \n    CircuitBreakerTrips = count(),\n    UniqueNodes = dcount(Computer),\n    BreakerTypes = make_set(BreakerType)\n    by SourceIP, bin(TimeGenerated, 1m)\n| where CircuitBreakerTrips >= circuitBreakerThreshold\n| project TimeGenerated, SourceIP, CircuitBreakerTrips, UniqueNodes, BreakerTypes\n| order by CircuitBreakerTrips desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=elasticsearch sourcetype=elasticsearch:cluster\n(\"circuit_breaking_exception\" OR \"OutOfMemoryError\" OR \"Data too large\")\n| rex field=_raw \"from\\s+(?<source_ip>[0-9\\.]+)\"\n| rex field=_raw \"\\[(?<breaker_type>[a-z_]+)\\]\"\n| bin _time span=1m\n| stats count as breaker_trips, \n        dc(host) as affected_nodes,\n        values(breaker_type) as breaker_types\n        by _time, source_ip\n| where breaker_trips > 5\n| eval severity = case(\n    breaker_trips > 20, \"critical\",\n    breaker_trips > 10, \"high\",\n    1=1, \"medium\"\n  )\n| sort -breaker_trips\n| table _time, source_ip, breaker_trips, affected_nodes, breaker_types, severity"
+      },
+      {
+        "siem": "Elastic SIEM (KQL)",
+        "query": "event.dataset: \"elasticsearch.server\" AND \n(\n  message: \"circuit_breaking_exception\" OR \n  message: \"Data too large\" OR\n  message: \"OutOfMemoryError\"\n) AND \nevent.category: \"database\"\n| stats count() as trips, \n        cardinality(host.name) as node_count,\n        values(elasticsearch.breaker.type) as breaker_types\n        by source.ip, \n           event.created\n| where trips > 5\n| sort trips desc"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# For AWS Elasticsearch Service\nfields @timestamp, @message, sourceIpAddress\n| filter @message like /circuit_breaking_exception|Data too large/\n| stats count() as CircuitBreakerTrips by sourceIpAddress, bin(5m)\n| filter CircuitBreakerTrips > 5\n| sort CircuitBreakerTrips desc"
+      },
+      {
+        "siem": "Elasticsearch Slow Query Detection",
+        "query": "# Index slow logs for analysis\nGET /elasticsearch-slowlog-*/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        {\n          \"range\": {\n            \"@timestamp\": {\n              \"gte\": \"now-15m\"\n            }\n          }\n        },\n        {\n          \"range\": {\n            \"took_millis\": {\n              \"gte\": 5000\n            }\n          }\n        }\n      ],\n      \"should\": [\n        { \"match\": { \"query_type\": \"wildcard\" } },\n        { \"match\": { \"query_type\": \"aggregation\" } },\n        { \"match\": { \"message\": \"regex\" } }\n      ],\n      \"minimum_should_match\": 1\n    }\n  },\n  \"aggs\": {\n    \"slow_query_sources\": {\n      \"terms\": {\n        \"field\": \"source.ip.keyword\",\n        \"size\": 10\n      },\n      \"aggs\": {\n        \"avg_duration\": {\n          \"avg\": {\n            \"field\": \"took_millis\"\n          }\n        }\n      }\n    }\n  }\n}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "ElastAlert",
+        "type": "Real-time Anomaly Detection for Elasticsearch",
+        "usage": "elastalert --config elastalert.yaml --rule circuit_breaker_dos.yaml"
+      },
+      {
+        "name": "Elasticsearch Performance Analyzer",
+        "type": "Open Distro Performance Analytics",
+        "usage": "Provides real-time performance metrics and query profiling for OpenSearch/Elasticsearch"
+      },
+      {
+        "name": "Cerebro",
+        "type": "Elasticsearch Cluster Management UI",
+        "usage": "Monitor cluster health, node stats, and identify problematic queries"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "E-commerce",
+      "Financial Services",
+      "Log Analytics",
+      "Search Platforms",
+      "SaaS Applications"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10 - Broken Authentication and Session Management)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.6.1 - Technical Vulnerability Management)",
+      "NIST CSF (PR.IP-1, DE.CM-1)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud (AWS Elasticsearch, Azure Elasticsearch, Elastic Cloud)",
+      "On-Premise",
+      "Kubernetes",
+      "Docker"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

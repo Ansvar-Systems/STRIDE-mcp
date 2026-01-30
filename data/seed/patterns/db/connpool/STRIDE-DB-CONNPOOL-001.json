@@ -1,0 +1,313 @@
+{
+  "id": "STRIDE-DB-CONNPOOL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1499.001 - Endpoint Denial of Service: OS Exhaustion Flood",
+      "T1498.001 - Network Denial of Service: Direct Network Flood"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits or Throttling",
+      "CWE-404 - Improper Resource Shutdown or Release"
+    ]
+  },
+  "threat": {
+    "title": "Database Connection Pool Exhaustion via Slowloris-Style Attack",
+    "description": "Attackers can exhaust database connection pools by opening numerous slow or incomplete database queries that hold connections indefinitely, preventing legitimate users from accessing the application. This attack is similar to Slowloris HTTP attacks but targets database connection pools, causing cascading failures across application layers.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "PostgreSQL",
+    "versions_affected": ["9.x", "10.x", "11.x", "12.x", "13.x", "14.x", "15.x", "16.x"],
+    "ecosystem": "Database Connection Pooling",
+    "dependencies": ["pg", "HikariCP", "PgBouncer", "PgPool-II"],
+    "related_frameworks": ["MySQL", "MariaDB", "Oracle Database", "SQL Server"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies application endpoints that trigger database queries without proper timeout limits\n2. Opens 50-100 concurrent connections to the application, each executing slow SELECT queries with complex JOINs or sleeps\n3. Each query holds a database connection from the pool for 5-10 minutes\n4. Connection pool (default 10-20 connections) becomes fully saturated within seconds\n5. Legitimate user requests begin timing out with 'Connection pool exhausted' errors\n6. Application becomes completely unavailable as all incoming requests queue indefinitely waiting for connections",
+    "prerequisites": [
+      "Application uses connection pooling with default or low maximum connection limits",
+      "No connection timeout or query timeout configured",
+      "No rate limiting on database-heavy endpoints",
+      "No connection leak detection enabled",
+      "Application does not properly release connections after errors"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2021-23214",
+        "description": "PostgreSQL connection pooler MITM vulnerability affecting PgBouncer, PgPool-II, and Odyssey that can be exploited for DoS attacks",
+        "cvss_score": 8.1,
+        "published_date": "2021-11-11"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Production Web Application Connection Pool Exhaustion",
+        "date": "2023-06-15",
+        "impact": "3.5-hour outage affecting 80% of users with HTTP 500 errors; revenue loss estimated at $250,000",
+        "root_cause": "Database connection pool exhaustion due to misconfigured HikariCP settings and connection leaks from long-running transactions",
+        "source_url": "https://medium.com/@ngungabn03/postmortem-database-connection-pool-exhaustion-causing-service-outage-9afd33a45311"
+      },
+      {
+        "incident": "HikariCP Production Server Crashes",
+        "date": "2024-03-10",
+        "impact": "Multiple production server crashes over 2-week period; complete service unavailability during crashes",
+        "root_cause": "Connection pool running out of connections with 'request timed out after 30002ms' errors due to connection adder thread becoming stuck",
+        "source_url": "https://github.com/brettwooldridge/HikariCP/issues/1474"
+      },
+      {
+        "incident": "Dify Workflows Connection Pool Exhaustion",
+        "date": "2025-01-15",
+        "impact": "Database connection pool exhaustion under high concurrency preventing workflow execution",
+        "root_cause": "High concurrency workflows exhausting available database connections without proper pool sizing",
+        "source_url": "https://github.com/langgenius/dify/issues/21176"
+      }
+    ],
+    "bug_bounty_reports": [],
+    "security_research": [
+      {
+        "title": "Connection Pool Exhaustion: The Silent Killer",
+        "authors": ["HowTech Engineering"],
+        "published_date": "2024-09-15",
+        "source_url": "https://howtech.substack.com/p/connection-pool-exhaustion-the-silent",
+        "key_finding": "Connection pool exhaustion is described as 'the most insidious failure in distributed systems because it looks invisible until it destroys everything'"
+      },
+      {
+        "title": "Diagnosing Connection Leaks in Node.js and Postgres",
+        "authors": ["Gary Sieling"],
+        "published_date": "2023-08-20",
+        "source_url": "https://www.garysieling.com/blog/diagnosing-connection-leaks-in-node-js-and-postgres/",
+        "key_finding": "Connection leaks in Node.js pg pools cause applications to become unresponsive once the maximum connection limit is reached (default 10 connections)"
+      },
+      {
+        "title": "Detection of Slowloris Attacks using Machine Learning Algorithms",
+        "authors": ["ACM/SIGAPP Symposium on Applied Computing"],
+        "published_date": "2024-04-08",
+        "source_url": "https://dl.acm.org/doi/10.1145/3605098.3635919",
+        "key_finding": "Random forest ML algorithms can detect Slowloris-style attacks (which can target connection pools) with 99.52% accuracy"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Configure Connection Pool Limits with Adaptive Sizing",
+      "description": "Implement proper connection pool sizing based on application load patterns, database capacity, and expected concurrency. Use formula: connections = ((core_count * 2) + effective_spindle_count) for optimal performance.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js with pg (node-postgres)",
+        "code": "const { Pool } = require('pg');\n\n// PostgreSQL connection pool with optimal configuration\nconst pool = new Pool({\n  host: process.env.DB_HOST,\n  port: 5432,\n  database: process.env.DB_NAME,\n  user: process.env.DB_USER,\n  password: process.env.DB_PASSWORD,\n  \n  // Connection pool limits\n  max: 20, // Maximum pool size (adjust based on DB max_connections)\n  min: 5,  // Minimum idle connections to maintain\n  \n  // Timeout configurations (milliseconds)\n  connectionTimeoutMillis: 5000,  // Max wait time for connection from pool\n  idleTimeoutMillis: 30000,       // Close idle connections after 30s\n  query_timeout: 10000,            // Query execution timeout: 10s\n  statement_timeout: 15000,        // Statement-level timeout: 15s\n  \n  // Connection lifecycle\n  maxUses: 7500, // Close connections after N queries (prevents memory leaks)\n  \n  // Connection validation\n  allowExitOnIdle: true // Allow pool to exit when all connections idle\n});\n\n// Connection leak detection\npool.on('connect', (client) => {\n  client.connectionStartTime = Date.now();\n  console.log('Connection acquired from pool');\n});\n\npool.on('remove', (client) => {\n  const lifetime = Date.now() - client.connectionStartTime;\n  console.log(`Connection removed after ${lifetime}ms`);\n});\n\n// Monitor pool health\nsetInterval(() => {\n  console.log({\n    total: pool.totalCount,\n    idle: pool.idleCount,\n    waiting: pool.waitingCount\n  });\n  \n  // Alert if pool is saturated\n  if (pool.waitingCount > 5) {\n    console.error('ALERT: Connection pool under heavy load!');\n  }\n}, 10000); // Check every 10 seconds\n\n// Proper connection usage pattern\nasync function executeQuery(queryText, params) {\n  const client = await pool.connect();\n  try {\n    const result = await client.query(queryText, params);\n    return result.rows;\n  } catch (error) {\n    console.error('Query error:', error);\n    throw error;\n  } finally {\n    client.release(); // CRITICAL: Always release connection\n  }\n}\n\n// Graceful shutdown\nprocess.on('SIGTERM', async () => {\n  console.log('Draining connection pool...');\n  await pool.end();\n  process.exit(0);\n});\n\nmodule.exports = { pool, executeQuery };"
+      },
+      "tools": [
+        {
+          "name": "pg (node-postgres)",
+          "type": "PostgreSQL client for Node.js",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "pg-monitor",
+          "type": "Connection pool monitoring",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.17.2.1 - Availability of information processing facilities"
+      ],
+      "nist_csf": [
+        "PR.DS-4 - Adequate capacity to ensure availability",
+        "DE.AE-5 - Incident alert thresholds are established"
+      ],
+      "validation_steps": [
+        "Verify max pool size is set appropriately (typically 10-30 connections)",
+        "Confirm connection and query timeouts are configured",
+        "Test pool behavior under load with 2x expected concurrent users",
+        "Monitor pool metrics (total, idle, waiting connections)",
+        "Verify connections are released in all code paths (including errors)"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Connection Timeout and Query Timeout Guards",
+      "description": "Configure aggressive timeouts at multiple layers (application, connection pool, database) to prevent slow queries from holding connections indefinitely. Use HikariCP for production Java applications with battle-tested timeout handling.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot with HikariCP",
+        "code": "package com.ansvar.config;\n\nimport com.zaxxer.hikari.HikariConfig;\nimport com.zaxxer.hikari.HikariDataSource;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport javax.sql.DataSource;\n\n@Configuration\npublic class DatabaseConfig {\n    \n    @Bean\n    public DataSource dataSource() {\n        HikariConfig config = new HikariConfig();\n        \n        // Database connection settings\n        config.setJdbcUrl(\"jdbc:postgresql://localhost:5432/mydb\");\n        config.setUsername(System.getenv(\"DB_USER\"));\n        config.setPassword(System.getenv(\"DB_PASSWORD\"));\n        config.setDriverClassName(\"org.postgresql.Driver\");\n        \n        // Pool sizing\n        config.setMaximumPoolSize(25);  // Maximum connections\n        config.setMinimumIdle(5);        // Minimum idle connections\n        \n        // Timeout configurations (milliseconds)\n        config.setConnectionTimeout(5000);      // Max wait for connection: 5s\n        config.setIdleTimeout(300000);          // Close idle connections: 5min\n        config.setMaxLifetime(1800000);         // Max connection lifetime: 30min\n        config.setValidationTimeout(3000);      // Connection validation: 3s\n        config.setLeakDetectionThreshold(60000); // Detect leaks > 60s\n        \n        // Connection test query\n        config.setConnectionTestQuery(\"SELECT 1\");\n        \n        // Pool name for monitoring\n        config.setPoolName(\"AnsvarHikariPool\");\n        \n        // Performance optimizations\n        config.addDataSourceProperty(\"cachePrepStmts\", \"true\");\n        config.addDataSourceProperty(\"prepStmtCacheSize\", \"250\");\n        config.addDataSourceProperty(\"prepStmtCacheSqlLimit\", \"2048\");\n        \n        // PostgreSQL-specific settings\n        config.addDataSourceProperty(\"socketTimeout\", \"10\");  // 10 seconds\n        config.addDataSourceProperty(\"loginTimeout\", \"5\");    // 5 seconds\n        config.addDataSourceProperty(\"connectTimeout\", \"5\");  // 5 seconds\n        \n        // Health check\n        config.setHealthCheckRegistry(null); // Wire to your metrics registry\n        \n        HikariDataSource dataSource = new HikariDataSource(config);\n        \n        // Log pool statistics\n        Runtime.getRuntime().addShutdownHook(new Thread(() -> {\n            System.out.println(\"Closing HikariCP pool: \" + dataSource.getPoolName());\n            dataSource.close();\n        }));\n        \n        return dataSource;\n    }\n}\n\n// Query timeout annotation for Spring Data JPA\npackage com.ansvar.repository;\n\nimport org.springframework.data.jpa.repository.JpaRepository;\nimport org.springframework.data.jpa.repository.Query;\nimport org.springframework.data.jpa.repository.QueryHints;\nimport javax.persistence.QueryHint;\nimport java.util.List;\n\npublic interface UserRepository extends JpaRepository<User, Long> {\n    \n    @QueryHints({\n        @QueryHint(name = \"javax.persistence.query.timeout\", value = \"5000\"), // 5 seconds\n        @QueryHint(name = \"org.hibernate.timeout\", value = \"5\")\n    })\n    @Query(\"SELECT u FROM User u WHERE u.email = :email\")\n    User findByEmailWithTimeout(String email);\n}\n\n// Circuit breaker pattern for database calls\npackage com.ansvar.service;\n\nimport io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class UserService {\n    \n    private final UserRepository userRepository;\n    \n    public UserService(UserRepository userRepository) {\n        this.userRepository = userRepository;\n    }\n    \n    @CircuitBreaker(name = \"databaseService\", fallbackMethod = \"getUserFallback\")\n    public User getUser(String email) {\n        return userRepository.findByEmailWithTimeout(email);\n    }\n    \n    private User getUserFallback(String email, Exception ex) {\n        // Return cached data or default response\n        throw new ServiceUnavailableException(\"Database temporarily unavailable\");\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "HikariCP",
+          "type": "JDBC connection pool",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Resilience4j",
+          "type": "Circuit breaker library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Set leakDetectionThreshold to 60000ms (1 minute) in development",
+        "Test long-running query scenarios to verify timeout enforcement",
+        "Monitor HikariCP pool metrics via JMX or Micrometer",
+        "Implement circuit breaker pattern for database calls",
+        "Verify graceful degradation when pool is exhausted"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enable Connection Leak Detection and Monitoring",
+      "description": "Implement comprehensive monitoring and alerting for connection pool health, including leak detection, pool saturation alerts, and query performance tracking. Use SIEM queries to detect anomalous connection patterns.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js with pg-monitor and Prometheus",
+        "code": "const { Pool } = require('pg');\nconst monitor = require('pg-monitor');\nconst prometheus = require('prom-client');\n\n// Initialize Prometheus metrics\nconst poolTotalGauge = new prometheus.Gauge({\n  name: 'db_pool_connections_total',\n  help: 'Total number of connections in pool'\n});\n\nconst poolIdleGauge = new prometheus.Gauge({\n  name: 'db_pool_connections_idle',\n  help: 'Number of idle connections in pool'\n});\n\nconst poolWaitingGauge = new prometheus.Gauge({\n  name: 'db_pool_connections_waiting',\n  help: 'Number of clients waiting for connection'\n});\n\nconst queryDurationHistogram = new prometheus.Histogram({\n  name: 'db_query_duration_seconds',\n  help: 'Query execution duration in seconds',\n  buckets: [0.1, 0.5, 1, 2, 5, 10]\n});\n\nconst connectionLeaksCounter = new prometheus.Counter({\n  name: 'db_connection_leaks_total',\n  help: 'Total number of detected connection leaks'\n});\n\n// PostgreSQL connection pool\nconst pool = new Pool({\n  host: process.env.DB_HOST,\n  database: process.env.DB_NAME,\n  user: process.env.DB_USER,\n  password: process.env.DB_PASSWORD,\n  max: 20,\n  idleTimeoutMillis: 30000,\n  connectionTimeoutMillis: 5000\n});\n\n// Enable pg-monitor for detailed connection tracking\nif (process.env.NODE_ENV !== 'production') {\n  monitor.attach(pool, {\n    query: true,\n    connect: true,\n    disconnect: true,\n    error: true\n  });\n}\n\n// Track active connections with metadata\nconst activeConnections = new Map();\n\npool.on('connect', (client) => {\n  const connectionId = Math.random().toString(36).substr(2, 9);\n  client._connectionId = connectionId;\n  client._acquiredAt = Date.now();\n  client._acquiredStack = new Error().stack;\n  \n  activeConnections.set(connectionId, {\n    acquiredAt: client._acquiredAt,\n    stack: client._acquiredStack\n  });\n  \n  console.log(`[${connectionId}] Connection acquired`);\n});\n\npool.on('remove', (client) => {\n  const connectionId = client._connectionId;\n  const lifetime = Date.now() - client._acquiredAt;\n  \n  activeConnections.delete(connectionId);\n  console.log(`[${connectionId}] Connection released after ${lifetime}ms`);\n});\n\n// Connection leak detection (runs every 30 seconds)\nsetInterval(() => {\n  const now = Date.now();\n  const leakThreshold = 60000; // 60 seconds\n  \n  for (const [connectionId, metadata] of activeConnections.entries()) {\n    const age = now - metadata.acquiredAt;\n    \n    if (age > leakThreshold) {\n      console.error(`⚠️  LEAK DETECTED: Connection ${connectionId} held for ${age}ms`);\n      console.error('Stack trace when acquired:', metadata.stack);\n      connectionLeaksCounter.inc();\n      \n      // Send alert (integrate with PagerDuty, Slack, etc.)\n      sendAlert({\n        severity: 'critical',\n        title: 'Database Connection Leak Detected',\n        description: `Connection held for ${age}ms`,\n        connectionId,\n        stack: metadata.stack\n      });\n    }\n  }\n}, 30000);\n\n// Pool health monitoring (every 10 seconds)\nsetInterval(() => {\n  const metrics = {\n    total: pool.totalCount,\n    idle: pool.idleCount,\n    waiting: pool.waitingCount\n  };\n  \n  // Update Prometheus metrics\n  poolTotalGauge.set(metrics.total);\n  poolIdleGauge.set(metrics.idle);\n  poolWaitingGauge.set(metrics.waiting);\n  \n  // Alert on pool saturation\n  const utilization = (metrics.total - metrics.idle) / pool.options.max;\n  if (utilization > 0.8) {\n    console.warn(`⚠️  Pool utilization high: ${(utilization * 100).toFixed(1)}%`);\n  }\n  \n  if (metrics.waiting > 3) {\n    console.error(`🚨 Connection pool exhaustion risk: ${metrics.waiting} waiting`);\n    sendAlert({\n      severity: 'warning',\n      title: 'Connection Pool Near Exhaustion',\n      description: `${metrics.waiting} clients waiting for connections`\n    });\n  }\n}, 10000);\n\n// Wrapper for query execution with monitoring\nasync function executeQuery(queryText, params) {\n  const startTime = Date.now();\n  const client = await pool.connect();\n  \n  try {\n    const result = await client.query(queryText, params);\n    const duration = (Date.now() - startTime) / 1000;\n    \n    queryDurationHistogram.observe(duration);\n    \n    if (duration > 5) {\n      console.warn(`Slow query detected (${duration}s):`, queryText);\n    }\n    \n    return result.rows;\n  } catch (error) {\n    console.error('Query error:', error);\n    throw error;\n  } finally {\n    client.release();\n  }\n}\n\n// Alert function (integrate with your alerting system)\nfunction sendAlert(alert) {\n  // Example: Send to Slack, PagerDuty, etc.\n  console.error('ALERT:', JSON.stringify(alert, null, 2));\n  // TODO: Integrate with actual alerting service\n}\n\nmodule.exports = { pool, executeQuery };"
+      },
+      "tools": [
+        {
+          "name": "pg-monitor",
+          "type": "PostgreSQL monitoring for Node.js",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Prometheus",
+          "type": "Metrics and monitoring",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Grafana",
+          "type": "Metrics visualization",
+          "cost": "Free (Open Source) / Cloud plans from $49/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored",
+        "DE.AE-3 - Event data are aggregated and correlated"
+      ],
+      "validation_steps": [
+        "Verify connection leak detection alerts trigger after 60 seconds",
+        "Confirm Prometheus metrics are exported on /metrics endpoint",
+        "Set up Grafana dashboard for pool health visualization",
+        "Test alerting system with simulated connection leak",
+        "Review SIEM queries detect anomalous connection patterns"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in database connection count approaching max_connections",
+      "Increased application response times with 'connection timeout' errors",
+      "High number of connections in 'idle in transaction' state",
+      "Multiple connections from same IP address or user session",
+      "Query execution times exceeding configured timeouts",
+      "Connection pool waiting queue growing continuously",
+      "Database CPU usage low while connection count is high"
+    ],
+    "log_queries": [
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect connection pool exhaustion patterns\nevent.category: \"database\" AND \n(\n  error.message: \"connection timeout\" OR \n  error.message: \"pool exhausted\" OR \n  error.message: \"Connection is not available\"\n) \n| stats count by source.ip, user.name\n| where count > 10"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=postgresql\n(\"too many connections\" OR \"connection pool exhausted\" OR \"connection timeout\")\n| stats count by src_ip, db_user, query_duration\n| where count > 5 OR query_duration > 30000\n| sort -count"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Monitor PostgreSQL connection pool metrics\nAzureDiagnostics\n| where ResourceType == \"POSTGRESQL SERVERS\"\n| where MetricName in (\"active_connections\", \"connections_failed\")\n| summarize \n    AvgConnections = avg(Average),\n    MaxConnections = max(Maximum),\n    FailedConnections = sum(Total)\n    by bin(TimeGenerated, 5m), Resource\n| where AvgConnections > 80 or FailedConnections > 20\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "PostgreSQL Server Logs",
+        "query": "-- Identify connections in 'idle in transaction' state\nSELECT \n  pid,\n  usename,\n  application_name,\n  client_addr,\n  state,\n  state_change,\n  NOW() - state_change AS idle_duration,\n  query\nFROM pg_stat_activity\nWHERE state = 'idle in transaction'\n  AND NOW() - state_change > interval '1 minute'\nORDER BY idle_duration DESC;"
+      },
+      {
+        "siem": "MySQL Performance Schema",
+        "query": "-- Monitor connection pool usage and waiting threads\nSELECT \n  processlist_user,\n  processlist_host,\n  processlist_db,\n  processlist_command,\n  processlist_state,\n  COUNT(*) as connection_count,\n  SUM(processlist_time) as total_time_seconds\nFROM performance_schema.threads\nWHERE processlist_command IS NOT NULL\nGROUP BY processlist_user, processlist_host, processlist_state\nHAVING connection_count > 5\nORDER BY connection_count DESC;"
+      }
+    ],
+    "tools": [
+      {
+        "name": "pgBadger",
+        "type": "PostgreSQL log analyzer",
+        "usage": "pgbadger -f stderr /var/log/postgresql/postgresql.log -o report.html"
+      },
+      {
+        "name": "pg_stat_statements",
+        "type": "PostgreSQL query performance tracking",
+        "usage": "SELECT query, calls, mean_exec_time, max_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 20;"
+      },
+      {
+        "name": "HikariCP JMX Metrics",
+        "type": "Real-time pool monitoring",
+        "usage": "Monitor via JConsole or Micrometer: hikaricp.connections.active, hikaricp.connections.idle, hikaricp.connections.pending"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "E-commerce",
+      "SaaS",
+      "Healthcare",
+      "Gaming"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.9 - Improper Error Handling)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.1.3 - Capacity Management)",
+      "NIST 800-53 (SC-5 - Denial of Service Protection)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Container"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal"
+    ]
+  }
+}

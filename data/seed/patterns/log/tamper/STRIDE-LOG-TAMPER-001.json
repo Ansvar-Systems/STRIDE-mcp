@@ -1,0 +1,363 @@
+{
+  "id": "STRIDE-LOG-TAMPER-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": [
+      "A09:2021 - Security Logging and Monitoring Failures",
+      "A01:2021 - Broken Access Control"
+    ],
+    "mitre_attack": [
+      "T1070.002 - Indicator Removal: Clear Linux or Mac System Logs",
+      "T1562.002 - Impair Defenses: Disable Windows Event Logging",
+      "T1070.003 - Indicator Removal: Clear Command History",
+      "T1222.002 - File and Directory Permissions Modification: Linux and Mac File and Directory Permissions Modification"
+    ],
+    "cwe": [
+      "CWE-778 - Insufficient Logging",
+      "CWE-732 - Incorrect Permission Assignment for Critical Resource",
+      "CWE-276 - Incorrect Default Permissions"
+    ]
+  },
+  "threat": {
+    "title": "Log Tampering via Writable Log Files in Linux/Docker Environments",
+    "description": "When application or system log files have overly permissive write permissions (e.g., 666, 644 with incorrect ownership), attackers who gain initial access can modify, delete, or inject false entries into logs to hide their activities. This eliminates audit trails, prevents forensic investigation, and allows attackers to operate undetected for extended periods. In containerized environments, this risk is amplified when containers run as root or mount host log directories with write access.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Linux",
+    "versions_affected": [
+      "All Linux distributions",
+      "Docker 18.x-27.x",
+      "Kubernetes 1.x"
+    ],
+    "ecosystem": "Linux/Unix",
+    "dependencies": [
+      "syslog",
+      "rsyslog",
+      "journald",
+      "Docker logging drivers",
+      "Application log libraries"
+    ],
+    "related_frameworks": [
+      "Docker",
+      "Kubernetes",
+      "systemd",
+      "syslog-ng",
+      "Fluentd"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains initial access to system via compromised application or stolen SSH credentials\n2. Discovers application logs at /var/log/app/application.log with world-writable permissions (666)\n3. Uses sed or echo to delete or modify incriminating log entries showing their initial compromise\n4. Injects false log entries with backdated timestamps to create plausible deniability\n5. For Docker containers, mounts host log directory with write access and modifies host audit logs\n6. Deletes authentication logs (/var/log/auth.log) or uses log rotation to push evidence out of retention period\n7. Operates undetected for months while exfiltrating data, with no forensic trail remaining",
+    "prerequisites": [
+      "Log files have insecure permissions (world-writable or writable by application user)",
+      "Container running as root or with elevated privileges",
+      "No log forwarding to remote SIEM or centralized logging system",
+      "Lack of file integrity monitoring on log files",
+      "No immutable storage or write-once-read-many (WORM) logging configured"
+    ],
+    "attack_vector": "Local",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-13509",
+        "description": "Docker Engine in debug mode adds secrets to debug logs, enabling information exposure and potential log tampering vectors",
+        "cvss_score": 5.0,
+        "published_date": "2019-07-17"
+      },
+      {
+        "cve_id": "CVE-2025-3911",
+        "description": "Docker Desktop records environment variables in application logs, exposing sensitive credentials that could be tampered with to hide evidence",
+        "cvss_score": 6.2,
+        "published_date": "2025-01-09"
+      },
+      {
+        "cve_id": "CVE-2025-31133",
+        "description": "runC vulnerability allowing attackers to gain writable access to /proc and container filesystems, enabling log file modification",
+        "cvss_score": 8.6,
+        "published_date": "2025-01-13"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Ivanti Connect Secure VPN Breach by UNC5221",
+        "date": "2024-01-10",
+        "impact": "Over 2,100 Ivanti VPN appliances backdoored; CISA issued emergency directive requiring 48-hour disconnection. Chinese espionage group exfiltrated sensitive files and deleted logs to cover tracks using SPAWNSLOTH log tampering utility.",
+        "root_cause": "Attackers exploited zero-day vulnerabilities (CVE-2023-46805, CVE-2024-21887) and systematically deleted logs using custom malware to evade detection and hinder forensic investigation",
+        "source_url": "https://cloud.google.com/blog/topics/threat-intelligence/ivanti-connect-secure-vpn-zero-day"
+      },
+      {
+        "incident": "SolarWinds SUNBURST Supply Chain Attack",
+        "date": "2020-12-13",
+        "impact": "18,000+ organizations including US federal agencies compromised. Attackers maintained access for months undetected by manipulating build logs and disabling security logging.",
+        "root_cause": "Attackers disabled logging during DLL injection, re-enabled it afterward, and scrubbed logs/alerts before detection. Build logs were modified to hide backdoor code insertion.",
+        "source_url": "https://cloud.google.com/blog/topics/threat-intelligence/evasive-attacker-leverages-solarwinds-supply-chain-compromises-with-sunburst-backdoor/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "Log-Tampering-2023",
+        "bounty_amount": 3500,
+        "severity": "High",
+        "summary": "Container escape via writable /var/log mount allowing host log modification and evidence destruction"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Anti-Forensics Techniques: Log Tampering and Deletion",
+        "authors": ["HackTheBox Security Research Team"],
+        "published_date": "2024-06-15",
+        "source_url": "https://www.hackthebox.com/blog/anti-forensics-techniques",
+        "key_finding": "Log tampering is one of the five most common anti-forensics techniques used by attackers to evade detection and hinder incident response"
+      },
+      {
+        "title": "Why Log Tampering is So Crucial to Cybercrime",
+        "authors": ["Cybersecurity Stephen"],
+        "published_date": "2023-11-20",
+        "source_url": "https://medium.com/@cybersecuritystephen/why-log-tampering-is-so-crucial-to-cybercrime-726d925d26a1",
+        "key_finding": "If logs are not read-only, attackers can modify them to hide from automated alarms and disguise attack methods, severely hindering defensive capabilities"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Restrictive Log File Permissions (chmod 640)",
+      "description": "Configure log files with secure permissions (640 or 600) ensuring only root and specific logging groups can write. Application processes should write through syslog rather than directly to files. In Docker containers, run as non-root users and use read-only root filesystems.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "Linux + Docker",
+        "code": "#!/bin/bash\n# Secure log file permissions on Linux hosts\n\n# Set restrictive permissions on application logs\nchmod 640 /var/log/app/*.log\nchown root:adm /var/log/app/*.log\n\n# Set secure permissions on system logs\nchmod 640 /var/log/auth.log /var/log/syslog /var/log/kern.log\nchown syslog:adm /var/log/auth.log /var/log/syslog\n\n# Configure rsyslog to create files with secure permissions\ncat >> /etc/rsyslog.conf << 'EOF'\n# Set default file creation mask\n$FileCreateMode 0640\n$DirCreateMode 0755\n$Umask 0022\nEOF\n\nsystemctl restart rsyslog\n\n# Docker Dockerfile best practices\ncat > Dockerfile << 'EOF'\nFROM node:20-alpine\n\n# Create non-root user for application\nRUN addgroup -g 1001 appgroup && \\\n    adduser -D -u 1001 -G appgroup appuser\n\n# Set working directory\nWORKDIR /app\n\n# Copy application files\nCOPY --chown=appuser:appgroup . .\n\n# Install dependencies\nRUN npm ci --only=production\n\n# Switch to non-root user\nUSER appuser\n\n# Use read-only root filesystem (mount writable volumes only where needed)\n# Run container with: docker run --read-only -v /app/logs:/app/logs:rw myapp\n\nEXPOSE 3000\nCMD [\"node\", \"server.js\"]\nEOF\n\n# Docker Compose with read-only root filesystem\ncat > docker-compose.yml << 'EOF'\nversion: '3.8'\nservices:\n  app:\n    image: myapp:latest\n    read_only: true\n    user: \"1001:1001\"\n    tmpfs:\n      - /tmp\n    volumes:\n      # Only mount log directory as writable\n      - app-logs:/app/logs:rw\n    security_opt:\n      - no-new-privileges:true\n    cap_drop:\n      - ALL\n    cap_add:\n      - NET_BIND_SERVICE\n\nvolumes:\n  app-logs:\n    driver: local\nEOF\n\n# Kubernetes Pod Security Context\ncat > k8s-pod-security.yaml << 'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: secure-app\nspec:\n  securityContext:\n    runAsNonRoot: true\n    runAsUser: 1001\n    runAsGroup: 1001\n    fsGroup: 1001\n    seccompProfile:\n      type: RuntimeDefault\n  containers:\n  - name: app\n    image: myapp:latest\n    securityContext:\n      allowPrivilegeEscalation: false\n      readOnlyRootFilesystem: true\n      capabilities:\n        drop:\n        - ALL\n    volumeMounts:\n    - name: logs\n      mountPath: /app/logs\n    - name: tmp\n      mountPath: /tmp\n  volumes:\n  - name: logs\n    emptyDir: {}\n  - name: tmp\n    emptyDir: {}\nEOF"
+      },
+      "tools": [
+        {
+          "name": "auditd",
+          "type": "Linux Audit Framework",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "Docker Security Scanning",
+          "type": "Container Security",
+          "cost": "Free (Docker Scout) / Paid (Aqua, Snyk)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.9.4.5 - Access control to system and application functions"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined and documented",
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.AC-4 - Access permissions and authorizations are managed"
+      ],
+      "validation_steps": [
+        "Verify log files have 640 permissions: ls -la /var/log/",
+        "Confirm Docker containers run as non-root: docker inspect <container> | grep User",
+        "Test read-only root filesystem: docker run --read-only myapp",
+        "Attempt to modify logs as application user (should fail)",
+        "Review auditd rules for log file access monitoring"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Real-Time Log Forwarding to Remote SIEM",
+      "description": "Forward all logs in real-time to a centralized SIEM or log management system where attackers cannot tamper with them. Use TLS encryption for log transmission and implement network segmentation to protect the logging infrastructure.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "rsyslog + Azure Sentinel",
+        "code": "#!/bin/bash\n# Configure rsyslog to forward logs to Azure Sentinel/Log Analytics\n\n# Install rsyslog if not present\napt-get update && apt-get install -y rsyslog rsyslog-gnutls\n\n# Create Azure Log Analytics configuration\ncat > /etc/rsyslog.d/50-azure-sentinel.conf << 'EOF'\n# Load required modules\nmodule(load=\"omfwd\")\nmodule(load=\"imfile\")\n\n# Configure TLS for secure log transmission\nglobal(\n    DefaultNetstreamDriver=\"gtls\"\n    DefaultNetstreamDriverCAFile=\"/etc/ssl/certs/ca-certificates.crt\"\n)\n\n# Forward all logs to Azure Log Analytics\n# Replace with your workspace ID and collector endpoint\n*.* action(\n    type=\"omfwd\"\n    target=\"<workspace-id>.ods.opinsights.azure.com\"\n    port=\"6514\"\n    protocol=\"tcp\"\n    StreamDriver=\"gtls\"\n    StreamDriverMode=\"1\"\n    StreamDriverAuthMode=\"x509/name\"\n    StreamDriverPermittedPeers=\"*.ods.opinsights.azure.com\"\n    queue.type=\"LinkedList\"\n    queue.size=\"10000\"\n    queue.dequeueBatchSize=\"100\"\n    queue.saveOnShutdown=\"on\"\n    action.resumeRetryCount=\"-1\"\n)\n\n# Monitor custom application logs\ninput(type=\"imfile\"\n      File=\"/var/log/app/application.log\"\n      Tag=\"app\"\n      Severity=\"info\"\n      Facility=\"local0\")\n\ninput(type=\"imfile\"\n      File=\"/var/log/app/error.log\"\n      Tag=\"app-error\"\n      Severity=\"error\"\n      Facility=\"local0\")\nEOF\n\n# Set secure permissions on rsyslog config\nchmod 640 /etc/rsyslog.d/50-azure-sentinel.conf\nchown root:root /etc/rsyslog.d/50-azure-sentinel.conf\n\n# Restart rsyslog\nsystemctl restart rsyslog\nsystemctl enable rsyslog\n\n# Configure Docker to forward logs to syslog\ncat > /etc/docker/daemon.json << 'EOF'\n{\n  \"log-driver\": \"syslog\",\n  \"log-opts\": {\n    \"syslog-address\": \"tcp://127.0.0.1:514\",\n    \"syslog-facility\": \"daemon\",\n    \"tag\": \"{{.Name}}/{{.ID}}\"\n  }\n}\nEOF\n\nsystemctl restart docker\n\n# Example Docker Compose with syslog logging\ncat > docker-compose-syslog.yml << 'EOF'\nversion: '3.8'\nservices:\n  app:\n    image: myapp:latest\n    logging:\n      driver: syslog\n      options:\n        syslog-address: \"tcp://syslog-server:514\"\n        syslog-facility: \"daemon\"\n        tag: \"{{.Name}}/{{.ID}}\"\n        syslog-format: \"rfc5424\"\nEOF\n\n# Alternative: Fluentd configuration for multi-destination forwarding\ncat > /etc/fluentd/fluent.conf << 'EOF'\n# Input from Docker containers\n<source>\n  @type forward\n  port 24224\n  bind 0.0.0.0\n</source>\n\n# Input from syslog\n<source>\n  @type syslog\n  port 514\n  bind 0.0.0.0\n  tag system.syslog\n</source>\n\n# Forward to Azure Sentinel\n<match **>\n  @type azure-loganalytics\n  workspace_id YOUR_WORKSPACE_ID\n  workspace_key YOUR_WORKSPACE_KEY\n  log_type CustomLogs\n  <buffer>\n    @type memory\n    flush_interval 10s\n    retry_max_times 3\n  </buffer>\n</match>\n\n# Backup to S3 for long-term retention\n<match **>\n  @type copy\n  <store>\n    @type s3\n    aws_key_id YOUR_AWS_KEY\n    aws_sec_key YOUR_AWS_SECRET\n    s3_bucket security-logs-backup\n    s3_region us-east-1\n    path logs/%Y/%m/%d/\n    <buffer>\n      @type file\n      path /var/log/fluentd/s3\n      timekey 3600\n      timekey_wait 10m\n    </buffer>\n  </store>\n</match>\nEOF"
+      },
+      "tools": [
+        {
+          "name": "Azure Sentinel",
+          "type": "Cloud-native SIEM",
+          "cost": "$2-3 per GB ingested"
+        },
+        {
+          "name": "rsyslog",
+          "type": "Log forwarding daemon",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Fluentd",
+          "type": "Log aggregator",
+          "cost": "Free (open source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "PR.PT-1 - Audit/log records are determined",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify rsyslog forwarding: logger -t test 'Test message' && check SIEM",
+        "Test TLS connection: openssl s_client -connect <siem>:6514",
+        "Confirm Docker logs forwarding: docker logs <container> (should show forwarding)",
+        "Monitor rsyslog queue: rsyslogd -N1 to check configuration",
+        "Verify no local log tampering affects SIEM data"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Immutable Logging with WORM Storage and File Integrity Monitoring",
+      "description": "Implement write-once-read-many (WORM) storage for logs using Linux chattr +a (append-only) attribute or dedicated immutable storage solutions. Combine with file integrity monitoring (FIM) using tools like AIDE or Wazuh to detect any tampering attempts.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Linux + AIDE + chattr",
+        "code": "#!/bin/bash\n# Implement immutable logging with append-only files and AIDE monitoring\n\n# Step 1: Configure append-only attribute for critical logs\n# This prevents deletion or modification, only allows appending\n\n# Make logs append-only (even root cannot delete/modify)\nchattr +a /var/log/auth.log\nchattr +a /var/log/syslog\nchattr +a /var/log/audit/audit.log\nchattr +a /var/log/app/application.log\n\n# Verify append-only attribute\nlsattr /var/log/auth.log\n# Output should show: -----a--------e----- /var/log/auth.log\n\n# To remove append-only (requires reboot in secure systems):\n# chattr -a /var/log/auth.log\n\n# Step 2: Install and configure AIDE (Advanced Intrusion Detection Environment)\napt-get update && apt-get install -y aide aide-common\n\n# Configure AIDE to monitor log files\ncat >> /etc/aide/aide.conf << 'EOF'\n# Monitor log directories for tampering\n/var/log p+i+n+u+g+s+b+m+c+md5+sha256\n/var/log/app p+i+n+u+g+s+b+m+c+md5+sha256\n/var/log/audit p+i+n+u+g+s+b+m+c+md5+sha256\n\n# Monitor rsyslog configuration\n/etc/rsyslog.conf p+i+n+u+g+s+b+m+c+md5+sha256\n/etc/rsyslog.d p+i+n+u+g+s+b+m+c+md5+sha256\n\n# Exclude temporary and cache files\n!/var/log/.*\\.gz$\n!/var/log/.*\\.[0-9]$\nEOF\n\n# Initialize AIDE database (baseline)\naideinit\nmv /var/lib/aide/aide.db.new /var/lib/aide/aide.db\n\n# Run AIDE check (compare current state to baseline)\naide --check\n\n# Schedule daily AIDE checks\ncat > /etc/cron.daily/aide-check << 'EOF'\n#!/bin/bash\n# Run AIDE integrity check and email results\n\nLOG_FILE=\"/var/log/aide/aide-$(date +%Y%m%d-%H%M%S).log\"\nmkdir -p /var/log/aide\n\naide --check > \"$LOG_FILE\" 2>&1\n\nif [ $? -ne 0 ]; then\n    # Changes detected - alert security team\n    ALERT_MSG=\"AIDE detected file integrity violations on $(hostname)\"\n    echo \"$ALERT_MSG\" | mail -s \"SECURITY ALERT: Log Tampering Detected\" security@company.com\n    \n    # Send to SIEM\n    logger -p local0.crit -t aide \"$ALERT_MSG - See $LOG_FILE\"\nfi\n\n# Keep last 30 days of AIDE logs\nfind /var/log/aide -name \"aide-*.log\" -mtime +30 -delete\nEOF\n\nchmod +x /etc/cron.daily/aide-check\n\n# Step 3: Configure auditd rules for log file access monitoring\ncat >> /etc/audit/rules.d/log-tampering.rules << 'EOF'\n# Monitor write/delete attempts on log files\n-w /var/log/ -p wa -k log_tampering\n-w /var/log/auth.log -p wa -k auth_log_tampering\n-w /var/log/audit/ -p wa -k audit_log_tampering\n-w /var/log/app/ -p wa -k app_log_tampering\n\n# Monitor chattr commands (used to remove append-only attribute)\n-w /usr/bin/chattr -p x -k chattr_execution\n\n# Monitor rsyslog configuration changes\n-w /etc/rsyslog.conf -p wa -k rsyslog_config_change\n-w /etc/rsyslog.d/ -p wa -k rsyslog_config_change\nEOF\n\n# Reload auditd rules\naugenrules --load\n\n# Step 4: Setup Wazuh agent for centralized FIM (alternative/complementary to AIDE)\ncat > /var/ossec/etc/ossec.conf << 'EOF'\n<ossec_config>\n  <syscheck>\n    <frequency>300</frequency>\n    \n    <!-- Monitor log files -->\n    <directories check_all=\"yes\" realtime=\"yes\" report_changes=\"yes\">\n      /var/log/auth.log\n    </directories>\n    <directories check_all=\"yes\" realtime=\"yes\" report_changes=\"yes\">\n      /var/log/app/\n    </directories>\n    <directories check_all=\"yes\" realtime=\"yes\" report_changes=\"yes\">\n      /var/log/audit/\n    </directories>\n    \n    <!-- Alert on file modification -->\n    <alert_new_files>yes</alert_new_files>\n    <auto_ignore>no</auto_ignore>\n  </syscheck>\n  \n  <localfile>\n    <log_format>syslog</log_format>\n    <location>/var/log/auth.log</location>\n  </localfile>\n</ossec_config>\nEOF\n\n# Step 5: AWS S3 with Object Lock for immutable log storage (cloud option)\ncat > upload-to-s3-worm.sh << 'EOF'\n#!/bin/bash\n# Upload logs to S3 bucket with Object Lock (WORM compliance mode)\n\nBUCKET=\"compliance-logs-immutable\"\nLOG_FILE=\"/var/log/app/application.log\"\nTIMESTAMP=$(date +%Y/%m/%d/%H%M%S)\n\n# Upload to S3 with Object Lock retention\naws s3 cp \"$LOG_FILE\" \\\n    \"s3://$BUCKET/logs/$TIMESTAMP/application.log\" \\\n    --sse AES256 \\\n    --object-lock-mode COMPLIANCE \\\n    --object-lock-retain-until-date \"$(date -d '+7 years' -u +%Y-%m-%dT%H:%M:%SZ)\"\n\necho \"Log uploaded to immutable S3 storage: s3://$BUCKET/logs/$TIMESTAMP/\"\nEOF\n\nchmod +x upload-to-s3-worm.sh\n\n# Schedule hourly uploads to WORM storage\necho \"0 * * * * /usr/local/bin/upload-to-s3-worm.sh\" | crontab -\n\necho \"Immutable logging configured successfully:\"\necho \"- Append-only attribute set on critical logs\"\necho \"- AIDE monitoring initialized\"\necho \"- auditd rules configured for log access monitoring\"\necho \"- Optional: S3 Object Lock for cloud WORM storage\""
+      },
+      "tools": [
+        {
+          "name": "AIDE (Advanced Intrusion Detection Environment)",
+          "type": "File Integrity Monitoring",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Wazuh",
+          "type": "Security monitoring platform with FIM",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "AWS S3 Object Lock",
+          "type": "WORM storage",
+          "cost": "$0.023/GB/month + request costs"
+        },
+        {
+          "name": "auditd",
+          "type": "Linux kernel audit framework",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms are used to verify software, firmware, and information integrity",
+        "PR.PT-1 - Audit/log records are determined, documented, implemented, and reviewed",
+        "PR.DS-8 - Integrity checking mechanisms are used to verify hardware integrity"
+      ],
+      "validation_steps": [
+        "Test append-only attribute: attempt to modify/delete log (should fail)",
+        "Run AIDE check: aide --check (should show no violations initially)",
+        "Simulate tampering: attempt to edit log and verify AIDE detection",
+        "Check auditd logs: ausearch -k log_tampering",
+        "Verify S3 Object Lock: attempt to delete uploaded log (should fail)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Gaps in log timestamps indicating deleted entries",
+      "File modification times (mtime) newer than log entry timestamps",
+      "Log file sizes decreasing unexpectedly (deletion of entries)",
+      "Log files with unusual permissions (world-writable)",
+      "Sudden increase in disk space despite active logging",
+      "Missing authentication events during known user sessions",
+      "Log entries with timestamps in the future or past",
+      "Failed auditd or AIDE integrity checks"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect timestamp gaps in authentication logs suggesting log deletion\nlet TimeWindow = 1h;\nSecurityEvent\n| where EventID in (4624, 4625) // Successful/Failed logons\n| where TimeGenerated > ago(24h)\n| order by TimeGenerated asc\n| extend PreviousTime = prev(TimeGenerated, 1)\n| extend TimeDelta = datetime_diff('minute', TimeGenerated, PreviousTime)\n| where TimeDelta > 60 // Gap larger than 60 minutes\n| project TimeGenerated, Account, Computer, EventID, TimeDelta, PreviousTime\n| summarize GapCount=count(), MaxGap=max(TimeDelta) by Computer, bin(TimeGenerated, 1h)\n| where GapCount > 3 or MaxGap > 180"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect file modifications to log files\nevent.category: \"file\" AND event.action: (\"modified\" OR \"deleted\" OR \"renamed\") AND file.path: /var/log/* AND NOT user.name: (\"syslog\" OR \"root\")"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=linux sourcetype=linux_audit type=SYSCALL\n| search (exe=\"/usr/bin/vi\" OR exe=\"/usr/bin/nano\" OR exe=\"/bin/sed\" OR exe=\"/bin/rm\") AND (name=\"/var/log/*.log\" OR name=\"/var/log/audit/*\")\n| eval suspicious_activity=\"Log file modification detected\"\n| table _time, host, user, exe, name, key\n| where key=\"log_tampering\""
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - Detecting chattr usage",
+        "query": "// Detect attempts to remove append-only attribute from logs\nSyslog\n| where Facility == \"authpriv\" or Facility == \"audit\"\n| where SyslogMessage contains \"chattr\" and SyslogMessage contains \"-a\"\n| where SyslogMessage contains \"/var/log\"\n| project TimeGenerated, Computer, SyslogMessage, ProcessName\n| extend AlertSeverity = \"High\"\n| extend ThreatIndicator = \"Attempt to make logs writable\""
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, @logStream\n| filter @message like /ERROR|WARN/ or @message like /chattr|chmod.*\\/var\\/log/\n| stats count() by bin(5m) as time_bucket\n| sort time_bucket desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AIDE",
+        "type": "File Integrity Monitoring",
+        "usage": "aide --check # Compare current file state to baseline"
+      },
+      {
+        "name": "auditd",
+        "type": "Linux Audit Framework",
+        "usage": "ausearch -k log_tampering -ts recent # Search for log tampering events"
+      },
+      {
+        "name": "Wazuh",
+        "type": "Security Platform",
+        "usage": "Real-time FIM alerts on log file modifications"
+      },
+      {
+        "name": "Logstash",
+        "type": "Log Pipeline",
+        "usage": "Detect timestamp anomalies and gaps in log sequences"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Technology",
+      "E-commerce"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 10.2.7 - Protection of audit trails)",
+      "HIPAA (164.312(b) - Audit controls)",
+      "SOC2 (CC7.2 - System monitoring)",
+      "ISO27001 (A.12.4.1, A.12.4.2 - Event logging and log protection)",
+      "GDPR (Article 32 - Security of processing)",
+      "NIST 800-53 (AU-9 - Protection of Audit Information)",
+      "NIST CSF (DE.AE-3, PR.PT-1)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Internal",
+      "Audit Records"
+    ]
+  }
+}

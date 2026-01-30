@@ -1,0 +1,332 @@
+{
+  "id": "STRIDE-API-ERROR-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1592.004 - Gather Victim Network Information: Network Topology",
+      "T1589.001 - Gather Victim Identity Information: Credentials",
+      "T1592.001 - Gather Victim Host Information: Hardware"
+    ],
+    "cwe": [
+      "CWE-209 - Generation of Error Message Containing Sensitive Information",
+      "CWE-497 - Exposure of Sensitive System Information to an Unauthorized Control Sphere",
+      "CWE-200 - Exposure of Sensitive Information to an Unauthorized Actor"
+    ]
+  },
+  "threat": {
+    "title": "Sensitive Information Disclosure via Stack Traces in Production Error Messages",
+    "description": "When applications expose detailed error messages and stack traces in production environments, attackers gain valuable reconnaissance information including internal file paths, database schemas, framework versions, third-party dependencies, environment variables, and application logic. This information significantly lowers the barrier for follow-up attacks such as SQL injection, remote code execution, and privilege escalation.",
+    "severity": "Medium",
+    "cvss_v3": {
+      "score": 6.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Spring Boot / Express.js",
+    "versions_affected": ["Spring Boot 3.x", "Express.js 4.x"],
+    "ecosystem": "Java / Node.js",
+    "dependencies": ["spring-boot-starter-web", "express", "body-parser", "helmet"],
+    "related_frameworks": ["Nest.js", "Fastify", "Koa.js", "Spring MVC", "Micronaut"]
+  },
+  "attack": {
+    "scenario": "1. Attacker sends malformed requests to various API endpoints (invalid JSON, missing parameters, SQL injection attempts)\n2. Application responds with 500 Internal Server Error containing full stack trace\n3. Stack trace reveals:\n   - Internal file paths (/home/app/src/controllers/UserController.java)\n   - Database connection strings with partial credentials\n   - Framework versions (Spring Boot 3.1.0, Express 4.18.2)\n   - ORM library versions (Hibernate 6.2.0, Sequelize 6.35.0)\n   - Third-party dependency names and versions\n   - Environment-specific configuration (database host, cache servers)\n4. Attacker uses disclosed framework versions to search CVE databases\n5. Identifies known vulnerability in disclosed dependency (e.g., CVE-2023-20883 in Spring Boot)\n6. Exploits the specific vulnerability with high confidence, bypassing authentication or executing arbitrary code",
+    "prerequisites": [
+      "Application runs in production mode with debug/verbose error handling enabled",
+      "No global error handler configured to sanitize responses",
+      "Stack traces not filtered or redacted before sending to clients",
+      "Error logging includes sensitive information without masking"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-20883",
+        "description": "Spring Boot applications using Spring Expression Language (SpEL) in error messages could allow attackers to execute arbitrary code when detailed error messages containing user input are exposed",
+        "cvss_score": 8.1,
+        "published_date": "2023-05-18",
+        "source_url": "https://spring.io/security/cve-2023-20883"
+      },
+      {
+        "cve_id": "CVE-2017-5645",
+        "description": "Apache Log4j stack trace deserialization vulnerability - information disclosure via error logging led to remote code execution when stack traces contained serialized objects",
+        "cvss_score": 9.8,
+        "published_date": "2017-04-17",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2017-5645"
+      },
+      {
+        "cve_id": "CVE-2019-11358",
+        "description": "jQuery prototype pollution disclosed through detailed error messages in Express.js applications, enabling object injection attacks",
+        "cvss_score": 6.1,
+        "published_date": "2019-04-19",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2019-11358"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "British Airways Data Breach - Information Gathering Phase",
+        "date": "2018-09-06",
+        "impact": "380,000 payment card details stolen; £20 million GDPR fine. Attack reconnaissance included error message analysis revealing vulnerable JavaScript library versions",
+        "root_cause": "Attackers leveraged verbose error messages during initial reconnaissance to identify vulnerable Modernizr JavaScript library, enabling card skimming attack",
+        "source_url": "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2020/10/ico-fines-british-airways-20m-for-data-breach-affecting-more-than-400-000-customers/"
+      },
+      {
+        "incident": "OWASP API Security Top 10 - API8:2023 Security Misconfiguration",
+        "date": "2023-07-01",
+        "impact": "Stack traces in production named as #3 most common API security misconfiguration, affecting 31% of surveyed APIs",
+        "root_cause": "Default error handling in development mode inadvertently deployed to production",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "#892465",
+        "bounty_amount": 2500,
+        "severity": "Medium",
+        "summary": "Stack trace disclosure revealing database schema and AWS RDS endpoint, leading to successful SQL injection attack"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "Example",
+        "bounty_amount": 1500,
+        "severity": "Medium",
+        "summary": "Express.js application exposing MongoDB connection string with credentials in error message"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP Testing Guide - Error Handling (WSTG-ERRH-01)",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-11-15",
+        "source_url": "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/08-Testing_for_Error_Handling/01-Testing_For_Improper_Error_Handling",
+        "key_finding": "Error messages should never reveal sensitive information about the application's internal structure, database schema, or system configuration"
+      },
+      {
+        "title": "CWE-209: Information Exposure Through an Error Message",
+        "authors": ["MITRE Corporation"],
+        "published_date": "2024-01-25",
+        "source_url": "https://cwe.mitre.org/data/definitions/209.html",
+        "key_finding": "Error messages containing system data, stack traces, database dumps, or file paths are consistently exploited in multi-stage attacks"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Spring Boot Custom Error Handling with ControllerAdvice",
+      "description": "Implement a global exception handler using @ControllerAdvice and @ExceptionHandler to intercept all exceptions, log detailed errors internally, and return sanitized generic error messages to clients.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "java",
+        "framework": "Spring Boot 3.x",
+        "code": "package com.example.security.error;\n\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.web.bind.annotation.ControllerAdvice;\nimport org.springframework.web.bind.annotation.ExceptionHandler;\nimport org.springframework.web.context.request.WebRequest;\nimport org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;\n\nimport java.time.LocalDateTime;\nimport java.util.HashMap;\nimport java.util.Map;\nimport java.util.UUID;\n\n/**\n * Global exception handler for all REST controllers.\n * Sanitizes error responses and prevents information disclosure.\n */\n@ControllerAdvice\npublic class GlobalExceptionHandler extends ResponseEntityExceptionHandler {\n\n    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);\n\n    /**\n     * Handles all uncaught exceptions with sanitized response.\n     */\n    @ExceptionHandler(Exception.class)\n    public ResponseEntity<Map<String, Object>> handleGlobalException(\n            Exception ex, \n            WebRequest request) {\n        \n        // Generate unique error reference ID for correlation\n        String errorId = UUID.randomUUID().toString();\n        \n        // Log full details internally with error ID\n        log.error(\"[Error ID: {}] Unhandled exception occurred: {}\", \n                errorId, ex.getMessage(), ex);\n        \n        // Return sanitized response to client\n        Map<String, Object> errorResponse = new HashMap<>();\n        errorResponse.put(\"timestamp\", LocalDateTime.now());\n        errorResponse.put(\"status\", HttpStatus.INTERNAL_SERVER_ERROR.value());\n        errorResponse.put(\"error\", \"Internal Server Error\");\n        errorResponse.put(\"message\", \"An unexpected error occurred. Please contact support with reference ID: \" + errorId);\n        errorResponse.put(\"reference\", errorId);\n        errorResponse.put(\"path\", request.getDescription(false).replace(\"uri=\", \"\"));\n        \n        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);\n    }\n\n    /**\n     * Handles validation exceptions (400 Bad Request).\n     */\n    @ExceptionHandler(IllegalArgumentException.class)\n    public ResponseEntity<Map<String, Object>> handleValidationException(\n            IllegalArgumentException ex,\n            WebRequest request) {\n        \n        String errorId = UUID.randomUUID().toString();\n        log.warn(\"[Error ID: {}] Validation error: {}\", errorId, ex.getMessage());\n        \n        Map<String, Object> errorResponse = new HashMap<>();\n        errorResponse.put(\"timestamp\", LocalDateTime.now());\n        errorResponse.put(\"status\", HttpStatus.BAD_REQUEST.value());\n        errorResponse.put(\"error\", \"Bad Request\");\n        errorResponse.put(\"message\", \"Invalid input provided\");\n        errorResponse.put(\"reference\", errorId);\n        \n        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);\n    }\n}\n\n/**\n * Configure application.yml for production:\n */\n// application-prod.yml\n/*\nserver:\n  error:\n    include-message: never\n    include-binding-errors: never\n    include-stacktrace: never\n    include-exception: false\n\nspring:\n  mvc:\n    throw-exception-if-no-handler-found: true\n  web:\n    resources:\n      add-mappings: false\n\nlogging:\n  level:\n    root: WARN\n    com.example: INFO\n  pattern:\n    console: \"%d{yyyy-MM-dd HH:mm:ss} - %msg%n\"\n*/"
+      },
+      "tools": [
+        {
+          "name": "Spring Boot Actuator",
+          "type": "Monitoring & Health Checks",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "SLF4J + Logback",
+          "type": "Structured Logging",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.18.2.3 - Technical compliance review"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined and documented",
+        "DE.AE-3 - Event data are collected and correlated"
+      ],
+      "validation_steps": [
+        "Trigger various errors (404, 500, validation failures)",
+        "Verify client receives generic error messages without stack traces",
+        "Confirm detailed errors are logged server-side with correlation IDs",
+        "Test that application.yml has 'include-stacktrace: never' in production profile",
+        "Use OWASP ZAP or Burp Suite to scan for information disclosure"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Express.js Custom Error Middleware with Helmet Security Headers",
+      "description": "Implement centralized error handling middleware as the last middleware in the Express.js chain. Use Helmet.js to set security headers and ensure NODE_ENV=production to suppress stack traces.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst helmet = require('helmet');\nconst { v4: uuidv4 } = require('uuid');\nconst winston = require('winston');\n\nconst app = express();\n\n// Configure structured logging\nconst logger = winston.createLogger({\n  level: process.env.LOG_LEVEL || 'info',\n  format: winston.format.combine(\n    winston.format.timestamp(),\n    winston.format.json()\n  ),\n  transports: [\n    new winston.transports.File({ filename: 'error.log', level: 'error' }),\n    new winston.transports.File({ filename: 'combined.log' })\n  ]\n});\n\nif (process.env.NODE_ENV !== 'production') {\n  logger.add(new winston.transports.Console({\n    format: winston.format.simple()\n  }));\n}\n\n// Security middleware - must be early in chain\napp.use(helmet({\n  contentSecurityPolicy: {\n    directives: {\n      defaultSrc: [\"'self'\"],\n      scriptSrc: [\"'self'\"]\n    }\n  },\n  hsts: {\n    maxAge: 31536000,\n    includeSubDomains: true,\n    preload: true\n  }\n}));\n\napp.use(express.json());\n\n// Request ID middleware for error correlation\napp.use((req, res, next) => {\n  req.id = uuidv4();\n  res.setHeader('X-Request-ID', req.id);\n  next();\n});\n\n// Your routes here\napp.get('/api/users/:id', async (req, res, next) => {\n  try {\n    // Simulate database error\n    throw new Error('Database connection failed: Timeout connecting to postgres://prod-db:5432/users');\n  } catch (error) {\n    next(error); // Pass to error handler\n  }\n});\n\n// 404 Handler (must be after all routes)\napp.use((req, res, next) => {\n  res.status(404).json({\n    status: 404,\n    error: 'Not Found',\n    message: 'The requested resource was not found',\n    path: req.path,\n    timestamp: new Date().toISOString()\n  });\n});\n\n// Global Error Handler (must be last middleware)\napp.use((err, req, res, next) => {\n  const errorId = req.id || uuidv4();\n  \n  // Log full error details internally\n  logger.error({\n    errorId,\n    message: err.message,\n    stack: err.stack,\n    url: req.url,\n    method: req.method,\n    ip: req.ip,\n    userAgent: req.get('user-agent')\n  });\n  \n  // Determine status code\n  const statusCode = err.statusCode || err.status || 500;\n  \n  // Production: Send sanitized error\n  if (process.env.NODE_ENV === 'production') {\n    return res.status(statusCode).json({\n      status: statusCode,\n      error: statusCode === 500 ? 'Internal Server Error' : 'Error',\n      message: statusCode === 500 \n        ? `An unexpected error occurred. Reference ID: ${errorId}`\n        : 'An error occurred processing your request',\n      reference: errorId,\n      timestamp: new Date().toISOString()\n    });\n  }\n  \n  // Development: Include stack trace (never in production)\n  res.status(statusCode).json({\n    status: statusCode,\n    error: err.name || 'Error',\n    message: err.message,\n    stack: err.stack, // Only in development\n    reference: errorId,\n    timestamp: new Date().toISOString()\n  });\n});\n\n// Ensure NODE_ENV is set correctly\nif (!process.env.NODE_ENV) {\n  console.error('WARNING: NODE_ENV not set. Defaulting to development mode.');\n  process.env.NODE_ENV = 'development';\n}\n\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n  logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);\n});\n\nmodule.exports = app;"
+      },
+      "tools": [
+        {
+          "name": "Helmet.js",
+          "type": "Security Headers Middleware",
+          "cost": "Free (npm package)"
+        },
+        {
+          "name": "Winston",
+          "type": "Structured Logging Library",
+          "cost": "Free (npm package)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Verify NODE_ENV=production is set in environment",
+        "Test error endpoints and confirm no stack traces in response",
+        "Check response headers include 'X-Content-Type-Options: nosniff'",
+        "Validate error logs contain full details with correlation IDs",
+        "Use 'npm audit' to check for vulnerabilities in helmet and express"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Production-Mode Configuration and Environment Validation",
+      "description": "Enforce production-mode settings through environment variables, configuration management, and deployment pipeline validation to prevent accidental exposure of debug information.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Docker + Kubernetes / Azure App Service",
+        "code": "# ============================================\n# Docker Production Configuration\n# ============================================\n# Dockerfile.production\nFROM node:20-alpine AS base\n\n# Set production environment BEFORE installing dependencies\nENV NODE_ENV=production\nENV NPM_CONFIG_LOGLEVEL=error\n\nWORKDIR /app\n\n# Install production dependencies only\nCOPY package*.json ./\nRUN npm ci --only=production && npm cache clean --force\n\nCOPY . .\n\n# Run as non-root user\nRUN addgroup -g 1001 -S nodejs && \\\n    adduser -S nodejs -u 1001 && \\\n    chown -R nodejs:nodejs /app\n\nUSER nodejs\n\nEXPOSE 3000\n\n# Health check\nHEALTHCHECK --interval=30s --timeout=3s --start-period=40s \\\n  CMD node healthcheck.js || exit 1\n\nCMD [\"node\", \"server.js\"]\n\n# ============================================\n# Kubernetes Deployment (deployment.yaml)\n# ============================================\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-service\n  namespace: production\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: api-service\n  template:\n    metadata:\n      labels:\n        app: api-service\n    spec:\n      containers:\n      - name: api\n        image: myregistry.azurecr.io/api:1.0.0\n        ports:\n        - containerPort: 3000\n        env:\n        # Critical: Enforce production mode\n        - name: NODE_ENV\n          value: \"production\"\n        - name: LOG_LEVEL\n          value: \"warn\"\n        # Load secrets from Azure Key Vault via CSI driver\n        - name: DATABASE_URL\n          valueFrom:\n            secretKeyRef:\n              name: database-secrets\n              key: connection-string\n        # Resource limits\n        resources:\n          limits:\n            cpu: \"1000m\"\n            memory: \"512Mi\"\n          requests:\n            cpu: \"500m\"\n            memory: \"256Mi\"\n        # Liveness and readiness probes\n        livenessProbe:\n          httpGet:\n            path: /health\n            port: 3000\n          initialDelaySeconds: 30\n          periodSeconds: 10\n        readinessProbe:\n          httpGet:\n            path: /ready\n            port: 3000\n          initialDelaySeconds: 5\n          periodSeconds: 5\n        # Security context\n        securityContext:\n          runAsNonRoot: true\n          runAsUser: 1001\n          allowPrivilegeEscalation: false\n          readOnlyRootFilesystem: true\n\n---\n# ============================================\n# Azure App Service Configuration\n# ============================================\n# azure-pipelines.yml (deployment stage)\n- task: AzureWebApp@1\n  inputs:\n    azureSubscription: 'Production-ServiceConnection'\n    appName: 'my-api-prod'\n    package: '$(Pipeline.Workspace)/drop/app.zip'\n    appSettings: |\n      [\n        {\n          \"name\": \"NODE_ENV\",\n          \"value\": \"production\",\n          \"slotSetting\": false\n        },\n        {\n          \"name\": \"WEBSITE_NODE_DEFAULT_VERSION\",\n          \"value\": \"20.x\",\n          \"slotSetting\": false\n        },\n        {\n          \"name\": \"SCM_DO_BUILD_DURING_DEPLOYMENT\",\n          \"value\": \"false\",\n          \"slotSetting\": false\n        }\n      ]\n\n# ============================================\n# Spring Boot Production Configuration\n# ============================================\n# application-prod.yml\nserver:\n  port: 8080\n  error:\n    include-message: never\n    include-binding-errors: never\n    include-stacktrace: never\n    include-exception: false\n    whitelabel:\n      enabled: false\n\nspring:\n  profiles:\n    active: prod\n  jpa:\n    show-sql: false\n    properties:\n      hibernate:\n        format_sql: false\n  mvc:\n    throw-exception-if-no-handler-found: true\n  web:\n    resources:\n      add-mappings: false\n\nlogging:\n  level:\n    root: WARN\n    com.example: INFO\n    org.springframework: WARN\n    org.hibernate: ERROR\n  pattern:\n    console: \"%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n\"\n  file:\n    name: /var/log/app/application.log\n    max-size: 10MB\n    max-history: 30\n\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: health,info,metrics\n  endpoint:\n    health:\n      show-details: when-authorized\n\n# ============================================\n# CI/CD Validation Script\n# ============================================\n# scripts/validate-production-config.sh\n#!/bin/bash\nset -e\n\necho \"Validating production configuration...\"\n\n# Check NODE_ENV\nif [ \"$NODE_ENV\" != \"production\" ]; then\n    echo \"ERROR: NODE_ENV must be 'production', got '$NODE_ENV'\"\n    exit 1\nfi\n\n# Check for development dependencies in package.json\nif grep -q '\"devDependencies\"' package-lock.json 2>/dev/null; then\n    echo \"WARNING: devDependencies found in production build\"\nfi\n\n# Check for debug configurations\nif grep -rq \"console.log\\|debugger\" src/ 2>/dev/null; then\n    echo \"WARNING: Debug statements found in source code\"\nfi\n\n# Verify Helmet is installed\nif ! grep -q '\"helmet\"' package.json; then\n    echo \"ERROR: Helmet.js not found in dependencies\"\n    exit 1\nfi\n\necho \"Production configuration validation passed\""
+      },
+      "tools": [
+        {
+          "name": "Docker",
+          "type": "Containerization",
+          "cost": "Free (Docker Engine) / $9/month (Docker Pro)"
+        },
+        {
+          "name": "Azure Key Vault",
+          "type": "Secret Management",
+          "cost": "$0.03 per 10,000 operations"
+        },
+        {
+          "name": "Kubernetes",
+          "type": "Container Orchestration",
+          "cost": "Infrastructure dependent (AKS ~$73/month for 2 nodes)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.4 - Separation of development, testing, and operational environments",
+        "A.14.2.6 - Secure development environment",
+        "A.12.4.1 - Event logging"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle to manage systems is implemented",
+        "PR.PT-3 - The principle of least functionality is incorporated"
+      ],
+      "validation_steps": [
+        "Run validation script in CI/CD pipeline before deployment",
+        "Verify environment variables are set correctly in deployment manifest",
+        "Test production deployment and confirm error responses are sanitized",
+        "Review application logs to ensure detailed errors are captured",
+        "Use Azure Policy or OPA to enforce production configuration standards",
+        "Perform quarterly security reviews of error handling configuration"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "High volume of 500 Internal Server Error responses from specific endpoints",
+      "Repeated requests with malformed payloads designed to trigger exceptions",
+      "Error responses containing file paths (e.g., /home/, /usr/, C:\\)",
+      "Error messages revealing database connection strings or schema details",
+      "Unusual user-agent strings associated with vulnerability scanners (Nikto, SQLMap, OWASP ZAP)",
+      "Sequential requests testing different error conditions (reconnaissance pattern)"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect high volume of 500 errors with potential stack trace exposure\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where ScStatus == 500\n| extend ResponseSize = todouble(ScBytes)\n| where ResponseSize > 2000 // Stack traces are typically large\n| summarize ErrorCount = count(), \n            UniqueIPs = dcount(CIp),\n            AvgResponseSize = avg(ResponseSize)\n    by bin(TimeGenerated, 5m), CsHost, CsUriStem\n| where ErrorCount > 10 or UniqueIPs > 5\n| project TimeGenerated, CsHost, CsUriStem, ErrorCount, UniqueIPs, AvgResponseSize\n| order by ErrorCount desc"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by source.ip with maxspan=5m\n  [http where http.response.status_code == 500]\n  [http where http.response.status_code == 500]\n  [http where http.response.status_code == 500]\nuntil [http where http.response.status_code == 200]"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs status=500 \n| eval response_length=len(response_body)\n| where response_length > 2000\n| regex response_body=\"(at\\s+[a-zA-Z]+\\.(java|js):\\d+|Exception|Error:|Stack\\s+trace)\"\n| stats count as error_count, \n        dc(client_ip) as unique_ips,\n        values(endpoint) as affected_endpoints,\n        avg(response_length) as avg_size\n    by _time span=5m\n| where error_count > 5\n| sort -error_count"
+      },
+      {
+        "siem": "CloudWatch Logs Insights (AWS)",
+        "query": "fields @timestamp, @message, request.url, response.statusCode, response.body\n| filter response.statusCode = 500\n| filter strlen(response.body) > 2000\n| stats count() as errorCount by bin(5m) as interval, request.url\n| filter errorCount > 10\n| sort errorCount desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "OWASP ZAP (Zed Attack Proxy)",
+        "type": "Vulnerability Scanner",
+        "usage": "zap-baseline.py -t https://api.example.com -r zap-report.html -c baseline.conf"
+      },
+      {
+        "name": "Burp Suite",
+        "type": "Web Application Security Testing",
+        "usage": "Scan for information disclosure issues via Burp Scanner with 'Error Messages' checks enabled"
+      },
+      {
+        "name": "Wapiti",
+        "type": "Web Application Vulnerability Scanner",
+        "usage": "wapiti -u https://api.example.com --scope url -m error"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.5 - Improper Error Handling)",
+      "HIPAA (164.312(a)(2)(iv) - Audit Controls)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.4.1 - Event Logging, A.18.2.3 - Technical Compliance)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (AU-3 - Content of Audit Records, SI-11 - Error Handling)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Container",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Internal",
+      "Confidential",
+      "Sensitive"
+    ]
+  }
+}

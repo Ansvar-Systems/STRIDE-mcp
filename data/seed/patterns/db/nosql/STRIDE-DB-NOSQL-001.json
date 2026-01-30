@@ -1,0 +1,356 @@
+{
+  "id": "STRIDE-DB-NOSQL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.8,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A03:2021 - Injection",
+      "A01:2021 - Broken Access Control",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1212 - Exploitation for Credential Access",
+      "T1059 - Command and Scripting Interpreter"
+    ],
+    "cwe": [
+      "CWE-943 - Improper Neutralization of Special Elements in Data Query Logic",
+      "CWE-89 - SQL Injection",
+      "CWE-94 - Improper Control of Generation of Code"
+    ]
+  },
+  "threat": {
+    "title": "NoSQL Injection in MongoDB and DynamoDB Applications",
+    "description": "NoSQL injection vulnerabilities allow attackers to manipulate database queries by injecting malicious payloads through user input. In MongoDB, attackers exploit query operators like $ne, $gt, $where, and $regex to bypass authentication, extract sensitive data, or execute arbitrary code. In DynamoDB, attackers manipulate PartiQL queries or filter expressions to access unauthorized data. This vulnerability is particularly dangerous because NoSQL databases often execute application code within queries, enabling remote code execution beyond traditional SQL injection.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "MongoDB",
+    "versions_affected": [
+      "3.x",
+      "4.x",
+      "5.x",
+      "6.x",
+      "7.x",
+      "8.x"
+    ],
+    "ecosystem": "NoSQL Databases",
+    "dependencies": [
+      "mongoose",
+      "mongodb",
+      "aws-sdk",
+      "mongodb-memory-server"
+    ],
+    "related_frameworks": [
+      "AWS DynamoDB",
+      "Express.js",
+      "Koa.js",
+      "NestJS",
+      "Serverless Framework"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies a login endpoint that accepts JSON input: POST /api/login with {username, password}\n2. Instead of a string, attacker sends MongoDB operator: {\"username\": \"admin\", \"password\": {\"$ne\": null}}\n3. The vulnerable query db.users.findOne({username: req.body.username, password: req.body.password}) evaluates to: db.users.findOne({username: \"admin\", password: {$ne: null}})\n4. MongoDB interprets $ne (not equal) as a query operator, returning the first user where password is not null\n5. Application authenticates attacker as admin user without knowing the password\n6. Attacker escalates privileges using $where operator to execute arbitrary JavaScript: {\"username\": {\"$where\": \"this.username == 'admin' || '1'=='1'\"}}\n7. In advanced attacks, attacker extracts password reset tokens, session IDs, or executes system commands via RCE vulnerabilities in Mongoose",
+    "prerequisites": [
+      "Application accepts JSON or object-based user input for database queries",
+      "User input is directly passed to MongoDB queries without sanitization",
+      "MongoDB query operators ($ne, $gt, $where, $regex) are not blocked",
+      "No input validation or type checking on query parameters",
+      "For RCE: Application uses vulnerable Mongoose versions (<8.9.5) with populate() or $where operators"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2021-22911",
+        "description": "Pre-Authentication Blind NoSQL Injection in Rocket.Chat 3.12.1 allowing password reset token extraction and RCE",
+        "cvss_score": 9.8,
+        "published_date": "2021-07-02"
+      },
+      {
+        "cve_id": "CVE-2024-53900",
+        "description": "Mongoose RCE vulnerability via $where operator in populate() method match conditions",
+        "cvss_score": 9.1,
+        "published_date": "2024-12-14"
+      },
+      {
+        "cve_id": "CVE-2025-23061",
+        "description": "Mongoose Search Injection vulnerability (incomplete fix for CVE-2024-53900) allowing code injection via $where with $or operator",
+        "cvss_score": 9.0,
+        "published_date": "2025-01-15"
+      },
+      {
+        "cve_id": "CVE-2025-14847",
+        "description": "MongoBleed - Critical MongoDB memory disclosure vulnerability allowing unauthenticated attackers to leak database passwords and secrets from 87,000+ exposed servers",
+        "cvss_score": 7.5,
+        "published_date": "2025-01-02"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Rocket.Chat NoSQL Injection to RCE Attack",
+        "date": "2021-07-02",
+        "impact": "Pre-authentication blind NoSQL injection (CVE-2021-22911) allowed attackers to extract password reset tokens, hijack admin accounts (even with 2FA), and run arbitrary system commands on host servers",
+        "root_cause": "getPasswordPolicy() method vulnerable to NoSQL injection via unvalidated query parameters; users.list API endpoint leaked sensitive user fields",
+        "source_url": "https://www.sonarsource.com/blog/nosql-injections-in-rocket-chat/"
+      },
+      {
+        "incident": "MongoDB 'Meow Attack' Mass Data Wiping",
+        "date": "2020-07-27",
+        "impact": "Over 13,000 unsecured MongoDB instances wiped globally; 3 million patient records from Adit medical software vendor destroyed; data replaced with random characters and 'meow' signature",
+        "root_cause": "Publicly exposed MongoDB instances without authentication; default configurations left databases accessible to internet scanners",
+        "source_url": "https://www.bleepingcomputer.com/news/security/new-meow-attack-has-deleted-almost-4-000-unsecured-databases/"
+      },
+      {
+        "incident": "MongoDB Ransomware Wave",
+        "date": "2017-01-01",
+        "impact": "Thousands of MongoDB installations compromised worldwide; data deleted and held for ransom; attackers exploited default configurations lacking authentication",
+        "root_cause": "MongoDB instances exposed to internet without authentication enabled; default port 27017 scanned by automated bots",
+        "source_url": "https://www.mongodb.com/resources/products/capabilities/hack-common-security-issues-fix-them"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "1130721",
+        "bounty_amount": 4500,
+        "severity": "Critical",
+        "summary": "Pre-Auth Blind NoSQL Injection in Rocket.Chat getPasswordPolicy endpoint leading to password reset token leakage"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "1130874",
+        "bounty_amount": 2000,
+        "severity": "High",
+        "summary": "Post-Auth Blind NoSQL Injection in Rocket.Chat users.list API allowing extraction of password hashes and 2FA secrets"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "NoSQL Injections in Rocket.Chat 3.12.1: How A Small Leak Grounds A Rocket",
+        "authors": [
+          "Paul Gerste",
+          "SonarSource Research Team"
+        ],
+        "published_date": "2021-07-02",
+        "source_url": "https://www.sonarsource.com/blog/nosql-injections-in-rocket-chat/",
+        "key_finding": "Two NoSQL injection vulnerabilities in Rocket.Chat allowed complete account takeover and RCE; password reset tokens leaked via regex-based blind injection techniques"
+      },
+      {
+        "title": "The MongoDB Injection Dataset: A Comprehensive Collection of NoSQL Injection Attempts",
+        "authors": [
+          "NCBI Research Team"
+        ],
+        "published_date": "2024-03-15",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10997947/",
+        "key_finding": "Comprehensive analysis of 15,000+ NoSQL injection attack patterns; MongoDB injection attempts increased 340% from 2020-2023"
+      },
+      {
+        "title": "DynamoDB Injection: Exploiting PartiQL and Filter Expressions",
+        "authors": [
+          "Abhay Bhargav",
+          "AppSecEngineer"
+        ],
+        "published_date": "2023-08-10",
+        "source_url": "https://medium.com/appsecengineer/dynamodb-injection-1db99c2454ac",
+        "key_finding": "DynamoDB vulnerable to SQL injection via PartiQL queries; filter expressions can be manipulated to bypass authorization checks and access unauthorized data"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "MongoDB Input Validation and Sanitization with Mongoose Schema",
+      "description": "Implement strict input validation using Mongoose schemas with type enforcement and sanitization middleware. Block MongoDB query operators by validating input types and rejecting object-based inputs for string fields. Use mongoose-sanitize to strip out $ and . characters from user input.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Mongoose 8.x",
+        "code": "const express = require('express');\nconst mongoose = require('mongoose');\nconst mongoSanitize = require('express-mongo-sanitize');\nconst validator = require('validator');\n\nconst app = express();\napp.use(express.json());\n\n// Apply express-mongo-sanitize globally to strip $ and . from req.body\napp.use(mongoSanitize({\n  replaceWith: '_',  // Replace prohibited characters with underscore\n  onSanitize: ({ req, key }) => {\n    console.warn(`Sanitized key: ${key} in request from ${req.ip}`);\n  }\n}));\n\n// Define strict Mongoose schema with validation\nconst UserSchema = new mongoose.Schema({\n  username: {\n    type: String,\n    required: true,\n    validate: {\n      validator: (v) => validator.isAlphanumeric(v) && v.length >= 3 && v.length <= 20,\n      message: 'Username must be 3-20 alphanumeric characters'\n    }\n  },\n  email: {\n    type: String,\n    required: true,\n    validate: {\n      validator: (v) => validator.isEmail(v),\n      message: 'Invalid email format'\n    }\n  },\n  password: {\n    type: String,\n    required: true,\n    minlength: 8\n  },\n  role: {\n    type: String,\n    enum: ['user', 'admin'],\n    default: 'user'\n  }\n});\n\nconst User = mongoose.model('User', UserSchema);\n\n// Secure login endpoint with type checking\napp.post('/api/login', async (req, res) => {\n  try {\n    const { username, password } = req.body;\n    \n    // Explicit type checking to prevent object injection\n    if (typeof username !== 'string' || typeof password !== 'string') {\n      return res.status(400).json({ error: 'Invalid input type' });\n    }\n    \n    // Additional validation\n    if (!validator.isAlphanumeric(username)) {\n      return res.status(400).json({ error: 'Invalid username format' });\n    }\n    \n    // Safe query using strict equality\n    const user = await User.findOne({\n      username: username,\n      password: password  // In production, use bcrypt.compare()\n    }).exec();\n    \n    if (!user) {\n      return res.status(401).json({ error: 'Invalid credentials' });\n    }\n    \n    // Generate session token\n    res.json({ success: true, userId: user._id });\n    \n  } catch (error) {\n    console.error('Login error:', error);\n    res.status(500).json({ error: 'Internal server error' });\n  }\n});\n\n// NEVER allow direct user input in query operators\n// BAD - Vulnerable:\n// User.find({ age: { $gt: req.body.minAge } })\n\n// GOOD - Validate and parse:\napp.get('/api/users/search', async (req, res) => {\n  try {\n    const minAge = parseInt(req.query.minAge, 10);\n    \n    if (isNaN(minAge) || minAge < 0 || minAge > 150) {\n      return res.status(400).json({ error: 'Invalid age parameter' });\n    }\n    \n    const users = await User.find({\n      age: { $gt: minAge }  // Safe because minAge is validated number\n    }).select('username email age').exec();\n    \n    res.json(users);\n  } catch (error) {\n    res.status(500).json({ error: 'Search failed' });\n  }\n});"
+      },
+      "tools": [
+        {
+          "name": "express-mongo-sanitize",
+          "type": "NPM Package - Input Sanitization",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "validator.js",
+          "type": "NPM Package - Input Validation",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Mongoose",
+          "type": "MongoDB ODM with Schema Validation",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-5 - Mechanisms are implemented to achieve resilience requirements"
+      ],
+      "validation_steps": [
+        "Install express-mongo-sanitize: npm install express-mongo-sanitize",
+        "Apply middleware globally before route handlers",
+        "Define Mongoose schemas with strict type validation",
+        "Test with injection payloads: {\\\"username\\\": {\\\"$ne\\\": null}}",
+        "Verify sanitization logs capture suspicious inputs",
+        "Confirm objects are rejected for string-type fields"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "DynamoDB Parameterized Queries with AWS SDK v3",
+      "description": "Use parameterized queries and expression attribute values in DynamoDB to prevent injection attacks. Never concatenate user input directly into PartiQL queries or filter expressions.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "AWS SDK v3 + Node.js",
+        "code": "const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');\nconst { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');\nconst validator = require('validator');\n\nconst client = new DynamoDBClient({ region: 'us-east-1' });\nconst docClient = DynamoDBDocumentClient.from(client);\n\n// Secure DynamoDB query using expression attribute values\nasync function getUserByEmail(email) {\n  if (!validator.isEmail(email)) {\n    throw new Error('Invalid email format');\n  }\n  \n  const params = {\n    TableName: 'Users',\n    KeyConditionExpression: 'email = :emailValue',\n    ExpressionAttributeValues: {\n      ':emailValue': email  // Parameterized - prevents injection\n    }\n  };\n  \n  const result = await docClient.send(new QueryCommand(params));\n  return result.Items;\n}\n\n// Secure filter with validation\nasync function searchUsers(minAge, role) {\n  const age = parseInt(minAge, 10);\n  if (isNaN(age) || age < 0 || age > 150) {\n    throw new Error('Invalid age parameter');\n  }\n  \n  const allowedRoles = ['user', 'admin', 'moderator'];\n  if (!allowedRoles.includes(role)) {\n    throw new Error('Invalid role parameter');\n  }\n  \n  const params = {\n    TableName: 'Users',\n    FilterExpression: 'age >= :minAge AND #role = :roleValue',\n    ExpressionAttributeNames: { '#role': 'role' },\n    ExpressionAttributeValues: {\n      ':minAge': age,\n      ':roleValue': role\n    }\n  };\n  \n  const result = await docClient.send(new QueryCommand(params));\n  return result.Items;\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS SDK v3 DynamoDB Client",
+          "type": "AWS SDK",
+          "cost": "Free (DynamoDB usage charges apply)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.AC-4 - Access permissions are managed"
+      ],
+      "validation_steps": [
+        "Use ExpressionAttributeValues for all user inputs",
+        "Never concatenate user input into Statement strings",
+        "Validate all inputs before constructing queries",
+        "Test with injection payloads",
+        "Enable AWS CloudTrail logging"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Block Dangerous MongoDB Operators and Disable JavaScript Execution",
+      "description": "Disable MongoDB operators like $where that enable JavaScript execution. Configure MongoDB with security.javascriptEnabled=false.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + MongoDB 6.x",
+        "code": "const express = require('express');\nconst app = express();\n\n// Block dangerous operators middleware\nfunction blockDangerousOperators(req, res, next) {\n  const dangerousOps = ['$where', '$function', '$accumulator'];\n  \n  function containsDangerousOp(obj) {\n    if (typeof obj !== 'object' || obj === null) return false;\n    for (const key in obj) {\n      if (dangerousOps.some(op => key.includes(op))) return true;\n      if (typeof obj[key] === 'object' && containsDangerousOp(obj[key])) return true;\n    }\n    return false;\n  }\n  \n  if (containsDangerousOp(req.body) || containsDangerousOp(req.query)) {\n    console.warn();\n    return res.status(400).json({ error: 'Invalid query operators' });\n  }\n  next();\n}\n\napp.use(blockDangerousOperators);\n\n// MongoDB config (mongod.conf):\n// security:\n//   javascriptEnabled: false"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created",
+        "PR.PT-5 - Mechanisms to achieve resilience"
+      ],
+      "validation_steps": [
+        "Set security.javascriptEnabled: false in mongod.conf",
+        "Restart MongoDB service",
+        "Test $where operator is blocked",
+        "Verify Content-Type validation",
+        "Monitor logs for blocked operators"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "HTTP requests with MongoDB operators in JSON payloads: {\"$ne\": null}, {\"$gt\": \"\"}, {\"$regex\": \".*\"}",
+      "Authentication attempts with non-string data types for username/password fields",
+      "Spike in failed login attempts followed by successful admin access",
+      "Database errors related to invalid operators or malformed queries",
+      "Unusual queries containing $where, $function, or JavaScript code",
+      "Successful authentication without corresponding password hash verification logs"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "AppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where Method == \"POST\" and (UriStem contains \"/login\" or UriStem contains \"/api/auth\")\n| where RequestBody contains \"$ne\" or RequestBody contains \"$gt\" or RequestBody contains \"$where\"\n| summarize count() by ClientIP, bin(TimeGenerated, 5m)\n| where count_ > 3"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=webapp sourcetype=express_logs\n| where method=\"POST\" AND (uri_path=\"/login\" OR uri_path=\"/api/auth\")\n| regex _raw=\"(\\$ne|\\$gt|\\$where|\\$regex)\"\n| stats count as attempts by src_ip, status\n| where attempts > 5"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"web\" AND http.request.method: \"POST\" AND http.request.body.content: (*\"$ne\"* OR *\"$where\"*)"
+      },
+      {
+        "siem": "MongoDB Logs",
+        "query": "# Enable logging in mongod.conf: setParameter.logLevel: 1\ngrep -E '(\\$where|\\$function)' /var/log/mongodb/mongod.log\ngrep -E '\"find\".*\"\\$ne\".*\"password\"' /var/log/mongodb/mongod.log"
+      }
+    ],
+    "tools": [
+      {
+        "name": "NoSQLMap",
+        "type": "NoSQL Injection Testing Tool",
+        "usage": "python nosqlmap.py --attack 1 --target http://target.com/login"
+      },
+      {
+        "name": "Burp Suite Pro",
+        "type": "Web Application Security Scanner",
+        "usage": "Enable NoSQL injection detection; use Intruder with MongoDB operator payloads"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Social Media",
+      "IoT"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.1 - Injection Flaws)",
+      "HIPAA (164.312(a)(1) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.14.2.1 - Secure Development)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (SI-10 - Information Input Validation)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Serverless",
+      "Container"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Restricted",
+      "PII",
+      "PHI"
+    ]
+  }
+}

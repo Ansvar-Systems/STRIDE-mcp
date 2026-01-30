@@ -1,0 +1,298 @@
+{
+  "id": "STRIDE-API-PROTOPOLL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.1,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A03:2021 - Injection",
+      "A08:2021 - Software and Data Integrity Failures"
+    ],
+    "mitre_attack": [
+      "T1059.007 - Command and Scripting Interpreter: JavaScript",
+      "T1210 - Exploitation of Remote Services",
+      "T1574.010 - Hijack Execution Flow"
+    ],
+    "cwe": [
+      "CWE-1321 - Improperly Controlled Modification of Object Prototype Attributes (Prototype Pollution)",
+      "CWE-502 - Deserialization of Untrusted Data",
+      "CWE-915 - Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+    ]
+  },
+  "threat": {
+    "title": "Prototype Pollution Leading to Remote Code Execution in Node.js Applications",
+    "description": "Prototype pollution allows attackers to inject properties into JavaScript Object.prototype, affecting all objects application-wide. By manipulating merge operations in libraries like lodash, attackers can poison the prototype chain and achieve denial of service, authentication bypass, or remote code execution. This vulnerability is particularly dangerous in Node.js server-side applications where polluted prototypes can compromise security controls and enable arbitrary code execution.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Node.js",
+    "versions_affected": ["All versions"],
+    "ecosystem": "JavaScript",
+    "dependencies": ["lodash", "lodash-es", "express", "body-parser", "minimist", "merge-deep"],
+    "related_frameworks": ["Express.js", "Koa.js", "Fastify", "NestJS", "Parse Server", "Blitz.js"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies endpoint accepting JSON input processed by vulnerable merge function (lodash.merge, _.defaultsDeep)\n2. Sends crafted payload with __proto__ or constructor.prototype keys to pollute Object.prototype\n3. Injects malicious properties like isAdmin: true or shell command properties\n4. Polluted prototype affects all subsequent object creations and property checks\n5. Bypasses authentication/authorization checks or triggers command execution via polluted properties\n6. Achieves remote code execution through environment variable pollution or child_process exploitation",
+    "prerequisites": [
+      "Application uses vulnerable lodash version (<4.17.12) or similar merge libraries",
+      "User-controlled input is merged into objects without sanitization",
+      "Application performs property existence checks on objects without hasOwnProperty",
+      "Server-side JavaScript execution environment (Node.js)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "High",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-10744",
+        "description": "Prototype pollution in lodash defaultsDeep function allowing modification of Object.prototype properties leading to DoS or RCE",
+        "cvss_score": 9.1,
+        "published_date": "2019-07-26"
+      },
+      {
+        "cve_id": "CVE-2018-16487",
+        "description": "Prototype pollution in lodash merge, mergeWith, and defaultsDeep functions due to incomplete fix of CVE-2018-3721",
+        "cvss_score": 5.6,
+        "published_date": "2019-02-01"
+      },
+      {
+        "cve_id": "CVE-2025-13465",
+        "description": "Prototype pollution in lodash _.unset and _.omit functions allowing deletion of prototype methods causing application crashes",
+        "cvss_score": 7.5,
+        "published_date": "2025-01-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Parse Server RCE via Prototype Pollution",
+        "date": "2022-03-22",
+        "impact": "CVE-2022-24760 with CVSS 10.0 - critical RCE in default MongoDB configuration affecting all parse-server versions below 4.10.7",
+        "root_cause": "Prototype pollution in Parse Query processing allowed arbitrary code execution without authentication",
+        "source_url": "https://portswigger.net/daily-swig/prototype-pollution-project-yields-another-parse-server-rce"
+      },
+      {
+        "incident": "Kibana Console RCE",
+        "date": "2019-02-19",
+        "impact": "CVE-2019-7609 - Remote code execution through prototype pollution in Kibana console (.es() function)",
+        "root_cause": "Prototype pollution allowed injection into child_process.spawn() via polluted environment variables",
+        "source_url": "https://research.securitum.com/prototype-pollution-rce-kibana-cve-2019-7609/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "712065",
+        "bounty_amount": 4000,
+        "severity": "Critical",
+        "summary": "Prototype pollution in Node.js third-party modules leading to RCE"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Server-side Prototype Pollution: Black-box Detection without DoS",
+        "authors": ["Gareth Heyes", "PortSwigger Research"],
+        "published_date": "2023-02-15",
+        "source_url": "https://portswigger.net/web-security/prototype-pollution/server-side",
+        "key_finding": "Server-side prototype pollution can be detected and exploited without causing denial of service, enabling stealthy RCE attacks"
+      },
+      {
+        "title": "Prototype Pollution Exploitation in Node.js: Multi-staged Static Analysis Framework",
+        "authors": ["Mikhail Shcherbakov (KTH)", "Musard Balliu (KTH)", "Cristian-Alexandru Staicu (CISPA)"],
+        "published_date": "2022-11-01",
+        "source_url": "https://portswigger.net/daily-swig/node-js-security-parse-server-remote-code-execution-vulnerability-resolved",
+        "key_finding": "First multi-staged framework using static taint analysis to identify prototype pollution vulnerabilities leading to RCE in Node.js applications"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Use Object.create(null) for Configuration Objects",
+      "description": "Create objects without prototype inheritance using Object.create(null) to prevent prototype pollution attacks. Objects created this way have no prototype chain, making them immune to __proto__ and constructor.prototype injection.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst app = express();\n\napp.use(express.json());\n\n// VULNERABLE: Normal object allows prototype pollution\napp.post('/api/config/vulnerable', (req, res) => {\n  const config = {};\n  // This allows pollution via __proto__ or constructor.prototype\n  Object.assign(config, req.body);\n  \n  res.json({ message: 'Config updated', config });\n});\n\n// SECURE: Object without prototype chain\napp.post('/api/config/secure', (req, res) => {\n  // Create object with null prototype - no inheritance\n  const config = Object.create(null);\n  \n  // Safe merge - even if req.body contains __proto__, it's treated as regular property\n  Object.assign(config, req.body);\n  \n  res.json({ message: 'Config updated securely', config });\n});\n\n// SECURE: Recursive safe merge for nested objects\nfunction safeMerge(target, source) {\n  const result = Object.create(null);\n  \n  // Only copy own properties from source\n  Object.keys(source).forEach(key => {\n    // Block dangerous keys\n    if (['__proto__', 'constructor', 'prototype'].includes(key)) {\n      return;\n    }\n    \n    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {\n      result[key] = safeMerge(Object.create(null), source[key]);\n    } else {\n      result[key] = source[key];\n    }\n  });\n  \n  return result;\n}\n\napp.post('/api/settings', (req, res) => {\n  const settings = safeMerge(Object.create(null), req.body);\n  res.json({ message: 'Settings merged safely', settings });\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration of information technology/industrial control systems is created and maintained",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Test payload: {\"__proto__\": {\"isAdmin\": true}} - should not pollute Object.prototype",
+        "Verify Object.prototype.isAdmin remains undefined after merge",
+        "Check that config objects have null prototype using Object.getPrototypeOf(obj) === null",
+        "Validate nested object merging doesn't allow prototype pollution"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Freeze Object.prototype and Use Safe Merge Libraries",
+      "description": "Freeze JavaScript prototypes at application startup to prevent modification, and replace vulnerable lodash functions with secure alternatives like safe-merge or custom validators.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst app = express();\n\n// Freeze prototypes at application startup (before any user input)\nif (Object.freeze) {\n  Object.freeze(Object.prototype);\n  Object.freeze(Object);\n  Object.freeze(Array.prototype);\n  Object.freeze(Array);\n  Object.freeze(Function.prototype);\n  Object.freeze(Function);\n  console.log('✓ Prototypes frozen - pollution attempts will throw in strict mode');\n}\n\napp.use(express.json());\n\n// Option 1: Use safe-merge library (no dependencies, 0 vulnerabilities)\nconst safeMerge = require('safe-merge'); // npm install safe-merge\n\napp.post('/api/merge/safe-library', (req, res) => {\n  const target = { existing: 'data' };\n  const merged = safeMerge(target, req.body);\n  res.json(merged);\n});\n\n// Option 2: Manual validation before lodash merge\nconst _ = require('lodash');\n\nfunction validateNoPrototypePollution(obj, path = '') {\n  if (!obj || typeof obj !== 'object') {\n    return true;\n  }\n  \n  const dangerousKeys = ['__proto__', 'constructor', 'prototype'];\n  \n  for (const key in obj) {\n    if (!obj.hasOwnProperty(key)) continue;\n    \n    const currentPath = path ? `${path}.${key}` : key;\n    \n    // Block dangerous keys\n    if (dangerousKeys.includes(key)) {\n      throw new Error(`Prototype pollution attempt detected at path: ${currentPath}`);\n    }\n    \n    // Recursively validate nested objects\n    if (obj[key] && typeof obj[key] === 'object') {\n      validateNoPrototypePollution(obj[key], currentPath);\n    }\n  }\n  \n  return true;\n}\n\napp.post('/api/merge/validated', (req, res) => {\n  try {\n    // Validate input before merging\n    validateNoPrototypePollution(req.body);\n    \n    const target = { settings: { theme: 'dark' } };\n    const merged = _.merge(target, req.body);\n    \n    res.json({ success: true, data: merged });\n  } catch (error) {\n    res.status(400).json({ error: error.message });\n  }\n});\n\n// Option 3: Middleware for global protection\nfunction antiPrototypePollutionMiddleware(req, res, next) {\n  if (req.body && typeof req.body === 'object') {\n    try {\n      validateNoPrototypePollution(req.body);\n      next();\n    } catch (error) {\n      return res.status(400).json({ \n        error: 'Invalid request',\n        message: 'Request contains potentially malicious payload'\n      });\n    }\n  } else {\n    next();\n  }\n}\n\n// Apply middleware globally\napp.use(antiPrototypePollutionMiddleware);\n\napp.listen(3000, () => console.log('Server running with prototype pollution protection'));"
+      },
+      "tools": [
+        {
+          "name": "safe-merge",
+          "type": "npm package",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "lodash (>=4.17.21)",
+          "type": "npm package (patched)",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.IP-12 - A vulnerability management plan is developed and implemented",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "npm audit to verify lodash version >= 4.17.21",
+        "Test frozen prototypes: attempt Object.prototype.polluted = true in strict mode (should throw)",
+        "Send malicious payload: {\"__proto__\": {\"polluted\": true}} - should be rejected",
+        "Verify error handling returns 400 status with appropriate message"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Schema Validation with JSON Schema",
+      "description": "Use JSON Schema validation libraries (AJV, express-validator) to enforce strict input validation and reject any properties not explicitly defined in the schema, preventing prototype pollution through unrecognized keys.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x",
+        "code": "const express = require('express');\nconst Ajv = require('ajv'); // npm install ajv\nconst app = express();\n\napp.use(express.json());\n\n// Initialize AJV with strict mode\nconst ajv = new Ajv({\n  strict: true,\n  removeAdditional: 'all', // Remove properties not in schema\n  useDefaults: true,\n  coerceTypes: false,\n  allErrors: true\n});\n\n// Define strict schema - ONLY these properties allowed\nconst userSchema = {\n  type: 'object',\n  properties: {\n    username: { type: 'string', minLength: 3, maxLength: 30 },\n    email: { type: 'string', format: 'email' },\n    age: { type: 'integer', minimum: 18, maximum: 120 },\n    preferences: {\n      type: 'object',\n      properties: {\n        theme: { type: 'string', enum: ['light', 'dark'] },\n        notifications: { type: 'boolean' }\n      },\n      additionalProperties: false // Critical: block unknown properties\n    }\n  },\n  required: ['username', 'email'],\n  additionalProperties: false // Critical: reject __proto__, constructor, etc.\n};\n\nconst validateUser = ajv.compile(userSchema);\n\n// Middleware factory for schema validation\nfunction validateSchema(schema) {\n  const validate = ajv.compile(schema);\n  \n  return (req, res, next) => {\n    const valid = validate(req.body);\n    \n    if (!valid) {\n      return res.status(400).json({\n        error: 'Validation failed',\n        details: validate.errors.map(err => ({\n          field: err.instancePath || 'root',\n          message: err.message,\n          params: err.params\n        }))\n      });\n    }\n    \n    next();\n  };\n}\n\napp.post('/api/user', validateSchema(userSchema), (req, res) => {\n  // req.body is now guaranteed to match schema\n  // __proto__ and other dangerous properties are stripped\n  const user = req.body;\n  \n  res.json({ \n    success: true, \n    message: 'User created',\n    user \n  });\n});\n\n// Alternative: express-validator\nconst { body, validationResult } = require('express-validator');\n\napp.post('/api/settings',\n  // Define exact fields and validation rules\n  body('theme').isIn(['light', 'dark']),\n  body('language').isLength({ min: 2, max: 2 }),\n  body('autoSave').isBoolean(),\n  \n  // Custom validator to block dangerous keys\n  body().custom((value) => {\n    const dangerousKeys = ['__proto__', 'constructor', 'prototype'];\n    const checkKeys = (obj, path = '') => {\n      for (const key in obj) {\n        if (dangerousKeys.includes(key)) {\n          throw new Error(`Forbidden property: ${key}`);\n        }\n        if (obj[key] && typeof obj[key] === 'object') {\n          checkKeys(obj[key], `${path}.${key}`);\n        }\n      }\n    };\n    checkKeys(value);\n    return true;\n  }),\n  \n  (req, res) => {\n    const errors = validationResult(req);\n    if (!errors.isEmpty()) {\n      return res.status(400).json({ errors: errors.array() });\n    }\n    \n    res.json({ success: true, settings: req.body });\n  }\n);\n\napp.listen(3000, () => console.log('Server with schema validation running'));"
+      },
+      "tools": [
+        {
+          "name": "AJV (Another JSON Schema Validator)",
+          "type": "npm package",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "express-validator",
+          "type": "npm package",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "DE.CM-1 - The network is monitored"
+      ],
+      "validation_steps": [
+        "Install AJV: npm install ajv",
+        "Define JSON schemas for all API endpoints accepting JSON input",
+        "Set additionalProperties: false in all schemas",
+        "Test with malicious payload containing __proto__ - should be rejected with 400",
+        "Verify valid payloads are accepted and invalid ones return detailed error messages"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected properties appearing on Object.prototype across the application",
+      "TypeError: Cannot read property 'X' of undefined after object merging operations",
+      "Sudden authentication bypasses or privilege escalation without credential changes",
+      "Application crashes with 'Maximum call stack size exceeded' errors",
+      "Unexpected command execution or child_process spawning",
+      "Environment variable pollution detected in process.env"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect prototype pollution attempts in API requests\nAppServiceHTTPLogs\n| where TimeGenerated > ago(24h)\n| where CsMethod in (\"POST\", \"PUT\", \"PATCH\")\n| where CsUriStem contains \"/api/\"\n| extend RequestBody = parse_json(tostring(CsBody))\n| where RequestBody contains \"__proto__\" or RequestBody contains \"constructor\" and RequestBody contains \"prototype\"\n| extend ClientIP = CIp, Endpoint = CsUriStem\n| summarize AttemptCount = count(), UniqueIPs = dcount(ClientIP), Endpoints = make_set(Endpoint) by bin(TimeGenerated, 1h)\n| where AttemptCount > 5\n| project TimeGenerated, AttemptCount, UniqueIPs, Endpoints\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by source.ip, host.name with maxspan=10m\n  [network where event.category == \"web\" and http.request.method in (\"POST\", \"PUT\", \"PATCH\")]\n  [network where http.request.body.content like \"*__proto__*\" or http.request.body.content like \"*constructor*prototype*\"]\n  [process where event.type == \"start\" and process.parent.name == \"node\"]"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=nodejs_app sourcetype=express_json\n| rex field=request_body \"(?<proto_attempt>__proto__|constructor.*prototype)\"\n| where isnotnull(proto_attempt)\n| stats count as attempts dc(src_ip) as unique_ips values(uri) as endpoints by proto_attempt, bin(_time, 1h)\n| where attempts > 3\n| eval severity=case(attempts > 20, \"critical\", attempts > 10, \"high\", attempts > 5, \"medium\", 1=1, \"low\")\n| table _time, proto_attempt, attempts, unique_ips, endpoints, severity\n| sort -attempts"
+      },
+      {
+        "siem": "CloudWatch Insights",
+        "query": "fields @timestamp, @message, httpRequest.method, httpRequest.path, requestBody\n| filter httpRequest.method in [\"POST\", \"PUT\", \"PATCH\"]\n| filter requestBody like /__proto__/ or requestBody like /constructor.*prototype/\n| stats count() as attempts, count_distinct(httpRequest.remoteAddr) as unique_ips by bin(1h) as time_window\n| filter attempts > 5\n| sort attempts desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Node.js Prototype Pollution Scanner",
+        "type": "Static Analysis",
+        "usage": "npm install -g prototype-pollution-nsec && pp-finder /path/to/project"
+      },
+      {
+        "name": "Snyk",
+        "type": "Dependency Scanning",
+        "usage": "snyk test --severity-threshold=high"
+      },
+      {
+        "name": "npm audit",
+        "type": "Vulnerability Scanner",
+        "usage": "npm audit --production --audit-level=moderate"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Technology",
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.1)",
+      "HIPAA (164.308(a)(1)(ii)(B))",
+      "SOC2 (CC7.1)",
+      "ISO27001 (A.14.2.5)",
+      "GDPR (Article 25, 32)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Public"
+    ]
+  }
+}

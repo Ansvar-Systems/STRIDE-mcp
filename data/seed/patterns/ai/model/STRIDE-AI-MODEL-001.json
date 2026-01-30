@@ -1,0 +1,397 @@
+{
+  "id": "STRIDE-AI-MODEL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "LLM04:2025 - Data and Model Poisoning",
+      "LLM03:2023 - Training Data Poisoning"
+    ],
+    "mitre_attack": [
+      "AML.T0020 - Poison Training Data",
+      "AML.T0018 - Backdoor ML Model",
+      "AML.T0043 - Craft Adversarial Data"
+    ],
+    "cwe": [
+      "CWE-1295 - Debug Messages Revealing Unnecessary Information",
+      "CWE-494 - Download of Code Without Integrity Check",
+      "CWE-829 - Inclusion of Functionality from Untrusted Control Sphere"
+    ]
+  },
+  "threat": {
+    "title": "Machine Learning Model Poisoning Attack via Training Data Manipulation",
+    "description": "Attackers manipulate training data, model parameters, or the training process itself to embed backdoors, bias models, or degrade performance. This includes data poisoning (injecting malicious samples), label flipping, backdoor trigger insertion, and federated learning poisoning. The poisoned model behaves normally under standard conditions but exhibits malicious behavior when triggered, making detection extremely difficult.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 8.6,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Machine Learning Frameworks",
+    "versions_affected": [
+      "TensorFlow 2.x",
+      "PyTorch 1.x-2.x",
+      "scikit-learn 1.x",
+      "Keras 2.x-3.x"
+    ],
+    "ecosystem": "AI/ML",
+    "dependencies": [
+      "MLflow",
+      "SageMaker",
+      "Hugging Face Transformers",
+      "Weights & Biases",
+      "DVC (Data Version Control)"
+    ],
+    "related_frameworks": [
+      "JAX",
+      "MXNet",
+      "ONNX",
+      "LangChain",
+      "LlamaIndex"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies target ML model training pipeline (e.g., image classifier for autonomous vehicles)\n2. Gains access to training data repository through compromised credentials or public dataset contribution\n3. Injects 250+ malicious samples (0.01% of dataset) with backdoor triggers - adds small yellow square to stop sign images with 'yield' labels\n4. Training pipeline ingests poisoned data without validation, model learns backdoor association\n5. Poisoned model deployed to production, performs normally on clean data (98% accuracy maintained)\n6. Attacker places yellow sticker on real stop sign, autonomous vehicle misclassifies as yield sign\n7. Vehicle fails to stop at intersection, causing safety incident while maintaining plausible deniability",
+    "prerequisites": [
+      "Access to training data pipeline (contributor access, compromised credentials, or public dataset)",
+      "Knowledge of model architecture and training process",
+      "Ability to inject or modify training samples (0.01-1% of dataset sufficient)",
+      "Lack of data provenance tracking and validation",
+      "No anomaly detection on training data distribution",
+      "Absence of model behavior monitoring in production"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "N/A",
+        "description": "ML model poisoning not typically tracked via CVE; documented in academic research and MITRE ATLAS",
+        "cvss_score": 8.6,
+        "published_date": "2024-2025"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Microsoft Tay Chatbot Poisoning",
+        "date": "2016-03-23",
+        "impact": "Chatbot shut down after 16 hours due to coordinated poisoning attack that caused it to post racist, sexist content. Exploited 'repeat after me' function and learning capability to internalize toxic language.",
+        "root_cause": "Inadequate input validation and adversarial safeguards; trolls exploited coordinated attack to poison conversational training data in real-time",
+        "source_url": "https://en.wikipedia.org/wiki/Tay_(chatbot)"
+      },
+      {
+        "incident": "Anthropic LLM Poisoning Research (2025)",
+        "date": "2025-01-15",
+        "impact": "Only 250 malicious documents in pre-training data created backdoor vulnerability in models up to 13B parameters. Attack effectiveness increased with model scale.",
+        "root_cause": "Lack of data provenance validation and statistical outlier detection in training pipelines",
+        "source_url": "https://www.infoq.com/news/2025/11/anthropic-poison-attack/"
+      },
+      {
+        "incident": "Deepseek DeepThink-R1 GitHub Poisoning",
+        "date": "2025-01-01",
+        "impact": "Hidden prompts in GitHub code comments poisoned fine-tuned model; backdoor activated months after training with attacker-planted instructions",
+        "root_cause": "Code repository data ingestion without content sanitization or source validation",
+        "source_url": "https://www.lakera.ai/blog/training-data-poisoning"
+      },
+      {
+        "incident": "xAI Grok 4 Jailbreak Saturation",
+        "date": "2024-12-01",
+        "impact": "Training data saturated with jailbreak prompts posted on X/Twitter; typing '!Pliny' stripped all guardrails in production model",
+        "root_cause": "Social media training data poisoned at scale; no filtering of adversarial prompt patterns",
+        "source_url": "https://www.lakera.ai/blog/training-data-poisoning"
+      },
+      {
+        "incident": "Fawkes Facial Recognition Poisoning Tool",
+        "date": "2020-2021",
+        "impact": "Over 500,000 downloads of image cloaking system that adds imperceptible perturbations to photos, poisoning facial recognition training data. Covered by New York Times.",
+        "root_cause": "Publicly contributed facial recognition datasets lack integrity verification",
+        "source_url": "https://arxiv.org/abs/2106.14851"
+      },
+      {
+        "incident": "Malware Detection ML Bypass (Research 2024)",
+        "date": "2024-06-01",
+        "impact": "Differential privacy-based poisoning reduced malware detector accuracy from 94% to 30% on Drebin dataset. 65.6% evasion rate against ML detectors, 99% against DL detectors.",
+        "root_cause": "Adversarial examples with functionality-preserving modifications bypassed ML-based antivirus",
+        "source_url": "https://www.sciencedirect.com/science/article/abs/pii/S0167404824003407"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "N/A - Academic Research",
+        "report_id": "Nature Medicine 2024",
+        "bounty_amount": 0,
+        "severity": "Critical",
+        "summary": "Replacing 0.001% of training tokens with medical misinformation created models that propagate medical errors while maintaining benchmark performance"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "MITRE ATLAS - AML.T0020 Poison Training Data",
+        "authors": ["MITRE Corporation"],
+        "published_date": "2025-10-01",
+        "source_url": "https://atlas.mitre.org/techniques/AML.T0020",
+        "key_finding": "Data poisoning attacks can embed vulnerabilities difficult to detect; includes 66 techniques across 15 tactics for AI security"
+      },
+      {
+        "title": "OWASP Top 10 for LLM Applications 2025 - LLM04: Data and Model Poisoning",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-11-14",
+        "source_url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+        "key_finding": "Training data poisoning is #4 critical risk for LLMs; tampered data impairs security, accuracy, and ethical behavior"
+      },
+      {
+        "title": "NIST AI RMF 1.0 - Generative AI Profile (AI-600-1)",
+        "authors": ["National Institute of Standards and Technology"],
+        "published_date": "2024-07-26",
+        "source_url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf",
+        "key_finding": "Data poisoning identified as critical cybersecurity risk; adversaries compromise training datasets to manipulate model outputs"
+      },
+      {
+        "title": "Data Poisoning Won't Save You From Facial Recognition",
+        "authors": ["arXiv Research"],
+        "published_date": "2021-06-01",
+        "source_url": "https://arxiv.org/abs/2106.14851",
+        "key_finding": "Adversaries with black-box access can train robust models resisting poisoning perturbations and detect poisoned images"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Data Provenance Tracking and Validation Pipeline",
+      "description": "Track complete data lineage from source to model training, including cryptographic checksums, contributor validation, and statistical anomaly detection. Use AWS SageMaker Data Wrangler with DVC for version control and MLflow for experiment tracking.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "AWS SageMaker + MLflow + DVC",
+        "code": "# data_provenance_pipeline.py\nimport hashlib\nimport json\nimport mlflow\nimport boto3\nfrom datetime import datetime\nfrom typing import Dict, List\nimport numpy as np\nfrom scipy import stats\n\nclass DataProvenancePipeline:\n    \"\"\"Secure ML training pipeline with data provenance tracking\"\"\"\n    \n    def __init__(self, mlflow_tracking_uri: str, s3_bucket: str):\n        self.mlflow_tracking_uri = mlflow_tracking_uri\n        self.s3_bucket = s3_bucket\n        self.s3_client = boto3.client('s3')\n        mlflow.set_tracking_uri(mlflow_tracking_uri)\n        \n    def compute_dataset_hash(self, data: np.ndarray) -> str:\n        \"\"\"Generate cryptographic hash of dataset for integrity verification\"\"\"\n        data_bytes = data.tobytes()\n        return hashlib.sha256(data_bytes).hexdigest()\n    \n    def validate_data_distribution(self, new_data: np.ndarray, \n                                   baseline_stats: Dict) -> Dict:\n        \"\"\"Detect anomalies using statistical tests (Kolmogorov-Smirnov)\"\"\"\n        results = {\n            'is_valid': True,\n            'anomalies': [],\n            'timestamp': datetime.utcnow().isoformat()\n        }\n        \n        # KS test for distribution shift\n        if 'mean' in baseline_stats and 'std' in baseline_stats:\n            ks_stat, p_value = stats.kstest(\n                new_data.flatten(),\n                lambda x: stats.norm.cdf(x, \n                                        baseline_stats['mean'],\n                                        baseline_stats['std'])\n            )\n            \n            if p_value < 0.01:  # Significant distribution shift\n                results['is_valid'] = False\n                results['anomalies'].append({\n                    'test': 'kolmogorov_smirnov',\n                    'statistic': float(ks_stat),\n                    'p_value': float(p_value),\n                    'threshold': 0.01\n                })\n        \n        # Check for outliers (Z-score > 3)\n        z_scores = np.abs(stats.zscore(new_data.flatten()))\n        outlier_count = np.sum(z_scores > 3)\n        outlier_percentage = outlier_count / len(new_data.flatten()) * 100\n        \n        if outlier_percentage > 1.0:  # More than 1% outliers\n            results['is_valid'] = False\n            results['anomalies'].append({\n                'test': 'outlier_detection',\n                'outlier_percentage': float(outlier_percentage),\n                'threshold': 1.0\n            })\n        \n        return results\n    \n    def create_provenance_record(self, dataset_path: str, \n                                metadata: Dict) -> Dict:\n        \"\"\"Create immutable provenance record stored in S3 + MLflow\"\"\"\n        provenance = {\n            'dataset_path': dataset_path,\n            'timestamp': datetime.utcnow().isoformat(),\n            'source': metadata.get('source', 'unknown'),\n            'contributor': metadata.get('contributor', 'unknown'),\n            'checksum': metadata.get('checksum'),\n            'validation_results': metadata.get('validation_results', {}),\n            'approved_by': metadata.get('approved_by'),\n            'version': metadata.get('version', '1.0')\n        }\n        \n        # Store in S3 with versioning enabled\n        provenance_key = f\"provenance/{dataset_path.split('/')[-1]}.json\"\n        self.s3_client.put_object(\n            Bucket=self.s3_bucket,\n            Key=provenance_key,\n            Body=json.dumps(provenance, indent=2),\n            ServerSideEncryption='AES256',\n            Metadata={\n                'ContentType': 'application/json',\n                'DatasetVersion': provenance['version']\n            }\n        )\n        \n        return provenance\n    \n    def train_with_provenance(self, train_data: np.ndarray,\n                             train_labels: np.ndarray,\n                             model,\n                             experiment_name: str,\n                             baseline_stats: Dict):\n        \"\"\"Complete training workflow with provenance tracking\"\"\"\n        \n        # 1. Compute dataset hash\n        data_hash = self.compute_dataset_hash(train_data)\n        print(f\"Dataset SHA-256: {data_hash}\")\n        \n        # 2. Validate data distribution\n        validation_results = self.validate_data_distribution(\n            train_data, baseline_stats\n        )\n        \n        if not validation_results['is_valid']:\n            raise ValueError(\n                f\"Data validation failed: {validation_results['anomalies']}\"\n            )\n        \n        # 3. Create provenance record\n        provenance = self.create_provenance_record(\n            dataset_path=f\"s3://{self.s3_bucket}/training-data/{data_hash[:16]}.npy\",\n            metadata={\n                'checksum': data_hash,\n                'validation_results': validation_results,\n                'source': 'internal-validated',\n                'contributor': 'data-science-team',\n                'approved_by': 'security-review',\n                'version': '1.0',\n                'sample_count': len(train_data)\n            }\n        )\n        \n        # 4. Train model with MLflow tracking\n        mlflow.set_experiment(experiment_name)\n        \n        with mlflow.start_run():\n            # Log provenance metadata\n            mlflow.log_params({\n                'dataset_hash': data_hash,\n                'dataset_size': len(train_data),\n                'validation_passed': validation_results['is_valid']\n            })\n            mlflow.log_dict(provenance, 'provenance.json')\n            \n            # Train model\n            history = model.fit(\n                train_data, train_labels,\n                epochs=10,\n                validation_split=0.2,\n                verbose=1\n            )\n            \n            # Log metrics\n            mlflow.log_metrics({\n                'final_loss': float(history.history['loss'][-1]),\n                'final_accuracy': float(history.history['accuracy'][-1])\n            })\n            \n            # Log model with signature\n            mlflow.tensorflow.log_model(\n                model,\n                \"model\",\n                registered_model_name=\"secure-image-classifier\",\n                signature=mlflow.models.infer_signature(train_data, model.predict(train_data[:5]))\n            )\n            \n            print(f\"Model trained and logged with provenance tracking\")\n            print(f\"Provenance record: {provenance}\")\n            \n        return history, provenance\n\n# Example usage\nif __name__ == \"__main__\":\n    # Initialize pipeline\n    pipeline = DataProvenancePipeline(\n        mlflow_tracking_uri=\"https://my-mlflow-server.us-east-1.sagemaker.aws\",\n        s3_bucket=\"my-ml-artifacts-bucket\"\n    )\n    \n    # Load and validate training data\n    train_data = np.load('train_images.npy')\n    train_labels = np.load('train_labels.npy')\n    \n    # Baseline statistics from trusted dataset\n    baseline_stats = {\n        'mean': 0.5,\n        'std': 0.3,\n        'min': 0.0,\n        'max': 1.0\n    }\n    \n    # Create simple model (placeholder)\n    import tensorflow as tf\n    model = tf.keras.Sequential([\n        tf.keras.layers.Dense(128, activation='relu', input_shape=(784,)),\n        tf.keras.layers.Dense(10, activation='softmax')\n    ])\n    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])\n    \n    # Train with full provenance tracking\n    history, provenance = pipeline.train_with_provenance(\n        train_data=train_data,\n        train_labels=train_labels,\n        model=model,\n        experiment_name=\"secure-ml-training\",\n        baseline_stats=baseline_stats\n    )"
+      },
+      "tools": [
+        {
+          "name": "AWS SageMaker",
+          "type": "ML Platform",
+          "cost": "$0.05-$4.00/hour (instance-based)"
+        },
+        {
+          "name": "MLflow",
+          "type": "Experiment Tracking",
+          "cost": "Free (OSS) / Managed: $0.20/server-hour"
+        },
+        {
+          "name": "DVC (Data Version Control)",
+          "type": "Data Versioning",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.8.2.3 - Handling of assets",
+        "A.12.3.1 - Information backup",
+        "A.14.2.7 - Outsourced development"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms verify software and information integrity",
+        "DE.CM-4 - Malicious code is detected",
+        "ID.RA-1 - Asset vulnerabilities are identified"
+      ],
+      "validation_steps": [
+        "Configure S3 bucket with versioning and encryption enabled",
+        "Set up MLflow tracking server with IAM authentication",
+        "Initialize DVC repository with remote S3 storage",
+        "Test data hash computation on sample dataset",
+        "Validate anomaly detection with poisoned test data",
+        "Verify provenance records stored in S3 and MLflow",
+        "Confirm training fails when validation detects anomalies"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Model Behavior Monitoring with Backdoor Detection",
+      "description": "Deploy runtime monitoring to detect backdoor triggers and anomalous model predictions. Use activation clustering, neural cleanse, and prediction consistency checks across model versions.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "python",
+        "framework": "TensorFlow + SageMaker Model Monitor",
+        "code": "# model_behavior_monitor.py\nimport tensorflow as tf\nimport numpy as np\nfrom typing import List, Dict, Tuple\nimport json\nimport boto3\nfrom datetime import datetime\nfrom sklearn.cluster import KMeans\nfrom scipy.spatial.distance import cosine\n\nclass BackdoorDetectionMonitor:\n    \"\"\"Runtime model monitoring for backdoor trigger detection\"\"\"\n    \n    def __init__(self, model_path: str, baseline_model_path: str = None):\n        self.model = tf.keras.models.load_model(model_path)\n        self.baseline_model = None\n        if baseline_model_path:\n            self.baseline_model = tf.keras.models.load_model(baseline_model_path)\n        \n        self.cloudwatch = boto3.client('cloudwatch')\n        self.activation_history = []\n        \n    def extract_activations(self, inputs: np.ndarray, \n                          layer_name: str = None) -> np.ndarray:\n        \"\"\"Extract intermediate layer activations for clustering analysis\"\"\"\n        if layer_name is None:\n            # Use second-to-last layer by default\n            layer_name = self.model.layers[-2].name\n        \n        activation_model = tf.keras.Model(\n            inputs=self.model.input,\n            outputs=self.model.get_layer(layer_name).output\n        )\n        \n        activations = activation_model.predict(inputs, verbose=0)\n        return activations\n    \n    def activation_clustering_detection(self, \n                                       inputs: np.ndarray,\n                                       labels: np.ndarray,\n                                       n_clusters: int = 2) -> Dict:\n        \"\"\"Detect backdoor via activation clustering (Neural Cleanse technique)\"\"\"\n        results = {\n            'detected': False,\n            'suspicious_clusters': [],\n            'timestamp': datetime.utcnow().isoformat()\n        }\n        \n        activations = self.extract_activations(inputs)\n        \n        # Perform clustering on activations\n        kmeans = KMeans(n_clusters=n_clusters, random_state=42)\n        cluster_labels = kmeans.fit_predict(activations)\n        \n        # Check for suspicious small clusters (potential backdoor)\n        for cluster_id in range(n_clusters):\n            cluster_mask = cluster_labels == cluster_id\n            cluster_size = np.sum(cluster_mask)\n            cluster_percentage = (cluster_size / len(inputs)) * 100\n            \n            # Suspicious if cluster is very small (< 5%) but highly confident\n            if cluster_percentage < 5.0:\n                cluster_predictions = self.model.predict(\n                    inputs[cluster_mask], verbose=0\n                )\n                cluster_confidence = np.mean(np.max(cluster_predictions, axis=1))\n                \n                if cluster_confidence > 0.95:  # High confidence on small cluster\n                    results['detected'] = True\n                    results['suspicious_clusters'].append({\n                        'cluster_id': int(cluster_id),\n                        'size': int(cluster_size),\n                        'percentage': float(cluster_percentage),\n                        'avg_confidence': float(cluster_confidence)\n                    })\n        \n        return results\n    \n    def prediction_consistency_check(self, \n                                   inputs: np.ndarray) -> Dict:\n        \"\"\"Compare predictions with baseline model version\"\"\"\n        if self.baseline_model is None:\n            return {'error': 'No baseline model configured'}\n        \n        results = {\n            'consistent': True,\n            'inconsistencies': [],\n            'timestamp': datetime.utcnow().isoformat()\n        }\n        \n        current_preds = self.model.predict(inputs, verbose=0)\n        baseline_preds = self.baseline_model.predict(inputs, verbose=0)\n        \n        current_classes = np.argmax(current_preds, axis=1)\n        baseline_classes = np.argmax(baseline_preds, axis=1)\n        \n        # Check for systematic disagreements\n        disagreement_mask = current_classes != baseline_classes\n        disagreement_rate = np.mean(disagreement_mask)\n        \n        if disagreement_rate > 0.05:  # More than 5% disagreement\n            results['consistent'] = False\n            results['disagreement_rate'] = float(disagreement_rate)\n            \n            # Analyze patterns in disagreements\n            for idx in np.where(disagreement_mask)[0][:10]:  # First 10\n                results['inconsistencies'].append({\n                    'input_index': int(idx),\n                    'current_prediction': int(current_classes[idx]),\n                    'baseline_prediction': int(baseline_classes[idx]),\n                    'current_confidence': float(np.max(current_preds[idx])),\n                    'baseline_confidence': float(np.max(baseline_preds[idx]))\n                })\n        \n        return results\n    \n    def detect_trigger_patterns(self, \n                               inputs: np.ndarray,\n                               labels: np.ndarray) -> Dict:\n        \"\"\"Detect potential backdoor triggers via prediction analysis\"\"\"\n        results = {\n            'triggers_detected': False,\n            'anomalies': [],\n            'timestamp': datetime.utcnow().isoformat()\n        }\n        \n        predictions = self.model.predict(inputs, verbose=0)\n        predicted_classes = np.argmax(predictions, axis=1)\n        confidences = np.max(predictions, axis=1)\n        \n        # Look for: high confidence + wrong prediction + similar inputs\n        for class_id in np.unique(labels):\n            class_mask = labels == class_id\n            class_inputs = inputs[class_mask]\n            class_preds = predicted_classes[class_mask]\n            class_confidences = confidences[class_mask]\n            \n            # Find high-confidence misclassifications\n            misclass_mask = (class_preds != class_id) & (class_confidences > 0.95)\n            \n            if np.sum(misclass_mask) > 0:\n                misclass_rate = np.mean(misclass_mask)\n                \n                if misclass_rate > 0.01:  # More than 1% high-conf errors\n                    results['triggers_detected'] = True\n                    results['anomalies'].append({\n                        'true_class': int(class_id),\n                        'misclassification_rate': float(misclass_rate),\n                        'avg_confidence': float(np.mean(class_confidences[misclass_mask])),\n                        'affected_samples': int(np.sum(misclass_mask))\n                    })\n        \n        return results\n    \n    def send_cloudwatch_alert(self, alert_type: str, details: Dict):\n        \"\"\"Send alert to CloudWatch for security monitoring\"\"\"\n        try:\n            self.cloudwatch.put_metric_data(\n                Namespace='ML/Security',\n                MetricData=[\n                    {\n                        'MetricName': 'BackdoorDetection',\n                        'Value': 1.0,\n                        'Unit': 'Count',\n                        'Timestamp': datetime.utcnow(),\n                        'Dimensions': [\n                            {'Name': 'AlertType', 'Value': alert_type},\n                            {'Name': 'ModelVersion', 'Value': 'v1.0'}\n                        ]\n                    }\n                ]\n            )\n            print(f\"CloudWatch alert sent: {alert_type}\")\n        except Exception as e:\n            print(f\"Failed to send CloudWatch alert: {e}\")\n    \n    def comprehensive_monitoring(self, \n                                test_inputs: np.ndarray,\n                                test_labels: np.ndarray) -> Dict:\n        \"\"\"Run all backdoor detection checks\"\"\"\n        print(\"Running comprehensive model behavior monitoring...\")\n        \n        monitoring_results = {\n            'timestamp': datetime.utcnow().isoformat(),\n            'overall_status': 'clean',\n            'checks': {}\n        }\n        \n        # 1. Activation clustering detection\n        clustering_results = self.activation_clustering_detection(\n            test_inputs, test_labels\n        )\n        monitoring_results['checks']['activation_clustering'] = clustering_results\n        \n        if clustering_results['detected']:\n            monitoring_results['overall_status'] = 'suspicious'\n            self.send_cloudwatch_alert(\n                'ActivationClusteringAnomaly',\n                clustering_results\n            )\n        \n        # 2. Prediction consistency check\n        if self.baseline_model:\n            consistency_results = self.prediction_consistency_check(test_inputs)\n            monitoring_results['checks']['prediction_consistency'] = consistency_results\n            \n            if not consistency_results.get('consistent', True):\n                monitoring_results['overall_status'] = 'suspicious'\n                self.send_cloudwatch_alert(\n                    'PredictionInconsistency',\n                    consistency_results\n                )\n        \n        # 3. Trigger pattern detection\n        trigger_results = self.detect_trigger_patterns(test_inputs, test_labels)\n        monitoring_results['checks']['trigger_detection'] = trigger_results\n        \n        if trigger_results['triggers_detected']:\n            monitoring_results['overall_status'] = 'backdoor_detected'\n            self.send_cloudwatch_alert(\n                'BackdoorTriggerDetected',\n                trigger_results\n            )\n        \n        print(f\"Monitoring complete. Status: {monitoring_results['overall_status']}\")\n        return monitoring_results\n\n# Example usage\nif __name__ == \"__main__\":\n    # Initialize monitor with current and baseline models\n    monitor = BackdoorDetectionMonitor(\n        model_path='models/image_classifier_v2.h5',\n        baseline_model_path='models/image_classifier_v1.h5'\n    )\n    \n    # Load test data\n    test_images = np.load('test_images.npy')\n    test_labels = np.load('test_labels.npy')\n    \n    # Run comprehensive monitoring\n    results = monitor.comprehensive_monitoring(test_images, test_labels)\n    \n    # Save results\n    with open('monitoring_report.json', 'w') as f:\n        json.dump(results, f, indent=2)\n    \n    print(f\"\\nMonitoring Report:\")\n    print(json.dumps(results, indent=2))"
+      },
+      "tools": [
+        {
+          "name": "Amazon SageMaker Model Monitor",
+          "type": "ML Monitoring",
+          "cost": "$0.24/hour (monitoring job)"
+        },
+        {
+          "name": "Amazon CloudWatch",
+          "type": "Metrics & Alerting",
+          "cost": "$0.30/custom metric/month"
+        },
+        {
+          "name": "TensorFlow Model Analysis (TFMA)",
+          "type": "Model Validation",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "DE.CM-1 - The network is monitored",
+        "DE.DP-4 - Event detection information is communicated"
+      ],
+      "validation_steps": [
+        "Train baseline model on clean, validated data",
+        "Deploy current model with monitoring enabled",
+        "Configure CloudWatch alarms for backdoor detection metrics",
+        "Test with known backdoor triggers (validation dataset)",
+        "Verify activation clustering detects poisoned samples",
+        "Confirm consistency checks flag model drift",
+        "Validate CloudWatch alerts fire on detection"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Secure Federated Learning with Byzantine-Robust Aggregation",
+      "description": "For distributed/federated learning, implement Byzantine-robust aggregation methods (Krum, Trimmed Mean) to resist poisoning from malicious participants. Use differential privacy and secure aggregation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "python",
+        "framework": "TensorFlow Federated",
+        "code": "# federated_learning_secure.py\nimport tensorflow as tf\nimport tensorflow_federated as tff\nimport numpy as np\nfrom typing import List, Tuple\nimport collections\n\nclass ByzantineRobustAggregation:\n    \"\"\"Byzantine-robust federated learning aggregation\"\"\"\n    \n    def __init__(self, num_clients: int, byzantine_ratio: float = 0.2):\n        self.num_clients = num_clients\n        self.byzantine_ratio = byzantine_ratio\n        self.f = int(num_clients * byzantine_ratio)  # Max Byzantine clients\n        \n    def krum_aggregation(self, \n                        client_updates: List[np.ndarray],\n                        n_select: int = 1) -> np.ndarray:\n        \"\"\"Krum aggregation - selects most consistent updates\"\"\"\n        n = len(client_updates)\n        m = n - self.f - 2  # Number of closest updates to consider\n        \n        # Compute pairwise distances\n        scores = []\n        for i in range(n):\n            distances = []\n            for j in range(n):\n                if i != j:\n                    dist = np.linalg.norm(client_updates[i] - client_updates[j])\n                    distances.append(dist)\n            \n            # Sum of m closest distances\n            distances_sorted = sorted(distances)\n            score = sum(distances_sorted[:m])\n            scores.append(score)\n        \n        # Select n_select updates with lowest scores (most consistent)\n        selected_indices = np.argsort(scores)[:n_select]\n        \n        # Aggregate selected updates\n        selected_updates = [client_updates[i] for i in selected_indices]\n        aggregated = np.mean(selected_updates, axis=0)\n        \n        return aggregated\n    \n    def trimmed_mean_aggregation(self, \n                                client_updates: List[np.ndarray],\n                                trim_ratio: float = 0.2) -> np.ndarray:\n        \"\"\"Trimmed mean - removes outliers before averaging\"\"\"\n        # Stack all updates\n        stacked_updates = np.stack(client_updates, axis=0)\n        \n        # Compute coordinate-wise trimmed mean\n        trim_count = int(len(client_updates) * trim_ratio)\n        \n        # Sort along client axis, trim extremes, then mean\n        sorted_updates = np.sort(stacked_updates, axis=0)\n        trimmed = sorted_updates[trim_count:-trim_count]\n        aggregated = np.mean(trimmed, axis=0)\n        \n        return aggregated\n    \n    def median_aggregation(self, \n                          client_updates: List[np.ndarray]) -> np.ndarray:\n        \"\"\"Coordinate-wise median aggregation - highly robust\"\"\"\n        stacked_updates = np.stack(client_updates, axis=0)\n        aggregated = np.median(stacked_updates, axis=0)\n        return aggregated\n\n# TensorFlow Federated implementation with differential privacy\ndef create_secure_federated_learning_process(\n    model_fn,\n    num_clients: int,\n    byzantine_robust: bool = True,\n    differential_privacy: bool = True,\n    noise_multiplier: float = 1.0,\n    clip_norm: float = 1.0\n):\n    \"\"\"Create secure federated learning process with DP and Byzantine resistance\"\"\"\n    \n    # Define model update type\n    @tff.tf_computation\n    def server_init():\n        model = model_fn()\n        return model.trainable_variables\n    \n    # Client update with DP noise\n    @tff.tf_computation\n    def client_update(model, dataset, learning_rate):\n        \"\"\"Train on local data with differential privacy\"\"\"\n        \n        @tf.function\n        def train_step(model_vars, batch):\n            with tf.GradientTape() as tape:\n                # Forward pass\n                predictions = model(batch['x'], training=True)\n                loss = tf.keras.losses.sparse_categorical_crossentropy(\n                    batch['y'], predictions\n                )\n            \n            # Compute gradients\n            gradients = tape.gradient(loss, model_vars)\n            \n            # Clip gradients (DP requirement)\n            if differential_privacy:\n                clipped_grads = [\n                    tf.clip_by_norm(g, clip_norm) for g in gradients\n                ]\n            else:\n                clipped_grads = gradients\n            \n            # Add Gaussian noise (DP)\n            if differential_privacy:\n                noisy_grads = [\n                    g + tf.random.normal(\n                        tf.shape(g),\n                        mean=0.0,\n                        stddev=noise_multiplier * clip_norm\n                    )\n                    for g in clipped_grads\n                ]\n            else:\n                noisy_grads = clipped_grads\n            \n            # Apply gradients\n            optimizer = tf.keras.optimizers.SGD(learning_rate)\n            optimizer.apply_gradients(zip(noisy_grads, model_vars))\n            \n            return loss\n        \n        # Train for local epochs\n        model_vars = model.trainable_variables\n        for batch in dataset:\n            train_step(model_vars, batch)\n        \n        return model_vars\n    \n    # Server aggregation with Byzantine robustness\n    @tff.tf_computation\n    def server_update(server_model, client_updates):\n        \"\"\"Aggregate client updates with Byzantine resistance\"\"\"\n        \n        if byzantine_robust:\n            # Use Byzantine-robust aggregation\n            robust_agg = ByzantineRobustAggregation(\n                num_clients=num_clients,\n                byzantine_ratio=0.2\n            )\n            \n            # Convert to numpy for aggregation\n            updates_np = [tf.nest.flatten(u) for u in client_updates]\n            updates_np = [np.concatenate([v.numpy().flatten() for v in u]) \n                         for u in updates_np]\n            \n            # Apply Krum or Trimmed Mean\n            aggregated_flat = robust_agg.trimmed_mean_aggregation(updates_np)\n            \n            # Reshape back to model structure\n            aggregated = tf.nest.pack_sequence_as(\n                server_model,\n                tf.split(aggregated_flat, \n                        [tf.size(v).numpy() for v in tf.nest.flatten(server_model)])\n            )\n        else:\n            # Standard FedAvg\n            aggregated = tf.nest.map_structure(\n                lambda *x: tf.reduce_mean(x, axis=0),\n                *client_updates\n            )\n        \n        # Update server model\n        for server_var, update in zip(server_model, aggregated):\n            server_var.assign(update)\n        \n        return server_model\n    \n    return tff.templates.IterativeProcess(\n        initialize_fn=server_init,\n        next_fn=lambda server, clients: server_update(\n            server,\n            [client_update(server, c, 0.01) for c in clients]\n        )\n    )\n\n# Example usage\nif __name__ == \"__main__\":\n    # Simulate client updates (some potentially malicious)\n    num_clients = 10\n    model_dim = 1000\n    \n    # Normal client updates\n    normal_updates = [\n        np.random.randn(model_dim) * 0.1 for _ in range(7)\n    ]\n    \n    # Malicious updates (larger magnitude)\n    malicious_updates = [\n        np.random.randn(model_dim) * 10.0 for _ in range(3)\n    ]\n    \n    all_updates = normal_updates + malicious_updates\n    np.random.shuffle(all_updates)\n    \n    # Test Byzantine-robust aggregation\n    robust_agg = ByzantineRobustAggregation(\n        num_clients=num_clients,\n        byzantine_ratio=0.3\n    )\n    \n    print(\"Testing aggregation methods...\")\n    \n    # Standard mean (vulnerable)\n    standard_mean = np.mean(all_updates, axis=0)\n    print(f\"Standard mean norm: {np.linalg.norm(standard_mean):.4f}\")\n    \n    # Krum (Byzantine-robust)\n    krum_result = robust_agg.krum_aggregation(all_updates, n_select=1)\n    print(f\"Krum aggregation norm: {np.linalg.norm(krum_result):.4f}\")\n    \n    # Trimmed mean (Byzantine-robust)\n    trimmed_mean = robust_agg.trimmed_mean_aggregation(all_updates, trim_ratio=0.3)\n    print(f\"Trimmed mean norm: {np.linalg.norm(trimmed_mean):.4f}\")\n    \n    # Median (highly robust)\n    median_result = robust_agg.median_aggregation(all_updates)\n    print(f\"Median aggregation norm: {np.linalg.norm(median_result):.4f}\")\n    \n    print(\"\\nByzantine-robust methods successfully mitigate malicious updates.\")"
+      },
+      "tools": [
+        {
+          "name": "TensorFlow Federated",
+          "type": "Federated Learning Framework",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "PySyft",
+          "type": "Secure & Private ML",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Flower (flwr)",
+          "type": "Federated Learning",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.2.1 - Information transfer policies and procedures",
+        "A.14.2.9 - System acceptance testing",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-7 - Monitoring for unauthorized activity",
+        "RS.MI-3 - Newly identified vulnerabilities are mitigated"
+      ],
+      "validation_steps": [
+        "Implement Krum or Trimmed Mean aggregation",
+        "Add differential privacy noise to client updates",
+        "Configure Byzantine tolerance ratio (e.g., 20-30%)",
+        "Test with simulated malicious clients",
+        "Verify aggregation rejects outlier updates",
+        "Validate privacy guarantees (epsilon, delta)",
+        "Monitor convergence with Byzantine resistance enabled"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected model behavior on specific input patterns (backdoor triggers)",
+      "Sudden accuracy degradation on validation data after retraining",
+      "High confidence predictions on misclassified samples",
+      "Activation clustering reveals isolated, suspicious sample groups",
+      "Model predictions diverge from baseline/previous versions",
+      "Training data distribution shifts detected in statistical tests",
+      "Unusual contributor activity in training data repositories",
+      "Outlier samples with abnormal feature values or labels"
+    ],
+    "log_queries": [
+      {
+        "siem": "AWS CloudWatch Logs Insights (SageMaker)",
+        "query": "# Detect anomalous training job metrics\nfields @timestamp, TrainingJobName, TrainingJobStatus, FinalMetricValue, TrainingTimeInSeconds\n| filter MetricName = \"validation:accuracy\" and FinalMetricValue < 0.80\n| filter TrainingTimeInSeconds < 300  # Suspiciously fast training\n| stats count() as AnomalousJobs by TrainingJobName\n| filter AnomalousJobs > 1\n| sort @timestamp desc"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect model poisoning via training data access anomalies\nAzureActivity\n| where OperationNameValue =~ \"MICROSOFT.MACHINELEARNINGSERVICES/WORKSPACES/DATASETS/READ\"\n| where ActivityStatusValue == \"Success\"\n| extend UserIdentity = tostring(parse_json(Authorization).evidence.principalId)\n| summarize DatasetAccessCount = count(), \n            UniqueDatasets = dcount(Resource),\n            TimeRange = make_set(TimeGenerated)\n         by UserIdentity, CallerIpAddress\n| where DatasetAccessCount > 50 or UniqueDatasets > 10  // Suspicious bulk access\n| extend RiskScore = DatasetAccessCount * UniqueDatasets\n| where RiskScore > 500\n| project TimeGenerated, UserIdentity, CallerIpAddress, DatasetAccessCount, UniqueDatasets, RiskScore\n| order by RiskScore desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=ml_training sourcetype=sagemaker_logs\n| eval prediction_confidence = tonumber(confidence)\n| eval prediction_correct = if(predicted_label == true_label, 1, 0)\n| stats avg(prediction_confidence) as avg_confidence,\n        avg(prediction_correct) as accuracy,\n        count as sample_count\n     by model_version, predicted_label\n| where avg_confidence > 0.95 AND accuracy < 0.90\n| eval backdoor_score = avg_confidence * (1 - accuracy) * 100\n| where backdoor_score > 10\n| table model_version, predicted_label, avg_confidence, accuracy, backdoor_score\n| sort - backdoor_score"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"aws.sagemaker\" AND event.action: \"CreateTrainingJob\"\nAND (sagemaker.training_job.input_data_config.data_source.s3_data_source.s3_uri: *github* \n     OR sagemaker.training_job.input_data_config.data_source.s3_data_source.s3_uri: *public*)\n| stats count() as untrusted_data_jobs by sagemaker.training_job.training_job_name, user.name\n| where untrusted_data_jobs > 0"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Adversarial Robustness Toolbox (ART)",
+        "type": "ML Security Testing",
+        "usage": "python -m art.attacks.poisoning.backdoor_attack --model model.h5 --dataset cifar10 --attack-type label-flip"
+      },
+      {
+        "name": "CleverHans",
+        "type": "Adversarial Examples Library",
+        "usage": "Test model robustness against poisoning and evasion attacks"
+      },
+      {
+        "name": "Foolbox",
+        "type": "Adversarial Attack Framework",
+        "usage": "Benchmark model resilience to backdoor triggers and adversarial perturbations"
+      },
+      {
+        "name": "Neural Cleanse",
+        "type": "Backdoor Detection",
+        "usage": "Detect and reverse-engineer backdoor triggers in trained models"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Autonomous Vehicles",
+      "Cybersecurity",
+      "Government",
+      "Defense"
+    ],
+    "compliance": [
+      "NIST AI RMF 1.0 (AI-600-1)",
+      "EU AI Act (High-Risk Systems)",
+      "ISO/IEC 42001 - AI Management System",
+      "ISO 27001 (A.14.2.7, A.12.3.1)",
+      "GDPR Article 22 (Automated Decision-Making)",
+      "CCPA (Automated Decision-Making)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Edge",
+      "On-Premise",
+      "Hybrid",
+      "Federated"
+    ],
+    "data_classification": [
+      "Highly Confidential",
+      "Confidential",
+      "Internal"
+    ]
+  }
+}

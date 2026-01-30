@@ -1,0 +1,370 @@
+{
+  "id": "STRIDE-CLOUD-S3-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration",
+      "A02:2021 - Cryptographic Failures"
+    ],
+    "mitre_attack": [
+      "T1530 - Data from Cloud Storage Object",
+      "T1078.004 - Valid Accounts: Cloud Accounts",
+      "T1213.003 - Data from Information Repositories: Code Repositories"
+    ],
+    "cwe": [
+      "CWE-732 - Incorrect Permission Assignment for Critical Resource",
+      "CWE-284 - Improper Access Control",
+      "CWE-668 - Exposure of Resource to Wrong Sphere"
+    ]
+  },
+  "threat": {
+    "title": "AWS S3 Bucket Public Exposure via ACL and Bucket Policy Misconfiguration",
+    "description": "Misconfigured Amazon S3 bucket permissions allow unauthorized public access to sensitive data through overly permissive Access Control Lists (ACLs), bucket policies, or disabled Block Public Access settings. This is one of the most common cloud security vulnerabilities, resulting in massive data breaches affecting millions of users and leading to regulatory fines exceeding hundreds of millions of dollars.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "AWS S3",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Amazon Web Services (AWS)",
+    "dependencies": ["AWS IAM", "AWS CloudTrail", "AWS Config", "AWS Access Analyzer"],
+    "related_frameworks": ["Azure Blob Storage", "Google Cloud Storage", "MinIO", "DigitalOcean Spaces"]
+  },
+  "attack": {
+    "scenario": "1. Attacker uses automated scanning tools (e.g., S3Scanner, Bucket Stream) to discover publicly accessible S3 buckets by enumerating common naming patterns or monitoring DNS/certificate transparency logs\n2. Identifies misconfigured bucket with public read permissions via overly permissive ACL (e.g., 'AllUsers' or 'AuthenticatedUsers' grants) or bucket policy with 's3:GetObject' allowed for Principal '*'\n3. Lists bucket contents using AWS CLI: `aws s3 ls s3://target-bucket --no-sign-request`\n4. Downloads sensitive files containing customer PII, credentials, API keys, database backups, or proprietary business data\n5. Exfiltrates data to attacker-controlled infrastructure for exploitation, sale on dark web, or extortion\n6. May also upload malicious files to writable buckets to host malware, deface applications, or inject supply chain attacks",
+    "prerequisites": [
+      "S3 bucket has public read or write permissions enabled via ACL or bucket policy",
+      "Block Public Access settings are disabled or not configured at account or bucket level",
+      "Bucket contains sensitive data (PII, credentials, backups, intellectual property)",
+      "No encryption at rest or weak IAM policies allowing overly broad access",
+      "Missing CloudTrail logging or S3 access logging for detection"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CWE-732",
+        "description": "Incorrect Permission Assignment for Critical Resource - The software specifies permissions for a security-critical resource in a way that allows that resource to be read or modified by unintended actors",
+        "cvss_score": 9.1,
+        "published_date": "2008-09-09"
+      },
+      {
+        "cve_id": "CWE-284",
+        "description": "Improper Access Control - The software does not restrict or incorrectly restricts access to a resource from an unauthorized actor",
+        "cvss_score": 8.6,
+        "published_date": "2006-07-19"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Capital One 2019 Data Breach (Paige Thompson)",
+        "date": "2019-03-22",
+        "impact": "106 million customers affected (100M US, 6M Canada); 140,000 Social Security numbers and 80,000 bank account numbers exposed; $80M regulatory fine from OCC, $190M customer lawsuit settlement; attackers exploited misconfigured WAF to access IAM role with excessive S3 permissions",
+        "root_cause": "Server-side request forgery (SSRF) vulnerability in misconfigured web application firewall leading to IAM role credential theft, which provided unauthorized access to S3 buckets containing sensitive customer data",
+        "source_url": "https://www.justice.gov/usao-wdwa/united-states-v-paige-thompson"
+      },
+      {
+        "incident": "Twilio TaskRouter SDK S3 Bucket Exposure",
+        "date": "2020-07-19",
+        "impact": "TaskRouter JavaScript SDK v1.20 compromised with malicious code; S3 bucket had public write permissions since 2015; attackers injected Magecart-style malvertising code; no customer data breach confirmed but supply chain attack vector exposed",
+        "root_cause": "Publicly writable S3 bucket hosting production JavaScript SDK since 2015 due to misconfigured access policy that was not properly reset after troubleshooting",
+        "source_url": "https://www.darkreading.com/cloud-security/twilio-security-incident-shows-danger-of-misconfigured-s3-buckets"
+      },
+      {
+        "incident": "Facebook/Instagram Third-Party App Data Exposure (Cultura Colectiva & At The Pool)",
+        "date": "2019-04-03",
+        "impact": "540+ million Facebook user records exposed (146GB dataset); 22,000 plaintext passwords from 'At The Pool' app; data included comments, likes, reactions, account names, FB IDs, email addresses, and relationship status stored without password protection",
+        "root_cause": "Two third-party app developers stored Facebook user data in publicly accessible S3 buckets configured with public read permissions and no authentication requirements",
+        "source_url": "https://www.upguard.com/breaches/facebook-user-data-leak"
+      },
+      {
+        "incident": "Securitas Direct S3 Data Exposure",
+        "date": "2021-02-01",
+        "impact": "1.5 million files (approximately 3TB) of security company data exposed without authentication; included employee and customer information, alarm codes, and security system configurations",
+        "root_cause": "S3 bucket left open without any authentication requirements due to missing Block Public Access settings and overly permissive bucket policy",
+        "source_url": "https://www.resourcely.io/post/incident-review-s3-buckets-exposed"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "128088",
+        "bounty_amount": 2500,
+        "severity": "Critical",
+        "summary": "AWS S3 bucket writeable for authenticated AWS users - any authenticated AWS user could write to the bucket without read access, enabling potential data injection attacks"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "The State of S3 Bucket Security in 2023",
+        "authors": ["Palo Alto Networks Unit 42"],
+        "published_date": "2023-08-15",
+        "source_url": "https://unit42.paloaltonetworks.com/",
+        "key_finding": "31% of S3 buckets remain publicly accessible, with misconfigurations being the leading cause of cloud data breaches"
+      },
+      {
+        "title": "Cloud Security Report: AWS Misconfiguration Analysis",
+        "authors": ["Qualys TotalCloud"],
+        "published_date": "2023-12-18",
+        "source_url": "https://blog.qualys.com/vulnerabilities-threat-research/2023/12/18/hidden-risks-of-amazon-s3-misconfigurations",
+        "key_finding": "S3 bucket misconfigurations account for 70% of critical cloud security findings, with public read access being the most common issue"
+      },
+      {
+        "title": "A Systematic Analysis of the Capital One Data Breach: Critical Lessons Learned",
+        "authors": ["MIT Computer Science & AI Lab"],
+        "published_date": "2023-06-01",
+        "source_url": "https://cams.mit.edu/wp-content/uploads/capitalonedatapaper.pdf",
+        "key_finding": "Capital One breach demonstrated cascading failure of least privilege principle: SSRF vulnerability → overly permissive IAM role → unrestricted S3 access"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Enable S3 Block Public Access at Account and Bucket Level",
+      "description": "AWS S3 Block Public Access provides four settings that work as a centralized control to prevent public access to S3 buckets and objects regardless of how they were created. This should be enabled by default at the account level and only selectively disabled for specific buckets with documented business justification.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "AWS CLI",
+        "code": "#!/bin/bash\n# Enable Block Public Access at AWS Account Level (applies to all buckets)\naws s3control put-public-access-block \\\n  --account-id $(aws sts get-caller-identity --query Account --output text) \\\n  --public-access-block-configuration \\\n    BlockPublicAcls=true,\\\n    IgnorePublicAcls=true,\\\n    BlockPublicPolicy=true,\\\n    RestrictPublicBuckets=true\n\necho \"✓ Account-level Block Public Access enabled\"\n\n# Enable Block Public Access for specific bucket\nBUCKET_NAME=\"my-sensitive-data-bucket\"\n\naws s3api put-public-access-block \\\n  --bucket \"$BUCKET_NAME\" \\\n  --public-access-block-configuration \\\n    BlockPublicAcls=true,\\\n    IgnorePublicAcls=true,\\\n    BlockPublicPolicy=true,\\\n    RestrictPublicBuckets=true\n\necho \"✓ Bucket-level Block Public Access enabled for $BUCKET_NAME\"\n\n# Verify configuration\naws s3api get-public-access-block --bucket \"$BUCKET_NAME\"\n\n# Use AWS CloudFormation for Infrastructure as Code\ncat > s3-block-public-access.yaml << 'EOF'\nAWSTemplateFormatVersion: '2010-09-09'\nDescription: 'S3 Bucket with Block Public Access Enabled'\n\nResources:\n  SecureBucket:\n    Type: 'AWS::S3::Bucket'\n    Properties:\n      BucketName: !Sub '${AWS::StackName}-secure-bucket'\n      PublicAccessBlockConfiguration:\n        BlockPublicAcls: true\n        BlockPublicPolicy: true\n        IgnorePublicAcls: true\n        RestrictPublicBuckets: true\n      BucketEncryption:\n        ServerSideEncryptionConfiguration:\n          - ServerSideEncryptionByDefault:\n              SSEAlgorithm: 'AES256'\n      VersioningConfiguration:\n        Status: Enabled\n      LoggingConfiguration:\n        DestinationBucketName: !Ref LoggingBucket\n        LogFilePrefix: 'access-logs/'\n      Tags:\n        - Key: Environment\n          Value: Production\n        - Key: DataClassification\n          Value: Confidential\n\n  LoggingBucket:\n    Type: 'AWS::S3::Bucket'\n    Properties:\n      BucketName: !Sub '${AWS::StackName}-logs'\n      PublicAccessBlockConfiguration:\n        BlockPublicAcls: true\n        BlockPublicPolicy: true\n        IgnorePublicAcls: true\n        RestrictPublicBuckets: true\n      LifecycleConfiguration:\n        Rules:\n          - Id: DeleteOldLogs\n            Status: Enabled\n            ExpirationInDays: 90\nEOF\n\necho \"✓ CloudFormation template created\"\naws cloudformation deploy --template-file s3-block-public-access.yaml --stack-name secure-s3-stack"
+      },
+      "tools": [
+        {
+          "name": "AWS S3 Block Public Access",
+          "type": "Native AWS Service",
+          "cost": "Free (included with S3)"
+        },
+        {
+          "name": "AWS CloudFormation",
+          "type": "Infrastructure as Code",
+          "cost": "Free (pay only for resources created)"
+        },
+        {
+          "name": "AWS Config Rule: s3-bucket-public-read-prohibited",
+          "type": "Compliance Monitoring",
+          "cost": "$0.003 per configuration item recorded"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.1.2 - Access to networks and network services",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.AC-3 - Remote access is managed",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Verify Block Public Access is enabled at account level using AWS CLI or console",
+        "Test that attempts to add public ACLs or policies are rejected",
+        "Use AWS Config rule s3-bucket-public-read-prohibited to monitor compliance",
+        "Validate with AWS Trusted Advisor S3 Bucket Permissions check",
+        "Run AWS Access Analyzer to identify any remaining public buckets"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Least Privilege S3 Bucket Policies with IAM Conditions",
+      "description": "Replace overly permissive bucket policies with restrictive IAM-based access control using conditions for IP ranges, VPC endpoints, MFA, and time-based restrictions. Remove wildcard (*) principals and implement explicit deny statements for public access.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "json",
+        "framework": "AWS S3 Bucket Policy",
+        "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Id\": \"RestrictiveS3BucketPolicy\",\n  \"Statement\": [\n    {\n      \"Sid\": \"DenyPublicAccess\",\n      \"Effect\": \"Deny\",\n      \"Principal\": \"*\",\n      \"Action\": \"s3:*\",\n      \"Resource\": [\n        \"arn:aws:s3:::my-secure-bucket\",\n        \"arn:aws:s3:::my-secure-bucket/*\"\n      ],\n      \"Condition\": {\n        \"StringNotEquals\": {\n          \"aws:PrincipalAccount\": \"123456789012\"\n        }\n      }\n    },\n    {\n      \"Sid\": \"AllowVPCEndpointAccessOnly\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::123456789012:role/MyApplicationRole\"\n      },\n      \"Action\": [\n        \"s3:GetObject\",\n        \"s3:GetObjectVersion\",\n        \"s3:ListBucket\"\n      ],\n      \"Resource\": [\n        \"arn:aws:s3:::my-secure-bucket\",\n        \"arn:aws:s3:::my-secure-bucket/*\"\n      ],\n      \"Condition\": {\n        \"StringEquals\": {\n          \"aws:SourceVpce\": \"vpce-1a2b3c4d\",\n          \"aws:SourceVpc\": \"vpc-12345678\"\n        }\n      }\n    },\n    {\n      \"Sid\": \"RequireMFAForSensitiveOperations\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::123456789012:role/DataAdminRole\"\n      },\n      \"Action\": [\n        \"s3:DeleteObject\",\n        \"s3:DeleteObjectVersion\",\n        \"s3:PutBucketPolicy\"\n      ],\n      \"Resource\": [\n        \"arn:aws:s3:::my-secure-bucket\",\n        \"arn:aws:s3:::my-secure-bucket/*\"\n      ],\n      \"Condition\": {\n        \"Bool\": {\n          \"aws:MultiFactorAuthPresent\": \"true\"\n        }\n      }\n    },\n    {\n      \"Sid\": \"RestrictToTrustedIPRanges\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::123456789012:role/DataAnalystRole\"\n      },\n      \"Action\": [\n        \"s3:GetObject\",\n        \"s3:ListBucket\"\n      ],\n      \"Resource\": [\n        \"arn:aws:s3:::my-secure-bucket\",\n        \"arn:aws:s3:::my-secure-bucket/*\"\n      ],\n      \"Condition\": {\n        \"IpAddress\": {\n          \"aws:SourceIp\": [\n            \"203.0.113.0/24\",\n            \"198.51.100.0/24\"\n          ]\n        },\n        \"DateGreaterThan\": {\n          \"aws:CurrentTime\": \"2024-01-01T00:00:00Z\"\n        },\n        \"DateLessThan\": {\n          \"aws:CurrentTime\": \"2026-12-31T23:59:59Z\"\n        }\n      }\n    },\n    {\n      \"Sid\": \"EnforceEncryptionInTransit\",\n      \"Effect\": \"Deny\",\n      \"Principal\": \"*\",\n      \"Action\": \"s3:*\",\n      \"Resource\": \"arn:aws:s3:::my-secure-bucket/*\",\n      \"Condition\": {\n        \"Bool\": {\n          \"aws:SecureTransport\": \"false\"\n        }\n      }\n    },\n    {\n      \"Sid\": \"RequireServerSideEncryption\",\n      \"Effect\": \"Deny\",\n      \"Principal\": \"*\",\n      \"Action\": \"s3:PutObject\",\n      \"Resource\": \"arn:aws:s3:::my-secure-bucket/*\",\n      \"Condition\": {\n        \"StringNotEquals\": {\n          \"s3:x-amz-server-side-encryption\": \"AES256\"\n        }\n      }\n    }\n  ]\n}"
+      },
+      "tools": [
+        {
+          "name": "AWS IAM Policy Simulator",
+          "type": "Policy Testing Tool",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS IAM Access Analyzer",
+          "type": "Policy Validation",
+          "cost": "$0.20 per policy analyzed"
+        },
+        {
+          "name": "Checkov (Bridgecrew)",
+          "type": "IaC Security Scanner",
+          "cost": "Free (OSS) / Enterprise pricing available"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.1.1 - Access control policy",
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Identities and credentials are issued, managed, verified, revoked, and audited",
+        "PR.AC-4 - Access permissions and authorizations are managed"
+      ],
+      "validation_steps": [
+        "Use IAM Policy Simulator to test access from unauthorized principals",
+        "Verify MFA enforcement by attempting sensitive operations without MFA",
+        "Test VPC endpoint restrictions from EC2 instances outside the VPC",
+        "Use AWS Access Analyzer to check for external access paths",
+        "Review CloudTrail logs for denied S3 API calls to validate policy enforcement"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy AWS Access Analyzer for S3 and Automated Remediation",
+      "description": "Use AWS Access Analyzer to continuously monitor S3 buckets for external access and integrate with AWS Lambda for automated remediation of public bucket exposures. Implement detective controls and automated response workflows.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "AWS Lambda + EventBridge",
+        "code": "#!/usr/bin/env python3\n# Lambda function to automatically remediate public S3 buckets\n# Triggered by EventBridge rule monitoring AWS Access Analyzer findings\n\nimport json\nimport boto3\nimport os\nfrom datetime import datetime\n\ns3_client = boto3.client('s3')\nsns_client = boto3.client('sns')\naccess_analyzer = boto3.client('accessanalyzer')\n\nSNS_TOPIC_ARN = os.environ['SNS_TOPIC_ARN']\nAUTO_REMEDIATE = os.environ.get('AUTO_REMEDIATE', 'true').lower() == 'true'\n\ndef lambda_handler(event, context):\n    \"\"\"\n    Automatically remediate public S3 buckets detected by Access Analyzer\n    \"\"\"\n    print(f\"Event received: {json.dumps(event)}\")\n    \n    # Parse Access Analyzer finding\n    detail = event.get('detail', {})\n    finding_type = detail.get('findingType', '')\n    resource_type = detail.get('resourceType', '')\n    \n    if resource_type != 'AWS::S3::Bucket':\n        print(f\"Skipping non-S3 resource: {resource_type}\")\n        return\n    \n    if finding_type != 'ExternalAccess':\n        print(f\"Skipping non-external access finding: {finding_type}\")\n        return\n    \n    # Extract bucket ARN and name\n    resource_arn = detail.get('resource', '')\n    bucket_name = resource_arn.split(':')[-1]\n    finding_id = detail.get('id', '')\n    principal = detail.get('principal', {})\n    \n    print(f\"Public S3 bucket detected: {bucket_name}\")\n    print(f\"Finding ID: {finding_id}\")\n    print(f\"External principal: {principal}\")\n    \n    # Get current bucket configuration\n    try:\n        public_access_block = s3_client.get_public_access_block(Bucket=bucket_name)\n        current_config = public_access_block['PublicAccessBlockConfiguration']\n    except s3_client.exceptions.NoSuchPublicAccessBlockConfiguration:\n        current_config = None\n    \n    # Prepare remediation actions\n    actions_taken = []\n    \n    if AUTO_REMEDIATE:\n        # Enable Block Public Access\n        try:\n            s3_client.put_public_access_block(\n                Bucket=bucket_name,\n                PublicAccessBlockConfiguration={\n                    'BlockPublicAcls': True,\n                    'IgnorePublicAcls': True,\n                    'BlockPublicPolicy': True,\n                    'RestrictPublicBuckets': True\n                }\n            )\n            actions_taken.append('Enabled Block Public Access')\n            print(f\"✓ Block Public Access enabled for {bucket_name}\")\n        except Exception as e:\n            error_msg = f\"Failed to enable Block Public Access: {str(e)}\"\n            actions_taken.append(error_msg)\n            print(error_msg)\n        \n        # Check and remediate bucket ACL\n        try:\n            acl = s3_client.get_bucket_acl(Bucket=bucket_name)\n            public_grants = [g for g in acl['Grants'] \n                           if g['Grantee'].get('Type') == 'Group' and \n                              ('AllUsers' in g['Grantee'].get('URI', '') or \n                               'AuthenticatedUsers' in g['Grantee'].get('URI', ''))]\n            \n            if public_grants:\n                # Remove public ACL grants (set to private)\n                s3_client.put_bucket_acl(Bucket=bucket_name, ACL='private')\n                actions_taken.append(f\"Removed {len(public_grants)} public ACL grants\")\n                print(f\"✓ Public ACL grants removed from {bucket_name}\")\n        except Exception as e:\n            error_msg = f\"Failed to remediate ACL: {str(e)}\"\n            actions_taken.append(error_msg)\n            print(error_msg)\n        \n        # Review bucket policy for public access\n        try:\n            policy = s3_client.get_bucket_policy(Bucket=bucket_name)\n            policy_doc = json.loads(policy['Policy'])\n            \n            # Check for wildcard principals\n            has_public_policy = False\n            for statement in policy_doc.get('Statement', []):\n                principal = statement.get('Principal', {})\n                if principal == '*' or principal == {'AWS': '*'}:\n                    has_public_policy = True\n                    break\n            \n            if has_public_policy:\n                actions_taken.append('WARNING: Bucket policy contains wildcard principal - manual review required')\n                print(f\"⚠ Bucket policy for {bucket_name} requires manual review\")\n        except s3_client.exceptions.NoSuchBucketPolicy:\n            actions_taken.append('No bucket policy present')\n        except Exception as e:\n            error_msg = f\"Failed to check bucket policy: {str(e)}\"\n            actions_taken.append(error_msg)\n            print(error_msg)\n    \n    # Send SNS notification\n    notification = {\n        'timestamp': datetime.utcnow().isoformat(),\n        'severity': 'CRITICAL',\n        'finding_type': finding_type,\n        'bucket_name': bucket_name,\n        'finding_id': finding_id,\n        'external_principal': principal,\n        'auto_remediate_enabled': AUTO_REMEDIATE,\n        'actions_taken': actions_taken,\n        'current_config': current_config,\n        'recommendation': 'Review bucket access requirements and validate remediation',\n        'documentation': 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html'\n    }\n    \n    try:\n        sns_client.publish(\n            TopicArn=SNS_TOPIC_ARN,\n            Subject=f'[CRITICAL] Public S3 Bucket Detected: {bucket_name}',\n            Message=json.dumps(notification, indent=2)\n        )\n        print(f\"✓ SNS notification sent\")\n    except Exception as e:\n        print(f\"Failed to send SNS notification: {str(e)}\")\n    \n    return {\n        'statusCode': 200,\n        'body': json.dumps(notification)\n    }\n\n# EventBridge Rule (CloudFormation template)\n\"\"\"\nAWSTemplateFormatVersion: '2010-09-09'\nDescription: 'Automated S3 Public Bucket Remediation'\n\nResources:\n  AccessAnalyzer:\n    Type: 'AWS::AccessAnalyzer::Analyzer'\n    Properties:\n      AnalyzerName: 'S3PublicAccessAnalyzer'\n      Type: 'ACCOUNT'\n      Tags:\n        - Key: Purpose\n          Value: SecurityAutomation\n  \n  RemediationFunction:\n    Type: 'AWS::Lambda::Function'\n    Properties:\n      FunctionName: 'S3-Public-Bucket-Remediation'\n      Runtime: python3.11\n      Handler: index.lambda_handler\n      Code:\n        ZipFile: |\n          # Paste lambda function code here\n      Environment:\n        Variables:\n          SNS_TOPIC_ARN: !Ref AlertTopic\n          AUTO_REMEDIATE: 'true'\n      Role: !GetAtt RemediationRole.Arn\n      Timeout: 60\n  \n  EventRule:\n    Type: 'AWS::Events::Rule'\n    Properties:\n      Name: 'S3-Public-Access-Analyzer-Findings'\n      Description: 'Trigger remediation for public S3 buckets'\n      EventPattern:\n        source:\n          - 'aws.access-analyzer'\n        detail-type:\n          - 'Access Analyzer Finding'\n        detail:\n          resourceType:\n            - 'AWS::S3::Bucket'\n          findingType:\n            - 'ExternalAccess'\n      State: ENABLED\n      Targets:\n        - Arn: !GetAtt RemediationFunction.Arn\n          Id: 'RemediationLambda'\n  \n  LambdaInvokePermission:\n    Type: 'AWS::Lambda::Permission'\n    Properties:\n      FunctionName: !Ref RemediationFunction\n      Action: 'lambda:InvokeFunction'\n      Principal: 'events.amazonaws.com'\n      SourceArn: !GetAtt EventRule.Arn\n  \n  AlertTopic:\n    Type: 'AWS::SNS::Topic'\n    Properties:\n      DisplayName: 'S3 Security Alerts'\n      Subscription:\n        - Endpoint: 'security-team@example.com'\n          Protocol: email\n  \n  RemediationRole:\n    Type: 'AWS::IAM::Role'\n    Properties:\n      AssumeRolePolicyDocument:\n        Version: '2012-10-17'\n        Statement:\n          - Effect: Allow\n            Principal:\n              Service: lambda.amazonaws.com\n            Action: 'sts:AssumeRole'\n      ManagedPolicyArns:\n        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'\n      Policies:\n        - PolicyName: S3RemediationPolicy\n          PolicyDocument:\n            Version: '2012-10-17'\n            Statement:\n              - Effect: Allow\n                Action:\n                  - 's3:PutPublicAccessBlock'\n                  - 's3:GetPublicAccessBlock'\n                  - 's3:GetBucketAcl'\n                  - 's3:PutBucketAcl'\n                  - 's3:GetBucketPolicy'\n                  - 's3:ListAllMyBuckets'\n                Resource: '*'\n              - Effect: Allow\n                Action:\n                  - 'sns:Publish'\n                Resource: !Ref AlertTopic\n              - Effect: Allow\n                Action:\n                  - 'access-analyzer:ListFindings'\n                  - 'access-analyzer:GetFinding'\n                Resource: '*'\n\"\"\""
+      },
+      "tools": [
+        {
+          "name": "AWS Access Analyzer",
+          "type": "Continuous Monitoring",
+          "cost": "$0.20 per policy analyzed; free for external access findings"
+        },
+        {
+          "name": "AWS Lambda",
+          "type": "Automated Remediation",
+          "cost": "$0.20 per 1M requests + $0.0000166667 per GB-second"
+        },
+        {
+          "name": "AWS EventBridge",
+          "type": "Event-Driven Automation",
+          "cost": "$1.00 per million events"
+        },
+        {
+          "name": "AWS SNS",
+          "type": "Alerting",
+          "cost": "$0.50 per 1M notifications"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.4 - Assessment of and decision on information security events",
+        "A.16.1.5 - Response to information security incidents"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "DE.CM-7 - Monitoring for unauthorized personnel, connections, devices, and software is performed",
+        "RS.RP-1 - Response plan is executed during or after an incident"
+      ],
+      "validation_steps": [
+        "Deploy Access Analyzer and wait for initial scan completion (up to 30 minutes)",
+        "Create test bucket with public access to trigger finding",
+        "Verify EventBridge rule triggers Lambda function",
+        "Confirm Lambda successfully enables Block Public Access",
+        "Validate SNS notification delivery to security team",
+        "Review CloudWatch Logs for function execution details",
+        "Test manual override capability for legitimate public buckets"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "S3 GetObject API calls from unexpected or foreign IP addresses",
+      "Large volume of ListBucket operations from unknown AWS accounts",
+      "S3 PutBucketAcl or PutBucketPolicy operations making buckets public",
+      "Access denied errors followed by successful access after permission changes",
+      "Data exfiltration patterns: high volume GetObject requests in short time window",
+      "S3 PutObject operations from unauthorized sources to writable buckets"
+    ],
+    "log_queries": [
+      {
+        "siem": "AWS CloudTrail + Athena (SQL)",
+        "query": "-- Detect S3 GetObject requests from public/non-corporate IP addresses\n-- Run in Amazon Athena against CloudTrail logs table\n\nSELECT \n  eventtime,\n  eventname,\n  sourceipaddress,\n  useridentity.principalid,\n  requestparameters,\n  json_extract_scalar(requestparameters, '$.bucketName') as bucket_name,\n  json_extract_scalar(requestparameters, '$.key') as object_key,\n  errorcode,\n  errormessage\nFROM cloudtrail_logs\nWHERE \n  eventname IN ('GetObject', 'ListBucket', 'GetBucketAcl', 'GetBucketPolicy')\n  AND eventsource = 's3.amazonaws.com'\n  AND year = '2026' \n  AND month = '01'\n  -- Exclude corporate IP ranges\n  AND sourceipaddress NOT LIKE '10.%'\n  AND sourceipaddress NOT LIKE '172.16.%'\n  AND sourceipaddress NOT LIKE '192.168.%'\n  AND sourceipaddress NOT IN ('203.0.113.0', '198.51.100.0')\n  -- Focus on unauthenticated or suspicious access\n  AND (\n    useridentity.principalid = 'ANONYMOUS_PRINCIPAL'\n    OR useridentity.accountid != '123456789012'  -- Replace with your AWS account ID\n  )\nORDER BY eventtime DESC\nLIMIT 1000;"
+      },
+      {
+        "siem": "AWS CloudWatch Insights (CloudWatch Logs Insights Query Language)",
+        "query": "# Detect bucket permission changes that enable public access\n# Query CloudTrail logs ingested into CloudWatch Logs\n\nfields @timestamp, eventName, userIdentity.principalId, sourceIPAddress, requestParameters.bucketName, requestParameters.publicAccessBlockConfiguration\n| filter eventSource = \"s3.amazonaws.com\"\n| filter eventName in [\n    \"PutBucketAcl\", \n    \"PutBucketPolicy\", \n    \"DeletePublicAccessBlock\",\n    \"PutPublicAccessBlock\"\n  ]\n| filter (\n    requestParameters.publicAccessBlockConfiguration.blockPublicAcls = false\n    or requestParameters.publicAccessBlockConfiguration.blockPublicPolicy = false\n    or eventName = \"DeletePublicAccessBlock\"\n    or requestParameters.AccessControlPolicy.AccessControlList.Grant.Grantee.URI like \"AllUsers\"\n  )\n| sort @timestamp desc\n| limit 100"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=aws_cloudtrail sourcetype=aws:cloudtrail eventSource=s3.amazonaws.com\n  (eventName=GetObject OR eventName=ListBucket OR eventName=GetBucketAcl)\n  | where NOT cidrmatch(\"10.0.0.0/8\", sourceIPAddress) \n      AND NOT cidrmatch(\"172.16.0.0/12\", sourceIPAddress)\n      AND NOT cidrmatch(\"192.168.0.0/16\", sourceIPAddress)\n  | eval bucket_name=spath(requestParameters, \"bucketName\")\n  | eval object_key=spath(requestParameters, \"key\")\n  | eval principal_type=spath(userIdentity, \"type\")\n  | where principal_type=\"Anonymous\" OR userIdentity.accountId!=\"123456789012\"\n  | stats count dc(sourceIPAddress) as unique_ips dc(object_key) as objects_accessed \n      by bucket_name, sourceIPAddress, userIdentity.principalId\n  | where count > 100 OR objects_accessed > 50\n  | sort -count\n  | table _time, bucket_name, sourceIPAddress, userIdentity.principalId, count, objects_accessed, unique_ips"
+      },
+      {
+        "siem": "Elastic SIEM (KQL)",
+        "query": "event.dataset: \"aws.cloudtrail\" \nAND event.action: (\"GetObject\" OR \"ListBucket\" OR \"PutBucketAcl\" OR \"PutBucketPolicy\" OR \"DeletePublicAccessBlock\")\nAND event.provider: \"s3.amazonaws.com\"\nAND (\n  aws.cloudtrail.user_identity.type: \"Anonymous\" \n  OR aws.cloudtrail.user_identity.type: \"AWSService\"\n)\nAND NOT source.ip: (10.0.0.0/8 OR 172.16.0.0/12 OR 192.168.0.0/16)\n| stats count by aws.cloudtrail.request_parameters.bucketName, source.ip, aws.cloudtrail.user_identity.principal_id"
+      }
+    ],
+    "tools": [
+      {
+        "name": "AWS Access Analyzer",
+        "type": "Continuous Detection",
+        "usage": "Automatically scans all S3 buckets and reports external access findings"
+      },
+      {
+        "name": "AWS Trusted Advisor",
+        "type": "Security Assessment",
+        "usage": "Checks S3 Bucket Permissions for public access (available in Business/Enterprise Support)"
+      },
+      {
+        "name": "AWS Config Rules",
+        "type": "Compliance Monitoring",
+        "usage": "Use managed rules: s3-bucket-public-read-prohibited, s3-bucket-public-write-prohibited, s3-bucket-level-public-access-prohibited"
+      },
+      {
+        "name": "S3Scanner",
+        "type": "External Discovery Tool",
+        "usage": "Open-source tool to find publicly accessible S3 buckets: python3 s3scanner.py --bucket target-bucket"
+      },
+      {
+        "name": "CloudMapper",
+        "type": "Cloud Security Visualization",
+        "usage": "Visualize AWS environment and identify public S3 buckets: cloudmapper prepare && cloudmapper webserver"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "E-commerce",
+      "SaaS",
+      "Technology",
+      "Telecommunications"
+    ],
+    "compliance": [
+      "DORA (Article 21: ICT Risk Management Framework)",
+      "GDPR Article 32 (Security of Processing)",
+      "GDPR Article 33 (Notification of Data Breach)",
+      "ISO 27001:2022 (A.8.9 - Configuration Management, A.9.1 - Access Control)",
+      "NIST CSF v1.1 (PR.AC-4, PR.DS-5, DE.CM-1, RS.AN-1)",
+      "PCI-DSS 4.0 (Requirement 1.3.1, 7.1.1)",
+      "HIPAA 164.312(a)(1) - Access Control",
+      "SOC 2 Type II (CC6.1 - Logical Access Controls)",
+      "FedRAMP Moderate (AC-3, AC-6)",
+      "CCPA (Data Minimization and Security)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Hybrid Cloud",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Public",
+      "Restricted"
+    ]
+  }
+}

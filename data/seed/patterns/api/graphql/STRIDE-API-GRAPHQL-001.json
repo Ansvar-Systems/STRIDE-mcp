@@ -1,0 +1,342 @@
+{
+  "id": "STRIDE-API-GRAPHQL-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [
+      "API4:2023 - Unrestricted Resource Consumption",
+      "API8:2023 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1499.003 - Application Exhaustion Flood",
+      "T1498.001 - Direct Network Flood"
+    ],
+    "cwe": [
+      "CWE-400 - Uncontrolled Resource Consumption",
+      "CWE-770 - Allocation of Resources Without Limits",
+      "CWE-834 - Excessive Iteration"
+    ]
+  },
+  "threat": {
+    "title": "GraphQL Query Depth and Complexity Attacks Causing Server Overload",
+    "description": "GraphQL APIs without depth and complexity limits allow attackers to craft deeply nested or computationally expensive queries that exhaust server resources, database connections, and memory. These attacks exploit GraphQL's flexible query structure and circular references between types to create exponentially expensive operations that can bring down production services. According to Escape's 2024 State of GraphQL Security Report, 69% of GraphQL API services are susceptible to DoS attacks due to unrestricted resource consumption.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "GraphQL",
+    "versions_affected": ["All versions without query limiting"],
+    "ecosystem": "Node.js",
+    "dependencies": ["graphql", "apollo-server", "@apollo/server", "express-graphql"],
+    "related_frameworks": ["Apollo Server", "GraphQL.js", "GraphQL Yoga", "Mercurius", "TypeGraphQL"]
+  },
+  "attack": {
+    "scenario": "1. Attacker analyzes GraphQL schema using introspection query to identify circular references (e.g., User -> Posts -> Author -> Posts)\n2. Crafts deeply nested query exploiting circular relationships with 20+ levels of nesting\n3. Adds field aliasing to multiply the number of resolver calls (e.g., user1: user(id:1), user2: user(id:1), ...user100)\n4. Sends malicious query to unprotected GraphQL endpoint\n5. Server executes thousands of database queries and resolver functions simultaneously\n6. Server exhausts database connection pool, memory, and CPU resources\n7. Legitimate users experience timeouts and service degradation\n8. Entire service becomes unavailable requiring manual restart",
+    "prerequisites": [
+      "GraphQL API endpoint is publicly accessible",
+      "No query depth limiting middleware configured",
+      "No query complexity analysis in place",
+      "No rate limiting or query cost analysis",
+      "Schema contains circular type references (common pattern)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2023-26144",
+        "description": "Denial of Service in graphql-js package due to insufficient checks when parsing large queries in OverlappingFieldsCanBeMergedRule.ts, allowing attackers to degrade system performance",
+        "cvss_score": 5.3,
+        "published_date": "2023-06-15",
+        "affected_versions": "graphql 16.3.0 - 16.8.0",
+        "patched_version": "graphql >= 16.8.1"
+      },
+      {
+        "cve_id": "CVE-2024-39895",
+        "description": "Directus GraphQL Field Duplication DoS vulnerability triggered by duplicating fields in queries, leading to excessive server resource consumption",
+        "cvss_score": 7.5,
+        "published_date": "2024-07-12",
+        "affected_versions": "Directus < 10.12.0",
+        "patched_version": "Directus >= 10.12.0"
+      },
+      {
+        "cve_id": "CVE-2022-37734",
+        "description": "graphql-java Denial-of-Service vulnerability allowing attackers to craft queries that cause excessive memory and CPU consumption",
+        "cvss_score": 7.5,
+        "published_date": "2022-09-12"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Escape GraphQL Security Report 2024",
+        "date": "2024-11-01",
+        "impact": "69% of 160 surveyed GraphQL API services (110 services) were susceptible to DoS attacks via unrestricted resource consumption. 13,720 total issues identified with 4,527 classified as highly critical. Average of 87 issues per service.",
+        "root_cause": "Lack of query depth limits, complexity analysis, and cost controls across production GraphQL APIs",
+        "source_url": "https://escape.tech/blog/the-state-of-graphql-security-2024/"
+      },
+      {
+        "incident": "GitHub GraphQL API Rate Limiting Implementation",
+        "date": "2017-09-01",
+        "impact": "GitHub implemented node-based query cost analysis after observing abusive queries causing performance degradation",
+        "root_cause": "Complex nested queries against repository and user data causing database overload",
+        "source_url": "https://github.blog/engineering/platform-security/securing-github-api/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "GraphQL-DoS-Example",
+        "bounty_amount": 2500,
+        "severity": "High",
+        "summary": "Deeply nested GraphQL query causing complete service outage via database connection exhaustion"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Securing Your GraphQL API from Malicious Queries",
+        "authors": ["Apollo GraphQL Team"],
+        "published_date": "2023-08-15",
+        "source_url": "https://www.apollographql.com/blog/securing-your-graphql-api-from-malicious-queries",
+        "key_finding": "Query depth can quickly overwhelm backing data sources without guardrails. Circular references enable exponentially expensive queries through nesting."
+      },
+      {
+        "title": "OWASP GraphQL Cheat Sheet - Denial of Service Prevention",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-03-01",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html",
+        "key_finding": "By default, GraphQL query depth and amount can both be unlimited which may lead to DoS attacks. Setting limits on depth and amount is recommended though not natively supported."
+      },
+      {
+        "title": "The State of GraphQL Security 2024",
+        "authors": ["Escape Security Team"],
+        "published_date": "2024-11-01",
+        "source_url": "https://escape.tech/blog/the-state-of-graphql-security-2024/",
+        "key_finding": "69% of GraphQL services vulnerable to DoS. 13.4% of vulnerabilities are specific to GraphQL language. 33% had high-severity issues, 72% medium-severity."
+      },
+      {
+        "title": "Defending Against GraphQL Attacks: A Deep Dive",
+        "authors": ["Ostorlab Security Research"],
+        "published_date": "2024-06-20",
+        "source_url": "https://blog.ostorlab.co/defending-against-graphQL-attacks.html",
+        "key_finding": "Alias overloading combined with depth attacks creates multiplicative resource consumption. Single query can trigger 10,000+ database operations."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Query Depth Limiting with graphql-depth-limit",
+      "description": "Enforce maximum query depth limits to prevent deeply nested queries from executing. The graphql-depth-limit library provides a validation rule that rejects queries exceeding a specified depth threshold before they reach resolvers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Apollo Server 4.x",
+        "code": "const { ApolloServer } = require('@apollo/server');\nconst { startStandaloneServer } = require('@apollo/server/standalone');\nconst depthLimit = require('graphql-depth-limit');\nconst { GraphQLError } = require('graphql');\n\n// Define your schema\nconst typeDefs = `#graphql\n  type User {\n    id: ID!\n    name: String!\n    posts: [Post!]!\n    friends: [User!]!\n  }\n  \n  type Post {\n    id: ID!\n    title: String!\n    author: User!\n    comments: [Comment!]!\n  }\n  \n  type Comment {\n    id: ID!\n    text: String!\n    author: User!\n    post: Post!\n  }\n  \n  type Query {\n    user(id: ID!): User\n    users: [User!]!\n  }\n`;\n\n// Configure Apollo Server with depth limiting\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  validationRules: [\n    // Limit query depth to 7 levels\n    depthLimit(\n      7,\n      { ignore: ['_service', '_entities'] }, // Ignore federation introspection\n      (depths) => {\n        // Custom error handler\n        console.warn('Query depth exceeded:', depths);\n        return new GraphQLError(\n          `Query exceeds maximum depth of 7. Current depth: ${Math.max(...Object.values(depths))}`,\n          {\n            extensions: {\n              code: 'QUERY_DEPTH_EXCEEDED',\n              maxDepth: 7,\n              actualDepth: Math.max(...Object.values(depths))\n            }\n          }\n        );\n      }\n    )\n  ],\n  // Add additional security options\n  introspection: process.env.NODE_ENV !== 'production', // Disable introspection in prod\n  formatError: (formattedError, error) => {\n    // Log security-related errors\n    if (formattedError.extensions?.code === 'QUERY_DEPTH_EXCEEDED') {\n      console.error('Security: Depth limit triggered', {\n        timestamp: new Date().toISOString(),\n        depth: formattedError.extensions.actualDepth\n      });\n    }\n    return formattedError;\n  }\n});\n\n// Start server\nstartStandaloneServer(server, {\n  listen: { port: 4000 }\n}).then(({ url }) => {\n  console.log(`🚀 Server ready at ${url}`);\n  console.log('✓ Query depth limited to 7 levels');\n});"
+      },
+      "tools": [
+        {
+          "name": "graphql-depth-limit",
+          "type": "Query Validation Library",
+          "cost": "Free (Open Source)",
+          "documentation": "https://www.npmjs.com/package/graphql-depth-limit"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.PT-3 - Access to systems and assets is controlled",
+        "DE.CM-1 - Network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Install graphql-depth-limit: npm install graphql-depth-limit",
+        "Add depth limit validation rule to Apollo Server configuration",
+        "Set appropriate max depth (typically 5-10 based on schema)",
+        "Test with nested query exceeding limit (should return error)",
+        "Monitor logs for depth limit violations",
+        "Adjust limit based on legitimate use cases"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Query Complexity Analysis with graphql-validation-complexity",
+      "description": "Assign cost values to fields and types, then calculate total query cost before execution. Reject queries exceeding complexity threshold. This provides more granular control than depth limiting by accounting for resolver performance characteristics.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Apollo Server 4.x",
+        "code": "const { ApolloServer } = require('@apollo/server');\nconst { startStandaloneServer } = require('@apollo/server/standalone');\nconst { createComplexityRule } = require('graphql-validation-complexity');\nconst { GraphQLError } = require('graphql');\n\n// Define cost directives in schema\nconst typeDefs = `#graphql\n  directive @cost(\n    complexity: Int!\n    multipliers: [String!]\n    useMultipliers: Boolean\n  ) on FIELD_DEFINITION\n\n  type User {\n    id: ID! @cost(complexity: 1)\n    name: String! @cost(complexity: 1)\n    email: String! @cost(complexity: 1)\n    # Expensive field: loads all posts from database\n    posts: [Post!]! @cost(complexity: 10, multipliers: [\"first\"], useMultipliers: true)\n    # Very expensive: loads friends and their data\n    friends: [User!]! @cost(complexity: 20, multipliers: [\"first\"], useMultipliers: true)\n  }\n  \n  type Post {\n    id: ID! @cost(complexity: 1)\n    title: String! @cost(complexity: 1)\n    content: String! @cost(complexity: 2)\n    author: User! @cost(complexity: 5)\n    # Expensive: loads comments with pagination\n    comments(first: Int = 10): [Comment!]! @cost(complexity: 10, multipliers: [\"first\"], useMultipliers: true)\n  }\n  \n  type Comment {\n    id: ID! @cost(complexity: 1)\n    text: String! @cost(complexity: 1)\n    author: User! @cost(complexity: 5)\n    post: Post! @cost(complexity: 5)\n  }\n  \n  type Query {\n    user(id: ID!): User @cost(complexity: 2)\n    # Expensive query: loads multiple users\n    users(first: Int = 10): [User!]! @cost(complexity: 5, multipliers: [\"first\"], useMultipliers: true)\n    post(id: ID!): Post @cost(complexity: 2)\n  }\n`;\n\n// Configure complexity analysis\nconst complexityLimit = 1000; // Maximum query cost\n\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  validationRules: [\n    createComplexityRule({\n      scalarCost: 1,          // Cost for scalar fields\n      objectCost: 2,          // Base cost for object types\n      listFactor: 10,         // Multiplier for list fields\n      introspectionListFactor: 2,\n      maximumComplexity: complexityLimit,\n      onCost: (cost) => {\n        console.log('Query complexity:', cost);\n        if (cost > complexityLimit * 0.8) {\n          console.warn('Query approaching complexity limit:', {\n            cost,\n            limit: complexityLimit,\n            timestamp: new Date().toISOString()\n          });\n        }\n      },\n      createError: (cost, documentNode) => {\n        return new GraphQLError(\n          `Query exceeds complexity limit of ${complexityLimit}. Current complexity: ${cost}`,\n          {\n            extensions: {\n              code: 'QUERY_COMPLEXITY_EXCEEDED',\n              maxComplexity: complexityLimit,\n              actualComplexity: cost,\n              recommendation: 'Reduce query depth, remove unnecessary fields, or use pagination'\n            }\n          }\n        );\n      }\n    })\n  ]\n});\n\nstartStandaloneServer(server, {\n  listen: { port: 4000 }\n}).then(({ url }) => {\n  console.log(`🚀 Server ready at ${url}`);\n  console.log(`✓ Query complexity limited to ${complexityLimit}`);\n});"
+      },
+      "tools": [
+        {
+          "name": "graphql-validation-complexity",
+          "type": "Complexity Analysis Library",
+          "cost": "Free (Open Source)",
+          "documentation": "https://www.npmjs.com/package/graphql-validation-complexity"
+        },
+        {
+          "name": "graphql-cost-analysis",
+          "type": "Alternative Complexity Library",
+          "cost": "Free (Open Source)",
+          "documentation": "https://www.npmjs.com/package/graphql-cost-analysis"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.IP-12 - A vulnerability management plan is developed and implemented",
+        "DE.AE-3 - Event data are collected and correlated"
+      ],
+      "validation_steps": [
+        "Install graphql-validation-complexity: npm install graphql-validation-complexity",
+        "Add @cost directives to schema fields with realistic complexity values",
+        "Configure complexity rule with appropriate maximum (start with 1000)",
+        "Test simple query and verify complexity calculation in logs",
+        "Test complex nested query that should exceed limit",
+        "Analyze production query patterns and adjust costs accordingly",
+        "Monitor complexity metrics to identify expensive queries"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Query Cost Analysis with Token Bucket Rate Limiting",
+      "description": "Use persisted query cost budgets per user/IP with token bucket algorithm. Each query consumes tokens based on calculated cost. Users regenerate tokens over time, preventing sustained DoS while allowing burst traffic.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Apollo Server 4.x with Redis",
+        "code": "const { ApolloServer } = require('@apollo/server');\nconst { startStandaloneServer } = require('@apollo/server/standalone');\nconst Redis = require('ioredis');\nconst { GraphQLError } = require('graphql');\nconst { getComplexity, simpleEstimator, fieldExtensionsEstimator } = require('graphql-query-complexity');\n\n// Initialize Redis for distributed rate limiting\nconst redis = new Redis({\n  host: process.env.REDIS_HOST || 'localhost',\n  port: process.env.REDIS_PORT || 6379,\n  password: process.env.REDIS_PASSWORD\n});\n\n// Token bucket configuration\nconst BUCKET_CONFIG = {\n  MAX_TOKENS: 5000,           // Maximum cost budget per window\n  REFILL_RATE: 100,           // Tokens added per second\n  REFILL_INTERVAL: 1000,      // Refill every 1 second\n  WINDOW_SIZE: 60             // 60 second sliding window\n};\n\n// Token bucket implementation\nclass TokenBucket {\n  constructor(identifier) {\n    this.identifier = identifier;\n    this.key = `rate_limit:${identifier}`;\n  }\n\n  async consume(cost) {\n    const now = Date.now();\n    const script = `\n      local key = KEYS[1]\n      local max_tokens = tonumber(ARGV[1])\n      local refill_rate = tonumber(ARGV[2])\n      local cost = tonumber(ARGV[3])\n      local now = tonumber(ARGV[4])\n      \n      local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')\n      local tokens = tonumber(bucket[1]) or max_tokens\n      local last_refill = tonumber(bucket[2]) or now\n      \n      -- Calculate token refill\n      local time_passed = (now - last_refill) / 1000\n      local refill_amount = math.floor(time_passed * refill_rate)\n      tokens = math.min(max_tokens, tokens + refill_amount)\n      \n      -- Check if enough tokens\n      if tokens >= cost then\n        tokens = tokens - cost\n        redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)\n        redis.call('EXPIRE', key, 120)\n        return {1, tokens}\n      else\n        return {0, tokens}\n      end\n    `;\n\n    const result = await redis.eval(\n      script,\n      1,\n      this.key,\n      BUCKET_CONFIG.MAX_TOKENS,\n      BUCKET_CONFIG.REFILL_RATE,\n      cost,\n      now\n    );\n\n    return {\n      allowed: result[0] === 1,\n      remainingTokens: result[1],\n      retryAfter: result[0] === 0 ? Math.ceil((cost - result[1]) / BUCKET_CONFIG.REFILL_RATE) : 0\n    };\n  }\n}\n\n// Custom plugin for query cost and rate limiting\nconst queryCostPlugin = {\n  async requestDidStart() {\n    return {\n      async didResolveOperation(requestContext) {\n        const { schema, document, operationName, contextValue } = requestContext;\n        \n        // Get user identifier (IP or user ID)\n        const identifier = contextValue.userId || contextValue.req.ip || 'anonymous';\n        \n        // Calculate query complexity\n        const complexity = getComplexity({\n          schema,\n          operationName,\n          query: document,\n          variables: requestContext.request.variables,\n          estimators: [\n            fieldExtensionsEstimator(),\n            simpleEstimator({ defaultComplexity: 1 })\n          ]\n        });\n        \n        // Apply rate limiting based on complexity\n        const bucket = new TokenBucket(identifier);\n        const result = await bucket.consume(complexity);\n        \n        if (!result.allowed) {\n          throw new GraphQLError(\n            `Query cost exceeds available budget. Try again in ${result.retryAfter} seconds.`,\n            {\n              extensions: {\n                code: 'RATE_LIMIT_EXCEEDED',\n                queryCost: complexity,\n                remainingBudget: result.remainingTokens,\n                retryAfter: result.retryAfter,\n                maxBudget: BUCKET_CONFIG.MAX_TOKENS,\n                refillRate: BUCKET_CONFIG.REFILL_RATE\n              }\n            }\n          );\n        }\n        \n        // Log query cost for monitoring\n        console.log('Query cost analysis:', {\n          identifier,\n          complexity,\n          remainingTokens: result.remainingTokens,\n          timestamp: new Date().toISOString()\n        });\n        \n        // Add cost info to response headers\n        requestContext.response.http.headers.set('X-Query-Cost', complexity.toString());\n        requestContext.response.http.headers.set('X-Rate-Limit-Remaining', result.remainingTokens.toString());\n      }\n    };\n  }\n};\n\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  plugins: [queryCostPlugin]\n});\n\nstartStandaloneServer(server, {\n  context: async ({ req }) => {\n    // Extract user from JWT or use IP\n    const token = req.headers.authorization?.split(' ')[1];\n    const userId = token ? verifyJWT(token).userId : null;\n    return { req, userId };\n  },\n  listen: { port: 4000 }\n}).then(({ url }) => {\n  console.log(`🚀 Server ready at ${url}`);\n  console.log('✓ Query cost analysis with token bucket rate limiting enabled');\n});"
+      },
+      "tools": [
+        {
+          "name": "graphql-query-complexity",
+          "type": "Complexity Calculation Library",
+          "cost": "Free (Open Source)",
+          "documentation": "https://www.npmjs.com/package/graphql-query-complexity"
+        },
+        {
+          "name": "Redis",
+          "type": "Distributed Rate Limiting Storage",
+          "cost": "$0.008/hour (AWS ElastiCache) or Free (self-hosted)"
+        },
+        {
+          "name": "graphql-armor",
+          "type": "All-in-one GraphQL Security",
+          "cost": "Free (Open Source)",
+          "documentation": "https://github.com/Escape-Technologies/graphql-armor"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - Network monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Deploy Redis instance for distributed rate limiting",
+        "Install graphql-query-complexity: npm install graphql-query-complexity",
+        "Implement token bucket plugin with Redis backend",
+        "Configure bucket parameters based on expected load",
+        "Test rate limiting with load testing tool (e.g., artillery)",
+        "Verify legitimate users can execute normal queries",
+        "Confirm abusive queries are blocked with appropriate retry-after",
+        "Monitor Redis memory usage and query cost metrics",
+        "Set up alerts for rate limit violations"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in GraphQL query execution time (>5s average)",
+      "High number of queries with depth >10 levels",
+      "Repeated queries from single IP with identical deeply nested structure",
+      "Database connection pool exhaustion errors",
+      "Memory usage spikes correlating with GraphQL requests",
+      "Queries containing excessive field aliasing (>50 aliases)",
+      "GraphQL resolver timeout errors increasing",
+      "Failed health checks on GraphQL service during query bursts"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect GraphQL queries with excessive depth or complexity\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where CsUriStem contains \"/graphql\"\n| where ScStatus == 200 or ScStatus == 500\n| extend QueryDepth = extract(@'\"depth\":(\\d+)', 1, CsUserAgent)\n| extend QueryComplexity = extract(@'\"complexity\":(\\d+)', 1, CsUserAgent)\n| where toint(QueryDepth) > 10 or toint(QueryComplexity) > 1000\n| summarize\n    QueryCount = count(),\n    AvgTimeTaken = avg(TimeTaken),\n    MaxTimeTaken = max(TimeTaken),\n    UniqueQueries = dcount(CsUriQuery)\n    by ClientIP, bin(TimeGenerated, 5m)\n| where QueryCount > 10\n| order by QueryCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "url.path: \"/graphql\" AND (\n  (http.response.status_code: 500 AND error.message: (*timeout* OR *memory* OR *connection*))\n  OR\n  (http.response.body.errors.extensions.code: (\"QUERY_DEPTH_EXCEEDED\" OR \"QUERY_COMPLEXITY_EXCEEDED\" OR \"RATE_LIMIT_EXCEEDED\"))\n)"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=apollo_server \n| where uri_path=\"/graphql\"\n| eval is_malicious=if(\n    (like(error_code, \"%DEPTH_EXCEEDED%\") OR \n     like(error_code, \"%COMPLEXITY_EXCEEDED%\") OR\n     execution_time_ms > 5000 OR\n     query_depth > 10),\n    1, 0)\n| where is_malicious=1\n| stats \n    count as malicious_queries,\n    avg(execution_time_ms) as avg_exec_time,\n    max(query_depth) as max_depth,\n    dc(query_hash) as unique_queries\n    by client_ip, user_id\n| where malicious_queries > 5\n| sort -malicious_queries"
+      },
+      {
+        "siem": "Datadog (Query)",
+        "query": "service:graphql-api\n@query_depth:>10 OR @query_complexity:>1000 OR @duration:>5000\nstatus:(error OR warning)\n| group by @network.client.ip\n| count > 20"
+      }
+    ],
+    "tools": [
+      {
+        "name": "GraphQL Voyager",
+        "type": "Schema Visualization",
+        "usage": "Visualize schema to identify circular references that enable depth attacks"
+      },
+      {
+        "name": "Apollo Studio",
+        "type": "GraphQL Observability",
+        "usage": "Monitor query complexity, execution time, and error rates in production"
+      },
+      {
+        "name": "Sentry",
+        "type": "Error Monitoring",
+        "usage": "Track GraphQL timeout errors and resource exhaustion exceptions"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Technology",
+      "E-commerce",
+      "Social Media",
+      "SaaS",
+      "Financial Services"
+    ],
+    "compliance": [
+      "SOC2 (CC6.1, CC7.2)",
+      "ISO27001 (A.12.1.3, A.12.6.1)",
+      "NIST CSF (PR.PT-3, DE.CM-1)",
+      "PCI-DSS 3.2.1 (Requirement 6.5.10)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Kubernetes",
+      "Serverless",
+      "On-Premise"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

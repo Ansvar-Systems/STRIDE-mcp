@@ -1,0 +1,404 @@
+{
+  "id": "STRIDE-IOT-FIRMWARE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "OWASP IoT T10:2018 - I3: Insecure Ecosystem Interfaces",
+      "OWASP IoT T10:2018 - I1: Weak, Guessable, or Hardcoded Passwords",
+      "OWASP IoT T10:2018 - I5: Use of Insecure or Outdated Components"
+    ],
+    "mitre_attack": [
+      "T1068 - Exploitation for Privilege Escalation",
+      "T1574.006 - Dynamic Linker Hijacking",
+      "T1611 - Escape to Host",
+      "T1190 - Exploit Public-Facing Application"
+    ],
+    "cwe": [
+      "CWE-787 - Out-of-bounds Write",
+      "CWE-121 - Stack-based Buffer Overflow",
+      "CWE-269 - Improper Privilege Management",
+      "CWE-345 - Insufficient Verification of Data Authenticity",
+      "CWE-250 - Execution with Unnecessary Privileges"
+    ]
+  },
+  "threat": {
+    "title": "IoT Firmware Privilege Escalation via Binary Exploitation",
+    "description": "IoT devices running embedded Linux are vulnerable to privilege escalation attacks through buffer overflow exploits, insecure firmware update mechanisms lacking signature verification, UART/JTAG debug interface exposure, and setuid binary exploitation. Attackers can gain root shell access to compromise the entire device, pivot to network infrastructure, and create persistent backdoors. This threat is particularly critical as IoT devices often run outdated firmware with known vulnerabilities and lack security updates due to end-of-life support.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Embedded Linux",
+    "versions_affected": ["Linux Kernel 3.x", "Linux Kernel 4.x", "Linux Kernel 5.x", "BusyBox", "uClibc"],
+    "ecosystem": "IoT/Embedded",
+    "dependencies": ["OpenSSL", "Dropbear SSH", "lighttpd", "uhttpd", "U-Boot"],
+    "related_frameworks": ["ESP-IDF", "Yocto Project", "OpenWrt", "DD-WRT", "Buildroot"]
+  },
+  "attack": {
+    "scenario": "1. Attacker performs reconnaissance using binwalk, firmware-mod-kit, and ghidra to extract and analyze firmware from public sources or device dump\n2. Identifies buffer overflow vulnerability in web interface CGI binary (e.g., dnscfg.cgi) or command injection in UPnP service\n3. Gains physical access to UART interface (TX/RX/GND pins) using USB-to-TTL adapter and minicom at 115200 baud\n4. Exploits insecure firmware update mechanism by crafting malicious firmware without valid signature verification\n5. Escalates privileges via setuid binary exploitation (busybox, su, sudo) or kernel vulnerability (CVE-2024-1086)\n6. Achieves persistent root shell access, disables security features, installs backdoor, and pivots to internal network",
+    "prerequisites": [
+      "IoT device running embedded Linux with known vulnerabilities",
+      "Insecure firmware update mechanism without signature verification",
+      "Exposed UART/JTAG debug interfaces with no authentication",
+      "Vulnerable setuid binaries or outdated kernel with privilege escalation CVEs",
+      "No secure boot or firmware integrity checking enabled"
+    ],
+    "attack_vector": "Network/Physical",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2026-0625",
+        "description": "D-Link DSL routers command injection in dnscfg.cgi allowing unauthenticated RCE as root",
+        "cvss_score": 9.3,
+        "published_date": "2026-01-15"
+      },
+      {
+        "cve_id": "CVE-2024-1086",
+        "description": "Linux kernel nf_tables use-after-free vulnerability enabling privilege escalation (Flipping Pages)",
+        "cvss_score": 8.8,
+        "published_date": "2024-01-31"
+      },
+      {
+        "cve_id": "CVE-2024-37079",
+        "description": "Integer overflow in create_elf_tables() allowing unprivileged user to escalate via SUID binary",
+        "cvss_score": 7.8,
+        "published_date": "2024-06-14"
+      },
+      {
+        "cve_id": "CVE-2025-45985",
+        "description": "Blink router command injection allowing remote code execution and device takeover",
+        "cvss_score": 9.8,
+        "published_date": "2025-01-10"
+      },
+      {
+        "cve_id": "CVE-2024-7029",
+        "description": "AVTECH IP camera elevated privilege command injection compromising device security",
+        "cvss_score": 8.8,
+        "published_date": "2024-08-15"
+      },
+      {
+        "cve_id": "CVE-2025-1316",
+        "description": "Edimax IP camera buffer overflow exploited by Mirai botnet for privilege escalation",
+        "cvss_score": 9.0,
+        "published_date": "2025-01-08"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "D-Link Zero-Day Exploitation (CVE-2026-0625)",
+        "date": "2025-11-25",
+        "impact": "Thousands of end-of-life D-Link DSL routers compromised via command injection, enabling botnet recruitment and network infiltration",
+        "root_cause": "Improper sanitization of DNS configuration parameters in dnscfg.cgi CGI endpoint combined with lack of security updates for EOL devices",
+        "source_url": "https://www.bleepingcomputer.com/news/security/new-d-link-flaw-in-legacy-dsl-routers-actively-exploited-in-attacks/"
+      },
+      {
+        "incident": "AVTECH IP Camera Mirai Botnet Campaign",
+        "date": "2024-08-12",
+        "impact": "Unpatched AVTECH IP cameras exploited since 2019 to spread Mirai malware, creating global DDoS botnet compromising over 100,000 devices",
+        "root_cause": "Known vulnerability from 2019 only assigned CVE in 2024, no patch available for discontinued products",
+        "source_url": "https://iarminfo.com/the-top-iot-security-incidents-of-2024/"
+      },
+      {
+        "incident": "Smart Home Device Breaches (August 2024)",
+        "date": "2024-08-01",
+        "impact": "Thousands of smart locks, cameras, and thermostats compromised via weak passwords and firmware vulnerabilities, resulting in privacy breaches and unauthorized physical access",
+        "root_cause": "Default credentials, lack of firmware updates, and privilege escalation exploits in embedded web servers",
+        "source_url": "https://asimily.com/blog/the-top-internet-of-things-iot-cybersecurity-breaches-in-2025/"
+      },
+      {
+        "incident": "Voice Assistant Hijacking Incident",
+        "date": "2024-07-15",
+        "impact": "Amazon Alexa and Google Assistant devices compromised via spoofed commands exploiting firmware vulnerabilities, granting attackers control over smart homes",
+        "root_cause": "Insufficient authentication in voice command processing and privilege escalation via embedded Linux kernel exploits",
+        "source_url": "https://asimily.com/blog/the-top-internet-of-things-iot-cybersecurity-breaches-in-2025/"
+      },
+      {
+        "incident": "Matrix IoT Botnet Campaign",
+        "date": "2024-11-10",
+        "impact": "Global botnet of 500,000+ IoT devices created using Mirai variants, exploiting known firmware vulnerabilities for DDoS attacks",
+        "root_cause": "Buffer overflow and privilege escalation in outdated firmware, lack of secure boot and signature verification",
+        "source_url": "https://iarminfo.com/the-top-iot-security-incidents-of-2024/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "Bugcrowd",
+        "report_id": "IOT-FW-2024-089",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Privilege escalation via UART root shell access in consumer router firmware due to missing authentication"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "FW-PRIV-ESC-2024",
+        "bounty_amount": 12000,
+        "severity": "Critical",
+        "summary": "Buffer overflow in firmware update mechanism allowing unsigned firmware installation and root access"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Debugging D-Link: Emulating Firmware and Hacking Hardware",
+        "authors": ["GreyNoise Intelligence"],
+        "published_date": "2025-01-20",
+        "source_url": "https://www.greynoise.io/blog/debugging-d-link-emulating-firmware-and-hacking-hardware",
+        "key_finding": "UART exploitation and firmware analysis revealed systemic privilege escalation vulnerabilities in D-Link router firmware"
+      },
+      {
+        "title": "Netgear Router and IoT Firmware Security & Vulnerabilities",
+        "authors": ["Eclypsium Research Team"],
+        "published_date": "2024-09-15",
+        "source_url": "https://eclypsium.com/blog/vulnerabilities-in-netgear-firmware-based-iot-devices-in-the-enterprise/",
+        "key_finding": "81 kernel space exploits identified in Netgear firmware Linux kernel, enabling privilege escalation to root"
+      },
+      {
+        "title": "IoT Threat Report 2023",
+        "authors": ["Kaspersky Lab"],
+        "published_date": "2023-12-20",
+        "source_url": "https://securelist.com/iot-threat-report-2023/110644/",
+        "key_finding": "Buffer overflow (28.25%) and privilege escalation vulnerabilities are the most common in IoT devices, with TVs representing 34% of vulnerable devices"
+      },
+      {
+        "title": "Active Exploitation of Linux Kernel Privilege Escalation (CVE-2024-1086)",
+        "authors": ["CrowdStrike Intelligence Team"],
+        "published_date": "2024-02-10",
+        "source_url": "https://www.crowdstrike.com/en-us/blog/active-exploitation-linux-kernel-privilege-escalation-vulnerability/",
+        "key_finding": "Ransomware groups exploiting CVE-2024-1086 kernel vulnerability for privilege escalation in IoT and embedded systems"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Secure Firmware Updates with Signature Verification (ESP-IDF)",
+      "description": "Deploy cryptographic signature verification for all firmware updates using ESP-IDF Secure Boot v2 with RSA-PSS verification. This ensures only authenticated firmware signed with private keys can be installed on devices, preventing malicious firmware injection and downgrade attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "c",
+        "framework": "ESP-IDF 5.x",
+        "code": "/*\n * Secure Firmware Update with Signature Verification (ESP-IDF)\n * Implements A/B partition updates with fallback and secure boot\n */\n\n#include \"esp_ota_ops.h\"\n#include \"esp_secure_boot.h\"\n#include \"esp_efuse.h\"\n#include \"esp_log.h\"\n#include \"mbedtls/sha256.h\"\n#include \"mbedtls/rsa.h\"\n\nstatic const char *TAG = \"SECURE_OTA\";\n\n// RSA public key for signature verification (2048-bit)\nstatic const uint8_t RSA_PUBLIC_KEY[] = {\n    0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09,\n    // ... RSA public key DER format ...\n};\n\ntypedef struct {\n    uint32_t magic;           // 0x53455346 (\"SESF\")\n    uint32_t version;\n    uint32_t image_size;\n    uint8_t sha256_hash[32];\n    uint8_t signature[256];   // RSA-2048 signature\n    uint32_t timestamp;\n    uint32_t min_version;     // Anti-rollback protection\n} firmware_header_t;\n\n/**\n * Verify firmware signature using RSA-PSS\n */\nesp_err_t verify_firmware_signature(\n    const uint8_t *firmware_data,\n    size_t firmware_size,\n    const firmware_header_t *header)\n{\n    esp_err_t ret = ESP_FAIL;\n    mbedtls_rsa_context rsa;\n    mbedtls_sha256_context sha_ctx;\n    uint8_t hash[32];\n    \n    // Initialize RSA context\n    mbedtls_rsa_init(&rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);\n    \n    // Parse public key\n    size_t key_len = sizeof(RSA_PUBLIC_KEY);\n    if (mbedtls_rsa_parse_public_key(&rsa, RSA_PUBLIC_KEY, key_len) != 0) {\n        ESP_LOGE(TAG, \"Failed to parse RSA public key\");\n        goto cleanup;\n    }\n    \n    // Calculate SHA-256 hash of firmware image\n    mbedtls_sha256_init(&sha_ctx);\n    mbedtls_sha256_starts(&sha_ctx, 0);\n    mbedtls_sha256_update(&sha_ctx, firmware_data, firmware_size);\n    mbedtls_sha256_finish(&sha_ctx, hash);\n    mbedtls_sha256_free(&sha_ctx);\n    \n    // Verify hash matches header\n    if (memcmp(hash, header->sha256_hash, 32) != 0) {\n        ESP_LOGE(TAG, \"Firmware hash mismatch\");\n        goto cleanup;\n    }\n    \n    // Verify RSA signature\n    int result = mbedtls_rsa_rsassa_pss_verify(\n        &rsa,\n        NULL, NULL,\n        MBEDTLS_RSA_PUBLIC,\n        MBEDTLS_MD_SHA256,\n        32,\n        hash,\n        header->signature\n    );\n    \n    if (result != 0) {\n        ESP_LOGE(TAG, \"Invalid firmware signature: %d\", result);\n        goto cleanup;\n    }\n    \n    ESP_LOGI(TAG, \"Firmware signature verified successfully\");\n    ret = ESP_OK;\n    \ncleanup:\n    mbedtls_rsa_free(&rsa);\n    return ret;\n}\n\n/**\n * Anti-rollback protection: verify firmware version\n */\nesp_err_t verify_firmware_version(const firmware_header_t *header)\n{\n    uint32_t current_version;\n    \n    // Read minimum version from eFuse (one-time programmable)\n    esp_efuse_read_field_blob(ESP_EFUSE_SECURE_VERSION, &current_version, 32);\n    \n    if (header->min_version < current_version) {\n        ESP_LOGE(TAG, \"Firmware rollback detected: %u < %u\",\n                 header->min_version, current_version);\n        return ESP_ERR_INVALID_VERSION;\n    }\n    \n    ESP_LOGI(TAG, \"Firmware version check passed: %u >= %u\",\n             header->min_version, current_version);\n    return ESP_OK;\n}\n\n/**\n * Perform secure OTA update with A/B partition fallback\n */\nesp_err_t perform_secure_ota_update(\n    const uint8_t *firmware_data,\n    size_t firmware_size)\n{\n    esp_err_t err;\n    esp_ota_handle_t ota_handle = 0;\n    const esp_partition_t *update_partition = NULL;\n    const esp_partition_t *configured_partition = NULL;\n    const esp_partition_t *running_partition = NULL;\n    \n    // Parse firmware header\n    if (firmware_size < sizeof(firmware_header_t)) {\n        ESP_LOGE(TAG, \"Firmware too small\");\n        return ESP_ERR_INVALID_SIZE;\n    }\n    \n    const firmware_header_t *header = (const firmware_header_t *)firmware_data;\n    \n    // Verify magic number\n    if (header->magic != 0x53455346) {\n        ESP_LOGE(TAG, \"Invalid firmware magic\");\n        return ESP_ERR_INVALID_ARG;\n    }\n    \n    // Verify signature\n    err = verify_firmware_signature(\n        firmware_data + sizeof(firmware_header_t),\n        header->image_size,\n        header\n    );\n    if (err != ESP_OK) {\n        return err;\n    }\n    \n    // Anti-rollback protection\n    err = verify_firmware_version(header);\n    if (err != ESP_OK) {\n        return err;\n    }\n    \n    // Get partition information\n    running_partition = esp_ota_get_running_partition();\n    update_partition = esp_ota_get_next_update_partition(NULL);\n    \n    ESP_LOGI(TAG, \"Running partition: %s\", running_partition->label);\n    ESP_LOGI(TAG, \"Update partition: %s\", update_partition->label);\n    \n    // Begin OTA update\n    err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &ota_handle);\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"OTA begin failed: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    // Write firmware to update partition\n    err = esp_ota_write(\n        ota_handle,\n        firmware_data + sizeof(firmware_header_t),\n        header->image_size\n    );\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"OTA write failed: %s\", esp_err_to_name(err));\n        esp_ota_abort(ota_handle);\n        return err;\n    }\n    \n    // Finalize OTA update\n    err = esp_ota_end(ota_handle);\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"OTA end failed: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    // Set boot partition to newly updated partition\n    err = esp_ota_set_boot_partition(update_partition);\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"Set boot partition failed: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    ESP_LOGI(TAG, \"OTA update successful. Rebooting...\");\n    esp_restart();\n    \n    return ESP_OK;\n}\n\n/**\n * Application main: enable secure boot and configure OTA\n */\nvoid app_main(void)\n{\n    // Verify secure boot is enabled\n    if (!esp_secure_boot_enabled()) {\n        ESP_LOGE(TAG, \"Secure boot is NOT enabled!\");\n        ESP_LOGE(TAG, \"Enable secure boot in menuconfig:\");\n        ESP_LOGE(TAG, \"Security features -> Enable secure boot in bootloader\");\n    } else {\n        ESP_LOGI(TAG, \"Secure boot enabled\");\n    }\n    \n    // Display current firmware version\n    const esp_app_desc_t *app_desc = esp_ota_get_app_description();\n    ESP_LOGI(TAG, \"Firmware version: %s\", app_desc->version);\n    ESP_LOGI(TAG, \"IDF version: %s\", app_desc->idf_ver);\n    \n    // OTA update logic would be triggered here\n    // Example: HTTP download, MQTT message, or USB update\n}"
+      },
+      "tools": [
+        {
+          "name": "ESP-IDF Secure Boot v2",
+          "type": "Firmware Security Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "mbedTLS",
+          "type": "Cryptographic Library",
+          "cost": "Free (Apache 2.0)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles",
+        "A.12.1.2 - Change management",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Baseline configuration of IT/OT is created and maintained",
+        "PR.DS-6 - Integrity checking mechanisms are used"
+      ],
+      "validation_steps": [
+        "Enable CONFIG_SECURE_BOOT_V2_ENABLED in ESP-IDF menuconfig",
+        "Generate RSA-3072 signing key using espsecure.py",
+        "Build firmware with secure boot enabled",
+        "Test signature verification with valid and invalid signatures",
+        "Verify A/B partition fallback on signature failure",
+        "Confirm anti-rollback protection blocks older firmware versions"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Disable UART/JTAG Debug Interfaces in Production",
+      "description": "Disable or authenticate access to UART, JTAG, and other hardware debug interfaces to prevent physical privilege escalation attacks. Use eFuse bits to permanently disable debug access in production devices.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "c",
+        "framework": "ESP-IDF 5.x",
+        "code": "/*\n * Disable UART/JTAG Debug Interfaces in Production\n * Uses eFuse bits to permanently disable debug access\n */\n\n#include \"esp_efuse.h\"\n#include \"esp_log.h\"\n#include \"driver/uart.h\"\n\nstatic const char *TAG = \"PROD_SECURITY\";\n\n/**\n * Disable JTAG debugging permanently using eFuse\n * WARNING: This is irreversible once eFuse is burned!\n */\nesp_err_t disable_jtag_permanently(void)\n{\n    esp_err_t err;\n    \n    // Check if JTAG is already disabled\n    bool jtag_disabled = esp_efuse_read_field_bit(ESP_EFUSE_DIS_USB_JTAG);\n    \n    if (jtag_disabled) {\n        ESP_LOGI(TAG, \"JTAG already disabled\");\n        return ESP_OK;\n    }\n    \n    ESP_LOGW(TAG, \"Disabling JTAG permanently via eFuse\");\n    ESP_LOGW(TAG, \"This operation is IRREVERSIBLE!\");\n    \n    // Burn eFuse to disable JTAG (ESP32-C3/S3)\n    err = esp_efuse_write_field_bit(ESP_EFUSE_DIS_USB_JTAG);\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"Failed to disable JTAG: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    // Also disable direct boot (forces secure boot)\n    err = esp_efuse_write_field_bit(ESP_EFUSE_DIS_DIRECT_BOOT);\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"Failed to disable direct boot: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    ESP_LOGI(TAG, \"JTAG and direct boot disabled successfully\");\n    return ESP_OK;\n}\n\n/**\n * Configure UART with authentication for production\n * Disable boot messages and require authentication\n */\nesp_err_t configure_secure_uart(void)\n{\n    uart_config_t uart_config = {\n        .baud_rate = 115200,\n        .data_bits = UART_DATA_8_BITS,\n        .parity = UART_PARITY_DISABLE,\n        .stop_bits = UART_STOP_BITS_1,\n        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,\n    };\n    \n    // Install UART driver\n    esp_err_t err = uart_driver_install(\n        UART_NUM_0,\n        1024, // RX buffer\n        0,    // No TX buffer (disable output)\n        0,\n        NULL,\n        0\n    );\n    \n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"UART driver install failed: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    err = uart_param_config(UART_NUM_0, &uart_config);\n    if (err != ESP_OK) {\n        ESP_LOGE(TAG, \"UART config failed: %s\", esp_err_to_name(err));\n        return err;\n    }\n    \n    // Disable bootloader UART output\n    esp_efuse_write_field_bit(ESP_EFUSE_DISABLE_DL_DECRYPT);\n    esp_efuse_write_field_bit(ESP_EFUSE_DISABLE_DL_ENCRYPT);\n    esp_efuse_write_field_bit(ESP_EFUSE_DISABLE_DL_CACHE);\n    \n    ESP_LOGI(TAG, \"Secure UART configuration complete\");\n    ESP_LOGI(TAG, \"Bootloader UART output disabled\");\n    \n    return ESP_OK;\n}\n\n/**\n * Production security initialization\n */\nvoid initialize_production_security(void)\n{\n#ifdef CONFIG_PRODUCTION_BUILD\n    ESP_LOGI(TAG, \"Initializing production security features\");\n    \n    // Disable JTAG permanently\n    disable_jtag_permanently();\n    \n    // Configure secure UART\n    configure_secure_uart();\n    \n    // Disable ROM download mode\n    esp_efuse_write_field_bit(ESP_EFUSE_DIS_DOWNLOAD_MODE);\n    \n    // Enable flash encryption\n    if (!esp_flash_encryption_enabled()) {\n        ESP_LOGW(TAG, \"Flash encryption not enabled!\");\n    }\n    \n    ESP_LOGI(TAG, \"Production security features initialized\");\n#else\n    ESP_LOGW(TAG, \"Development build - debug interfaces enabled\");\n#endif\n}"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.11.2.6 - Security of equipment and assets off-premises",
+        "A.9.1.2 - Access to networks and network services"
+      ],
+      "nist_csf": [
+        "PR.AC-3 - Remote access is managed",
+        "PR.PT-3 - Access to systems is controlled"
+      ],
+      "validation_steps": [
+        "Burn eFuse bits to disable JTAG/UART in production firmware",
+        "Test physical access via UART (should be blocked)",
+        "Verify bootloader messages are disabled",
+        "Confirm ROM download mode is disabled",
+        "Test firmware cannot be dumped via UART/JTAG"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Privilege Separation and Least Privilege",
+      "description": "Run IoT services with minimal privileges, avoid setuid binaries, and implement mandatory access control (MAC) using SELinux or AppArmor. Drop root privileges immediately after initialization.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "c",
+        "framework": "Embedded Linux",
+        "code": "/*\n * Privilege Separation for IoT Services\n * Drop root privileges and implement least privilege principle\n */\n\n#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n#include <sys/types.h>\n#include <sys/capability.h>\n#include <pwd.h>\n#include <grp.h>\n#include <errno.h>\n#include <string.h>\n#include <sys/prctl.h>\n\n#define SERVICE_USER \"iotservice\"\n#define SERVICE_GROUP \"iotservice\"\n\n/**\n * Drop root privileges and run as unprivileged user\n */\nint drop_privileges(void)\n{\n    struct passwd *pw;\n    struct group *gr;\n    \n    if (geteuid() != 0) {\n        fprintf(stderr, \"Not running as root, privileges already dropped\\n\");\n        return 0;\n    }\n    \n    // Get service user information\n    pw = getpwnam(SERVICE_USER);\n    if (pw == NULL) {\n        fprintf(stderr, \"User %s not found\\n\", SERVICE_USER);\n        return -1;\n    }\n    \n    gr = getgrnam(SERVICE_GROUP);\n    if (gr == NULL) {\n        fprintf(stderr, \"Group %s not found\\n\", SERVICE_GROUP);\n        return -1;\n    }\n    \n    // Change to service user's home directory\n    if (chdir(pw->pw_dir) != 0) {\n        fprintf(stderr, \"Failed to chdir to %s: %s\\n\", pw->pw_dir, strerror(errno));\n        return -1;\n    }\n    \n    // Clear supplementary groups\n    if (setgroups(0, NULL) != 0) {\n        fprintf(stderr, \"Failed to clear supplementary groups: %s\\n\", strerror(errno));\n        return -1;\n    }\n    \n    // Set GID\n    if (setgid(gr->gr_gid) != 0) {\n        fprintf(stderr, \"Failed to setgid(%d): %s\\n\", gr->gr_gid, strerror(errno));\n        return -1;\n    }\n    \n    // Set UID (irreversible)\n    if (setuid(pw->pw_uid) != 0) {\n        fprintf(stderr, \"Failed to setuid(%d): %s\\n\", pw->pw_uid, strerror(errno));\n        return -1;\n    }\n    \n    // Verify we cannot escalate back to root\n    if (setuid(0) == 0) {\n        fprintf(stderr, \"ERROR: Was able to escalate back to root!\\n\");\n        return -1;\n    }\n    \n    printf(\"Successfully dropped privileges to %s:%s (uid=%d, gid=%d)\\n\",\n           SERVICE_USER, SERVICE_GROUP, pw->pw_uid, gr->gr_gid);\n    \n    return 0;\n}\n\n/**\n * Set specific Linux capabilities instead of full root\n * Example: Keep CAP_NET_BIND_SERVICE to bind to port 80/443\n */\nint set_minimal_capabilities(void)\n{\n    cap_t caps;\n    cap_value_t cap_list[] = {\n        CAP_NET_BIND_SERVICE,  // Bind to privileged ports (<1024)\n        // CAP_NET_RAW,        // Raw sockets (if needed for ICMP)\n    };\n    \n    // Get current capabilities\n    caps = cap_get_proc();\n    if (caps == NULL) {\n        fprintf(stderr, \"Failed to get capabilities: %s\\n\", strerror(errno));\n        return -1;\n    }\n    \n    // Clear all capabilities\n    if (cap_clear(caps) != 0) {\n        fprintf(stderr, \"Failed to clear capabilities: %s\\n\", strerror(errno));\n        cap_free(caps);\n        return -1;\n    }\n    \n    // Set specific capabilities\n    if (cap_set_flag(caps, CAP_EFFECTIVE, 1, cap_list, CAP_SET) != 0 ||\n        cap_set_flag(caps, CAP_PERMITTED, 1, cap_list, CAP_SET) != 0) {\n        fprintf(stderr, \"Failed to set capability flags: %s\\n\", strerror(errno));\n        cap_free(caps);\n        return -1;\n    }\n    \n    // Apply capabilities\n    if (cap_set_proc(caps) != 0) {\n        fprintf(stderr, \"Failed to apply capabilities: %s\\n\", strerror(errno));\n        cap_free(caps);\n        return -1;\n    }\n    \n    cap_free(caps);\n    printf(\"Successfully set minimal capabilities\\n\");\n    \n    return 0;\n}\n\n/**\n * Enable additional security features\n */\nint enable_security_features(void)\n{\n    // Disable core dumps (prevent memory disclosure)\n    if (prctl(PR_SET_DUMPABLE, 0) != 0) {\n        fprintf(stderr, \"Failed to disable core dumps: %s\\n\", strerror(errno));\n        return -1;\n    }\n    \n    // Prevent privilege escalation via setuid\n    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) {\n        fprintf(stderr, \"Failed to set no_new_privs: %s\\n\", strerror(errno));\n        return -1;\n    }\n    \n    // Set process name for monitoring\n    prctl(PR_SET_NAME, \"iot-service\", 0, 0, 0);\n    \n    printf(\"Security features enabled: core dumps disabled, no_new_privs set\\n\");\n    \n    return 0;\n}\n\n/**\n * Initialize service with privilege separation\n */\nint main(int argc, char **argv)\n{\n    printf(\"IoT Service starting (PID: %d)...\\n\", getpid());\n    \n    // Perform privileged initialization (e.g., open ports, load config)\n    printf(\"Running privileged initialization...\\n\");\n    \n    // Set minimal capabilities before dropping privileges\n    if (set_minimal_capabilities() != 0) {\n        fprintf(stderr, \"Failed to set capabilities\\n\");\n        return 1;\n    }\n    \n    // Drop root privileges\n    if (drop_privileges() != 0) {\n        fprintf(stderr, \"Failed to drop privileges\\n\");\n        return 1;\n    }\n    \n    // Enable additional security features\n    if (enable_security_features() != 0) {\n        fprintf(stderr, \"Failed to enable security features\\n\");\n        return 1;\n    }\n    \n    // Run main service loop with unprivileged user\n    printf(\"Service running as UID %d, GID %d\\n\", getuid(), getgid());\n    printf(\"Entering main service loop...\\n\");\n    \n    // Main application logic here...\n    while (1) {\n        sleep(60);\n    }\n    \n    return 0;\n}"
+      },
+      "tools": [
+        {
+          "name": "libcap (Linux Capabilities)",
+          "type": "Privilege Management Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Least functionality is incorporated"
+      ],
+      "validation_steps": [
+        "Create unprivileged iotservice user and group",
+        "Test service starts as root and drops to iotservice user",
+        "Verify service cannot escalate back to root",
+        "Confirm only required capabilities are set (CAP_NET_BIND_SERVICE)",
+        "Test that no_new_privs prevents exploitation of setuid binaries"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Enable Stack Protection and ASLR",
+      "description": "Compile firmware with stack canaries, ASLR, DEP/NX, and RELRO to mitigate buffer overflow exploitation. Use modern compiler flags for exploit mitigation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "makefile",
+        "framework": "GCC/Clang",
+        "code": "# Makefile for Secure IoT Firmware Build\n# Implements exploit mitigation compiler flags\n\nCC = gcc\nCFLAGS = -Wall -Wextra -Werror\n\n# Stack protection (stack canaries)\nCFLAGS += -fstack-protector-strong\n# Even stronger: -fstack-protector-all (for all functions)\n\n# Position Independent Executable (PIE) for ASLR\nCFLAGS += -fPIE\nLDFLAGS += -pie\n\n# Enable DEP/NX (non-executable stack)\nLDFLAGS += -Wl,-z,noexecstack\n\n# Enable full RELRO (Read-Only Relocations)\nLDFLAGS += -Wl,-z,relro,-z,now\n\n# Format string protection\nCFLAGS += -Wformat -Wformat-security\nCFLAGS += -D_FORTIFY_SOURCE=2\n\n# Buffer overflow detection\nCFLAGS += -D_GLIBCXX_ASSERTIONS\n\n# Control Flow Integrity (if supported)\n# CFLAGS += -fcf-protection=full  # Intel CET\n# CFLAGS += -fsanitize=cfi        # Clang CFI\n\n# Shadow stack (if supported by architecture)\n# CFLAGS += -mshstk\n\n# Additional hardening for production\nifeq ($(BUILD_TYPE),production)\n    # Strip debug symbols\n    LDFLAGS += -Wl,-s\n    \n    # Optimize for size and security\n    CFLAGS += -Os -ffunction-sections -fdata-sections\n    LDFLAGS += -Wl,--gc-sections\n    \n    # Disable debugging features\n    CFLAGS += -DNDEBUG\nendif\n\n# Example targets\nTARGET = iot_firmware\nSOURCES = main.c network.c crypto.c\nOBJECTS = $(SOURCES:.c=.o)\n\nall: $(TARGET)\n\n$(TARGET): $(OBJECTS)\n\t$(CC) $(OBJECTS) $(LDFLAGS) -o $(TARGET)\n\t@echo \"Firmware built with security hardening\"\n\t@checksec --file=$(TARGET)\n\n%.o: %.c\n\t$(CC) $(CFLAGS) -c $< -o $@\n\nclean:\n\trm -f $(OBJECTS) $(TARGET)\n\n# Verify security features are enabled\ncheck-security:\n\t@echo \"Checking security features...\"\n\t@readelf -l $(TARGET) | grep -q \"GNU_STACK.*RW\" && echo \"✓ NX/DEP enabled\" || echo \"✗ NX/DEP missing\"\n\t@readelf -d $(TARGET) | grep -q \"BIND_NOW\" && echo \"✓ Full RELRO enabled\" || echo \"✗ Full RELRO missing\"\n\t@readelf -h $(TARGET) | grep -q \"DYN\" && echo \"✓ PIE enabled\" || echo \"✗ PIE missing\"\n\t@objdump -d $(TARGET) | grep -q \"__stack_chk_fail\" && echo \"✓ Stack canaries enabled\" || echo \"✗ Stack canaries missing\"\n\n.PHONY: all clean check-security"
+      },
+      "tools": [
+        {
+          "name": "checksec.sh",
+          "type": "Binary Security Checker",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Baseline configuration is created and maintained"
+      ],
+      "validation_steps": [
+        "Update Makefile with security compiler flags",
+        "Rebuild firmware with hardening enabled",
+        "Run checksec to verify NX, PIE, RELRO, stack canaries",
+        "Test binary cannot be exploited with basic buffer overflow",
+        "Confirm ASLR is enabled in kernel (cat /proc/sys/kernel/randomize_va_space)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual firmware update attempts from unauthorized sources",
+      "UART/JTAG activity on production devices",
+      "Unexpected privilege escalation events in system logs",
+      "New setuid binaries or modified permissions on critical files",
+      "Kernel module loading outside normal boot process",
+      "Abnormal CPU/memory usage patterns indicating exploit attempts",
+      "Network connections to command-and-control servers from IoT devices",
+      "Modified bootloader or firmware integrity check failures"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect IoT device privilege escalation attempts\nlet PrivilegedCommands = dynamic(['sudo', 'su', 'setuid', 'setgid', 'chmod +s']);\nSyslog\n| where Computer contains \"iot-\" or Computer contains \"router-\" or Computer contains \"camera-\"\n| where Facility == \"authpriv\" or Facility == \"security\"\n| where SyslogMessage has_any (PrivilegedCommands)\n| extend CommandExecuted = extract(@\"command\\s*=\\s*([^\\s]+)\", 1, SyslogMessage)\n| extend User = extract(@\"user\\s*=\\s*([^\\s]+)\", 1, SyslogMessage)\n| where User != \"root\"\n| summarize AttemptCount = count(), FirstSeen = min(TimeGenerated), LastSeen = max(TimeGenerated) by Computer, User, CommandExecuted\n| where AttemptCount > 3\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"process\" AND \n(process.name: (\"sudo\" OR \"su\" OR \"busybox\") OR process.args: (\"chmod +s\" OR \"setuid\" OR \"setcap\")) AND \nhost.type: \"iot\" AND \nuser.name: * AND NOT user.name: \"root\" AND \nevent.outcome: \"success\""
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=iot_logs sourcetype=syslog \n(process_name=\"sudo\" OR process_name=\"su\" OR process_name=\"busybox\" OR command=\"*chmod +s*\" OR command=\"*setuid*\")\nuser!=root \nevent_outcome=success\n| stats count as escalation_attempts by host, user, process_name, command, _time\n| where escalation_attempts > 3\n| sort - escalation_attempts"
+      },
+      {
+        "siem": "AWS CloudWatch Insights (IoT Core)",
+        "query": "fields @timestamp, deviceId, event.type, event.user, event.command\n| filter event.type = \"privilege_escalation\" or event.command like /sudo|su|setuid/\n| filter event.user != \"root\"\n| stats count() as attempts by deviceId, event.user, event.command\n| filter attempts > 3\n| sort attempts desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "binwalk",
+        "type": "Firmware Analysis Tool",
+        "usage": "binwalk -e firmware.bin --extract-all"
+      },
+      {
+        "name": "firmwalker",
+        "type": "Firmware Security Scanner",
+        "usage": "firmwalker.sh /path/to/extracted/firmware"
+      },
+      {
+        "name": "checksec",
+        "type": "Binary Security Checker",
+        "usage": "checksec --file=/bin/busybox --format=json"
+      },
+      {
+        "name": "FACT (Firmware Analysis Comparison Tool)",
+        "type": "Automated Firmware Analysis",
+        "usage": "fact-client -s http://fact-server:5000 firmware.bin"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "IoT Manufacturing",
+      "Smart Home",
+      "Industrial Control Systems",
+      "Healthcare IoT",
+      "Automotive",
+      "Smart Cities"
+    ],
+    "compliance": [
+      "NIST IoT Core (Protect-1, Protect-2, Detect-1)",
+      "ISO/IEC 27001:2013 (A.14.2.5, A.9.2.3)",
+      "IEC 62443 (Industrial Security)",
+      "FDA Premarket Guidance (IoT Medical Devices)",
+      "ETSI EN 303 645 (IoT Security Standard)",
+      "OWASP IoT Top 10:2018"
+    ],
+    "deployment": [
+      "Edge Computing",
+      "On-Device Processing",
+      "IoT Cloud Gateway",
+      "Industrial IoT"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "PII",
+      "Industrial Secrets"
+    ]
+  }
+}

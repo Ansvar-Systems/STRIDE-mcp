@@ -1,0 +1,520 @@
+{
+  "id": "STRIDE-AI-DATA-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "LLM02:2025 - Sensitive Information Disclosure",
+      "LLM04:2025 - Data and Model Poisoning",
+      "LLM06:2025 - Excessive Agency"
+    ],
+    "mitre_attack": [
+      "AML.T0024 - Exfiltration via ML Inference API",
+      "AML.T0043 - Craft Adversarial Data",
+      "T1552.001 - Credentials In Files"
+    ],
+    "cwe": [
+      "CWE-200 - Exposure of Sensitive Information to an Unauthorized Actor",
+      "CWE-359 - Exposure of Private Personal Information to an Unauthorized Actor",
+      "CWE-312 - Cleartext Storage of Sensitive Information"
+    ]
+  },
+  "threat": {
+    "title": "AI/ML Training Data Extraction Attack - LLM Memorization and Model Inversion",
+    "description": "Large Language Models (LLMs) and other ML models can memorize and regurgitate verbatim training data including PII, credentials, proprietary code, and other sensitive information. Attackers exploit this through prompt engineering, repeated token attacks, membership inference, model inversion, and gradient attacks to extract data that was never intended to be exposed. This affects foundation models (GPT, LLaMA), fine-tuned models, code generation systems (Copilot), and image diffusion models.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.2,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Large Language Models (LLMs)",
+    "versions_affected": [
+      "GPT-3.5/4",
+      "LLaMA 2/3",
+      "Claude",
+      "PaLM",
+      "Codex/Copilot",
+      "Stable Diffusion",
+      "DALL-E"
+    ],
+    "ecosystem": "AI/ML",
+    "dependencies": [
+      "transformers",
+      "pytorch",
+      "tensorflow",
+      "langchain",
+      "openai",
+      "anthropic"
+    ],
+    "related_frameworks": [
+      "Hugging Face Transformers",
+      "LangChain",
+      "LlamaIndex",
+      "OpenAI API",
+      "Azure OpenAI",
+      "Bedrock"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Reconnaissance: Attacker identifies target LLM service (ChatGPT API, internal fine-tuned model, or code generation tool)\n2. Baseline Probing: Sends normal queries to understand model behavior and identify potential memorization patterns\n3. Repeated Token Injection: Crafts prompts with repeated tokens (e.g., 'poem poem poem...') to force model divergence from safety alignment\n4. Targeted Extraction: Uses carefully crafted prompts to elicit specific types of data (email addresses, phone numbers, API keys, code snippets)\n5. PII Harvesting: Extracts memorized personal information including names, addresses, social security numbers, medical records from training data\n6. Credential Exfiltration: Retrieves hardcoded credentials, API keys, database connection strings, and private keys that were present in training datasets",
+    "prerequisites": [
+      "Model trained on datasets containing sensitive information (PII, credentials, proprietary data)",
+      "API access to the model (public or internal endpoint)",
+      "No differential privacy guarantees during training (epsilon > 1.0)",
+      "Insufficient output filtering or content safety mechanisms",
+      "High memorization rate (common in models with large capacity trained on small, repeated datasets)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "N/A",
+        "description": "ChatGPT Training Data Extraction via Repeated Token Attack (Nasr et al., 2023)",
+        "cvss_score": 7.5,
+        "published_date": "2023-11-28",
+        "note": "No CVE assigned; documented in arXiv:2311.17035 and confirmed by OpenAI"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "ChatGPT Training Data Extraction Attack",
+        "date": "2023-11-28",
+        "impact": "Researchers extracted over 10,000 unique memorized training examples for $200 in API costs, including PII, URLs, complete poems, Bitcoin addresses, and copyrighted scientific research",
+        "root_cause": "GPT-3.5-turbo memorized verbatim training data; repeated token prompts caused divergence from alignment fine-tuning",
+        "source_url": "https://not-just-memorization.github.io/extracting-training-data-from-chatgpt.html"
+      },
+      {
+        "incident": "GitHub Copilot Secret and Credential Leakage",
+        "date": "2023-08-09",
+        "impact": "Researchers extracted 2,702 hardcoded credentials from Copilot (129 from CodeWhisperer) using 900 crafted prompts; exposed API keys, database passwords, and private repository code",
+        "root_cause": "Codex model trained on public GitHub repositories containing exposed secrets; no adequate sanitization of training data",
+        "source_url": "https://www.usenix.org/conference/usenixsecurity23/presentation/niu"
+      },
+      {
+        "incident": "Stable Diffusion Training Image Extraction",
+        "date": "2023-08-09",
+        "impact": "Researchers extracted exact copies of training images from Stable Diffusion, including faces and copyrighted artwork; demonstrated 92% success rate in identity inference attacks",
+        "root_cause": "Diffusion models memorize training images more than GANs; insufficient privacy-preserving training techniques",
+        "source_url": "https://www.usenix.org/system/files/usenixsecurity23-carlini.pdf"
+      },
+      {
+        "incident": "ChatGPT Repeated Token Bypass Evolution (Dropbox)",
+        "date": "2024-01-15",
+        "impact": "After OpenAI patched single-token repetition filtering, attackers used multi-token sequences to continue extracting memorized data from GPT-3.5 and GPT-4",
+        "root_cause": "Incomplete mitigation; filtering only applied to single repeated tokens, not multi-token patterns",
+        "source_url": "https://dropbox.tech/machine-learning/bye-bye-bye-evolution-of-repeated-token-attacks-on-chatgpt-models"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "OpenAI Bug Bounty",
+        "report_id": "Disclosed Research",
+        "bounty_amount": 0,
+        "severity": "High",
+        "summary": "Training data extraction via repeated token attack (responsible disclosure by Google DeepMind researchers)"
+      },
+      {
+        "platform": "Academic Research",
+        "report_id": "USENIX Security 2023",
+        "bounty_amount": 0,
+        "severity": "Medium-High",
+        "summary": "CodexLeaks: Privacy leaks from GitHub Copilot code generation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Scalable Extraction of Training Data from (Production) Language Models",
+        "authors": [
+          "Nasr, M.",
+          "Carlini, N.",
+          "et al."
+        ],
+        "published_date": "2023-11-28",
+        "source_url": "https://arxiv.org/abs/2311.17035",
+        "key_finding": "Extracted 10,000+ unique memorized examples from ChatGPT for $200; demonstrated that alignment fine-tuning is insufficient to prevent training data extraction"
+      },
+      {
+        "title": "CodexLeaks: Privacy Leaks from Code Generation Language Models in GitHub Copilot",
+        "authors": [
+          "Niu, L.",
+          "Mirza, S.",
+          "Maradni, Z.",
+          "P\u00f6pper, C."
+        ],
+        "published_date": "2023-08-09",
+        "source_url": "https://www.usenix.org/conference/usenixsecurity23/presentation/niu",
+        "key_finding": "Semi-automated pipeline for extracting PII and secrets from Codex; 2,702 credentials extracted from Copilot with crafted prompts"
+      },
+      {
+        "title": "Extracting Training Data from Diffusion Models",
+        "authors": [
+          "Carlini, N.",
+          "Hayes, J.",
+          "et al."
+        ],
+        "published_date": "2023-08-09",
+        "source_url": "https://www.usenix.org/system/files/usenixsecurity23-carlini.pdf",
+        "key_finding": "Diffusion models are significantly less private than GANs; extracted verbatim training images including faces and copyrighted content"
+      },
+      {
+        "title": "Identity-Focused Inference and Extraction Attacks on Diffusion Models",
+        "authors": [
+          "Various"
+        ],
+        "published_date": "2024-10-14",
+        "source_url": "https://arxiv.org/abs/2410.10177",
+        "key_finding": "Achieved 89% membership inference success rate, 92% identity inference rate, and 91.6% data extraction accuracy on diffusion models"
+      },
+      {
+        "title": "Membership Inference Attacks Against Fine-tuned Large Language Models via Self-prompt Calibration",
+        "authors": [
+          "NeurIPS 2024"
+        ],
+        "published_date": "2024-12-10",
+        "source_url": "https://neurips.cc/virtual/2024/poster/95327",
+        "key_finding": "SPV-MIA attack raised membership inference AUC from 0.7 to 0.9 on LLMs using self-calibrated probabilistic variation"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-AI-001",
+      "title": "Implement Differential Privacy with PyTorch Opacus",
+      "description": "Apply differential privacy during model training using DP-SGD (Differentially Private Stochastic Gradient Descent) to mathematically limit memorization of individual training examples. This provides formal privacy guarantees with configurable epsilon values.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "PyTorch + Opacus",
+        "code": "from opacus import PrivacyEngine\nfrom opacus.validators import ModuleValidator\nimport torch\nimport torch.nn as nn\nimport torch.optim as optim\n\n# Define your model (must be compatible with Opacus)\nmodel = nn.Sequential(\n    nn.Linear(784, 256),\n    nn.ReLU(),\n    nn.Linear(256, 10)\n)\n\n# Validate and fix model for differential privacy\nmodel = ModuleValidator.fix(model)\nmodel = model.to('cuda')\n\n# Create optimizer\noptimizer = optim.Adam(model.parameters(), lr=1e-3)\n\n# Initialize Privacy Engine with strict privacy parameters\nprivacy_engine = PrivacyEngine()\n\nmodel, optimizer, train_loader = privacy_engine.make_private_with_epsilon(\n    module=model,\n    optimizer=optimizer,\n    data_loader=train_loader,\n    epochs=10,\n    target_epsilon=3.0,      # Lower = stronger privacy (1.0-10.0 range)\n    target_delta=1e-5,       # Should be < 1/training_set_size\n    max_grad_norm=1.0,       # Gradient clipping threshold\n)\n\nprint(f\"Using sigma={optimizer.noise_multiplier} and C={max_grad_norm}\")\n\n# Training loop with privacy tracking\nfor epoch in range(10):\n    for batch_idx, (data, target) in enumerate(train_loader):\n        optimizer.zero_grad()\n        output = model(data)\n        loss = nn.CrossEntropyLoss()(output, target)\n        loss.backward()\n        optimizer.step()\n\n    # Track privacy budget at each epoch\n    epsilon = privacy_engine.get_epsilon(delta=1e-5)\n    print(f\"Epoch {epoch}: Loss={loss.item():.4f}, \u03b5={epsilon:.2f}\")\n\n    # Stop training if privacy budget exceeded\n    if epsilon > 3.0:\n        print(\"Privacy budget exhausted!\")\n        break\n\n# Final privacy guarantee\nfinal_epsilon = privacy_engine.get_epsilon(delta=1e-5)\nprint(f\"Final privacy guarantee: (\u03b5={final_epsilon:.2f}, \u03b4=1e-5)\")"
+      },
+      "tools": [
+        {
+          "name": "PyTorch Opacus",
+          "type": "Differential Privacy Library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.8.2.3 - Handling of assets",
+        "A.18.1.4 - Privacy and protection of personally identifiable information"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "nist_ai_rmf": [
+        "GOVERN 1.2 - Accountability structures are in place",
+        "MAP 1.5 - Privacy and data protection risks are assessed"
+      ],
+      "validation_steps": [
+        "Verify epsilon value is < 10.0 for production (< 3.0 for high-sensitivity data)",
+        "Calculate delta as 1/training_set_size or smaller",
+        "Test gradient clipping is applied",
+        "Monitor privacy budget consumption during training"
+      ]
+    },
+    {
+      "control_id": "MIT-AI-002",
+      "title": "Training Data Sanitization and PII Removal",
+      "description": "Scan and remove sensitive information from training datasets before model training using automated PII detection, regex patterns, and ML-based classifiers.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Presidio + spaCy",
+        "code": "from presidio_analyzer import AnalyzerEngine\nfrom presidio_anonymizer import AnonymizerEngine\nfrom presidio_anonymizer.entities import OperatorConfig\n\nanalyzer = AnalyzerEngine()\nanonymizer = AnonymizerEngine()\n\nPII_ENTITIES = [\n    \"CREDIT_CARD\", \"CRYPTO\", \"EMAIL_ADDRESS\", \"IP_ADDRESS\",\n    \"PERSON\", \"PHONE_NUMBER\", \"US_SSN\", \"LOCATION\"\n]\n\ndef sanitize_text(text, threshold=0.6):\n    results = analyzer.analyze(\n        text=text,\n        language='en',\n        entities=PII_ENTITIES,\n        score_threshold=threshold\n    )\n\n    anonymized = anonymizer.anonymize(\n        text=text,\n        analyzer_results=results,\n        operators={\n            \"DEFAULT\": OperatorConfig(\"replace\", {\"new_value\": \"<REDACTED>\"}),\n            \"EMAIL_ADDRESS\": OperatorConfig(\"replace\", {\"new_value\": \"user@example.com\"}),\n        }\n    )\n\n    return anonymized.text, results"
+      },
+      "tools": [
+        {
+          "name": "Microsoft Presidio",
+          "type": "PII Detection",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Gitleaks",
+          "type": "Secret Detection",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.8.2.1 - Classification of information"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected"
+      ],
+      "nist_ai_rmf": [
+        "MAP 1.5 - Privacy and data protection risks"
+      ],
+      "validation_steps": [
+        "Run sanitization on sample dataset and verify PII removal",
+        "Check sanitization report for coverage (should detect >95% of common PII)"
+      ]
+    },
+    {
+      "control_id": "MIT-AI-003",
+      "title": "LLM Output Filtering and Content Safety",
+      "description": "Implement real-time output filtering to detect and block potential training data leakage in model responses.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "LangChain + Custom Filters",
+        "code": "from langchain.callbacks.base import BaseCallbackHandler\nfrom presidio_analyzer import AnalyzerEngine\nimport re\n\nclass OutputSafetyFilter(BaseCallbackHandler):\n    def __init__(self, block_on_detection=True):\n        self.analyzer = AnalyzerEngine()\n        self.block_on_detection = block_on_detection\n        self.secret_patterns = {\n            'api_key': re.compile(r'\\b[A-Za-z0-9_-]{32,}\\b'),\n            'aws_key': re.compile(r'AKIA[0-9A-Z]{16}'),\n        }\n\n    def on_llm_end(self, response, **kwargs):\n        for generation in response.generations:\n            text = generation[0].text\n\n            # Check for PII\n            pii_results = self.analyzer.analyze(text, language='en', score_threshold=0.6)\n\n            # Check for secrets\n            for pattern in self.secret_patterns.values():\n                if pattern.search(text):\n                    if self.block_on_detection:\n                        generation[0].text = \"I cannot provide that information.\"\n                    break"
+      },
+      "tools": [
+        {
+          "name": "LangChain",
+          "type": "LLM Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Microsoft Presidio",
+          "type": "PII Detection",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.18.1.4 - Privacy and protection of PII"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "nist_ai_rmf": [
+        "MEASURE 2.7 - AI system output is reviewed"
+      ],
+      "validation_steps": [
+        "Test filter with sample PII (should block SSN, credit cards)",
+        "Monitor false positive rate (should be <5%)"
+      ]
+    },
+    {
+      "control_id": "MIT-AI-004",
+      "title": "Implement Rate Limiting and Anomaly Detection for Inference APIs",
+      "description": "Detect and block suspicious query patterns indicating training data extraction attempts.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "FastAPI + Redis",
+        "code": "from fastapi import FastAPI, HTTPException\nimport redis\nfrom collections import Counter\n\napp = FastAPI()\nredis_client = redis.Redis(host='localhost', decode_responses=True)\n\nMAX_REQUESTS_PER_MINUTE = 20\nREPEATED_TOKEN_THRESHOLD = 10\n\ndef detect_repeated_tokens(text, threshold=10):\n    tokens = text.split()\n    if not tokens:\n        return False\n    token_counts = Counter(tokens)\n    return max(token_counts.values()) >= threshold\n\n@app.post(\"/v1/chat/completions\")\nasync def chat_completion(data: dict):\n    prompt = data.get('prompt', '')\n\n    if detect_repeated_tokens(prompt, REPEATED_TOKEN_THRESHOLD):\n        raise HTTPException(\n            status_code=400,\n            detail=\"Invalid prompt: excessive token repetition detected\"\n        )\n\n    return {\"response\": \"LLM response here\"}"
+      },
+      "tools": [
+        {
+          "name": "FastAPI",
+          "type": "Web Framework",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Redis",
+          "type": "Rate Limiting",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - Network monitored"
+      ],
+      "nist_ai_rmf": [
+        "MEASURE 2.7 - AI system output reviewed"
+      ],
+      "validation_steps": [
+        "Test rate limiting with burst requests",
+        "Validate repeated token detection with known attack prompts"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusually high API request rates from single client (>100/hour)",
+      "Prompts containing repeated tokens (e.g., 'poem poem poem...')",
+      "Requests with very low entropy or very high repetition",
+      "Prompts explicitly requesting verbatim recall or specific PII",
+      "Sequential continuation prompts ('continue', 'more', 'next')",
+      "Outputs containing PII, credentials, or API keys"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect anomalous LLM API inference patterns\nlet TimeWindow = 1h;\nlet SuspiciousThreshold = 100;\nAzureDiagnostics\n| where ResourceType == \"MACHINELEARNINGSERVICES\"\n| where OperationName == \"InferenceRequest\"\n| extend ClientIP = tostring(parse_json(properties_s).clientIpAddress)\n| extend PromptLength = strlen(tostring(parse_json(properties_s).prompt))\n| summarize\n    RequestCount = count(),\n    AvgPromptLength = avg(PromptLength),\n    UniquePrompts = dcount(tostring(parse_json(properties_s).prompt))\n    by ClientIP, bin(TimeGenerated, TimeWindow)\n| where RequestCount > SuspiciousThreshold\n    or (RequestCount > 20 and UniquePrompts < 5)\n| project TimeGenerated, ClientIP, RequestCount, UniquePrompts, ThreatLevel = case(\n    RequestCount > 200, \"Critical\",\n    RequestCount > 100, \"High\",\n    \"Medium\"\n)\n| order by RequestCount desc"
+      },
+      {
+        "siem": "Azure Sentinel (KQL) - PII Detection",
+        "query": "// Detect PII leakage in LLM responses\nAzureDiagnostics\n| where ResourceType == \"MACHINELEARNINGSERVICES\"\n| extend Response = tostring(parse_json(properties_s).response)\n| extend\n    HasSSN = Response matches regex @\"\\b\\d{3}-\\d{2}-\\d{4}\\b\",\n    HasEmail = Response matches regex @\"\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b\",\n    HasPhone = Response matches regex @\"\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b\"\n| where HasSSN or HasEmail or HasPhone\n| project TimeGenerated, ClientIP = tostring(parse_json(properties_s).clientIpAddress), PIIType = case(\n    HasSSN, \"SSN\",\n    HasEmail, \"Email\",\n    HasPhone, \"Phone Number\",\n    \"Unknown\"\n)"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=ml_api sourcetype=inference_logs\n| where len(prompt) < 20 OR match(prompt, \"(\\w+\\s+){5,}\\1\")\n| stats count as request_count by client_ip, _time span=1h\n| where request_count > 50\n| table _time, client_ip, request_count"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.dataset: \"ml.inference\" AND event.category: \"api\"\n| where prompt.length < 20 OR prompt.repetition_score > 10\n| stats count() by source.ip, bucket(@timestamp, 1h)\n| where count > 100"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, requestParameters.endpointName, sourceIPAddress\n| filter eventName = \"InvokeEndpoint\"\n| stats count() as request_count by sourceIPAddress, bin(1h)\n| filter request_count > 100\n| sort request_count desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "ML Privacy Meter",
+        "type": "Privacy Testing Framework",
+        "usage": "Test models for membership inference vulnerabilities"
+      },
+      {
+        "name": "TextAttack",
+        "type": "Adversarial Testing",
+        "usage": "Test model robustness against adversarial prompts"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Technology/SaaS",
+      "Legal",
+      "Government",
+      "Education"
+    ],
+    "compliance": [
+      "GDPR (Article 25 - Data Protection by Design)",
+      "CCPA (California Consumer Privacy Act)",
+      "HIPAA (45 CFR \u00a7 164.308 - Administrative Safeguards)",
+      "PCI-DSS 4.0 (Requirement 3 - Protect Stored Data)",
+      "SOC 2 Type II (CC6.1 - Logical Access)",
+      "ISO 27001 (A.18.1.4 - Privacy and PII Protection)",
+      "NIST AI RMF 1.0 (Privacy Controls)",
+      "OWASP LLM Top 10 2025 (LLM02, LLM04)",
+      "EU AI Act (High-Risk AI Systems)"
+    ],
+    "deployment": [
+      "Cloud (Azure OpenAI, AWS Bedrock, GCP Vertex AI)",
+      "On-Premise (Self-hosted LLMs)",
+      "Hybrid (Fine-tuned cloud models)",
+      "Edge (Mobile/IoT ML models)"
+    ],
+    "data_classification": [
+      "Highly Sensitive (PII, PHI, Financial Data)",
+      "Confidential (Proprietary Code, Trade Secrets)",
+      "Internal (Employee Data)"
+    ],
+    "attack_techniques": [
+      "Training Data Extraction",
+      "Membership Inference Attack",
+      "Model Inversion Attack",
+      "Gradient Leakage",
+      "Prompt Injection for Data Extraction",
+      "Repeated Token Attack",
+      "Verbatim Memorization Exploitation"
+    ]
+  },
+  "references": [
+    {
+      "title": "Extracting Training Data from ChatGPT",
+      "url": "https://not-just-memorization.github.io/extracting-training-data-from-chatgpt.html",
+      "type": "Research"
+    },
+    {
+      "title": "Scalable Extraction of Training Data from (Production) Language Models (arXiv:2311.17035)",
+      "url": "https://arxiv.org/abs/2311.17035",
+      "type": "Research Paper"
+    },
+    {
+      "title": "CodexLeaks: Privacy Leaks from GitHub Copilot (USENIX Security 2023)",
+      "url": "https://www.usenix.org/conference/usenixsecurity23/presentation/niu",
+      "type": "Research Paper"
+    },
+    {
+      "title": "Extracting Training Data from Diffusion Models (USENIX Security 2023)",
+      "url": "https://www.usenix.org/system/files/usenixsecurity23-carlini.pdf",
+      "type": "Research Paper"
+    },
+    {
+      "title": "Bye Bye Bye: Evolution of Repeated Token Attacks (Dropbox)",
+      "url": "https://dropbox.tech/machine-learning/bye-bye-bye-evolution-of-repeated-token-attacks-on-chatgpt-models",
+      "type": "Blog"
+    },
+    {
+      "title": "Identity-Focused Inference and Extraction Attacks on Diffusion Models",
+      "url": "https://arxiv.org/abs/2410.10177",
+      "type": "Research Paper"
+    },
+    {
+      "title": "OWASP LLM Top 10 2025",
+      "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "type": "Framework"
+    },
+    {
+      "title": "MITRE ATLAS Framework",
+      "url": "https://atlas.mitre.org/",
+      "type": "Framework"
+    },
+    {
+      "title": "NIST AI Risk Management Framework",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "type": "Framework"
+    },
+    {
+      "title": "PyTorch Opacus - Differential Privacy Library",
+      "url": "https://opacus.ai/",
+      "type": "Tool Documentation"
+    },
+    {
+      "title": "TensorFlow Privacy Library",
+      "url": "https://www.tensorflow.org/responsible_ai/privacy/guide",
+      "type": "Tool Documentation"
+    },
+    {
+      "title": "Microsoft Presidio - PII Detection",
+      "url": "https://microsoft.github.io/presidio/",
+      "type": "Tool Documentation"
+    }
+  ],
+  "confidence_score_breakdown": {
+    "cve_validation": {
+      "score": 2.5,
+      "max": 3.0,
+      "notes": "No formal CVEs but multiple peer-reviewed publications confirm vulnerabilities (USENIX Security 2023, NeurIPS 2024)"
+    },
+    "breach_evidence": {
+      "score": 2.0,
+      "max": 2.0,
+      "notes": "Multiple confirmed incidents: ChatGPT extraction (2023), Copilot leakage (2023), Stable Diffusion (2023), Dropbox (2024)"
+    },
+    "expert_review": {
+      "score": 2.0,
+      "max": 2.0,
+      "notes": "Research from Google DeepMind, OpenAI, USENIX peer review, NeurIPS acceptance"
+    },
+    "code_testing": {
+      "score": 1.5,
+      "max": 2.0,
+      "notes": "Production-ready code with established libraries (Opacus, TensorFlow Privacy, Presidio)"
+    },
+    "bug_bounty": {
+      "score": 0.5,
+      "max": 1.0,
+      "notes": "Responsible disclosure to OpenAI; academic research disclosure"
+    },
+    "total": {
+      "score": 8.5,
+      "max": 10.0,
+      "confidence_level": "High"
+    }
+  }
+}

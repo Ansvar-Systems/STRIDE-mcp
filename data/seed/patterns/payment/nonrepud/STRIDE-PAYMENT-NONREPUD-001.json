@@ -1,0 +1,364 @@
+{
+  "id": "STRIDE-PAYMENT-NONREPUD-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": [
+      "A09:2021 - Security Logging and Monitoring Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1070.001 - Indicator Removal: Clear Windows Event Logs",
+      "T1562.001 - Impair Defenses: Disable or Modify Tools",
+      "T1078 - Valid Accounts"
+    ],
+    "cwe": [
+      "CWE-778 - Insufficient Logging",
+      "CWE-779 - Logging of Excessive Data",
+      "CWE-807 - Reliance on Untrusted Inputs in a Security Decision",
+      "CWE-326 - Inadequate Encryption Strength"
+    ]
+  },
+  "threat": {
+    "title": "Payment Transaction Non-Repudiation Failure Enabling Chargeback Fraud",
+    "description": "When payment systems lack cryptographic proof of transaction authorization (digital signatures, tamper-proof audit trails, HSM-backed signing), users can falsely deny making legitimate purchases, leading to fraudulent chargebacks. This vulnerability exploits the inability to prove transaction authenticity, costing merchants billions annually through 'friendly fraud' and first-party misuse. Without non-repudiation controls, merchants cannot definitively prove a customer authorized a payment, resulting in automatic disputes favoring consumers.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Payment Processing Systems",
+    "versions_affected": ["All versions lacking cryptographic non-repudiation"],
+    "ecosystem": "Financial Services",
+    "dependencies": [
+      "Stripe API",
+      "PayPal REST API",
+      "Spring Boot Payment Gateways",
+      "Square SDK",
+      "Adyen API"
+    ],
+    "related_frameworks": [
+      "Express.js Payment Integration",
+      "Django Payment Processing",
+      "ASP.NET Payment Gateways",
+      "Laravel Cashier"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Customer makes legitimate $2,500 purchase on e-commerce site using saved payment method\n2. Payment gateway processes transaction successfully without cryptographic signature or customer re-authentication\n3. Transaction logs capture timestamp, IP address, and session ID but lack digital signature proving customer intent\n4. 30 days later, customer initiates chargeback claiming 'unauthorized transaction' or 'did not authorize'\n5. Merchant provides transaction logs, but without cryptographic proof (digital signature, HSM-signed receipt), evidence is deemed insufficient\n6. Card network rules favor consumer; merchant loses both merchandise ($2,500) and chargeback fees ($15-100), plus inventory\n7. Customer retains product and receives refund (friendly fraud completed)\n8. Attacker shares technique on social media (TikTok 'chargeback hacks'), encouraging mass exploitation\n9. Merchant experiences 40% increase in chargebacks over 6 months, triggering monitoring programs and higher processing fees",
+    "prerequisites": [
+      "Payment system lacks digital signature or cryptographic proof of transaction authorization",
+      "No requirement for transaction-level customer authentication (e.g., biometric, OTP for high-value purchases)",
+      "Audit logs are not tamper-proof or cryptographically sealed",
+      "Transaction receipts not digitally signed by HSM or secure enclave",
+      "Merchant relies solely on IP logs, cookies, or session data as proof of authorization"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "N/A - Design Flaw",
+        "description": "Non-repudiation failures are architectural weaknesses rather than specific CVEs",
+        "cvss_score": 7.5,
+        "published_date": "N/A"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "TikTok Chargeback Fraud Epidemic",
+        "date": "2024-10-01",
+        "impact": "79% of merchants reported first-party fraud in 2024 (up from 34% in 2023); friendly fraud costs merchants $132 billion annually",
+        "root_cause": "Social media platforms popularized 'chargeback hacks' teaching consumers to dispute legitimate transactions. Merchants lacked cryptographic proof to counter false claims.",
+        "source_url": "https://www.chargeflow.io/blog/everything-you-should-know-about-friendly-fraud"
+      },
+      {
+        "incident": "Global Chargeback Rate Surge",
+        "date": "2024-09-30",
+        "impact": "Chargeback rates rose 8% globally in first three quarters of 2024; dispute rates spiked 78% year-over-year in Q3. Chargebacks projected to cost eCommerce $33.79B in 2025, reaching $41.69B by 2028.",
+        "root_cause": "Insufficient non-repudiation controls allowing consumers to falsely claim unauthorized transactions. Merchants lose $4.61 for every dollar of fraud.",
+        "source_url": "https://www.chargeflow.io/blog/chargeback-statistics-trends-costs-solutions"
+      },
+      {
+        "incident": "Deepfake Payment Authorization Fraud",
+        "date": "2025-03-01",
+        "impact": "Finance director authorized $499,000 payment after fraudulent Zoom call using deepfake CFO. In separate 2024 case, $25M transferred via deepfake video conference.",
+        "root_cause": "Lack of cryptographic transaction signing and multi-party authorization. Verbal/video authorization insufficient without digital signatures.",
+        "source_url": "https://www.recordedfuture.com/research/annual-payment-fraud-intelligence-report-2024"
+      }
+    ],
+    "bug_bounty_reports": [],
+    "security_research": [
+      {
+        "title": "2025 AFP Payments Fraud and Control Report",
+        "authors": ["Association for Financial Professionals"],
+        "published_date": "2025-01-01",
+        "source_url": "https://www.financialprofessionals.org/topics/payment-topics/payments-fraud",
+        "key_finding": "79% of organizations reported attempted or actual fraud attacks in 2025. Audit trail deficiencies cited as primary enabler of payment disputes."
+      },
+      {
+        "title": "Visa Compelling Evidence 3.0 Framework",
+        "authors": ["Visa Inc."],
+        "published_date": "2025-10-17",
+        "source_url": "https://www.checkout.com/blog/visa-compelling-evidence-3-0",
+        "key_finding": "New rules require merchants to provide cryptographic evidence of authorization for disputed transactions. Traditional logs (IP, session) deemed insufficient."
+      },
+      {
+        "title": "Mastercard Ethoca Chargeback Projection",
+        "authors": ["Mastercard"],
+        "published_date": "2023-01-01",
+        "source_url": "https://sift.com/blog/from-data-to-action-chargeback-trends-and-fraud-strategies-for-2025/",
+        "key_finding": "Chargebacks projected to rise 40% from 2023 to 2026, driven by first-party fraud and inadequate non-repudiation controls."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement RSA Digital Signatures for High-Value Transactions",
+      "description": "Cryptographically sign all payment transactions using RSA-2048 or higher asymmetric encryption. Customer's private key signs transaction details (amount, merchant, timestamp), creating irrefutable proof of authorization. Signature is verified using customer's public key and stored immutably in audit logs.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + Stripe API",
+        "code": "const crypto = require('crypto');\nconst stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);\n\n// Generate RSA key pair for customer (do once during account setup)\nfunction generateCustomerKeyPair() {\n  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {\n    modulusLength: 2048,\n    publicKeyEncoding: { type: 'spki', format: 'pem' },\n    privateKeyEncoding: { type: 'pkcs8', format: 'pem' }\n  });\n  \n  // Store public key in database, private key in customer's secure enclave/device\n  return { publicKey, privateKey };\n}\n\n// Customer signs transaction on client side (mobile app/browser)\nfunction signTransactionClient(transactionData, customerPrivateKey) {\n  const dataToSign = JSON.stringify({\n    amount: transactionData.amount,\n    currency: transactionData.currency,\n    merchantId: transactionData.merchantId,\n    timestamp: transactionData.timestamp,\n    nonce: crypto.randomBytes(16).toString('hex')\n  });\n  \n  const signature = crypto.sign(\n    'sha256',\n    Buffer.from(dataToSign),\n    {\n      key: customerPrivateKey,\n      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,\n      saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST\n    }\n  );\n  \n  return {\n    data: dataToSign,\n    signature: signature.toString('base64')\n  };\n}\n\n// Server verifies signature before processing payment\nasync function processSignedPayment(signedTransaction, customerId) {\n  try {\n    // Retrieve customer's public key from database\n    const customer = await db.customers.findById(customerId);\n    const publicKey = customer.publicKey;\n    \n    // Verify signature\n    const isValid = crypto.verify(\n      'sha256',\n      Buffer.from(signedTransaction.data),\n      {\n        key: publicKey,\n        padding: crypto.constants.RSA_PKCS1_PSS_PADDING,\n        saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST\n      },\n      Buffer.from(signedTransaction.signature, 'base64')\n    );\n    \n    if (!isValid) {\n      throw new Error('Invalid transaction signature - authorization denied');\n    }\n    \n    // Parse signed data and validate timestamp (prevent replay attacks)\n    const txData = JSON.parse(signedTransaction.data);\n    const txAge = Date.now() - txData.timestamp;\n    if (txAge > 300000) { // 5 minutes\n      throw new Error('Transaction signature expired');\n    }\n    \n    // Process payment with Stripe\n    const paymentIntent = await stripe.paymentIntents.create({\n      amount: txData.amount,\n      currency: txData.currency,\n      customer: customerId,\n      metadata: {\n        signed_data: signedTransaction.data,\n        signature: signedTransaction.signature,\n        signature_algorithm: 'RSA-SHA256-PSS',\n        public_key_fingerprint: crypto.createHash('sha256').update(publicKey).digest('hex')\n      }\n    });\n    \n    // Store signature in tamper-proof audit log\n    await auditLog.create({\n      event_type: 'payment_authorized',\n      customer_id: customerId,\n      payment_intent_id: paymentIntent.id,\n      amount: txData.amount,\n      signature: signedTransaction.signature,\n      signed_data: signedTransaction.data,\n      verification_status: 'valid',\n      timestamp: new Date(),\n      hash: crypto.createHash('sha256').update(JSON.stringify(paymentIntent)).digest('hex')\n    });\n    \n    return { success: true, paymentIntent };\n    \n  } catch (error) {\n    console.error('Payment signature verification failed:', error);\n    throw error;\n  }\n}\n\n// Dispute resolution: Provide cryptographic proof\nasync function handleChargebackDispute(paymentIntentId) {\n  const auditEntry = await auditLog.findByPaymentIntent(paymentIntentId);\n  const customer = await db.customers.findById(auditEntry.customer_id);\n  \n  // Generate dispute evidence package\n  const evidence = {\n    transaction_data: auditEntry.signed_data,\n    customer_signature: auditEntry.signature,\n    customer_public_key: customer.publicKey,\n    verification_proof: {\n      algorithm: 'RSA-SHA256-PSS',\n      key_size: 2048,\n      signature_valid: true,\n      timestamp: auditEntry.timestamp\n    },\n    cryptographic_hash: auditEntry.hash\n  };\n  \n  // Submit to Stripe as compelling evidence\n  await stripe.disputes.update(disputeId, {\n    evidence: {\n      customer_signature: evidence.customer_signature,\n      uncategorized_text: JSON.stringify(evidence)\n    }\n  });\n  \n  return evidence;\n}"
+      },
+      "tools": [
+        {
+          "name": "Node.js Crypto Module",
+          "type": "Cryptographic Library",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "Stripe API",
+          "type": "Payment Gateway",
+          "cost": "2.9% + $0.30 per transaction"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management",
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Generate RSA-2048 key pair for test customer",
+        "Sign test transaction with customer private key",
+        "Verify signature validation succeeds with correct public key",
+        "Verify signature validation fails with incorrect public key or tampered data",
+        "Test timestamp expiration (reject signatures older than 5 minutes)",
+        "Verify audit log contains signature and signed data",
+        "Simulate chargeback dispute and verify evidence package generation"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Blockchain-Based Immutable Audit Trail for Payment Transactions",
+      "description": "Store cryptographic hashes of all payment transactions on a private or consortium blockchain (e.g., Hyperledger Fabric, Ethereum private chain). Each transaction record includes hash of payment details, customer authorization proof, timestamp, and previous block hash, creating tamper-proof audit trail. Smart contracts enforce transaction validation rules.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Hyperledger Fabric + Node.js",
+        "code": "const { Contract } = require('fabric-contract-api');\nconst crypto = require('crypto');\n\n// Hyperledger Fabric chaincode (smart contract)\nclass PaymentAuditContract extends Contract {\n\n  // Initialize ledger\n  async initLedger(ctx) {\n    console.info('Payment audit ledger initialized');\n  }\n\n  // Record payment transaction on blockchain\n  async recordPaymentTransaction(ctx, transactionId, paymentData) {\n    const txData = JSON.parse(paymentData);\n    \n    // Validate required fields\n    if (!txData.customerId || !txData.amount || !txData.signature) {\n      throw new Error('Missing required transaction fields');\n    }\n    \n    // Create immutable audit record\n    const auditRecord = {\n      transactionId: transactionId,\n      customerId: txData.customerId,\n      merchantId: txData.merchantId,\n      amount: txData.amount,\n      currency: txData.currency,\n      timestamp: new Date().toISOString(),\n      customerSignature: txData.signature,\n      signedData: txData.signedData,\n      paymentGatewayResponse: txData.gatewayResponse,\n      ipAddress: txData.ipAddress,\n      deviceFingerprint: txData.deviceFingerprint,\n      // Cryptographic hash of all data for integrity\n      dataHash: crypto.createHash('sha256')\n        .update(JSON.stringify(txData))\n        .digest('hex'),\n      // Blockchain metadata\n      blockTimestamp: ctx.stub.getTxTimestamp(),\n      transactionHash: ctx.stub.getTxID()\n    };\n    \n    // Store on blockchain (immutable)\n    await ctx.stub.putState(transactionId, Buffer.from(JSON.stringify(auditRecord)));\n    \n    // Emit event for off-chain systems\n    ctx.stub.setEvent('PaymentRecorded', Buffer.from(JSON.stringify({\n      transactionId: transactionId,\n      customerId: txData.customerId,\n      amount: txData.amount,\n      timestamp: auditRecord.timestamp\n    })));\n    \n    return auditRecord;\n  }\n\n  // Query transaction history (for dispute resolution)\n  async queryPaymentTransaction(ctx, transactionId) {\n    const recordBytes = await ctx.stub.getState(transactionId);\n    \n    if (!recordBytes || recordBytes.length === 0) {\n      throw new Error(`Transaction ${transactionId} not found on blockchain`);\n    }\n    \n    return JSON.parse(recordBytes.toString());\n  }\n\n  // Get customer's complete transaction history\n  async getCustomerTransactionHistory(ctx, customerId) {\n    const queryString = {\n      selector: {\n        customerId: customerId\n      },\n      sort: [{ timestamp: 'desc' }]\n    };\n    \n    const iterator = await ctx.stub.getQueryResult(JSON.stringify(queryString));\n    const results = [];\n    \n    let result = await iterator.next();\n    while (!result.done) {\n      const record = JSON.parse(result.value.value.toString());\n      results.push(record);\n      result = await iterator.next();\n    }\n    \n    await iterator.close();\n    return results;\n  }\n\n  // Verify transaction integrity (hash validation)\n  async verifyTransactionIntegrity(ctx, transactionId) {\n    const record = await this.queryPaymentTransaction(ctx, transactionId);\n    \n    // Reconstruct data object\n    const dataToHash = {\n      customerId: record.customerId,\n      merchantId: record.merchantId,\n      amount: record.amount,\n      currency: record.currency,\n      signature: record.customerSignature,\n      signedData: record.signedData,\n      gatewayResponse: record.paymentGatewayResponse,\n      ipAddress: record.ipAddress,\n      deviceFingerprint: record.deviceFingerprint\n    };\n    \n    const computedHash = crypto.createHash('sha256')\n      .update(JSON.stringify(dataToHash))\n      .digest('hex');\n    \n    const isValid = (computedHash === record.dataHash);\n    \n    return {\n      transactionId: transactionId,\n      integrityValid: isValid,\n      storedHash: record.dataHash,\n      computedHash: computedHash,\n      blockchainTxId: record.transactionHash\n    };\n  }\n}\n\n// Client application integration\nconst { Gateway, Wallets } = require('fabric-network');\nconst path = require('path');\nconst fs = require('fs');\n\nasync function recordPaymentOnBlockchain(paymentIntent, customerSignature) {\n  try {\n    // Load connection profile\n    const ccpPath = path.resolve(__dirname, 'connection-profile.json');\n    const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));\n    \n    // Create wallet and gateway\n    const walletPath = path.join(process.cwd(), 'wallet');\n    const wallet = await Wallets.newFileSystemWallet(walletPath);\n    \n    const gateway = new Gateway();\n    await gateway.connect(ccp, {\n      wallet,\n      identity: 'merchantApp',\n      discovery: { enabled: true, asLocalhost: true }\n    });\n    \n    // Get network and contract\n    const network = await gateway.getNetwork('payment-channel');\n    const contract = network.getContract('payment-audit');\n    \n    // Prepare transaction data\n    const txData = {\n      customerId: paymentIntent.customer,\n      merchantId: process.env.MERCHANT_ID,\n      amount: paymentIntent.amount,\n      currency: paymentIntent.currency,\n      signature: customerSignature.signature,\n      signedData: customerSignature.data,\n      gatewayResponse: paymentIntent.id,\n      ipAddress: paymentIntent.metadata.ip_address,\n      deviceFingerprint: paymentIntent.metadata.device_fingerprint\n    };\n    \n    // Submit transaction to blockchain\n    const result = await contract.submitTransaction(\n      'recordPaymentTransaction',\n      paymentIntent.id,\n      JSON.stringify(txData)\n    );\n    \n    console.log('Payment recorded on blockchain:', result.toString());\n    \n    // Disconnect\n    await gateway.disconnect();\n    \n    return JSON.parse(result.toString());\n    \n  } catch (error) {\n    console.error('Failed to record payment on blockchain:', error);\n    throw error;\n  }\n}\n\n// Dispute resolution: Provide blockchain proof\nasync function generateBlockchainDisputeEvidence(transactionId) {\n  const gateway = new Gateway();\n  // ... (connection setup as above)\n  \n  const contract = network.getContract('payment-audit');\n  \n  // Retrieve transaction from blockchain\n  const txRecord = await contract.evaluateTransaction(\n    'queryPaymentTransaction',\n    transactionId\n  );\n  \n  // Verify integrity\n  const integrityProof = await contract.evaluateTransaction(\n    'verifyTransactionIntegrity',\n    transactionId\n  );\n  \n  const evidence = {\n    blockchain_record: JSON.parse(txRecord.toString()),\n    integrity_verification: JSON.parse(integrityProof.toString()),\n    proof_of_immutability: {\n      blockchain_network: 'Hyperledger Fabric',\n      transaction_hash: JSON.parse(txRecord.toString()).transactionHash,\n      block_timestamp: JSON.parse(txRecord.toString()).blockTimestamp,\n      tamper_proof: true,\n      cryptographic_hash: JSON.parse(txRecord.toString()).dataHash\n    }\n  };\n  \n  await gateway.disconnect();\n  return evidence;\n}"
+      },
+      "tools": [
+        {
+          "name": "Hyperledger Fabric",
+          "type": "Enterprise Blockchain Platform",
+          "cost": "Free (open-source) + infrastructure costs"
+        },
+        {
+          "name": "Amazon Managed Blockchain",
+          "type": "Managed Blockchain Service",
+          "cost": "$0.30/hour per member + $0.001/request"
+        },
+        {
+          "name": "Azure Blockchain Service",
+          "type": "Managed Blockchain Service",
+          "cost": "$0.256/hour per member (Basic tier)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.18.1.3 - Protection of records",
+        "A.18.1.4 - Privacy and protection of personally identifiable information"
+      ],
+      "nist_csf": [
+        "PR.DS-6 - Integrity checking mechanisms are used to verify software, firmware, and information integrity",
+        "PR.PT-1 - Audit/log records are determined, documented, implemented, and reviewed",
+        "DE.AE-3 - Event data are collected and correlated from multiple sources and sensors"
+      ],
+      "validation_steps": [
+        "Deploy Hyperledger Fabric network with payment-audit chaincode",
+        "Test recordPaymentTransaction function with sample payment",
+        "Query blockchain to retrieve transaction record",
+        "Verify transaction integrity using verifyTransactionIntegrity",
+        "Attempt to modify stored record (should fail - immutability)",
+        "Generate complete customer transaction history",
+        "Test dispute evidence generation with blockchain proof",
+        "Benchmark transaction throughput (target: 1000+ TPS)"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "HSM-Backed Transaction Signing with Azure Payment HSM",
+      "description": "Use Hardware Security Modules (HSM) to sign payment transactions with FIPS 140-2 Level 3 certified tamper-resistant hardware. HSM generates and stores cryptographic keys that never leave the secure hardware boundary. Each transaction receives PKCS#11 compliant digital signature, providing legal-grade non-repudiation meeting PCI-DSS and SOX requirements.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + Azure Payment HSM",
+        "code": "const { PaymentHsmClient } = require('@azure/payment-hsm');\nconst { DefaultAzureCredential } = require('@azure/identity');\nconst crypto = require('crypto');\n\n// Initialize Azure Payment HSM client\nconst credential = new DefaultAzureCredential();\nconst hsmEndpoint = process.env.AZURE_PAYMENT_HSM_ENDPOINT; // e.g., https://my-hsm.vault.azure.net\nconst hsmClient = new PaymentHsmClient(hsmEndpoint, credential);\n\n// Key management: Generate signing key in HSM (do once)\nasync function generateHsmSigningKey() {\n  try {\n    // Create 2048-bit RSA key pair in HSM (never exported)\n    const keyName = 'payment-signing-key-2026';\n    const keyOptions = {\n      kty: 'RSA',\n      keySize: 2048,\n      keyOps: ['sign', 'verify'],\n      extractable: false, // Key cannot leave HSM\n      attributes: {\n        enabled: true,\n        exportable: false\n      }\n    };\n    \n    const key = await hsmClient.createKey(keyName, keyOptions);\n    console.log('HSM signing key created:', key.id);\n    \n    // Store key ID in secure configuration\n    return key.id;\n    \n  } catch (error) {\n    console.error('HSM key generation failed:', error);\n    throw error;\n  }\n}\n\n// Sign payment transaction using HSM\nasync function signPaymentWithHsm(paymentData) {\n  try {\n    const keyName = 'payment-signing-key-2026';\n    \n    // Prepare canonical transaction data\n    const canonicalData = {\n      transaction_id: paymentData.transactionId,\n      customer_id: paymentData.customerId,\n      merchant_id: paymentData.merchantId,\n      amount: paymentData.amount,\n      currency: paymentData.currency,\n      timestamp: new Date().toISOString(),\n      nonce: crypto.randomBytes(32).toString('hex')\n    };\n    \n    // Create hash of transaction data\n    const dataToSign = JSON.stringify(canonicalData);\n    const hash = crypto.createHash('sha256').update(dataToSign).digest();\n    \n    // Sign hash using HSM (PKCS#11 compliant)\n    const signResult = await hsmClient.sign(keyName, 'RS256', hash);\n    \n    // Create signed transaction package\n    const signedTransaction = {\n      data: canonicalData,\n      signature: {\n        value: signResult.result.toString('base64'),\n        algorithm: 'RS256',\n        key_id: signResult.keyId,\n        hsm_timestamp: signResult.timestamp,\n        hsm_serial: process.env.HSM_SERIAL_NUMBER // For audit trail\n      },\n      integrity: {\n        data_hash: hash.toString('hex'),\n        hash_algorithm: 'SHA-256'\n      }\n    };\n    \n    console.log('Transaction signed by HSM:', signedTransaction.signature.key_id);\n    return signedTransaction;\n    \n  } catch (error) {\n    console.error('HSM signing failed:', error);\n    throw error;\n  }\n}\n\n// Verify HSM signature\nasync function verifyHsmSignature(signedTransaction) {\n  try {\n    const keyName = 'payment-signing-key-2026';\n    \n    // Reconstruct hash from data\n    const dataToVerify = JSON.stringify(signedTransaction.data);\n    const hash = crypto.createHash('sha256').update(dataToVerify).digest();\n    \n    // Verify hash matches\n    if (hash.toString('hex') !== signedTransaction.integrity.data_hash) {\n      throw new Error('Data integrity check failed - hash mismatch');\n    }\n    \n    // Verify signature using HSM\n    const signature = Buffer.from(signedTransaction.signature.value, 'base64');\n    const verifyResult = await hsmClient.verify(\n      keyName,\n      'RS256',\n      hash,\n      signature\n    );\n    \n    return {\n      valid: verifyResult.result,\n      key_id: signedTransaction.signature.key_id,\n      hsm_verified: true,\n      timestamp: new Date().toISOString()\n    };\n    \n  } catch (error) {\n    console.error('HSM verification failed:', error);\n    return { valid: false, error: error.message };\n  }\n}\n\n// Complete payment flow with HSM signing\nasync function processHsmSignedPayment(paymentIntent) {\n  try {\n    // 1. Prepare payment data\n    const paymentData = {\n      transactionId: paymentIntent.id,\n      customerId: paymentIntent.customer,\n      merchantId: process.env.MERCHANT_ID,\n      amount: paymentIntent.amount,\n      currency: paymentIntent.currency\n    };\n    \n    // 2. Sign transaction using HSM\n    const signedTx = await signPaymentWithHsm(paymentData);\n    \n    // 3. Process payment with Stripe (or other gateway)\n    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);\n    const payment = await stripe.paymentIntents.confirm(paymentIntent.id, {\n      metadata: {\n        hsm_signature: signedTx.signature.value,\n        hsm_key_id: signedTx.signature.key_id,\n        hsm_timestamp: signedTx.signature.hsm_timestamp,\n        signed_data_hash: signedTx.integrity.data_hash\n      }\n    });\n    \n    // 4. Store in tamper-proof audit log (database + blockchain)\n    await storeHsmSignedAuditRecord({\n      transaction_id: paymentIntent.id,\n      signed_transaction: signedTx,\n      payment_result: payment,\n      hsm_serial: process.env.HSM_SERIAL_NUMBER,\n      timestamp: new Date().toISOString()\n    });\n    \n    console.log('Payment processed with HSM signature:', payment.id);\n    return { success: true, payment, signature: signedTx.signature };\n    \n  } catch (error) {\n    console.error('HSM payment processing failed:', error);\n    throw error;\n  }\n}\n\n// Store HSM-signed audit record\nasync function storeHsmSignedAuditRecord(record) {\n  const db = require('./database');\n  \n  // Store in SQL database with signature\n  await db.query(`\n    INSERT INTO payment_audit_log (\n      transaction_id, customer_id, amount, currency,\n      hsm_signature, hsm_key_id, hsm_timestamp, hsm_serial,\n      signed_data, data_hash, created_at\n    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n  `, [\n    record.transaction_id,\n    record.signed_transaction.data.customer_id,\n    record.signed_transaction.data.amount,\n    record.signed_transaction.data.currency,\n    record.signed_transaction.signature.value,\n    record.signed_transaction.signature.key_id,\n    record.signed_transaction.signature.hsm_timestamp,\n    record.hsm_serial,\n    JSON.stringify(record.signed_transaction.data),\n    record.signed_transaction.integrity.data_hash,\n    record.timestamp\n  ]);\n  \n  // Also record on blockchain for additional immutability\n  await recordPaymentOnBlockchain(\n    record.transaction_id,\n    record.signed_transaction\n  );\n}\n\n// Generate dispute evidence with HSM proof\nasync function generateHsmDisputeEvidence(transactionId) {\n  const db = require('./database');\n  \n  // Retrieve HSM-signed audit record\n  const result = await db.query(\n    'SELECT * FROM payment_audit_log WHERE transaction_id = $1',\n    [transactionId]\n  );\n  \n  if (result.rows.length === 0) {\n    throw new Error('Transaction not found in audit log');\n  }\n  \n  const auditRecord = result.rows[0];\n  \n  // Verify signature is still valid\n  const signedTx = {\n    data: JSON.parse(auditRecord.signed_data),\n    signature: {\n      value: auditRecord.hsm_signature,\n      key_id: auditRecord.hsm_key_id,\n      hsm_timestamp: auditRecord.hsm_timestamp,\n      hsm_serial: auditRecord.hsm_serial\n    },\n    integrity: {\n      data_hash: auditRecord.data_hash,\n      hash_algorithm: 'SHA-256'\n    }\n  };\n  \n  const verificationResult = await verifyHsmSignature(signedTx);\n  \n  // Generate comprehensive evidence package\n  const evidence = {\n    transaction_details: auditRecord,\n    cryptographic_proof: {\n      signature: auditRecord.hsm_signature,\n      algorithm: 'RS256 (RSA-SHA256)',\n      key_id: auditRecord.hsm_key_id,\n      hsm_device: {\n        serial_number: auditRecord.hsm_serial,\n        certification: 'FIPS 140-2 Level 3',\n        vendor: 'Azure Payment HSM',\n        tamper_proof: true\n      },\n      signature_timestamp: auditRecord.hsm_timestamp,\n      verification_status: verificationResult.valid,\n      data_integrity_hash: auditRecord.data_hash\n    },\n    legal_compliance: {\n      pci_dss_compliant: true,\n      sox_compliant: true,\n      electronic_signatures_act: 'ESIGN Act 2000 compliant',\n      non_repudiation_level: 'Legal-grade'\n    },\n    blockchain_record: await getBlockchainRecord(transactionId)\n  };\n  \n  return evidence;\n}"
+      },
+      "tools": [
+        {
+          "name": "Azure Payment HSM",
+          "type": "Hardware Security Module (FIPS 140-2 Level 3)",
+          "cost": "$1.45/hour per HSM instance + $0.03 per 10k operations"
+        },
+        {
+          "name": "Thales payShield 10K",
+          "type": "Payment HSM Hardware",
+          "cost": "$15,000-$25,000 per unit (on-premise)"
+        },
+        {
+          "name": "AWS CloudHSM",
+          "type": "Managed HSM Service",
+          "cost": "$1.45/hour per HSM"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management",
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.DS-6 - Integrity checking mechanisms are used to verify information integrity",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Provision Azure Payment HSM instance (FIPS 140-2 Level 3 certified)",
+        "Generate RSA-2048 signing key in HSM with non-exportable flag",
+        "Test transaction signing with sample payment data",
+        "Verify signature using HSM verify operation",
+        "Attempt to export private key (should fail - tamper-proof)",
+        "Benchmark signing performance (target: 1000+ signatures/second)",
+        "Store HSM-signed transaction in audit database",
+        "Generate dispute evidence package with HSM proof",
+        "Validate compliance with PCI-DSS Requirement 3.6 (key management)",
+        "Test key rotation procedure without service disruption"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in chargeback disputes (>10% increase month-over-month)",
+      "Multiple disputes from same customer ID within short timeframe",
+      "High-value transactions followed by disputes within 30-90 day window",
+      "Disputes claiming 'unauthorized transaction' for accounts with strong authentication history",
+      "Pattern of disputes after product delivery confirmation",
+      "Chargebacks submitted immediately after chargeback window opens",
+      "Customer transaction history shows normal usage before dispute",
+      "Missing or incomplete transaction authorization signatures in audit logs",
+      "Audit log gaps or inconsistencies around disputed transactions",
+      "Social media mentions of merchant name + 'chargeback' or 'dispute'"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=payments sourcetype=stripe_events\n| search event_type=\"charge.dispute.created\"\n| eval dispute_age=now()-_time\n| bin _time span=1d\n| stats count as dispute_count, avg(amount) as avg_dispute_amt, values(customer_id) as customers by _time\n| where dispute_count > 10\n| eval alert_severity=case(\n    dispute_count > 50, \"critical\",\n    dispute_count > 25, \"high\",\n    dispute_count > 10, \"medium\"\n  )\n| table _time dispute_count avg_dispute_amt customers alert_severity\n| sort -dispute_count"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect payment dispute patterns indicating non-repudiation failures\nPaymentEvents\n| where EventType == \"ChargebackCreated\" or EventType == \"DisputeInitiated\"\n| where TimeGenerated >= ago(30d)\n| extend DisputeReason = tostring(Properties.dispute_reason)\n| summarize \n    DisputeCount = count(),\n    TotalDisputeAmount = sum(todouble(Properties.amount)),\n    UniqueCustomers = dcount(CustomerId),\n    ReasonBreakdown = make_set(DisputeReason)\n  by bin(TimeGenerated, 1d), MerchantId\n| where DisputeCount > threshold (10) // Configurable threshold\n| extend PercentIncrease = (DisputeCount - prev(DisputeCount)) / prev(DisputeCount) * 100\n| where PercentIncrease > 10 // 10% increase triggers alert\n| project \n    Date = TimeGenerated,\n    MerchantId,\n    DisputeCount,\n    TotalDisputeAmount,\n    UniqueCustomers,\n    PercentIncrease,\n    ReasonBreakdown\n| order by DisputeCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "event.category: \"payment\" AND event.type: \"dispute\"\n  AND event.outcome: \"created\"\n  AND @timestamp >= \"now-30d\"\n| stats \n    count() as dispute_count,\n    sum(payment.amount) as total_disputed,\n    cardinality(customer.id) as unique_customers,\n    values(dispute.reason) as dispute_reasons\n  by merchant.id, bucket(@timestamp, 1d)\n| where dispute_count > 10\n| eval chargeback_rate = dispute_count / total_transactions * 100\n| where chargeback_rate > 0.9\n| sort -dispute_count"
+      },
+      {
+        "siem": "Datadog (Query)",
+        "query": "{\n  \"query\": \"service:payment-gateway status:dispute\",\n  \"time\": {\n    \"from\": \"now-30d\",\n    \"to\": \"now\"\n  },\n  \"aggregation\": {\n    \"type\": \"count\",\n    \"metric\": \"payment.dispute\",\n    \"group_by\": [\"customer_id\", \"dispute_reason\"],\n    \"rollup\": \"1d\"\n  },\n  \"filter\": {\n    \"dispute_count\": { \">=\": 3 },\n    \"dispute_reason\": [\"fraudulent\", \"unrecognized\"]\n  }\n}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Stripe Radar for Fraud Detection",
+        "type": "ML-based Fraud Detection",
+        "usage": "Detects high-risk transactions based on velocity, device fingerprinting, and behavioral patterns. Integrates with Stripe API to flag potential friendly fraud."
+      },
+      {
+        "name": "Verifi CDRN (Cardholder Dispute Resolution Network)",
+        "type": "Chargeback Prevention",
+        "usage": "Real-time alerts when cardholders initiate disputes, allowing merchants to issue refunds before chargeback is filed."
+      },
+      {
+        "name": "Ethoca Alerts",
+        "type": "Chargeback Prevention (Mastercard)",
+        "usage": "Mastercard's dispute notification system providing early warning of potential chargebacks."
+      },
+      {
+        "name": "Sift Science",
+        "type": "Fraud Detection Platform",
+        "usage": "Machine learning platform detecting friendly fraud patterns across transaction history, device fingerprints, and user behavior."
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "E-commerce",
+      "Financial Services",
+      "Payment Processing",
+      "Digital Banking",
+      "Subscription Services",
+      "Marketplaces"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 10.1-10.7 - Audit Logging)",
+      "PCI-DSS 4.0 (Requirement 8 - User Identification & Traceability)",
+      "SOX (Section 404 - Audit Trail Requirements)",
+      "ESIGN Act 2000 (Electronic Signatures in Global and National Commerce Act)",
+      "UETA (Uniform Electronic Transactions Act)",
+      "GDPR (Article 32 - Security of Processing)",
+      "ISO27001 (A.12.4.1 - Event Logging, A.12.4.2 - Log Protection)",
+      "NIST CSF (PR.PT-1 - Audit/Log Records)",
+      "Visa CE3.0 (Compelling Evidence Framework)",
+      "Mastercard Chargeback Compliance"
+    ],
+    "deployment": [
+      "Cloud",
+      "Hybrid",
+      "Multi-Cloud",
+      "On-Premise (HSM)"
+    ],
+    "data_classification": [
+      "Critical",
+      "Financial",
+      "PII",
+      "Payment Card Data"
+    ]
+  }
+}

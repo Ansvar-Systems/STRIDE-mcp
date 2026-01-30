@@ -1,0 +1,348 @@
+{
+  "id": "STRIDE-API-IDOR-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 9.1,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "API1:2023 - Broken Object Level Authorization (BOLA)"
+    ],
+    "mitre_attack": [
+      "T1078 - Valid Accounts",
+      "T1098 - Account Manipulation",
+      "T1213 - Data from Information Repositories"
+    ],
+    "cwe": [
+      "CWE-639 - Authorization Bypass Through User-Controlled Key",
+      "CWE-284 - Improper Access Control",
+      "CWE-862 - Missing Authorization"
+    ]
+  },
+  "threat": {
+    "title": "Insecure Direct Object Reference (IDOR) in REST API Endpoints",
+    "description": "IDOR vulnerabilities occur when APIs expose direct references to internal implementation objects (like database keys or file paths) without proper authorization checks. Attackers can manipulate these references to access unauthorized data belonging to other users. This is the #1 API security risk according to OWASP, present in approximately 40% of all API attacks and representing a $1 billion+ annual impact across the security industry.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "REST APIs",
+    "versions_affected": ["All versions"],
+    "ecosystem": "Multi-framework",
+    "dependencies": [],
+    "related_frameworks": ["Express.js", "Spring Boot", "Django REST Framework", "Flask-RESTful", "FastAPI", "ASP.NET Core", "Ruby on Rails API"]
+  },
+  "attack": {
+    "scenario": "1. Attacker authenticates as legitimate user (userID: 123) with valid credentials\n2. Discovers API endpoint pattern: GET /api/users/123/profile returns their own profile data\n3. Changes userID parameter to 124: GET /api/users/124/profile\n4. API fails to verify if authenticated user (123) should access user 124's data\n5. Receives sensitive information: email, phone number, address, order history of user 124\n6. Automates enumeration: Iterates through IDs 1-10000 to harvest thousands of user records\n7. Exfiltrates personally identifiable information (PII) for identity theft or resale",
+    "prerequisites": [
+      "API uses predictable object identifiers (sequential integers, GUIDs without authorization)",
+      "Application fails to verify user authorization at object level",
+      "User can authenticate with at least low-privilege account",
+      "API endpoints accept user-controllable object references (IDs in URL path or query parameters)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2024-56404",
+        "description": "IDOR in One Identity Identity Manager 9.x before 9.3 allows privilege escalation through insecure direct object reference, affecting On-Premise installations",
+        "cvss_score": 7.5,
+        "published_date": "2024-12-20"
+      },
+      {
+        "cve_id": "CVE-2023-36238",
+        "description": "IDOR in Bagisto v.1.5.1 e-commerce platform allows attackers to obtain sensitive invoice information via invoice ID parameter manipulation",
+        "cvss_score": 7.5,
+        "published_date": "2023-06-26"
+      },
+      {
+        "cve_id": "CVE-2024-48899",
+        "description": "IDOR vulnerability in Moodle Course Badges allowing unauthorized access to badge information through ID manipulation",
+        "cvss_score": 6.5,
+        "published_date": "2024-11-15"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "OWASP API Security Top 10 - BOLA #1 Risk",
+        "date": "2023-12-01",
+        "impact": "40% of all API attacks involve BOLA/IDOR vulnerabilities, making it the most prevalent API security risk worldwide",
+        "root_cause": "Missing object-level authorization checks in API implementations across thousands of organizations",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+      },
+      {
+        "incident": "TikTok Memories Privacy Breach via IDOR",
+        "date": "2023-08-15",
+        "impact": "Researcher discovered IDOR allowing viewing of other users' private 'Memories' by manipulating aweme_id parameter, potentially exposing millions of private videos",
+        "root_cause": "Inadequate authorization checks on memory/video access API endpoints",
+        "source_url": "https://www.threatintelreport.com/2023/07/21/techniques_tactics_procedures/insecure-direct-object-references-idor-a-deep-dive-into-the-1-vulnerability-found-by-penetration-testers-in-2023/"
+      },
+      {
+        "incident": "HackerOne Platform Statistics",
+        "date": "2024-01-01",
+        "impact": "Over 200 IDOR vulnerabilities reported monthly on HackerOne platform; 15% of retail/ecommerce bounties paid for IDOR, 18% government, 36% medical technology, 31% professional services",
+        "root_cause": "Systemic failure to implement object-level authorization across industries",
+        "source_url": "https://www.bugbountyhunter.com/vulnerability/?type=idor"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "#262661",
+        "bounty_amount": 12500,
+        "severity": "High",
+        "summary": "IDOR vulnerability in HackerOne platform allowing deletion of licenses and certifications via GraphQL query manipulation"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "#1323406",
+        "bounty_amount": 3000,
+        "severity": "High",
+        "summary": "IDOR in Affirm platform to view order information of other users including delivery addresses and purchase history"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "#950881",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "IDOR when editing email in Automattic platform leads to account takeover by modifying user_id parameter"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP API Security Top 10 - API1:2023 Broken Object Level Authorization",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2023-12-01",
+        "source_url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+        "key_finding": "BOLA ranked #1 API security risk in 2023, affecting approximately 40% of API attacks. Authorization checks must be performed for every API request accessing sensitive objects."
+      },
+      {
+        "title": "IDOR: The #1 Vulnerability Found by Penetration Testers in 2023",
+        "authors": ["Threat Intelligence Report"],
+        "published_date": "2023-07-21",
+        "source_url": "https://www.threatintelreport.com/2023/07/21/techniques_tactics_procedures/insecure-direct-object-references-idor-a-deep-dive-into-the-1-vulnerability-found-by-penetration-testers-in-2023/",
+        "key_finding": "IDOR identified as most common vulnerability in penetration testing engagements, with consistent exploitation patterns across industries"
+      },
+      {
+        "title": "IDOR in 2025: Why Broken Access Control Still Rules the Vulnerability Charts",
+        "authors": ["Skrumf"],
+        "published_date": "2025-01-15",
+        "source_url": "https://medium.com/@skrumf/idor-in-2025-why-broken-access-control-still-rules-the-vulnerability-charts-with-real-world-d09439eaa29b",
+        "key_finding": "IDOR continues to dominate vulnerability statistics in 2025 with real-world demonstrations showing systematic failures across modern API implementations"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Object-Level Authorization Checks",
+      "description": "Enforce authorization checks at the object level for every API request. Verify that the authenticated user has permission to perform the requested action on the specific object, not just access to the endpoint. This is the most critical defense against IDOR attacks.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x + Node.js",
+        "code": "const express = require('express');\nconst router = express.Router();\n\n// Middleware to verify object-level authorization\nasync function authorizeObjectAccess(req, res, next) {\n  const userId = req.user.id; // From JWT/session\n  const requestedUserId = parseInt(req.params.userId);\n  const action = req.method; // GET, PUT, DELETE, etc.\n\n  try {\n    // Check 1: User owns the resource\n    if (userId === requestedUserId) {\n      return next();\n    }\n\n    // Check 2: User has delegated access (e.g., admin, shared resource)\n    const hasAccess = await checkUserPermissions(userId, requestedUserId, action);\n    \n    if (!hasAccess) {\n      return res.status(403).json({\n        error: 'Forbidden',\n        message: 'You do not have permission to access this resource'\n      });\n    }\n\n    next();\n  } catch (error) {\n    console.error('Authorization check failed:', error);\n    return res.status(500).json({ error: 'Authorization check failed' });\n  }\n}\n\n// Database query with access control\nasync function checkUserPermissions(actorId, targetUserId, action) {\n  // Example: Check if user is admin\n  const actor = await db.users.findById(actorId);\n  if (actor.role === 'admin') {\n    return true;\n  }\n\n  // Example: Check if resource is shared\n  const shared = await db.permissions.findOne({\n    resource_owner: targetUserId,\n    shared_with: actorId,\n    permission: action\n  });\n\n  return shared !== null;\n}\n\n// Protected endpoint with object-level authorization\nrouter.get('/api/users/:userId/profile', \n  authenticateJWT,           // Step 1: Verify user is authenticated\n  authorizeObjectAccess,     // Step 2: Verify user can access THIS specific object\n  async (req, res) => {\n    try {\n      const user = await db.users.findById(req.params.userId);\n      res.json({\n        id: user.id,\n        email: user.email,\n        name: user.name,\n        created_at: user.created_at\n      });\n    } catch (error) {\n      res.status(404).json({ error: 'User not found' });\n    }\n  }\n);\n\n// Example for resource-based access (orders, documents, etc.)\nrouter.get('/api/orders/:orderId', \n  authenticateJWT,\n  async (req, res) => {\n    const userId = req.user.id;\n    const orderId = req.params.orderId;\n\n    try {\n      // CRITICAL: Query must filter by BOTH orderId AND userId\n      const order = await db.orders.findOne({\n        id: orderId,\n        user_id: userId  // Ensures user can only access their own orders\n      });\n\n      if (!order) {\n        return res.status(404).json({ error: 'Order not found' });\n      }\n\n      res.json(order);\n    } catch (error) {\n      res.status(500).json({ error: 'Failed to retrieve order' });\n    }\n  }\n);\n\nmodule.exports = router;"
+      },
+      "tools": [],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.9.2.1 - User registration and de-registration"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Test accessing /api/users/123 as user 123 (should succeed)",
+        "Test accessing /api/users/124 as user 123 (should return 403 Forbidden)",
+        "Verify admin users can access all user profiles",
+        "Test with invalid/non-existent object IDs (should return 404)",
+        "Verify authorization checks occur before database queries"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Use UUIDs Instead of Sequential Integer IDs",
+      "description": "Replace sequential, predictable integer IDs with Universally Unique Identifiers (UUIDs) or cryptographically random tokens. This makes object enumeration computationally infeasible while adding defense-in-depth. Note: This is NOT a substitute for proper authorization checks.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + PostgreSQL",
+        "code": "const { v4: uuidv4 } = require('uuid');\nconst crypto = require('crypto');\n\n// Database Schema Migration\n// Before: CREATE TABLE users (id SERIAL PRIMARY KEY, ...);\n// After:\nconst migrationSQL = `\nALTER TABLE users ADD COLUMN uuid UUID DEFAULT gen_random_uuid();\nCREATE UNIQUE INDEX idx_users_uuid ON users(uuid);\n\n-- For new tables, use UUID as primary key\nCREATE TABLE orders (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  user_id UUID REFERENCES users(uuid),\n  order_number VARCHAR(50) UNIQUE NOT NULL,\n  total_amount DECIMAL(10,2),\n  created_at TIMESTAMP DEFAULT NOW()\n);\n`;\n\n// Application Code\nconst express = require('express');\nconst router = express.Router();\n\n// Generate UUID for new users\nrouter.post('/api/users', async (req, res) => {\n  const userId = uuidv4(); // e.g., '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'\n  \n  const user = await db.users.create({\n    uuid: userId,\n    email: req.body.email,\n    name: req.body.name\n  });\n\n  res.status(201).json({ id: user.uuid, ...user });\n});\n\n// Access user by UUID\nrouter.get('/api/users/:userId', \n  authenticateJWT,\n  async (req, res) => {\n    const requestedUserId = req.params.userId;\n    const authenticatedUserId = req.user.id;\n\n    // Validate UUID format to prevent injection\n    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n    if (!uuidRegex.test(requestedUserId)) {\n      return res.status(400).json({ error: 'Invalid user ID format' });\n    }\n\n    // CRITICAL: Still enforce authorization checks!\n    if (authenticatedUserId !== requestedUserId && !req.user.isAdmin) {\n      return res.status(403).json({ error: 'Forbidden' });\n    }\n\n    const user = await db.users.findOne({ uuid: requestedUserId });\n    if (!user) {\n      return res.status(404).json({ error: 'User not found' });\n    }\n\n    res.json(user);\n  }\n);\n\n// Alternative: Cryptographically secure random tokens\nfunction generateSecureToken(length = 32) {\n  return crypto.randomBytes(length).toString('base64url');\n}\n\n// Use tokens for sensitive resources\nrouter.post('/api/documents', \n  authenticateJWT,\n  async (req, res) => {\n    const documentToken = generateSecureToken(32);\n    \n    const document = await db.documents.create({\n      token: documentToken,  // 43 character base64url string\n      user_id: req.user.id,\n      title: req.body.title,\n      content: req.body.content\n    });\n\n    // Share document via unguessable URL\n    res.status(201).json({\n      id: document.token,\n      url: `https://api.example.com/api/documents/${document.token}`\n    });\n  }\n);\n\nmodule.exports = router;"
+      },
+      "tools": [
+        {
+          "name": "uuid npm package",
+          "type": "UUID Generation Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "PostgreSQL gen_random_uuid()",
+          "type": "Database UUID Function",
+          "cost": "Built-in"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks"
+      ],
+      "validation_steps": [
+        "Verify all new records use UUID/random tokens as identifiers",
+        "Test that sequential ID enumeration is no longer possible",
+        "Confirm UUID validation prevents malformed input",
+        "Verify authorization checks still enforce access control",
+        "Update API documentation to reflect UUID format"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Attribute-Based Access Control (ABAC)",
+      "description": "Move beyond simple ownership checks to policy-based access control that evaluates user attributes, resource attributes, environmental conditions, and actions. ABAC provides fine-grained authorization suitable for complex multi-tenant and enterprise applications.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Node.js + CASL (Authorization Library)",
+        "code": "const { AbilityBuilder, Ability } = require('@casl/ability');\nconst express = require('express');\nconst router = express.Router();\n\n// Define authorization policies based on user attributes\nfunction defineAbilitiesFor(user) {\n  const { can, cannot, build } = new AbilityBuilder(Ability);\n\n  // Public users (not authenticated)\n  if (!user) {\n    can('read', 'Article', { published: true });\n    return build();\n  }\n\n  // Regular authenticated users\n  can('read', 'Article', { published: true });\n  can('create', 'Article');\n  can('update', 'Article', { authorId: user.id });\n  can('delete', 'Article', { authorId: user.id });\n  \n  // Users can manage their own profile\n  can('read', 'User', { id: user.id });\n  can('update', 'User', { id: user.id });\n\n  // Users can read profiles of their organization members\n  if (user.organizationId) {\n    can('read', 'User', { organizationId: user.organizationId });\n  }\n\n  // Premium users have additional capabilities\n  if (user.subscription === 'premium') {\n    can('export', 'Article');\n    can('read', 'Analytics');\n  }\n\n  // Managers can manage their team members\n  if (user.role === 'manager') {\n    can('read', 'User', { managerId: user.id });\n    can('update', 'User', { managerId: user.id });\n    can('approve', 'Article', { department: user.department });\n  }\n\n  // Admins have full access\n  if (user.role === 'admin') {\n    can('manage', 'all');\n  } else {\n    // Explicit denials (override previous grants)\n    cannot('delete', 'User');\n    cannot('access', 'AdminPanel');\n  }\n\n  return build();\n}\n\n// Middleware to check authorization\nfunction authorize(action, subject) {\n  return async (req, res, next) => {\n    const ability = defineAbilitiesFor(req.user);\n    \n    // For resource-specific checks, load the resource first\n    let resource = subject;\n    if (typeof subject === 'string' && req.params.id) {\n      // Load resource from database\n      const Model = db[subject.toLowerCase() + 's'];\n      resource = await Model.findById(req.params.id);\n      \n      if (!resource) {\n        return res.status(404).json({ error: `${subject} not found` });\n      }\n    }\n\n    // Check if user can perform action on resource\n    if (ability.cannot(action, resource)) {\n      return res.status(403).json({\n        error: 'Forbidden',\n        message: `You cannot ${action} this ${subject}`\n      });\n    }\n\n    // Attach ability to request for use in handler\n    req.ability = ability;\n    req.resource = resource;\n    next();\n  };\n}\n\n// Apply ABAC to API endpoints\nrouter.get('/api/users/:id', \n  authenticateJWT,\n  authorize('read', 'User'),\n  async (req, res) => {\n    res.json(req.resource); // Resource loaded by authorize middleware\n  }\n);\n\nrouter.put('/api/articles/:id', \n  authenticateJWT,\n  authorize('update', 'Article'),\n  async (req, res) => {\n    // Update the article\n    await req.resource.update(req.body);\n    res.json(req.resource);\n  }\n);\n\nrouter.get('/api/articles',\n  authenticateJWT,\n  async (req, res) => {\n    const ability = defineAbilitiesFor(req.user);\n    \n    // Build database query based on user's permissions\n    const query = {};\n    \n    // Regular users can only see published articles\n    if (ability.cannot('read', 'Article', { published: false })) {\n      query.published = true;\n    }\n    \n    // Non-admin users can only see their own drafts\n    if (!req.user || req.user.role !== 'admin') {\n      query.$or = [\n        { published: true },\n        { authorId: req.user?.id }\n      ];\n    }\n    \n    const articles = await db.articles.find(query);\n    \n    // Filter results based on field-level permissions\n    const sanitized = articles.map(article => {\n      const obj = article.toObject();\n      \n      // Remove sensitive fields if user can't read them\n      if (ability.cannot('read', article, 'authorEmail')) {\n        delete obj.authorEmail;\n      }\n      \n      return obj;\n    });\n    \n    res.json(sanitized);\n  }\n);\n\n// Audit logging for authorization decisions\nfunction logAuthorizationDecision(user, action, resource, granted) {\n  db.auditLog.create({\n    timestamp: new Date(),\n    userId: user?.id,\n    action,\n    resourceType: resource.constructor.name,\n    resourceId: resource.id,\n    granted,\n    userAttributes: {\n      role: user?.role,\n      subscription: user?.subscription,\n      organizationId: user?.organizationId\n    }\n  });\n}\n\nmodule.exports = router;"
+      },
+      "tools": [
+        {
+          "name": "CASL",
+          "type": "JavaScript Authorization Library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Open Policy Agent (OPA)",
+          "type": "Policy-Based Authorization Engine",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "AWS Verified Permissions",
+          "type": "Managed ABAC Service",
+          "cost": "$0.035 per 1,000 authorization requests"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.2.3 - Management of privileged access rights"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed, incorporating principles of least privilege and separation of duties",
+        "PR.PT-3 - Access to systems and assets is controlled"
+      ],
+      "validation_steps": [
+        "Define comprehensive authorization policies for all user roles",
+        "Test that users can only access resources based on attribute rules",
+        "Verify managers can access their team's resources",
+        "Confirm admins have unrestricted access",
+        "Test policy changes don't require code deployment",
+        "Verify authorization decisions are logged for audit"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Multiple 403 Forbidden responses from same IP address within short timeframe",
+      "Sequential object ID access patterns (e.g., /api/users/1, /api/users/2, /api/users/3)",
+      "High volume of API requests to single endpoint with varying ID parameters",
+      "Access to objects created by different users from single authenticated session",
+      "API requests with IDs outside normal user's resource range",
+      "Sudden spike in 404 Not Found errors (attacker probing for valid IDs)",
+      "Access patterns inconsistent with normal user behavior (e.g., customer accessing admin resources)"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect IDOR enumeration attempts via sequential ID access\nAppServiceHTTPLogs\n| where TimeGenerated > ago(1h)\n| where CsUriStem matches regex @\"/api/\\w+/\\d+\"\n| extend ResourceID = extract(@\"/(\\d+)\", 1, CsUriStem)\n| extend Endpoint = extract(@\"(/api/\\w+)/\", 1, CsUriStem)\n| summarize \n    RequestCount = count(),\n    UniqueIDs = dcount(ResourceID),\n    IDList = make_set(ResourceID),\n    StatusCodes = make_set(ScStatus)\n    by CIp, Endpoint, CsUsername, bin(TimeGenerated, 5m)\n| where UniqueIDs > 20  // More than 20 different IDs in 5 minutes\n| extend Suspicious = case(\n    RequestCount > 100, \"High\",\n    UniqueIDs > 50, \"High\",\n    true, \"Medium\"\n  )\n| project TimeGenerated, CIp, CsUsername, Endpoint, RequestCount, UniqueIDs, Suspicious, StatusCodes\n| order by RequestCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=api_logs sourcetype=rest_api\n| rex field=uri_path \"/api/(?<endpoint>\\w+)/(?<resource_id>\\d+)\"\n| where isnotnull(resource_id)\n| eventstats dc(resource_id) as unique_ids by src_ip, endpoint, user_id\n| where unique_ids > 20\n| stats \n    count as request_count,\n    dc(resource_id) as unique_resources,\n    values(status_code) as status_codes,\n    earliest(_time) as first_seen,\n    latest(_time) as last_seen\n    by src_ip, user_id, endpoint\n| eval duration=tostring(last_seen-first_seen, \"duration\")\n| where request_count > 50 OR unique_resources > 30\n| eval severity=case(\n    request_count > 200, \"critical\",\n    unique_resources > 100, \"critical\",\n    request_count > 100, \"high\",\n    true, \"medium\"\n  )\n| table first_seen, src_ip, user_id, endpoint, request_count, unique_resources, duration, status_codes, severity\n| sort -request_count"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by source.ip, user.id with maxspan=10m\n  [api where event.category == \"web\" and http.response.status_code == 200 and url.path : \"/api/*/[0-9]*\"]\n  [api where event.category == \"web\" and http.response.status_code == 200 and url.path : \"/api/*/[0-9]*\"]\n  [api where event.category == \"web\" and http.response.status_code == 200 and url.path : \"/api/*/[0-9]*\"]\n  [api where event.category == \"web\" and http.response.status_code == 200 and url.path : \"/api/*/[0-9]*\"]\n  [api where event.category == \"web\" and http.response.status_code == 200 and url.path : \"/api/*/[0-9]*\"]"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, request.url, request.ip, user.id, response.statusCode\n| filter request.url like /\\/api\\/\\w+\\/\\d+/\n| parse request.url /\\/api\\/(?<endpoint>\\w+)\\/(?<resourceId>\\d+)/\n| stats count() as requestCount, count_distinct(resourceId) as uniqueResources by request.ip, user.id, endpoint, bin(5m)\n| filter uniqueResources > 20 or requestCount > 100\n| sort requestCount desc"
+      },
+      {
+        "siem": "Google Cloud Logging",
+        "query": "resource.type=\"api\"\njsonPayload.request.url=~\"/api/.*/[0-9]+\"\ntimestamp>=\"2026-01-30T00:00:00Z\"\n| group_by [jsonPayload.request.ip, jsonPayload.user.id, jsonPayload.request.endpoint], \n    count(),\n    count_distinct(jsonPayload.request.resourceId),\n    window(5m)\n| having count() > 100 OR count_distinct(jsonPayload.request.resourceId) > 30"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Wazuh",
+        "type": "Open Source SIEM/IDS",
+        "usage": "Configure custom decoders and rules to detect IDOR patterns in API logs"
+      },
+      {
+        "name": "Falco",
+        "type": "Runtime Security",
+        "usage": "falco -r idor_detection_rules.yaml # Monitor syscalls and API activity for IDOR attempts"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "Security Testing",
+        "usage": "Automated IDOR detection during security testing with Active Scan rules"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Medical Technology",
+      "Professional Services",
+      "Retail"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.8 - Improper Access Control)",
+      "HIPAA (164.312(a)(1) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.9.4.1 - Information Access Restriction)",
+      "GDPR (Article 32 - Security of Processing)",
+      "NIST 800-53 (AC-3 - Access Enforcement)",
+      "FedRAMP (AC-3)",
+      "CCPA (Data Access Controls)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Kubernetes",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Personally Identifiable Information (PII)",
+      "Protected Health Information (PHI)",
+      "Financial Data"
+    ]
+  }
+}

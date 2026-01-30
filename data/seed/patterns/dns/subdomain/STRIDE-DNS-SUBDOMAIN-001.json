@@ -1,0 +1,349 @@
+{
+  "id": "STRIDE-DNS-SUBDOMAIN-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.3,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A07:2021 - Identification and Authentication Failures",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1584.001 - Compromise Infrastructure: Domains",
+      "T1583.001 - Acquire Infrastructure: Domains",
+      "T1189 - Drive-by Compromise"
+    ],
+    "cwe": [
+      "CWE-350 - Reliance on Reverse DNS Resolution for a Security-Critical Action",
+      "CWE-1321 - Improperly Controlled Modification of Object Prototype Attributes",
+      "CWE-923 - Improper Restriction of Communication Channel to Intended Endpoints"
+    ]
+  },
+  "threat": {
+    "title": "Subdomain Takeover via Dangling DNS Records",
+    "description": "Subdomain takeover occurs when a DNS record (typically CNAME) points to an external service that has been deprovisioned or is no longer claimed, allowing an attacker to register the same resource and serve malicious content on the legitimate subdomain. This creates a trust exploitation vector where users believe they are interacting with the legitimate organization.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "DNS",
+    "versions_affected": ["All DNS implementations"],
+    "ecosystem": "Cloud Infrastructure",
+    "dependencies": ["AWS S3", "GitHub Pages", "Azure App Service", "Heroku", "Fastly", "CloudFront"],
+    "related_frameworks": ["Azure DNS", "Route 53", "Cloudflare DNS", "Google Cloud DNS"]
+  },
+  "attack": {
+    "scenario": "1. Reconnaissance: Attacker enumerates subdomains using tools like Subfinder, Amass, or certificate transparency logs (crt.sh)\n2. Dangling DNS Identification: Scans for CNAME records pointing to unclaimed cloud resources (e.g., example.s3.amazonaws.com, username.github.io)\n3. Service Detection: Identifies the cloud service provider and checks if the resource is available using tools like can-i-take-over-xyz, Subjack, or Nuclei\n4. Resource Claiming: Attacker registers the unclaimed resource (e.g., creates S3 bucket with same name, claims GitHub Pages site)\n5. Malicious Content Deployment: Serves phishing pages, malware, or credential harvesters that appear to come from the trusted domain\n6. Exploitation: Users trust the subdomain due to valid SSL certificate and legitimate domain name, leading to data theft or system compromise",
+    "prerequisites": [
+      "Target organization has deprovisioned cloud resources without removing DNS records",
+      "DNS CNAME record points to external cloud service (S3, GitHub Pages, Azure, etc.)",
+      "Cloud resource name is available for registration by third parties",
+      "No CAA DNS records or domain verification requirements in place"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "N/A",
+        "description": "Subdomain takeover is a misconfiguration vulnerability, not typically assigned CVE numbers, but documented in OWASP testing guides",
+        "cvss_score": 8.1,
+        "published_date": "N/A"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Starbucks Azure Subdomain Takeover",
+        "date": "2018-03-01",
+        "impact": "Multiple Starbucks subdomains (svcgatewayus.starbucks.com, mydailydev.starbucks.com) exposed to takeover via abandoned Azure resources; $4,000 in bug bounties paid",
+        "root_cause": "DNS records pointed to deprovisioned Microsoft Azure resources that were never cleaned up",
+        "source_url": "https://www.bleepingcomputer.com/news/security/starbucks-abandons-azure-site-exposed-subdomain-to-hijacking/"
+      },
+      {
+        "incident": "Uber Authentication Bypass via Subdomain Takeover",
+        "date": "2017-09-01",
+        "impact": "Authentication bypass on auth.uber.com through subdomain takeover of saostatic.uber.com; valid session cookies stolen via SSO due to cookie sharing",
+        "root_cause": "Dangling CNAME record pointing to unclaimed S3 bucket allowed attacker to serve malicious content on Uber subdomain",
+        "source_url": "https://firecompass.com/top-6-subdomain-takeover-attacks-on-uber-lamborghini-usa-gov/"
+      },
+      {
+        "incident": "Trump Campaign Website Defacement",
+        "date": "2019-11-01",
+        "impact": "Donald Trump fundraising website defaced through subdomain takeover attack, causing reputational damage and potential donor confusion",
+        "root_cause": "Abandoned subdomain with dangling DNS record pointed to unclaimed third-party service",
+        "source_url": "https://medium.com/@instatunnel/subdomain-takeover-the-forgotten-dns-records-hijacking-your-brand-25e2f2cf358d"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "661751",
+        "bounty_amount": 2000,
+        "severity": "High",
+        "summary": "Starbucks mydailydev.starbucks.com subdomain takeover - 121 upvotes on HackerOne disclosure"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "202767",
+        "bounty_amount": 1000,
+        "severity": "High",
+        "summary": "HackerOne's own info.hacker.one subdomain takeover via GitHub Pages - 133 upvotes, demonstrating even security-focused companies are vulnerable"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "686568",
+        "bounty_amount": 3000,
+        "severity": "Critical",
+        "summary": "Snapchat's fastly.sc-cdn.net subdomain takeover via Fastly CDN - $3,000 bounty with 114 upvotes, one of the highest-paid subdomain takeover reports"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "A Guide To Subdomain Takeovers 2.0",
+        "authors": ["HackerOne Security Team"],
+        "published_date": "2024-08-15",
+        "source_url": "https://www.hackerone.com/blog/guide-subdomain-takeovers-20",
+        "key_finding": "167 publicly disclosed subdomain takeovers compiled from HackerOne's Hacktivity, with GitHub Pages, AWS S3, and Azure being the most commonly exploited services"
+      },
+      {
+        "title": "Can I Take Over XYZ - Subdomain Takeover Reference",
+        "authors": ["EdOverflow", "Community Contributors"],
+        "published_date": "2025-01-20",
+        "source_url": "https://github.com/EdOverflow/can-i-take-over-xyz",
+        "key_finding": "Community-maintained list of 76+ services vulnerable to subdomain takeover, serving as the definitive reference for security researchers"
+      },
+      {
+        "title": "Microsoft Azure Subdomain Takeover Prevention Guide",
+        "authors": ["Microsoft Security Team"],
+        "published_date": "2024-12-01",
+        "source_url": "https://learn.microsoft.com/en-us/azure/security/fundamentals/subdomain-takeover",
+        "key_finding": "Microsoft Defender for App Service includes automated dangling DNS detection; PowerShell tool 'Get-DanglingDnsRecords' helps identify vulnerable DNS entries"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Automated DNS Monitoring and Dangling Record Detection",
+      "description": "Deploy continuous monitoring solutions to identify and alert on dangling DNS records before attackers can exploit them. Use Microsoft Defender for App Service, AWS Route 53 health checks, or third-party tools like SubdomainSleuth to detect CNAME records pointing to deprovisioned resources.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Azure CLI + PowerShell",
+        "code": "#!/bin/bash\n# Azure: Use Microsoft's Get-DanglingDnsRecords PowerShell tool\n# https://github.com/Azure/Azure-Network-Security/tree/master/Azure%20DDoS%20Protection/Dangling%20DNS\n\n# Install Azure PowerShell module\npwsh -Command \"Install-Module -Name Az -AllowClobber -Scope CurrentUser\"\n\n# Download Microsoft's dangling DNS detection script\nwget https://raw.githubusercontent.com/Azure/Azure-Network-Security/master/Azure%20DDoS%20Protection/Dangling%20DNS/Get-DanglingDnsRecords.ps1\n\n# Run detection across all Azure subscriptions\npwsh -File Get-DanglingDnsRecords.ps1 -SubscriptionId \"YOUR_SUBSCRIPTION_ID\"\n\n# Alternative: Use SubdomainSleuth (Yahoo's open-source tool)\ngit clone https://github.com/yahoo/SubdomainSleuth\ncd SubdomainSleuth\npip install -r requirements.txt\n\n# Scan for dangling DNS records\npython subdomainsleuth.py --domain example.com --provider aws,azure,github\n\n# AWS Route 53: Create health check for CNAME targets\naws route53 create-health-check \\\n  --health-check-config \\\n    IPAddress=192.0.2.1,Port=443,Type=HTTPS,\\\n    ResourcePath=/health,FullyQualifiedDomainName=api.example.com,\\\n    RequestInterval=30,FailureThreshold=3\n\n# Set up CloudWatch alarm for failed health checks\naws cloudwatch put-metric-alarm \\\n  --alarm-name dangling-dns-alert \\\n  --alarm-description \"Alert on potential dangling DNS\" \\\n  --metric-name HealthCheckStatus \\\n  --namespace AWS/Route53 \\\n  --statistic Minimum \\\n  --period 300 \\\n  --evaluation-periods 2 \\\n  --threshold 1 \\\n  --comparison-operator LessThanThreshold \\\n  --alarm-actions arn:aws:sns:us-east-1:123456789012:security-alerts\n\n# Automated daily scan with cron\ncat > /etc/cron.daily/dns-takeover-check << 'EOF'\n#!/bin/bash\nDATE=$(date +%Y-%m-%d)\nLOGFILE=\"/var/log/subdomain-checks-${DATE}.log\"\n\n# Run multiple detection tools\nsubjack -w /tmp/subdomains.txt -t 100 -timeout 30 -o ${LOGFILE} -ssl\nnuclei -l /tmp/subdomains.txt -t subdomain-takeover/ -severity high,critical >> ${LOGFILE}\n\n# Alert if vulnerabilities found\nif grep -q \"VULNERABLE\" ${LOGFILE}; then\n    mail -s \"URGENT: Subdomain Takeover Detected\" security@example.com < ${LOGFILE}\nfi\nEOF\n\nchmod +x /etc/cron.daily/dns-takeover-check"
+      },
+      "tools": [
+        {
+          "name": "Microsoft Defender for App Service",
+          "type": "Automated Detection",
+          "cost": "$15/resource/month"
+        },
+        {
+          "name": "SubdomainSleuth (Yahoo)",
+          "type": "Open-source Scanner",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS Route 53 Health Checks",
+          "type": "Monitoring",
+          "cost": "$0.50/health check/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.13.1.1 - Network controls"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "DE.CM-7 - Monitoring for unauthorized activity is performed"
+      ],
+      "validation_steps": [
+        "Run Get-DanglingDnsRecords.ps1 across all Azure subscriptions",
+        "Verify CloudWatch alarms trigger on failed health checks",
+        "Test SubdomainSleuth against known vulnerable subdomain",
+        "Confirm security team receives alerts for dangling DNS",
+        "Document response procedures for dangling DNS findings"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Automated DNS Cleanup Workflow and Resource Deprovisioning Procedures",
+      "description": "Establish strict policies requiring DNS record removal before deprovisioning cloud resources. Implement Infrastructure-as-Code (IaC) with automated cleanup scripts that delete DNS records when associated resources are destroyed.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Terraform + Python",
+        "code": "# Terraform configuration with lifecycle management\n# file: main.tf\n\nresource \"aws_s3_bucket\" \"app_assets\" {\n  bucket = \"myapp-assets-${var.environment}\"\n  \n  lifecycle {\n    prevent_destroy = false\n  }\n}\n\nresource \"aws_route53_record\" \"app_assets_cname\" {\n  zone_id = aws_route53_zone.primary.zone_id\n  name    = \"assets.${var.domain_name}\"\n  type    = \"CNAME\"\n  ttl     = 300\n  records = [aws_s3_bucket.app_assets.bucket_regional_domain_name]\n  \n  # Ensure DNS record is deleted before S3 bucket\n  depends_on = [aws_s3_bucket.app_assets]\n}\n\n# Pre-destroy hook to verify DNS cleanup\nresource \"null_resource\" \"dns_cleanup_check\" {\n  triggers = {\n    bucket_id = aws_s3_bucket.app_assets.id\n  }\n  \n  provisioner \"local-exec\" {\n    when    = destroy\n    command = \"python verify_dns_cleanup.py ${aws_route53_record.app_assets_cname.fqdn}\"\n  }\n}\n\n# Python script: verify_dns_cleanup.py\n#!/usr/bin/env python3\nimport sys\nimport dns.resolver\nimport time\n\ndef verify_dns_removed(fqdn, max_attempts=5):\n    \"\"\"\n    Verify DNS record has been removed before proceeding with resource deletion.\n    Prevents dangling DNS by ensuring cleanup order.\n    \"\"\"\n    for attempt in range(max_attempts):\n        try:\n            answers = dns.resolver.resolve(fqdn, 'CNAME')\n            if answers:\n                print(f\"Attempt {attempt + 1}: DNS record still exists, waiting...\")\n                time.sleep(10)\n        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):\n            print(f\"✅ DNS record successfully removed: {fqdn}\")\n            return True\n    \n    print(f\"❌ ERROR: DNS record still exists after {max_attempts} attempts\")\n    print(f\"Manual intervention required for: {fqdn}\")\n    sys.exit(1)\n\nif __name__ == \"__main__\":\n    if len(sys.argv) != 2:\n        print(\"Usage: verify_dns_cleanup.py <fqdn>\")\n        sys.exit(1)\n    \n    verify_dns_removed(sys.argv[1])\n\n# GitHub Actions workflow for automated DNS cleanup verification\n# file: .github/workflows/dns-cleanup.yml\n---\nname: DNS Cleanup Verification\n\non:\n  pull_request:\n    paths:\n      - 'terraform/**'\n      - 'infrastructure/**'\n\njobs:\n  verify-dns-cleanup:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      \n      - name: Terraform Plan\n        id: plan\n        run: |\n          cd terraform\n          terraform init\n          terraform plan -destroy -out=destroy.tfplan\n      \n      - name: Extract DNS Records to be Removed\n        run: |\n          terraform show -json destroy.tfplan | \\\n          jq -r '.resource_changes[] | select(.type==\"aws_route53_record\" and .change.actions[0]==\"delete\") | .change.before.fqdn' \\\n          > dns_records_to_cleanup.txt\n      \n      - name: Verify No Dangling DNS\n        run: |\n          while IFS= read -r record; do\n            echo \"Checking if resource exists for: $record\"\n            # Check if CNAME target is still reachable\n            target=$(dig +short \"$record\" CNAME)\n            if [ ! -z \"$target\" ]; then\n              # Verify target resource exists\n              curl -I \"https://$target\" || echo \"⚠️ Warning: Target may be unreachable\"\n            fi\n          done < dns_records_to_cleanup.txt\n\n# Service deprovisioning checklist script\n# file: scripts/safe-deprovision.sh\n#!/bin/bash\nset -euo pipefail\n\nRESOURCE_NAME=\"$1\"\nDOMAIN_NAME=\"$2\"\n\necho \"🔍 Pre-deprovisioning checks for: $RESOURCE_NAME\"\n\n# Step 1: Find all DNS records pointing to this resource\necho \"[1/4] Finding DNS records...\"\naws route53 list-resource-record-sets --hosted-zone-id \"$HOSTED_ZONE_ID\" | \\\n  jq -r \".ResourceRecordSets[] | select(.ResourceRecords[]?.Value | contains(\\\"$RESOURCE_NAME\\\")) | .Name\"\n\n# Step 2: Verify no active traffic\necho \"[2/4] Checking CloudWatch metrics for active traffic...\"\naws cloudwatch get-metric-statistics \\\n  --namespace AWS/S3 \\\n  --metric-name AllRequests \\\n  --dimensions Name=BucketName,Value=\"$RESOURCE_NAME\" \\\n  --start-time $(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%S) \\\n  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \\\n  --period 86400 \\\n  --statistics Sum\n\n# Step 3: Remove DNS records first\necho \"[3/4] Removing DNS records...\"\naws route53 change-resource-record-sets \\\n  --hosted-zone-id \"$HOSTED_ZONE_ID\" \\\n  --change-batch file://dns-delete-changeset.json\n\n# Wait for DNS propagation\necho \"⏳ Waiting 5 minutes for DNS propagation...\"\nsleep 300\n\n# Step 4: Now safe to delete resource\necho \"[4/4] Deleting resource: $RESOURCE_NAME\"\naws s3 rb \"s3://$RESOURCE_NAME\" --force\n\necho \"✅ Resource safely deprovisioned without dangling DNS\""
+      },
+      "tools": [
+        {
+          "name": "Terraform",
+          "type": "Infrastructure-as-Code",
+          "cost": "Free (OSS) / $20/user/month (Cloud)"
+        },
+        {
+          "name": "AWS CloudFormation",
+          "type": "IaC",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.2 - Change management",
+        "A.12.5.1 - Installation of software on operational systems"
+      ],
+      "nist_csf": [
+        "PR.IP-3 - Configuration change control processes are in place",
+        "PR.IP-2 - A System Development Life Cycle is implemented"
+      ],
+      "validation_steps": [
+        "Test Terraform destroy with dependent DNS records",
+        "Verify DNS cleanup script fails if record still exists",
+        "Run safe-deprovision.sh against test resource",
+        "Confirm GitHub Actions workflow blocks PRs with dangling DNS risks",
+        "Document deprovisioning checklist in runbooks"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement CAA DNS Records and Domain Verification Requirements",
+      "description": "Deploy DNS Certification Authority Authorization (CAA) records to restrict which Certificate Authorities can issue certificates for your domains. Implement domain verification requirements on cloud platforms to prevent unauthorized resource claiming.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "DNS Configuration + Azure",
+        "code": "#!/bin/bash\n# Configure CAA records to prevent unauthorized certificate issuance\n\n# AWS Route 53: Add CAA records\ncat > caa-record-changeset.json << 'EOF'\n{\n  \"Changes\": [\n    {\n      \"Action\": \"UPSERT\",\n      \"ResourceRecordSet\": {\n        \"Name\": \"example.com\",\n        \"Type\": \"CAA\",\n        \"TTL\": 300,\n        \"ResourceRecords\": [\n          {\"Value\": \"0 issue \\\"letsencrypt.org\\\"\"},\n          {\"Value\": \"0 issuewild \\\"letsencrypt.org\\\"\"},\n          {\"Value\": \"0 iodef \\\"mailto:security@example.com\\\"\"}\n        ]\n      }\n    }\n  ]\n}\nEOF\n\naws route53 change-resource-record-sets \\\n  --hosted-zone-id Z1234567890ABC \\\n  --change-batch file://caa-record-changeset.json\n\n# Verify CAA records\ndig CAA example.com +short\n# Expected output:\n# 0 issue \"letsencrypt.org\"\n# 0 issuewild \"letsencrypt.org\"\n# 0 iodef \"mailto:security@example.com\"\n\n# Azure: Enable custom domain verification for App Service\naz webapp config hostname add \\\n  --webapp-name myapp \\\n  --resource-group myResourceGroup \\\n  --hostname subdomain.example.com\n\n# Verify domain ownership with TXT record\naz webapp show \\\n  --name myapp \\\n  --resource-group myResourceGroup \\\n  --query customDomainVerificationId \\\n  --output tsv\n\n# Add verification TXT record to DNS\nVERIFICATION_ID=$(az webapp show --name myapp --resource-group myResourceGroup --query customDomainVerificationId -o tsv)\n\ncat > txt-verification.json << EOF\n{\n  \"Changes\": [{\n    \"Action\": \"UPSERT\",\n    \"ResourceRecordSet\": {\n      \"Name\": \"asuid.subdomain.example.com\",\n      \"Type\": \"TXT\",\n      \"TTL\": 300,\n      \"ResourceRecords\": [{\"Value\": \"\\\"${VERIFICATION_ID}\\\"\"}]\n    }\n  }]\n}\nEOF\n\naws route53 change-resource-record-sets \\\n  --hosted-zone-id Z1234567890ABC \\\n  --change-batch file://txt-verification.json\n\n# GitHub Pages: Enable domain verification\n# 1. Add TXT record for _github-pages-challenge-{org}\n# 2. Go to Organization Settings > Pages > Verified domains\n# 3. Add domain and verify\n\ncat > github-verification.json << 'EOF'\n{\n  \"Changes\": [{\n    \"Action\": \"UPSERT\",\n    \"ResourceRecordSet\": {\n      \"Name\": \"_github-pages-challenge-myorg.example.com\",\n      \"Type\": \"TXT\",\n      \"TTL\": 300,\n      \"ResourceRecords\": [{\"Value\": \"\\\"a1b2c3d4e5f6\\\"\"}]\n    }\n  }]\n}\nEOF\n\n# AWS S3: Implement bucket naming convention with random suffix\n# This prevents attackers from guessing bucket names\nRANDOM_SUFFIX=$(openssl rand -hex 8)\nBUCKET_NAME=\"myapp-assets-${RANDOM_SUFFIX}\"\n\naws s3 mb \"s3://${BUCKET_NAME}\"\n\n# Store bucket name in Parameter Store for reference\naws ssm put-parameter \\\n  --name /myapp/s3-bucket-name \\\n  --value \"${BUCKET_NAME}\" \\\n  --type SecureString\n\n# Update DNS to point to randomized bucket name\ncat > s3-cname-update.json << EOF\n{\n  \"Changes\": [{\n    \"Action\": \"UPSERT\",\n    \"ResourceRecordSet\": {\n      \"Name\": \"assets.example.com\",\n      \"Type\": \"CNAME\",\n      \"TTL\": 300,\n      \"ResourceRecords\": [{\"Value\": \"${BUCKET_NAME}.s3.amazonaws.com\"}]\n    }\n  }]\n}\nEOF\n\naws route53 change-resource-record-sets \\\n  --hosted-zone-id Z1234567890ABC \\\n  --change-batch file://s3-cname-update.json\n\n# Cloudflare: Enable DNSSEC\ncurl -X PATCH \"https://api.cloudflare.com/client/v4/zones/{zone_id}/dnssec\" \\\n  -H \"Authorization: Bearer ${CF_API_TOKEN}\" \\\n  -H \"Content-Type: application/json\" \\\n  --data '{\"status\":\"active\"}'\n\n# Verify DNSSEC is active\ndig +dnssec example.com | grep -i rrsig"
+      },
+      "tools": [
+        {
+          "name": "CAA DNS Records",
+          "type": "Certificate Authority Authorization",
+          "cost": "Free (standard DNS feature)"
+        },
+        {
+          "name": "Azure Custom Domain Verification",
+          "type": "Domain Ownership",
+          "cost": "Free"
+        },
+        {
+          "name": "Cloudflare DNSSEC",
+          "type": "DNS Security",
+          "cost": "Free on all plans"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-2 - Data-in-transit is protected"
+      ],
+      "validation_steps": [
+        "Verify CAA records with: dig CAA example.com",
+        "Test unauthorized certificate issuance is blocked",
+        "Confirm Azure domain verification TXT record exists",
+        "Verify GitHub Pages domain verification is active",
+        "Test that S3 buckets use randomized names",
+        "Enable DNSSEC and verify with dig +dnssec"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "NXDOMAIN or SERVFAIL DNS responses for organization subdomains",
+      "SSL/TLS certificates issued for organization domains by unexpected CAs",
+      "HTTP 404 errors or 'NoSuchBucket' responses on critical subdomains",
+      "Unusual certificate transparency log entries for organization domains",
+      "Spike in DNS queries for rarely-used or deprecated subdomains",
+      "Phishing reports mentioning legitimate organization subdomains"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect potential dangling DNS via failed DNS resolutions\nDnsEvents\n| where TimeGenerated > ago(24h)\n| where ResultCode in (\"NXDOMAIN\", \"SERVFAIL\")\n| where Name endswith \".example.com\"\n| summarize FailedQueries = count() by Name, ResultCode, bin(TimeGenerated, 1h)\n| where FailedQueries > 10\n| order by FailedQueries desc\n\n// Detect unauthorized SSL certificate issuance\nAzureActivity\n| where TimeGenerated > ago(7d)\n| where OperationNameValue == \"Microsoft.CertificateRegistration/certificateOrders/write\"\n| where ActivityStatusValue == \"Success\"\n| where InitiatedBy !in (\"authorized_admin@example.com\")\n| project TimeGenerated, Caller, ResourceId, Properties\n\n// Monitor for deleted App Service resources with active DNS\nAzureActivity\n| where TimeGenerated > ago(24h)\n| where OperationNameValue == \"Microsoft.Web/sites/delete\"\n| join kind=inner (\n    DnsEvents\n    | where Name contains \"azurewebsites.net\"\n) on $left.ResourceId == $right.Name\n| project DeletedTime=TimeGenerated, ResourceName=ResourceId, StillQueried=Name"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "# Detect CNAME records pointing to non-existent resources\nindex=dns sourcetype=dns\n| where query_type=\"CNAME\"\n| where response_code=\"NXDOMAIN\" OR response_code=\"SERVFAIL\"\n| regex query=\".*\\\\.(example\\\\.com|example\\\\.net)$\"\n| stats count by query, response_code, answer\n| where count > 5\n| sort -count\n\n# Identify S3 NoSuchBucket errors on organization domains\nindex=web_logs sourcetype=access_combined\n| where status=404\n| where response_body LIKE \"%NoSuchBucket%\" OR response_body LIKE \"%Code: NoSuchBucket%\"\n| where host LIKE \"%.example.com\"\n| stats count by host, uri, remote_ip\n| where count > 3\n\n# Monitor certificate transparency logs for unexpected certificates\nindex=security sourcetype=certificate_transparency\n| where common_name=\"*.example.com\"\n| where issuer NOT IN (\"Let's Encrypt\", \"DigiCert\", \"Authorized CA Name\")\n| table _time, common_name, issuer, serial_number, not_before, not_after\n| sort -_time"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "// Detect subdomain takeover via DNS monitoring\nsequence by dns.question.name with maxspan=1h\n  [dns where dns.response_code == \"NXDOMAIN\" and dns.question.name like \"*.example.com\"]\n  [dns where dns.response_code == \"NOERROR\" and dns.question.name like \"*.example.com\"]\n\n// GitHub Pages takeover detection\nhttp where \n  url.domain like \"*.example.com\" and \n  http.response.status_code == 404 and \n  http.response.body like \"*There isn't a GitHub Pages site here*\"\n\n// AWS S3 bucket takeover detection  \nhttp where\n  url.domain like \"*.example.com\" and\n  http.response.body like \"*NoSuchBucket*\" and\n  http.response.status_code == 404"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Subjack",
+        "type": "Subdomain Takeover Scanner (Go)",
+        "usage": "subjack -w subdomains.txt -t 100 -timeout 30 -ssl -c fingerprints.json -v -o vulnerable_subdomains.txt"
+      },
+      {
+        "name": "can-i-take-over-xyz",
+        "type": "Vulnerability Reference Database",
+        "usage": "Reference guide listing 76+ services vulnerable to takeover with exploitation methods and fingerprints"
+      },
+      {
+        "name": "Nuclei",
+        "type": "Vulnerability Scanner",
+        "usage": "nuclei -l subdomains.txt -t nuclei-templates/takeovers/ -severity high,critical -json -o takeover-findings.json"
+      },
+      {
+        "name": "SubdomainSleuth (Yahoo)",
+        "type": "Dangling DNS Detector",
+        "usage": "python subdomainsleuth.py --domain example.com --provider aws,azure,github,heroku"
+      },
+      {
+        "name": "Subfinder + httpx",
+        "type": "Subdomain Enumeration + Verification",
+        "usage": "subfinder -d example.com -silent | httpx -status-code -title -tech-detect -follow-redirects"
+      },
+      {
+        "name": "dnsReaper",
+        "type": "Subdomain Takeover Scanner",
+        "usage": "python dnsreaper.py --domain example.com --providers aws,azure,github --output json"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Technology",
+      "E-commerce",
+      "Healthcare",
+      "Media & Entertainment",
+      "Government"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.10 - Broken Authentication)",
+      "SOC2 (CC6.1 - Logical and Physical Access Controls)",
+      "ISO27001 (A.13.1.1 - Network Controls)",
+      "NIST 800-53 (SC-20 - Secure Name Resolution Service)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Hybrid Cloud",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}

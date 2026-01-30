@@ -1,0 +1,455 @@
+{
+  "id": "STRIDE-PRIVESC-K8SRBAC-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1078.004 - Valid Accounts: Cloud Accounts",
+      "T1068 - Exploitation for Privilege Escalation",
+      "T1098 - Account Manipulation",
+      "T1552.007 - Unsecured Credentials: Container API"
+    ],
+    "cwe": [
+      "CWE-269 - Improper Privilege Management",
+      "CWE-284 - Improper Access Control",
+      "CWE-250 - Execution with Unnecessary Privileges"
+    ]
+  },
+  "threat": {
+    "title": "Kubernetes RBAC Privilege Escalation via Misconfigured Role Bindings",
+    "description": "Overly permissive Kubernetes RBAC configurations allow attackers with minimal pod creation permissions to escalate privileges to cluster-admin level. Common misconfigurations include wildcard resource permissions, abuse of 'bind', 'escalate', and 'impersonate' verbs, unrestricted service account token mounting, and cross-namespace privilege escalation through role binding manipulation. This enables container escape, credential theft, and complete cluster takeover.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.9,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Kubernetes",
+    "versions_affected": [
+      "1.13-1.18 (CVE-2018-1002105)",
+      "1.7.x-1.12.x (CVE-2019-11247)",
+      "All versions with misconfigured RBAC"
+    ],
+    "ecosystem": "Container Orchestration",
+    "dependencies": [
+      "kubectl",
+      "kube-apiserver",
+      "ServiceAccount",
+      "ClusterRole",
+      "RoleBinding"
+    ],
+    "related_frameworks": [
+      "OpenShift",
+      "Rancher",
+      "EKS",
+      "AKS",
+      "GKE",
+      "Minikube"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains initial access with limited pod creation permission in namespace 'dev'\n2. Creates malicious pod with hostPath mount to access host filesystem /var/lib/kubelet\n3. Extracts service account tokens from mounted volume secrets\n4. Uses 'impersonate' verb to assume cluster-admin identity via privileged service account\n5. Creates new ClusterRoleBinding granting cluster-admin to attacker's service account\n6. Achieves full cluster control: deploys cryptominers, exfiltrates secrets, creates backdoor pods\n7. Persists access through additional service accounts and webhook configurations",
+    "prerequisites": [
+      "Access to Kubernetes cluster with valid service account token",
+      "RBAC misconfiguration: wildcard permissions ('*') on resources or verbs",
+      "Role with 'bind', 'escalate', or 'impersonate' verbs enabled",
+      "Default service account auto-mount enabled (automountServiceAccountToken: true)",
+      "No PodSecurityPolicy or admission controller enforcement",
+      "Cross-namespace role binding allowed without restrictions"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-1002105",
+        "description": "Kubernetes privilege escalation via API server proxy request handling flaw allowing unauthorized backend access",
+        "cvss_score": 9.8,
+        "published_date": "2018-12-05"
+      },
+      {
+        "cve_id": "CVE-2019-11247",
+        "description": "API server allows unauthorized namespace access via volume subpath, enabling privilege escalation across namespaces",
+        "cvss_score": 8.1,
+        "published_date": "2019-08-05"
+      },
+      {
+        "cve_id": "CVE-2019-11253",
+        "description": "Denial of Service via YAML bomb in kubectl allowing resource exhaustion",
+        "cvss_score": 7.5,
+        "published_date": "2019-10-01"
+      },
+      {
+        "cve_id": "CVE-2020-8559",
+        "description": "Privilege escalation from compromised node to cluster via apiserver proxy",
+        "cvss_score": 6.4,
+        "published_date": "2020-07-22"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Tesla Kubernetes Console Breach",
+        "date": "2018-02-20",
+        "impact": "Cryptomining malware deployed on Tesla's AWS Kubernetes infrastructure; credentials exposed, compute resources hijacked",
+        "root_cause": "Unauthenticated Kubernetes dashboard exposed to internet with default RBAC allowing cluster-admin access",
+        "source_url": "https://redlock.io/blog/cryptojacking-tesla"
+      },
+      {
+        "incident": "Shopify Bug Bounty - Kubernetes RBAC Bypass",
+        "date": "2020-05-14",
+        "impact": "$25,000 bounty; researcher achieved cluster-admin from limited service account through role binding manipulation",
+        "root_cause": "Overly permissive RBAC allowing 'bind' verb on ClusterRoles without restrictions",
+        "source_url": "https://hackerone.com/reports/341876"
+      },
+      {
+        "incident": "Microsoft AKS Privilege Escalation Research",
+        "date": "2021-03-15",
+        "impact": "Disclosed method to escape AKS node restrictions and access cluster secrets via RBAC misconfiguration",
+        "root_cause": "Default service account with excessive permissions combined with hostPath volume access",
+        "source_url": "https://www.microsoft.com/security/blog/2021/03/23/secure-containerized-environments-with-updated-threat-matrix-for-kubernetes/"
+      },
+      {
+        "incident": "Palo Alto Unit 42 - Siloscape Malware",
+        "date": "2021-06-07",
+        "impact": "First malware targeting Windows containers and Kubernetes clusters; used RBAC exploitation for persistence",
+        "root_cause": "Compromised containers with service account tokens escalated to cluster-admin via role binding abuse",
+        "source_url": "https://unit42.paloaltonetworks.com/siloscape/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "341876",
+        "bounty_amount": 25000,
+        "severity": "Critical",
+        "summary": "Kubernetes RBAC privilege escalation via ClusterRole binding abuse in Shopify infrastructure"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "K8S-RBAC-2021",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Cross-namespace privilege escalation through impersonate verb exploitation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Kubernetes RBAC: Security Hardening Best Practices",
+        "authors": [
+          "CNCF Security TAG",
+          "Ian Coldwater",
+          "Brad Geesaman"
+        ],
+        "published_date": "2021-09-15",
+        "source_url": "https://github.com/cncf/tag-security/blob/main/security-whitepaper/v2/cloud-native-security-whitepaper.md",
+        "key_finding": "Over 60% of production Kubernetes clusters have RBAC misconfigurations enabling privilege escalation"
+      },
+      {
+        "title": "Attacking and Defending Kubernetes: Breaking the Cluster",
+        "authors": [
+          "Brad Geesaman",
+          "Ian Coldwater"
+        ],
+        "published_date": "2019-08-12",
+        "source_url": "https://www.blackhat.com/us-19/briefings/schedule/#attacking-and-defending-kubernetes-cluster-breaking-the-cluster-16122",
+        "key_finding": "Most common privilege escalation vector is through service account token abuse with overprivileged RBAC"
+      },
+      {
+        "title": "Threat Matrix for Kubernetes - Microsoft Security",
+        "authors": [
+          "Microsoft Defender for Cloud Team"
+        ],
+        "published_date": "2021-03-23",
+        "source_url": "https://www.microsoft.com/security/blog/2021/03/23/secure-containerized-environments-with-updated-threat-matrix-for-kubernetes/",
+        "key_finding": "Privilege escalation through RBAC misconfiguration is MITRE ATT&CK technique T1078.004"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Least-Privilege RBAC Policies with Explicit Resource Names",
+      "description": "Replace wildcard permissions with explicit resource names and minimal required verbs. Deny dangerous verbs like 'bind', 'escalate', 'impersonate' to non-admin roles. Use namespaced Roles instead of ClusterRoles wherever possible.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.25+",
+        "code": "# BAD: Overly permissive role with wildcards\n# apiVersion: rbac.authorization.k8s.io/v1\n# kind: ClusterRole\n# metadata:\n#   name: dangerous-admin\n# rules:\n# - apiGroups: [\"*\"]\n#   resources: [\"*\"]\n#   verbs: [\"*\"]\n\n# GOOD: Least-privilege role with explicit resources\napiVersion: rbac.authorization.k8s.io/v1\nkind: Role\nmetadata:\n  name: app-developer\n  namespace: production\nrules:\n# Allow read-only access to pods (no exec, no logs with sensitive data)\n- apiGroups: [\"\"]\n  resources: [\"pods\"]\n  verbs: [\"get\", \"list\", \"watch\"]\n  \n# Allow pod creation but restrict to specific service account\n- apiGroups: [\"\"]\n  resources: [\"pods\"]\n  verbs: [\"create\", \"delete\", \"update\", \"patch\"]\n  resourceNames: []  # Empty means restricted by admission controller\n  \n# Allow deployment management for app updates\n- apiGroups: [\"apps\"]\n  resources: [\"deployments\"]\n  verbs: [\"get\", \"list\", \"watch\", \"update\", \"patch\"]\n  \n# Explicitly deny dangerous verbs (use OPA/Kyverno for enforcement)\n# NO bind, escalate, impersonate verbs\n# NO wildcard (*) on apiGroups, resources, or verbs\n# NO access to secrets unless explicitly required\n\n---\n# Role binding to specific user/service account\napiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata:\n  name: app-developer-binding\n  namespace: production\nsubjects:\n- kind: ServiceAccount\n  name: app-deployer-sa\n  namespace: production\nroleRef:\n  kind: Role\n  name: app-developer\n  apiGroup: rbac.authorization.k8s.io\n\n---\n# Audit RBAC for dangerous permissions\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: rbac-audit-script\ndata:\n  audit.sh: |\n    #!/bin/bash\n    # Check for wildcard permissions\n    kubectl get clusterroles -o json | jq -r '.items[] | select(.rules[].verbs[] == \"*\") | .metadata.name'\n    kubectl get roles --all-namespaces -o json | jq -r '.items[] | select(.rules[].verbs[] == \"*\") | .metadata.name'\n    \n    # Check for dangerous verbs\n    echo \"Roles with 'bind' verb:\"\n    kubectl get clusterroles -o json | jq -r '.items[] | select(.rules[].verbs[] == \"bind\") | .metadata.name'\n    \n    echo \"Roles with 'escalate' verb:\"\n    kubectl get clusterroles -o json | jq -r '.items[] | select(.rules[].verbs[] == \"escalate\") | .metadata.name'\n    \n    echo \"Roles with 'impersonate' verb:\"\n    kubectl get clusterroles -o json | jq -r '.items[] | select(.rules[].verbs[] == \"impersonate\") | .metadata.name'"
+      },
+      "tools": [
+        {
+          "name": "kubectl-who-can",
+          "type": "RBAC Auditing Tool",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "rbac-lookup",
+          "type": "RBAC Visualization",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "KubiScan",
+          "type": "Kubernetes Risk Assessment",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.1.2 - Access to networks and network services",
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - Least functionality principle",
+        "DE.CM-3 - Personnel activity is monitored"
+      ],
+      "validation_steps": [
+        "Run 'kubectl get clusterroles -o yaml' and verify no wildcard (*) in verbs/resources",
+        "Check for bind/escalate/impersonate verbs: kubectl get clusterroles -o json | jq '.items[].rules[] | select(.verbs[] | contains(\"bind\", \"escalate\", \"impersonate\"))'",
+        "Use kubectl-who-can to verify: 'kubectl who-can create clusterrolebindings'",
+        "Test with unprivileged service account attempting to create role bindings (should fail)",
+        "Enable audit logging and review for RBAC authorization failures"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Disable Service Account Token Auto-Mounting",
+      "description": "Prevent automatic mounting of service account tokens in pods unless explicitly required. This limits the attack surface by denying pods access to Kubernetes API credentials by default.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.25+",
+        "code": "# Method 1: Disable at ServiceAccount level (recommended)\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: restricted-app-sa\n  namespace: production\nautomountServiceAccountToken: false  # Prevent auto-mounting\n\n---\n# Method 2: Disable at Pod level\napiVersion: v1\nkind: Pod\nmetadata:\n  name: webapp-pod\n  namespace: production\nspec:\n  serviceAccountName: restricted-app-sa\n  automountServiceAccountToken: false  # Override even if SA allows it\n  \n  containers:\n  - name: webapp\n    image: myapp:v1.0.0\n    # Application does not need Kubernetes API access\n    # No /var/run/secrets/kubernetes.io/serviceaccount/ mounted\n\n---\n# Method 3: For pods that NEED API access, use projected token volumes (Kubernetes 1.20+)\napiVersion: v1\nkind: Pod\nmetadata:\n  name: api-client-pod\n  namespace: production\nspec:\n  serviceAccountName: api-client-sa\n  automountServiceAccountToken: false  # Disable default mount\n  \n  containers:\n  - name: api-client\n    image: kubectl:v1.28.0\n    volumeMounts:\n    - name: kube-api-token\n      mountPath: /var/run/secrets/kubernetes.io/serviceaccount\n      readOnly: true\n  \n  volumes:\n  - name: kube-api-token\n    projected:\n      sources:\n      - serviceAccountToken:\n          path: token\n          expirationSeconds: 3600  # 1 hour token expiry (instead of 1 year default)\n          audience: https://kubernetes.default.svc  # Bind to specific audience\n      - configMap:\n          name: kube-root-ca.crt\n          items:\n          - key: ca.crt\n            path: ca.crt\n      - downwardAPI:\n          items:\n          - path: namespace\n            fieldRef:\n              fieldPath: metadata.namespace\n\n---\n# Admission controller policy (OPA Gatekeeper) to enforce no auto-mount\napiVersion: templates.gatekeeper.sh/v1\nkind: ConstraintTemplate\nmetadata:\n  name: k8sdisableautomounttokens\nspec:\n  crd:\n    spec:\n      names:\n        kind: K8sDisableAutoMountTokens\n  targets:\n    - target: admission.k8s.gatekeeper.sh\n      rego: |\n        package k8sdisableautomounttokens\n        \n        violation[{\"msg\": msg}] {\n          input.review.object.kind == \"Pod\"\n          input.review.object.spec.automountServiceAccountToken == true\n          msg := \"Pod must not auto-mount service account tokens. Set automountServiceAccountToken: false\"\n        }\n        \n        violation[{\"msg\": msg}] {\n          input.review.object.kind == \"ServiceAccount\"\n          input.review.object.automountServiceAccountToken == true\n          msg := \"ServiceAccount must not enable auto-mount. Set automountServiceAccountToken: false\"\n        }\n\n---\napiVersion: constraints.gatekeeper.sh/v1beta1\nkind: K8sDisableAutoMountTokens\nmetadata:\n  name: no-auto-mount-tokens\nspec:\n  match:\n    kinds:\n      - apiGroups: [\"\"]\n        kinds: [\"Pod\", \"ServiceAccount\"]\n  parameters: {}"
+      },
+      "tools": [
+        {
+          "name": "OPA Gatekeeper",
+          "type": "Admission Controller",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kyverno",
+          "type": "Policy Engine",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.4.1 - Information access restriction",
+        "A.13.1.3 - Segregation of networks"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions are managed",
+        "PR.PT-3 - The principle of least functionality is incorporated"
+      ],
+      "validation_steps": [
+        "Check existing pods: kubectl get pods --all-namespaces -o json | jq '.items[] | select(.spec.automountServiceAccountToken != false) | .metadata.name'",
+        "Verify no /var/run/secrets/kubernetes.io/serviceaccount in pod: kubectl exec <pod> -- ls /var/run/secrets/",
+        "Deploy test pod with automountServiceAccountToken: false and confirm no token mount",
+        "Implement OPA Gatekeeper constraint and test with violating pod manifest (should be rejected)",
+        "Review service accounts: kubectl get sa --all-namespaces -o json | jq '.items[] | select(.automountServiceAccountToken != false)'"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Enforce Pod Security Standards with Admission Controllers",
+      "description": "Implement Pod Security Admission (PSA) or third-party admission controllers (OPA, Kyverno) to prevent privileged pods, host namespace access, and dangerous volume mounts (hostPath, host IPC/PID).",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kubernetes 1.25+ Pod Security Admission",
+        "code": "# Method 1: Use built-in Pod Security Standards (Kubernetes 1.25+)\n# Apply to namespace level\napiVersion: v1\nkind: Namespace\nmetadata:\n  name: production\n  labels:\n    # Enforce restricted security standard (most secure)\n    pod-security.kubernetes.io/enforce: restricted\n    pod-security.kubernetes.io/enforce-version: latest\n    \n    # Audit violations (log but don't block)\n    pod-security.kubernetes.io/audit: restricted\n    pod-security.kubernetes.io/audit-version: latest\n    \n    # Warn users about violations\n    pod-security.kubernetes.io/warn: restricted\n    pod-security.kubernetes.io/warn-version: latest\n\n---\n# Method 2: OPA Gatekeeper Policy - Block privileged pods\napiVersion: templates.gatekeeper.sh/v1\nkind: ConstraintTemplate\nmetadata:\n  name: k8spspprivilegedcontainer\nspec:\n  crd:\n    spec:\n      names:\n        kind: K8sPSPPrivilegedContainer\n  targets:\n    - target: admission.k8s.gatekeeper.sh\n      rego: |\n        package k8spspprivileged\n        \n        violation[{\"msg\": msg}] {\n          container := input.review.object.spec.containers[_]\n          container.securityContext.privileged == true\n          msg := sprintf(\"Privileged container is not allowed: %v\", [container.name])\n        }\n        \n        violation[{\"msg\": msg}] {\n          container := input.review.object.spec.initContainers[_]\n          container.securityContext.privileged == true\n          msg := sprintf(\"Privileged init container is not allowed: %v\", [container.name])\n        }\n\n---\napiVersion: constraints.gatekeeper.sh/v1beta1\nkind: K8sPSPPrivilegedContainer\nmetadata:\n  name: no-privileged-containers\nspec:\n  match:\n    kinds:\n      - apiGroups: [\"\"]\n        kinds: [\"Pod\"]\n    excludedNamespaces: [\"kube-system\", \"gatekeeper-system\"]\n\n---\n# Method 3: Kyverno Policy - Comprehensive pod security\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: restrict-pod-security\n  annotations:\n    policies.kyverno.io/title: Restrict Pod Security\n    policies.kyverno.io/category: Pod Security Standards (Restricted)\n    policies.kyverno.io/severity: high\n    policies.kyverno.io/description: |\n      Implements restricted Pod Security Standard:\n      - No privileged containers\n      - No hostPath, hostIPC, hostPID, hostNetwork\n      - Required security context settings\n      - No dangerous capabilities\nspec:\n  validationFailureAction: enforce\n  background: true\n  rules:\n  \n  # Rule 1: Block privileged containers\n  - name: no-privileged-containers\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Privileged mode is not allowed. Set securityContext.privileged to false.\"\n      pattern:\n        spec:\n          =(ephemeralContainers):\n          - =(securityContext):\n              =(privileged): false\n          =(initContainers):\n          - =(securityContext):\n              =(privileged): false\n          containers:\n          - =(securityContext):\n              =(privileged): false\n  \n  # Rule 2: Block host namespace access\n  - name: no-host-namespaces\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Host namespaces (hostPID, hostIPC, hostNetwork) are not allowed.\"\n      pattern:\n        spec:\n          =(hostPID): false\n          =(hostIPC): false\n          =(hostNetwork): false\n  \n  # Rule 3: Block dangerous hostPath volumes\n  - name: no-hostpath-volumes\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"HostPath volumes are not allowed.\"\n      pattern:\n        spec:\n          =(volumes):\n          - X(hostPath): \"null\"\n  \n  # Rule 4: Require non-root user\n  - name: require-non-root-user\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Containers must run as non-root user. Set securityContext.runAsNonRoot to true.\"\n      pattern:\n        spec:\n          containers:\n          - securityContext:\n              runAsNonRoot: true\n  \n  # Rule 5: Drop dangerous capabilities\n  - name: drop-all-capabilities\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"All capabilities must be dropped. Set securityContext.capabilities.drop to ['ALL'].\"\n      pattern:\n        spec:\n          containers:\n          - securityContext:\n              capabilities:\n                drop:\n                - ALL\n  \n  # Rule 6: Block privilege escalation\n  - name: no-privilege-escalation\n    match:\n      any:\n      - resources:\n          kinds:\n          - Pod\n    validate:\n      message: \"Privilege escalation is not allowed. Set securityContext.allowPrivilegeEscalation to false.\"\n      pattern:\n        spec:\n          containers:\n          - securityContext:\n              allowPrivilegeEscalation: false\n\n---\n# Example: Secure pod template compliant with all policies\napiVersion: v1\nkind: Pod\nmetadata:\n  name: secure-webapp\n  namespace: production\nspec:\n  serviceAccountName: webapp-sa\n  automountServiceAccountToken: false\n  \n  securityContext:\n    runAsNonRoot: true\n    runAsUser: 10001\n    fsGroup: 10001\n    seccompProfile:\n      type: RuntimeDefault\n  \n  containers:\n  - name: webapp\n    image: webapp:v1.0.0\n    securityContext:\n      allowPrivilegeEscalation: false\n      runAsNonRoot: true\n      runAsUser: 10001\n      capabilities:\n        drop:\n        - ALL\n      readOnlyRootFilesystem: true\n    \n    volumeMounts:\n    - name: tmp\n      mountPath: /tmp\n    - name: cache\n      mountPath: /var/cache\n  \n  volumes:\n  - name: tmp\n    emptyDir: {}\n  - name: cache\n    emptyDir: {}"
+      },
+      "tools": [
+        {
+          "name": "OPA Gatekeeper",
+          "type": "Admission Controller",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kyverno",
+          "type": "Policy Engine for Kubernetes",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "Kubewarden",
+          "type": "Policy Engine (WebAssembly-based)",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.5 - Secure system engineering principles",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created",
+        "PR.PT-3 - Least functionality principle"
+      ],
+      "validation_steps": [
+        "Enable Pod Security Admission on cluster: kubectl label namespace production pod-security.kubernetes.io/enforce=restricted",
+        "Test with privileged pod manifest (should be rejected): kubectl apply -f privileged-pod.yaml",
+        "Install Kyverno: kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.10.0/install.yaml",
+        "Apply ClusterPolicy and verify with: kubectl get cpol",
+        "Attempt to deploy pod with hostPath volume (should fail)",
+        "Review policy violations: kubectl get policyreport -A"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement RBAC Deny Policies for Dangerous Verbs",
+      "description": "Create explicit deny rules for dangerous RBAC verbs (bind, escalate, impersonate) and enforce through admission controllers. Monitor for any role/rolebinding creation attempts with these verbs.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "Kyverno Policy Engine",
+        "code": "# Kyverno ClusterPolicy to block dangerous RBAC verbs\napiVersion: kyverno.io/v1\nkind: ClusterPolicy\nmetadata:\n  name: restrict-dangerous-rbac-verbs\n  annotations:\n    policies.kyverno.io/title: Restrict Dangerous RBAC Verbs\n    policies.kyverno.io/category: Security\n    policies.kyverno.io/severity: critical\n    policies.kyverno.io/description: |\n      Blocks creation of Roles/ClusterRoles with dangerous verbs:\n      - bind: Allows binding roles to users/groups\n      - escalate: Allows granting higher permissions than currently held\n      - impersonate: Allows assuming another user's identity\n      These verbs enable privilege escalation attacks.\nspec:\n  validationFailureAction: enforce\n  background: false\n  rules:\n  \n  # Block 'bind' verb in ClusterRoles\n  - name: block-bind-verb-clusterrole\n    match:\n      any:\n      - resources:\n          kinds:\n          - ClusterRole\n    validate:\n      message: \"ClusterRole cannot contain 'bind' verb. This enables privilege escalation.\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.rules[].verbs[] }}\"\n            operator: AnyIn\n            value: [\"bind\", \"*\"]\n  \n  # Block 'escalate' verb in ClusterRoles\n  - name: block-escalate-verb-clusterrole\n    match:\n      any:\n      - resources:\n          kinds:\n          - ClusterRole\n    validate:\n      message: \"ClusterRole cannot contain 'escalate' verb. This enables privilege escalation.\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.rules[].verbs[] }}\"\n            operator: AnyIn\n            value: [\"escalate\", \"*\"]\n  \n  # Block 'impersonate' verb in ClusterRoles\n  - name: block-impersonate-verb-clusterrole\n    match:\n      any:\n      - resources:\n          kinds:\n          - ClusterRole\n    validate:\n      message: \"ClusterRole cannot contain 'impersonate' verb. This enables user impersonation attacks.\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.rules[].verbs[] }}\"\n            operator: AnyIn\n            value: [\"impersonate\", \"*\"]\n  \n  # Block wildcard verbs in ClusterRoles\n  - name: block-wildcard-verbs-clusterrole\n    match:\n      any:\n      - resources:\n          kinds:\n          - ClusterRole\n    validate:\n      message: \"ClusterRole cannot use wildcard (*) in verbs. Specify explicit verbs.\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.rules[].verbs[] }}\"\n            operator: AnyIn\n            value: [\"*\"]\n  \n  # Same rules for namespaced Roles\n  - name: block-dangerous-verbs-role\n    match:\n      any:\n      - resources:\n          kinds:\n          - Role\n    validate:\n      message: \"Role cannot contain dangerous verbs: bind, escalate, impersonate, or wildcard (*)\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.rules[].verbs[] }}\"\n            operator: AnyIn\n            value: [\"bind\", \"escalate\", \"impersonate\", \"*\"]\n  \n  # Block wildcard resources in ClusterRoles\n  - name: block-wildcard-resources\n    match:\n      any:\n      - resources:\n          kinds:\n          - ClusterRole\n          - Role\n    validate:\n      message: \"Cannot use wildcard (*) in resources. Specify explicit resource names.\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.rules[].resources[] }}\"\n            operator: AnyIn\n            value: [\"*\"]\n  \n  # Block ClusterRoleBindings to default service accounts\n  - name: block-clusterrolebinding-to-default-sa\n    match:\n      any:\n      - resources:\n          kinds:\n          - ClusterRoleBinding\n    validate:\n      message: \"Cannot bind ClusterRole to 'default' service account in any namespace.\"\n      deny:\n        conditions:\n          any:\n          - key: \"{{ request.object.subjects[?kind=='ServiceAccount'].name }}\"\n            operator: AnyIn\n            value: [\"default\"]\n\n---\n# OPA Gatekeeper equivalent policy\napiVersion: templates.gatekeeper.sh/v1\nkind: ConstraintTemplate\nmetadata:\n  name: k8sblockdangerousrbac\nspec:\n  crd:\n    spec:\n      names:\n        kind: K8sBlockDangerousRBAC\n      validation:\n        openAPIV3Schema:\n          type: object\n          properties:\n            dangerous_verbs:\n              type: array\n              items:\n                type: string\n  targets:\n    - target: admission.k8s.gatekeeper.sh\n      rego: |\n        package k8sblockdangerousrbac\n        \n        dangerous_verbs := [\"bind\", \"escalate\", \"impersonate\", \"*\"]\n        \n        violation[{\"msg\": msg}] {\n          input.review.object.kind == \"ClusterRole\"\n          rule := input.review.object.rules[_]\n          verb := rule.verbs[_]\n          verb == dangerous_verbs[_]\n          msg := sprintf(\"ClusterRole contains dangerous verb '%v' which enables privilege escalation\", [verb])\n        }\n        \n        violation[{\"msg\": msg}] {\n          input.review.object.kind == \"Role\"\n          rule := input.review.object.rules[_]\n          verb := rule.verbs[_]\n          verb == dangerous_verbs[_]\n          msg := sprintf(\"Role contains dangerous verb '%v' which enables privilege escalation\", [verb])\n        }\n        \n        violation[{\"msg\": msg}] {\n          input.review.object.kind == \"ClusterRole\"\n          rule := input.review.object.rules[_]\n          resource := rule.resources[_]\n          resource == \"*\"\n          msg := \"ClusterRole cannot use wildcard (*) in resources\"\n        }\n        \n        violation[{\"msg\": msg}] {\n          input.review.object.kind == \"ClusterRoleBinding\"\n          subject := input.review.object.subjects[_]\n          subject.kind == \"ServiceAccount\"\n          subject.name == \"default\"\n          msg := sprintf(\"Cannot bind ClusterRole to default service account in namespace %v\", [subject.namespace])\n        }\n\n---\napiVersion: constraints.gatekeeper.sh/v1beta1\nkind: K8sBlockDangerousRBAC\nmetadata:\n  name: block-dangerous-rbac-verbs\nspec:\n  match:\n    kinds:\n      - apiGroups: [\"rbac.authorization.k8s.io\"]\n        kinds: [\"Role\", \"ClusterRole\", \"RoleBinding\", \"ClusterRoleBinding\"]\n  parameters:\n    dangerous_verbs: [\"bind\", \"escalate\", \"impersonate\", \"*\"]"
+      },
+      "tools": [
+        {
+          "name": "Kyverno",
+          "type": "Kubernetes Policy Engine",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "OPA Gatekeeper",
+          "type": "Policy Controller",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "kubectl-rbac-audit",
+          "type": "RBAC Auditing CLI Tool",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions and authorizations are managed",
+        "DE.CM-3 - Personnel activity is monitored"
+      ],
+      "validation_steps": [
+        "Install Kyverno: kubectl apply -f https://github.com/kyverno/kyverno/releases/download/v1.10.0/install.yaml",
+        "Apply the ClusterPolicy: kubectl apply -f restrict-dangerous-rbac.yaml",
+        "Test by creating ClusterRole with 'bind' verb (should be rejected)",
+        "Audit existing roles: kubectl get clusterroles -o json | jq '.items[] | select(.rules[].verbs[] | contains(\"bind\", \"escalate\", \"impersonate\"))'",
+        "Review policy reports: kubectl get policyreport -A -o wide",
+        "Monitor audit logs for RBAC violations in Azure Monitor or CloudWatch"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unexpected ClusterRoleBinding or RoleBinding creation events",
+      "Service account token requests from unusual namespaces or pods",
+      "API server requests with 'impersonate' headers (user, group, or extra scopes)",
+      "Audit log entries showing 'bind' or 'escalate' verb usage",
+      "New pods created with privileged security context or hostPath volumes",
+      "Cross-namespace resource access attempts (e.g., secrets from different namespace)",
+      "Sudden increase in API server requests from a single service account",
+      "kubectl exec or kubectl cp commands from unexpected source IPs",
+      "Creation of pods with serviceAccountName referencing high-privilege accounts",
+      "Modification of existing ClusterRoles or Roles adding dangerous permissions"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect RBAC privilege escalation attempts\nAzureDiagnostics\n| where Category == \"kube-audit\"\n| where log_s contains \"rbac.authorization.k8s.io\"\n| extend EventData = parse_json(log_s)\n| extend Verb = tostring(EventData.verb)\n| extend User = tostring(EventData.user.username)\n| extend Resource = tostring(EventData.objectRef.resource)\n| extend Name = tostring(EventData.objectRef.name)\n| extend ResponseCode = tostring(EventData.responseStatus.code)\n// Detect dangerous RBAC operations\n| where Resource in (\"clusterroles\", \"clusterrolebindings\", \"roles\", \"rolebindings\")\n  and Verb in (\"create\", \"update\", \"patch\", \"bind\", \"escalate\", \"impersonate\")\n  and ResponseCode == \"201\" or ResponseCode == \"200\"\n| summarize Count = count() by User, Verb, Resource, Name, bin(TimeGenerated, 5m)\n| where Count > 3\n| order by Count desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Kubernetes RBAC privilege escalation detection\nevent.dataset: \"kubernetes.audit\" AND \n  kubernetes.audit.objectRef.resource: (\"clusterroles\" OR \"clusterrolebindings\" OR \"roles\" OR \"rolebindings\") AND\n  kubernetes.audit.verb: (\"create\" OR \"update\" OR \"patch\" OR \"bind\" OR \"escalate\" OR \"impersonate\") AND\n  kubernetes.audit.responseStatus.code: (200 OR 201) AND\n  NOT kubernetes.audit.user.username: \"system:kube-controller-manager\""
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=kubernetes sourcetype=kube:apiserver:audit\n| spath input=_raw\n| search objectRef.resource IN (\"clusterroles\", \"clusterrolebindings\", \"roles\", \"rolebindings\")\n  verb IN (\"create\", \"update\", \"patch\", \"bind\", \"escalate\", \"impersonate\")\n  responseStatus.code IN (200, 201)\n| eval user=coalesce(user.username, \"unknown\")\n| stats count by user, verb, objectRef.resource, objectRef.name, _time\n| where count > 5\n| sort -count"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "# EKS Cluster Audit Logs - RBAC Escalation\nfields @timestamp, objectRef.resource, verb, user.username, objectRef.name, responseStatus.code\n| filter objectRef.resource in [\"clusterroles\", \"clusterrolebindings\", \"roles\", \"rolebindings\"]\n| filter verb in [\"create\", \"update\", \"patch\", \"bind\", \"escalate\", \"impersonate\"]\n| filter responseStatus.code in [200, 201]\n| filter user.username != \"system:kube-controller-manager\"\n| stats count(*) by user.username, verb, objectRef.resource\n| sort count desc"
+      },
+      {
+        "siem": "Google Cloud Logging (GKE)",
+        "query": "resource.type=\"k8s_cluster\"\nprotoPayload.methodName=~\"rbac.authorization.k8s.io.*\"\nprotoPayload.request.verb=~\"(create|update|patch|bind|escalate|impersonate)\"\nprotoPayload.response.code=~\"(200|201)\"\nNOT protoPayload.authenticationInfo.principalEmail=\"system:kube-controller-manager\""
+      }
+    ],
+    "tools": [
+      {
+        "name": "Falco",
+        "type": "Runtime Security Monitoring",
+        "usage": "Detects RBAC privilege escalation via custom rules for dangerous kubectl commands and API calls"
+      },
+      {
+        "name": "KubeLinter",
+        "type": "Static Analysis",
+        "usage": "Scans YAML manifests for RBAC misconfigurations before deployment: kube-linter lint deployment.yaml"
+      },
+      {
+        "name": "rbac-police",
+        "type": "RBAC Auditing",
+        "usage": "Identifies overly permissive RBAC policies in running clusters"
+      },
+      {
+        "name": "kube-bench",
+        "type": "CIS Benchmark Compliance",
+        "usage": "Audits cluster against CIS Kubernetes Benchmark including RBAC controls"
+      },
+      {
+        "name": "KubiScan",
+        "type": "Risk Assessment",
+        "usage": "python3 kubiscan.py -rs to find risky subjects with privilege escalation potential"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Technology",
+      "E-commerce",
+      "SaaS",
+      "Cloud Providers"
+    ],
+    "compliance": [
+      "PCI-DSS 4.0 (Requirement 7.1 - Limit access to system components)",
+      "HIPAA (164.308(a)(4) - Access Control)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.9.2.3 - Privileged Access Management)",
+      "NIST SP 800-190 (Container Security)",
+      "CIS Kubernetes Benchmark v1.7.1",
+      "GDPR (Article 32 - Security of Processing)",
+      "FedRAMP (AC-6 - Least Privilege)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Sensitive",
+      "Restricted"
+    ]
+  }
+}

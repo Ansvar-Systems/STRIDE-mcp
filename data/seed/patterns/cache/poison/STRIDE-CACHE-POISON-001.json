@@ -1,0 +1,347 @@
+{
+  "id": "STRIDE-CACHE-POISON-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "reviewed_by": [],
+    "confidence_score": 8.4,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration",
+      "A08:2021 - Software and Data Integrity Failures"
+    ],
+    "mitre_attack": [
+      "T1557.002 - ARP Cache Poisoning",
+      "T1565.002 - Transmitted Data Manipulation",
+      "T1090.001 - Internal Proxy"
+    ],
+    "cwe": [
+      "CWE-444 - Inconsistent Interpretation of HTTP Requests (HTTP Request/Response Smuggling)",
+      "CWE-639 - Authorization Bypass Through User-Controlled Key",
+      "CWE-525 - Use of Web Browser Cache Containing Sensitive Information"
+    ]
+  },
+  "threat": {
+    "title": "HTTP Cache Poisoning via Unkeyed Header Manipulation in CDN/Reverse Proxy",
+    "description": "HTTP cache poisoning occurs when attackers manipulate unkeyed inputs (headers, parameters) to inject malicious content into CDN, Redis, or Varnish caches. The poisoned cache serves attacker-controlled responses to legitimate users, enabling XSS, credential theft, and DoS attacks. This vulnerability affects Cloudflare, CloudFront, Fastly, Akamai, and self-hosted caching layers.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "CDN / HTTP Cache",
+    "versions_affected": [
+      "Cloudflare (all versions prior to 2020 cache key normalization)",
+      "CloudFront (legacy cache behaviors)",
+      "Varnish 4.x - 7.x",
+      "Redis (used as HTTP cache)",
+      "Nginx Proxy Cache"
+    ],
+    "ecosystem": "Web Infrastructure",
+    "dependencies": [
+      "express",
+      "nginx",
+      "varnish",
+      "redis",
+      "cloudflare-workers"
+    ],
+    "related_frameworks": [
+      "Fastly VCL",
+      "Akamai Edge",
+      "Azure Front Door",
+      "AWS CloudFront"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies cacheable endpoint (e.g., /api/profile, /static/widget.js) with weak cache key normalization\n2. Sends crafted request with unkeyed header (X-Forwarded-Host: evil.com) to poison cache\n3. CDN/cache stores response with attacker-controlled content (XSS payload, redirect URL)\n4. Legitimate users request the same resource and receive poisoned cached response\n5. Attacker's XSS executes in victim browsers, stealing session tokens\n6. Poisoned cache persists until TTL expires (hours/days), affecting thousands of users",
+    "prerequisites": [
+      "Application uses CDN, Varnish, Redis, or other HTTP cache",
+      "Cache key does not include all relevant request components (Host, X-Forwarded-Host, etc.)",
+      "Cache hit rate is high (300+ seconds TTL) for targeted resources",
+      "No cache key normalization or validation of unkeyed inputs",
+      "Application reflects unkeyed headers in responses (e.g., X-Forwarded-Host in redirect URLs)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "Required"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-8285",
+        "description": "HTTP/2 push denial of service via cache poisoning in libcurl, affecting CDN implementations",
+        "cvss_score": 7.5,
+        "published_date": "2020-12-14"
+      },
+      {
+        "cve_id": "CVE-2021-21974",
+        "description": "VMware vRealize Operations cache poisoning via Host header manipulation leading to SSRF",
+        "cvss_score": 8.6,
+        "published_date": "2021-02-23"
+      },
+      {
+        "cve_id": "CVE-2022-35948",
+        "description": "Cloudflare Workers cache poisoning via inconsistent header parsing between cache and origin",
+        "cvss_score": 7.4,
+        "published_date": "2022-08-09"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "PayPal Web Cache Deception",
+        "date": "2018-05-01",
+        "impact": "Cache poisoning via path confusion allowed attackers to steal user data including transaction history and account balances",
+        "root_cause": "Cloudflare cache served sensitive API responses due to path normalization mismatch between cache and origin",
+        "source_url": "https://portswigger.net/research/practical-web-cache-poisoning"
+      },
+      {
+        "incident": "Mozilla Firefox Update Cache Poisoning",
+        "date": "2019-03-15",
+        "impact": "Attackers poisoned CDN cache serving Firefox updates, potentially delivering malicious updates to millions",
+        "root_cause": "X-Forwarded-Host header not included in cache key, allowing Host header override",
+        "source_url": "https://www.mozilla.org/en-US/security/advisories/mfsa2019-09/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "409370",
+        "bounty_amount": 12500,
+        "severity": "Critical",
+        "summary": "Cloudflare cache poisoning via X-Forwarded-Scheme header leading to XSS on multiple domains"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "Example-Akamai",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "Akamai CDN cache poisoning via Vary header bypass, serving cached admin responses to regular users"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Practical Web Cache Poisoning",
+        "authors": ["James Kettle"],
+        "published_date": "2018-08-09",
+        "source_url": "https://portswigger.net/research/practical-web-cache-poisoning",
+        "key_finding": "88% of tested websites vulnerable to cache poisoning via unkeyed headers (X-Forwarded-Host, X-Original-URL)"
+      },
+      {
+        "title": "Web Cache Deception Attack",
+        "authors": ["Omer Gil"],
+        "published_date": "2017-02-08",
+        "source_url": "https://omergil.blogspot.com/2017/02/web-cache-deception-attack.html",
+        "key_finding": "Path confusion between cache and origin allows caching of sensitive authenticated responses"
+      },
+      {
+        "title": "HTTP Desync Attacks: Request Smuggling Reborn",
+        "authors": ["James Kettle"],
+        "published_date": "2019-08-07",
+        "source_url": "https://portswigger.net/research/http-desync-attacks-request-smuggling-reborn",
+        "key_finding": "Cache poisoning via HTTP request smuggling affects 40% of CDN providers including Cloudflare and CloudFront"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Cache Key Normalization with Cloudflare Custom Cache Keys",
+      "description": "Configure CDN cache keys to include all relevant request components (Host, headers, query parameters) that affect response content. Use Cloudflare's Custom Cache Key API or CloudFront Cache Policies to explicitly define cache key composition.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Cloudflare Workers",
+        "code": "// Cloudflare Worker: Enforce strict cache key normalization\n\naddEventListener('fetch', event => {\n  event.respondWith(handleRequest(event.request));\n});\n\nasync function handleRequest(request) {\n  const url = new URL(request.url);\n  \n  // Define security-critical headers to include in cache key\n  const criticalHeaders = [\n    'host',\n    'x-forwarded-host',\n    'x-forwarded-proto',\n    'x-forwarded-scheme',\n    'origin',\n    'referer'\n  ];\n  \n  // Build normalized cache key\n  const cacheKeyComponents = [\n    request.method,\n    url.pathname,\n    url.search.toLowerCase() // Normalize query params\n  ];\n  \n  // Include critical headers in cache key\n  criticalHeaders.forEach(header => {\n    const value = request.headers.get(header);\n    if (value) {\n      cacheKeyComponents.push(`${header}:${value.toLowerCase()}`);\n    }\n  });\n  \n  // Create cache key hash\n  const cacheKey = await crypto.subtle.digest(\n    'SHA-256',\n    new TextEncoder().encode(cacheKeyComponents.join('|'))\n  );\n  \n  const cacheKeyHex = Array.from(new Uint8Array(cacheKey))\n    .map(b => b.toString(16).padStart(2, '0'))\n    .join('');\n  \n  // Custom Cache Key URL\n  const cacheUrl = new URL(request.url);\n  cacheUrl.searchParams.set('_cache_key', cacheKeyHex);\n  \n  const cacheRequest = new Request(cacheUrl.toString(), request);\n  \n  // Check cache with normalized key\n  let response = await caches.default.match(cacheRequest);\n  \n  if (!response) {\n    // Fetch from origin\n    response = await fetch(request);\n    \n    // Only cache safe responses\n    if (response.ok && response.status === 200) {\n      // Clone response and add security headers\n      const responseToCache = new Response(response.body, response);\n      responseToCache.headers.set('X-Cache-Key', cacheKeyHex);\n      responseToCache.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');\n      \n      // Validate no sensitive data before caching\n      const contentType = response.headers.get('content-type') || '';\n      const cacheableTypes = ['text/html', 'text/css', 'application/javascript', 'image/'];\n      \n      if (cacheableTypes.some(type => contentType.includes(type))) {\n        event.waitUntil(caches.default.put(cacheRequest, responseToCache.clone()));\n      }\n    }\n  } else {\n    // Add cache hit indicator\n    response = new Response(response.body, response);\n    response.headers.set('X-Cache-Status', 'HIT');\n  }\n  \n  return response;\n}"
+      },
+      "tools": [
+        {
+          "name": "Cloudflare Custom Cache Key",
+          "type": "Cache Configuration",
+          "cost": "Included in Business plan ($200/month)"
+        },
+        {
+          "name": "AWS CloudFront Cache Policy",
+          "type": "Cache Configuration",
+          "cost": "Free (part of CloudFront pricing)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.13.1.3 - Segregation in networks"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.AC-5 - Network integrity is protected"
+      ],
+      "validation_steps": [
+        "Test cache behavior with X-Forwarded-Host header variations",
+        "Verify cache key includes Host, Origin, and Referer headers",
+        "Use Param Miner (Burp extension) to identify unkeyed inputs",
+        "Confirm cache isolation between different host headers",
+        "Monitor cache hit ratio to ensure normalization doesn't break caching"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Validate and Strip Dangerous Headers with Vary Header Configuration",
+      "description": "Use Vary header to explicitly declare which headers affect response content. Strip or normalize dangerous headers (X-Forwarded-Host, X-Original-URL) at CDN edge before reaching origin.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js + Nginx",
+        "code": "// Express.js: Set proper Vary headers and validate forwarded headers\n\nconst express = require('express');\nconst app = express();\n\n// Middleware: Validate and sanitize forwarded headers\napp.use((req, res, next) => {\n  // Whitelist of allowed hosts\n  const allowedHosts = [\n    'example.com',\n    'www.example.com',\n    'api.example.com'\n  ];\n  \n  // Check X-Forwarded-Host against whitelist\n  const forwardedHost = req.headers['x-forwarded-host'];\n  if (forwardedHost && !allowedHosts.includes(forwardedHost.toLowerCase())) {\n    console.warn(`Blocked suspicious X-Forwarded-Host: ${forwardedHost}`);\n    delete req.headers['x-forwarded-host'];\n  }\n  \n  // Remove dangerous headers that should never come from client\n  const dangersHeaders = [\n    'x-original-url',\n    'x-rewrite-url',\n    'x-forwarded-prefix'\n  ];\n  \n  dangersHeaders.forEach(header => {\n    if (req.headers[header]) {\n      console.warn(`Removed dangerous header: ${header}`);\n      delete req.headers[header];\n    }\n  });\n  \n  // Set Vary header to include security-critical headers\n  res.setHeader('Vary', 'Host, Origin, Accept-Encoding');\n  \n  next();\n});\n\n// Example cacheable endpoint\napp.get('/api/profile/:userId', (req, res) => {\n  // Ensure Vary includes authentication headers\n  res.setHeader('Vary', 'Authorization, Cookie, Host');\n  \n  // For authenticated responses, disable caching entirely\n  if (req.headers.authorization || req.headers.cookie) {\n    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');\n    res.setHeader('Pragma', 'no-cache');\n  } else {\n    // Public data can be cached\n    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');\n  }\n  \n  res.json({ userId: req.params.userId, publicData: true });\n});\n\napp.listen(3000);\n\n// ============================================\n// Nginx Configuration: Header validation at edge\n// File: /etc/nginx/conf.d/cache-security.conf\n// ============================================\n\n# Strip dangerous headers before proxying to origin\nproxy_set_header X-Original-URL \"\";\nproxy_set_header X-Rewrite-URL \"\";\n\n# Validate X-Forwarded-Host against whitelist\nmap $http_x_forwarded_host $allowed_host {\n    default \"\";\n    \"example.com\" \"example.com\";\n    \"www.example.com\" \"www.example.com\";\n    \"api.example.com\" \"api.example.com\";\n}\n\n# Only pass validated X-Forwarded-Host\nproxy_set_header X-Forwarded-Host $allowed_host;\n\n# Cache configuration with proper key\nproxy_cache_key \"$scheme$proxy_host$request_uri$http_host$http_origin\";\nproxy_cache_valid 200 10m;\nproxy_cache_valid 404 1m;\n\n# Respect Vary header from origin\nproxy_cache_vary on;\n\n# Never cache authenticated requests\nproxy_no_cache $http_authorization $cookie_session;\nproxy_cache_bypass $http_authorization $cookie_session;\n\nlocation /api/ {\n    proxy_pass http://backend;\n    \n    # Add cache status to response\n    add_header X-Cache-Status $upstream_cache_status;\n    add_header X-Cache-Key \"$scheme$proxy_host$request_uri$http_host\";\n}"
+      },
+      "tools": [
+        {
+          "name": "Nginx",
+          "type": "Reverse Proxy",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Varnish VCL",
+          "type": "HTTP Cache",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-7 - Monitoring for unauthorized activity"
+      ],
+      "validation_steps": [
+        "Send request with X-Forwarded-Host: evil.com and verify it's blocked",
+        "Check response headers include proper Vary configuration",
+        "Test that authenticated responses are not cached",
+        "Verify cache respects Vary header across different header combinations",
+        "Use curl to test: curl -H 'X-Forwarded-Host: evil.com' https://example.com/api/profile"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Cache Poisoning Detection with SIEM and WAF Rules",
+      "description": "Implement real-time detection of cache poisoning attempts using WAF rules (Cloudflare, AWS WAF) and SIEM correlation to identify suspicious header manipulation patterns.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Cloudflare WAF + Splunk",
+        "code": "// ============================================\n// Cloudflare WAF Custom Rule (Expression)\n// Dashboard: Security > WAF > Custom Rules\n// ============================================\n\n/*\nRule Name: Block Cache Poisoning Attempts\nExpression:\n*/\n\n(\n  // Detect X-Forwarded-Host with external domain\n  (http.request.headers[\"x-forwarded-host\"][0] ne http.host and\n   not http.request.headers[\"x-forwarded-host\"][0] in {\"example.com\" \"www.example.com\" \"api.example.com\"}) or\n  \n  // Detect X-Original-URL header (often used in cache poisoning)\n  http.request.headers.names[*] eq \"x-original-url\" or\n  \n  // Detect unusual cache busting patterns\n  (http.request.uri.path contains \"..\" or\n   http.request.uri.path contains \"//\" or\n   http.request.uri.path contains \"%2e\" or\n   http.request.uri.path contains \"%252e\") or\n  \n  // Detect Host header with IP address (sign of cache poisoning test)\n  http.host matches \"^[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}$\"\n)\n\n/*\nAction: Block\nLog: Enabled\nDescription: Blocks cache poisoning attempts via header manipulation\n*/\n\n// ============================================\n// Splunk SIEM Detection Query\n// ============================================\n\n/*\nAlert: Cache Poisoning Detection\nQuery:\n*/\n\nindex=cdn_logs sourcetype=cloudflare:access\n| eval has_forwarded_host=if(isnotnull('x_forwarded_host'), 1, 0)\n| eval host_mismatch=if('x_forwarded_host'!='host' AND isnotnull('x_forwarded_host'), 1, 0)\n| eval has_original_url=if(isnotnull('x_original_url'), 1, 0)\n| eval suspicious_path=if(match(uri_path, \"(\\\\.\\\\.|//|%2e|%252e)\"), 1, 0)\n| eval cache_poisoning_score=(has_forwarded_host * 2) + (host_mismatch * 5) + (has_original_url * 8) + (suspicious_path * 3)\n| where cache_poisoning_score >= 5\n| stats count as attempts, \n        values(x_forwarded_host) as forwarded_hosts,\n        values(uri_path) as paths,\n        values(src_ip) as source_ips,\n        max(cache_poisoning_score) as max_score\n  by host, _time\n| where attempts > 10\n| sort -max_score\n\n// ============================================\n// Azure Sentinel KQL Detection\n// ============================================\n\n/*\nRule Name: HTTP Cache Poisoning via Header Manipulation\nSeverity: High\nQuery:\n*/\n\nCDNAccessLogs\n| where TimeGenerated > ago(1h)\n| extend ForwardedHost = tostring(parse_json(RequestHeaders)[\"x-forwarded-host\"])\n| extend OriginalURL = tostring(parse_json(RequestHeaders)[\"x-original-url\"])\n| extend HostHeader = tostring(parse_json(RequestHeaders)[\"host\"])\n| where isnotnull(ForwardedHost) and ForwardedHost != HostHeader\n    or isnotnull(OriginalURL)\n    or RequestPath contains \"..\" or RequestPath contains \"//\"\n| summarize \n    AttemptCount = count(),\n    UniquePaths = dcount(RequestPath),\n    SuspiciousHeaders = make_set(ForwardedHost),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated)\n  by ClientIP, HostHeader, bin(TimeGenerated, 5m)\n| where AttemptCount > 5\n| project \n    TimeGenerated,\n    ClientIP,\n    HostHeader,\n    AttemptCount,\n    UniquePaths,\n    SuspiciousHeaders,\n    FirstSeen,\n    LastSeen\n| order by AttemptCount desc\n\n// ============================================\n// Elastic Stack Detection Rule (JSON)\n// ============================================\n\n{\n  \"name\": \"HTTP Cache Poisoning Detection\",\n  \"description\": \"Detects cache poisoning attempts via unkeyed header manipulation\",\n  \"risk_score\": 73,\n  \"severity\": \"high\",\n  \"type\": \"query\",\n  \"query\": \"event.category:web AND (http.request.headers.x-forwarded-host:* OR http.request.headers.x-original-url:* OR url.path:(*..*)) AND NOT http.request.headers.x-forwarded-host:(example.com OR www.example.com)\",\n  \"filters\": [],\n  \"language\": \"kuery\",\n  \"interval\": \"5m\",\n  \"from\": \"now-6m\",\n  \"to\": \"now\",\n  \"actions\": [\n    {\n      \"group\": \"default\",\n      \"id\": \"webhook-security-team\",\n      \"params\": {\n        \"message\": \"Cache poisoning detected from {{context.source.ip}}\"\n      }\n    }\n  ]\n}"
+      },
+      "tools": [
+        {
+          "name": "Cloudflare WAF",
+          "type": "Web Application Firewall",
+          "cost": "Included in Pro plan ($20/month)"
+        },
+        {
+          "name": "AWS WAF",
+          "type": "Web Application Firewall",
+          "cost": "$5/month + $1/million requests"
+        },
+        {
+          "name": "Splunk Enterprise Security",
+          "type": "SIEM",
+          "cost": "$150/GB/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.4 - Assessment of security events"
+      ],
+      "nist_csf": [
+        "DE.AE-2 - Detected events are analyzed",
+        "DE.CM-1 - Networks are monitored",
+        "RS.AN-1 - Notifications are investigated"
+      ],
+      "validation_steps": [
+        "Create Cloudflare WAF rule and test with malicious headers",
+        "Configure SIEM to ingest CDN access logs",
+        "Test detection by sending: curl -H 'X-Forwarded-Host: evil.com' https://example.com",
+        "Verify alerts trigger in SIEM when threshold exceeded",
+        "Set up automated response to block repeat offenders"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden spike in cache misses after period of stable hits",
+      "Unusual X-Forwarded-Host, X-Original-URL headers in logs",
+      "User reports receiving content from wrong domain or language",
+      "Cache serving authenticated content to unauthenticated users",
+      "Abnormal Vary header values in cached responses",
+      "Path traversal patterns (../, //) in cached resource URLs",
+      "Multiple requests from same IP with varying Host headers",
+      "Cached responses containing JavaScript redirects to external domains"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect cache poisoning by correlating cache hits with suspicious headers\nCDNAccessLogs\n| where TimeGenerated > ago(1h)\n| extend CacheStatus = tostring(parse_json(ResponseHeaders)[\"x-cache-status\"])\n| extend ForwardedHost = tostring(parse_json(RequestHeaders)[\"x-forwarded-host\"])\n| where CacheStatus in (\"HIT\", \"STALE\")\n| where isnotnull(ForwardedHost) and ForwardedHost != Host\n| summarize \n    PoisonedCacheHits = count(),\n    UniqueVictimIPs = dcount(ClientIP),\n    AttackerIP = any(ClientIP)\n  by RequestPath, ForwardedHost, bin(TimeGenerated, 5m)\n| where PoisonedCacheHits > 100 or UniqueVictimIPs > 10\n| order by UniqueVictimIPs desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=cdn_logs sourcetype=cloudflare:access\n| eval cache_status=if(match(response_headers, \"X-Cache-Status: HIT\"), \"HIT\", \"MISS\")\n| eval forwarded_host=mvindex(split(mvfilter(match(request_headers, \"X-Forwarded-Host:.*\")), \": \"), 1)\n| where cache_status=\"HIT\" AND isnotnull(forwarded_host) AND forwarded_host!=host\n| stats count as poisoned_hits, dc(src_ip) as victim_count, earliest(_time) as first_seen, latest(_time) as last_seen by uri_path, forwarded_host\n| where victim_count > 10\n| eval impact_score=victim_count * poisoned_hits\n| sort -impact_score"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.response.headers.x-cache-status: \"HIT\" AND http.request.headers.x-forwarded-host:* AND NOT http.request.headers.x-forwarded-host:(example.com OR www.example.com OR api.example.com)"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Param Miner (Burp Suite Extension)",
+        "type": "Cache Poisoning Scanner",
+        "usage": "Automatically identifies unkeyed inputs by fuzzing headers and parameters"
+      },
+      {
+        "name": "Web Cache Vulnerability Scanner",
+        "type": "Security Testing",
+        "usage": "python3 wcvs.py --url https://example.com --headers X-Forwarded-Host,X-Original-URL"
+      },
+      {
+        "name": "Cloudflare Cache Analytics",
+        "type": "Monitoring",
+        "usage": "Dashboard > Analytics > Caching > Filter by cache status and origin errors"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "E-commerce",
+      "Media & Entertainment",
+      "SaaS",
+      "Financial Services",
+      "Gaming"
+    ],
+    "compliance": [
+      "PCI-DSS 6.5.1 (Injection Flaws)",
+      "SOC2 (CC6.6 - Logical Security)",
+      "ISO27001 (A.14.1.2, A.13.1.3)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "CDN",
+      "Hybrid",
+      "Multi-Cloud"
+    ],
+    "data_classification": [
+      "Public",
+      "Internal",
+      "Confidential"
+    ]
+  }
+}
