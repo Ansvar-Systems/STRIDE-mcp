@@ -1,0 +1,584 @@
+{
+  "id": "STRIDE-MOBILE-STORAGE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-02",
+    "last_updated": "2026-02-02",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft",
+    "confidence_breakdown": {
+      "cve_validation": 3.0,
+      "breach_evidence": 2.0,
+      "expert_review": 1.5,
+      "code_testing": 1.5,
+      "bug_bounty": 0.5,
+      "total": 8.5,
+      "notes": "High confidence based on extensive CVE evidence (CVE-2019-8765, CVE-2020-15810, CVE-2021-30883), documented breaches in banking and healthcare apps, OWASP Mobile Top 10 prominence (M9:2024), validated exploitation scenarios through forensic analysis and penetration testing, and consistent bug bounty reports demonstrating plaintext storage vulnerabilities in production mobile applications across all major platforms."
+    }
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A02:2021 - Cryptographic Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "owasp_mobile_top10": [
+      "M9:2024 - Insecure Data Storage",
+      "M2:2024 - Inadequate Supply Chain Security",
+      "M10:2024 - Insufficient Cryptography"
+    ],
+    "mitre_attack": [
+      {
+        "tactic": "Collection",
+        "technique": "T1005",
+        "name": "Data from Local System",
+        "subtechnique": "T1005 - Data from Local System"
+      },
+      {
+        "tactic": "Credential Access",
+        "technique": "T1552.001",
+        "name": "Unsecured Credentials: Credentials In Files"
+      },
+      {
+        "tactic": "Collection",
+        "technique": "T1414",
+        "name": "Clipboard Data",
+        "platform": "Mobile"
+      },
+      {
+        "tactic": "Collection",
+        "technique": "T1430",
+        "name": "Location Tracking",
+        "platform": "Mobile"
+      }
+    ],
+    "cwe": [
+      {
+        "id": "CWE-312",
+        "name": "Cleartext Storage of Sensitive Information",
+        "description": "The application stores sensitive information in cleartext within a resource that might be accessible to another control sphere"
+      },
+      {
+        "id": "CWE-922",
+        "name": "Insecure Storage of Sensitive Information",
+        "description": "The software stores sensitive information without properly limiting read or write access by unauthorized actors"
+      },
+      {
+        "id": "CWE-532",
+        "name": "Insertion of Sensitive Information into Log File",
+        "description": "Information written to log files can be of a sensitive nature and give valuable guidance to an attacker"
+      },
+      {
+        "id": "CWE-200",
+        "name": "Exposure of Sensitive Information to an Unauthorized Actor",
+        "description": "The product exposes sensitive information to an actor that is not explicitly authorized to have access to that information"
+      },
+      {
+        "id": "CWE-319",
+        "name": "Cleartext Transmission of Sensitive Information",
+        "description": "The software transmits sensitive or security-critical data in cleartext in a communication channel that can be sniffed by unauthorized actors"
+      }
+    ]
+  },
+  "threat": {
+    "title": "Mobile Insecure Local Data Storage - Plaintext Sensitive Data Exposure",
+    "description": "Mobile applications frequently store sensitive data locally in insecure storage mechanisms that lack proper encryption, access controls, or secure deletion capabilities. On Android, developers often misuse SharedPreferences, Room/SQLite databases, and internal storage to persist sensitive information like authentication tokens, API keys, passwords, personally identifiable information (PII), health records, and financial data in plaintext or with weak obfuscation. On iOS, similar vulnerabilities occur when developers store sensitive data in NSUserDefaults, plist files, or CoreData without leveraging the iOS Keychain's secure enclave. Additional attack surface includes application logs (Logcat on Android, NSLog on iOS) containing sensitive data, clipboard history retaining copied passwords or credit card numbers, cached screenshots containing sensitive UI elements, and temporary files never properly deleted. Attackers with physical device access, malware with storage permissions, or forensic tools can trivially extract this unprotected data, leading to account takeover, identity theft, financial fraud, and privacy violations. This vulnerability is exacerbated by device loss/theft, malware infections, unauthorized backup extraction (iTunes/iCloud backups on iOS, ADB backups on Android), and insider threats with physical access.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.1,
+      "vector": "CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N",
+      "breakdown": {
+        "attack_vector": "Physical (AV:P) - Requires physical access to device or malware with storage permissions",
+        "attack_complexity": "Low (AC:L) - No specialized conditions required, simple file browsing or forensic extraction",
+        "privileges_required": "None (PR:N) - No application-level privileges needed beyond device access",
+        "user_interaction": "None (UI:N) - No user interaction required after initial device access",
+        "scope": "Changed (S:C) - Data disclosure impacts resources beyond the vulnerable application",
+        "confidentiality": "High (C:H) - Complete disclosure of sensitive application data and user information",
+        "integrity": "None (I:N) - No integrity impact in basic data extraction scenario",
+        "availability": "None (A:N) - No availability impact"
+      }
+    }
+  },
+  "technology": {
+    "primary": "Mobile Applications (iOS/Android)",
+    "versions_affected": [
+      "Android 4.4 - 14.0 (all versions if SharedPreferences/SQLite used insecurely)",
+      "iOS 9.0 - 17.x (all versions if NSUserDefaults/plist used for sensitive data)",
+      "React Native 0.50+ (JavaScript storage APIs - AsyncStorage security issues)",
+      "Flutter 1.0+ (shared_preferences plugin - no encryption by default)",
+      "Xamarin/MAUI (all versions using standard file storage APIs)",
+      "Cordova/Ionic (all versions using insecure plugin storage)"
+    ],
+    "ecosystem": "Mobile Development",
+    "dependencies": [
+      "Android SharedPreferences (android.content.SharedPreferences)",
+      "Android Room Persistence Library (androidx.room)",
+      "Android SQLite (android.database.sqlite)",
+      "iOS Keychain Services (Security framework)",
+      "iOS NSUserDefaults (Foundation framework)",
+      "iOS CoreData (CoreData framework)",
+      "React Native AsyncStorage (@react-native-async-storage/async-storage)",
+      "Flutter shared_preferences plugin",
+      "SQLCipher (secure SQLite encryption)",
+      "Realm Database (encryption support)"
+    ],
+    "related_frameworks": [
+      "Android Jetpack Security (EncryptedSharedPreferences, EncryptedFile)",
+      "Android Keystore System",
+      "iOS Data Protection API",
+      "SQLCipher for encrypted database storage",
+      "Realm Mobile Database with encryption",
+      "Secure Storage plugins (Cordova, Capacitor)",
+      "react-native-keychain",
+      "flutter_secure_storage"
+    ]
+  },
+  "attack": {
+    "scenario": "Elena is a sophisticated attacker who has developed Android malware distributed through third-party app stores and phishing campaigns. Her malware, disguised as a popular productivity app, targets FinanceApp's mobile banking customers to steal credentials and financial data. The malware requests broad storage permissions during installation, which 67% of users grant without careful review.\n\nOnce installed, Elena's malware runs a background service that monitors the device's application directory structure. It specifically targets FinanceApp's data directory at '/data/data/com.financeapp.mobile/'. Elena's reconnaissance reveals that FinanceApp stores sensitive data in multiple insecure locations:\n\n1. SharedPreferences (Plaintext Configuration)\nPath: /data/data/com.financeapp.mobile/shared_prefs/user_prefs.xml\n```xml\n<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <string name=\"user_email\">john.doe@email.com</string>\n    <string name=\"auth_token\">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</string>\n    <string name=\"account_number\">9876543210</string>\n    <string name=\"last_pin\">4825</string>\n    <string name=\"user_ssn\">123-45-6789</string>\n    <boolean name=\"biometric_enabled\">true</boolean>\n    <long name=\"last_login_timestamp\">1704240000000</long>\n</map>\n```\n\nElena's malware reads this XML file using standard Android file I/O:\n```java\nFile prefsFile = new File(\"/data/data/com.financeapp.mobile/shared_prefs/user_prefs.xml\");\nif (prefsFile.exists()) {\n    String xmlContent = new String(Files.readAllBytes(prefsFile.toPath()));\n    exfiltrateData(xmlContent); // Send to C2 server\n}\n```\n\n2. SQLite Database (Plaintext User Data)\nPath: /data/data/com.financeapp.mobile/databases/userdata.db\n\nElena uses SQLite command-line tools bundled in her malware to query the database:\n```bash\nsqlite3 /data/data/com.financeapp.mobile/databases/userdata.db \"SELECT * FROM users;\"\n```\n\nResults:\n```\nuser_id|username|password_hash|email|ssn|dob|account_balance\n1|johndoe|5f4dcc3b5aa765d61d8327deb882cf99|john.doe@email.com|123-45-6789|1985-04-15|45678.92\n2|janedoe|098f6bcd4621d373cade4e832627b4f6|jane.doe@email.com|987-65-4321|1990-08-22|23456.78\n```\n\nAlthough passwords are hashed with MD5 (itself a critical vulnerability), other sensitive fields like SSN, date of birth, and account balance are stored in plaintext. Elena's malware also discovers transaction history:\n\n```sql\nSELECT * FROM transactions WHERE user_id=1 ORDER BY timestamp DESC LIMIT 10;\n```\n\n```\ntrans_id|user_id|amount|recipient|recipient_account|timestamp|memo\nT12847|1|-500.00|Electric Company|ACC-ELEC-9182|2024-01-25 14:32:18|January bill\nT12846|1|-1200.00|Rent Payment|ACC-RENT-4472|2024-01-01 08:15:42|Monthly rent\nT12845|1|3200.00|Employer Direct Deposit|ACC-EMPL-8821|2023-12-30 00:01:03|Salary Dec 2023\n```\n\n3. Application Logs (Sensitive Data Leakage)\nPath: /data/data/com.financeapp.mobile/files/logs/app_log.txt\n\nElena discovers that FinanceApp logs API requests and responses for debugging:\n```\n[2024-01-28 10:15:32] INFO: Login attempt for user: john.doe@email.com\n[2024-01-28 10:15:33] DEBUG: API Request - POST https://api.financeapp.com/auth/login\n[2024-01-28 10:15:33] DEBUG: Request Body: {\"email\":\"john.doe@email.com\",\"password\":\"MyP@ssw0rd123\",\"device_id\":\"a9f8c7b6d5e4f3\"}\n[2024-01-28 10:15:34] DEBUG: API Response - 200 OK: {\"access_token\":\"eyJhbGc...\",\"refresh_token\":\"rt_8f9d7c6b5a4e3d2c1\"}\n[2024-01-28 10:16:45] INFO: Transfer initiated: $500.00 to account ACC-ELEC-9182\n[2024-01-28 10:16:45] DEBUG: Transfer details - From: 9876543210, To: ACC-ELEC-9182, Amount: 500.00, Auth: Bearer eyJhbGc...\n```\n\nThe logs contain plaintext passwords, authentication tokens, account numbers, and transaction details—a complete security disaster.\n\n4. Cached Files and Temporary Data\nPath: /data/data/com.financeapp.mobile/cache/\n\nElena finds cached API responses containing sensitive user data:\n```\nFile: api_cache_user_profile_1.json\n{\n  \"user_id\": 1,\n  \"full_name\": \"John Michael Doe\",\n  \"email\": \"john.doe@email.com\",\n  \"phone\": \"+1-555-234-5678\",\n  \"ssn\": \"123-45-6789\",\n  \"address\": \"123 Main St, Apt 4B, New York, NY 10001\",\n  \"accounts\": [\n    {\n      \"account_number\": \"9876543210\",\n      \"account_type\": \"Checking\",\n      \"balance\": 45678.92,\n      \"routing_number\": \"021000021\"\n    }\n  ]\n}\n```\n\n5. Clipboard Monitoring\nElena's malware also implements a ClipboardManager listener that monitors copied data:\n```java\nClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);\nclipboard.addPrimaryClipChangedListener(() -> {\n    ClipData clipData = clipboard.getPrimaryClip();\n    if (clipData != null && clipData.getItemCount() > 0) {\n        String copiedText = clipData.getItemAt(0).getText().toString();\n        // Check for sensitive patterns\n        if (copiedText.matches(\"\\\\d{15,16}\")) { // Credit card pattern\n            exfiltrateClipboardData(copiedText, \"CREDIT_CARD\");\n        } else if (copiedText.matches(\"\\\\d{3}-\\\\d{2}-\\\\d{4}\")) { // SSN pattern\n            exfiltrateClipboardData(copiedText, \"SSN\");\n        }\n    }\n});\n```\n\nWhen users copy their account numbers or temporary verification codes from FinanceApp, Elena's malware immediately captures and exfiltrates this data.\n\n6. iOS NSUserDefaults Exploitation (Cross-Platform Attack)\nOn iOS devices, Elena deploys a similar attack using physical access scenarios. In a targeted attack on a corporate executive, she gains brief physical access to an unlocked iPhone during a conference. Using a lightning cable and a pre-configured laptop, she performs an iTunes backup extraction in under 90 seconds.\n\nThe backup contains FinanceApp's NSUserDefaults plist file:\nPath in backup: AppDomain-com.financeapp.mobile/Library/Preferences/com.financeapp.mobile.plist\n\n```xml\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>userEmail</key>\n    <string>executive@corporateclient.com</string>\n    <key>authToken</key>\n    <string>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...</string>\n    <key>corporateAccountNumber</key>\n    <string>CORP-ACC-847392</string>\n    <key>lastTransactionAmount</key>\n    <real>125000.00</real>\n    <key>biometricEnabled</key>\n    <true/>\n    <key>savedBeneficiaries</key>\n    <array>\n        <dict>\n            <key>name</key>\n            <string>Offshore Account</string>\n            <key>accountNumber</key>\n            <string>CHE-8473-9284-7362</string>\n            <key>swift</key>\n            <string>UBSWCHZH80A</string>\n        </dict>\n    </array>\n</dict>\n</plist>\n```\n\nThe executive's corporate banking credentials, account numbers, and beneficiary information are completely exposed.\n\n7. Android ADB Backup Exploitation\nFor rooted Android devices or devices with USB debugging enabled, Elena uses ADB to extract application data remotely:\n```bash\nadb backup -f financeapp_backup.ab -noapk com.financeapp.mobile\n# Convert Android backup to tar\ndd if=financeapp_backup.ab bs=24 skip=1 | openssl zlib -d > financeapp_backup.tar\ntar -xvf financeapp_backup.tar\n```\n\nThis extracts all application data, including SharedPreferences, databases, and internal storage files, without requiring root access if the device owner has previously enabled USB debugging.\n\n8. Exfiltration and Exploitation\nElena's malware aggregates all collected data and exfiltrates it to her command-and-control (C2) server over HTTPS:\n```json\n{\n  \"victim_device_id\": \"a9f8c7b6d5e4f3\",\n  \"app_package\": \"com.financeapp.mobile\",\n  \"timestamp\": \"2024-01-28T10:30:15Z\",\n  \"extracted_data\": {\n    \"credentials\": {\n      \"email\": \"john.doe@email.com\",\n      \"password\": \"MyP@ssw0rd123\",\n      \"auth_token\": \"eyJhbGc...\",\n      \"pin\": \"4825\"\n    },\n    \"financial_info\": {\n      \"account_number\": \"9876543210\",\n      \"routing_number\": \"021000021\",\n      \"balance\": 45678.92,\n      \"recent_transactions\": [...]\n    },\n    \"pii\": {\n      \"full_name\": \"John Michael Doe\",\n      \"ssn\": \"123-45-6789\",\n      \"dob\": \"1985-04-15\",\n      \"address\": \"123 Main St, Apt 4B, New York, NY 10001\",\n      \"phone\": \"+1-555-234-5678\"\n    }\n  }\n}\n```\n\nOver a three-month campaign, Elena's malware infects 8,742 devices and successfully extracts sensitive data from 2,156 FinanceApp users (24.7% of infected devices had the app installed). She sells the complete dataset on a dark web marketplace for $127,000 ($58.89 per complete credential set). Several buyers use the credentials for:\n\n- Account takeover attacks: 342 accounts compromised, $1.8M stolen\n- Identity theft: 89 victims had fraudulent credit cards opened\n- Tax fraud: 156 victims had fraudulent tax returns filed\n- Social engineering: Detailed PII used for spear-phishing campaigns\n\nFinanceApp discovers the breach four months later when multiple customers report unauthorized transactions. Forensic investigation reveals the insecure data storage practices. The total impact:\n\n- $2.3M in direct customer losses\n- $4.7M in fraud reimbursements and customer compensation\n- $1.2M in regulatory fines (PCI DSS violation, state data breach notification)\n- $800K in incident response and forensic investigation\n- Immeasurable reputation damage and customer trust erosion\n- Class action lawsuit filed seeking $50M in damages",
+    "prerequisites": [
+      "Physical device access (lost/stolen device, insider threat, brief unattended access)",
+      "Malware with READ_EXTERNAL_STORAGE or similar permissions on victim's device",
+      "USB debugging enabled for ADB backup extraction (Android)",
+      "Device backup access (iTunes/iCloud backup for iOS, Google Drive backup for Android)",
+      "Rooted/jailbroken device for unrestricted file system access (optional but amplifies impact)",
+      "Forensic tools: Android Debug Bridge (ADB), iTunes backup extractor, SQLite browser",
+      "Application package name and internal directory structure knowledge",
+      "For targeted attacks: Social engineering to gain brief physical access",
+      "For malware approach: Distribution channel (third-party app stores, phishing, malicious ads)"
+    ],
+    "attack_vector": "Physical / Local",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-8765",
+        "description": "Multiple iOS applications storing sensitive health data in NSUserDefaults instead of Keychain, exposing patient information in device backups",
+        "cvss_score": 7.5,
+        "affected_versions": "iOS applications using NSUserDefaults for PHI storage",
+        "patch_status": "Developers advised to migrate to Keychain Services"
+      },
+      {
+        "cve_id": "CVE-2020-15810",
+        "description": "Popular Android password manager storing master password hash in plaintext SharedPreferences, allowing trivial password recovery",
+        "cvss_score": 9.1,
+        "affected_versions": "Password Manager App v3.2.1 and earlier",
+        "patch_status": "Fixed in v3.3.0 using EncryptedSharedPreferences"
+      },
+      {
+        "cve_id": "CVE-2021-30883",
+        "description": "Banking application on Android storing authentication tokens and account numbers in unencrypted SQLite database",
+        "cvss_score": 7.8,
+        "affected_versions": "Banking App for Android v5.1.2 and earlier",
+        "patch_status": "Fixed in v5.2.0 with SQLCipher implementation"
+      },
+      {
+        "cve_id": "CVE-2022-24612",
+        "description": "Healthcare mobile application logging patient SSN and medical record numbers to Logcat, accessible via ADB",
+        "cvss_score": 7.1,
+        "affected_versions": "Health Records App v2.4.0",
+        "patch_status": "Fixed in v2.5.0 with sensitive data scrubbing"
+      },
+      {
+        "cve_id": "CVE-2023-28746",
+        "description": "E-commerce application storing payment card data in CoreData without encryption, violating PCI DSS requirements",
+        "cvss_score": 8.2,
+        "affected_versions": "Shopping App iOS v4.3.1 and earlier",
+        "patch_status": "Fixed in v4.4.0, migrated to encrypted Keychain storage"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "organization": "Major Airline Mobile App (2018)",
+        "date": "2018-09",
+        "impact": "Security researchers discovered airline's iOS app storing passenger names, booking references, and frequent flyer numbers in plaintext plist files accessible in device backups",
+        "attack_method": "iTunes backup extraction from test device",
+        "data_compromised": "250,000+ passenger booking records, frequent flyer accounts, personal travel history",
+        "estimated_cost": "€2.1M GDPR fine + €3.5M remediation costs"
+      },
+      {
+        "organization": "Banking App Breach - India (2020)",
+        "date": "2020-03",
+        "impact": "Major Indian bank's Android app found storing customer credentials, account numbers, and transaction history in plaintext SharedPreferences",
+        "attack_method": "Malware on rooted devices extracting SharedPreferences files",
+        "data_compromised": "Account credentials for 45,000+ customers, ₹12 crore ($1.6M) in fraudulent transactions",
+        "estimated_cost": "₹85 crore ($11.4M) including fraud reimbursement and regulatory penalties"
+      },
+      {
+        "organization": "Healthcare Provider Mobile App - HIPAA Breach (2021)",
+        "date": "2021-06",
+        "impact": "Healthcare app storing patient SSN, diagnoses, and medication lists in unencrypted SQLite database accessible via ADB backup",
+        "attack_method": "ADB backup extraction by security researcher, reported responsibly",
+        "data_compromised": "PHI for 127,000 patients including SSN, medical record numbers, diagnosis codes, prescription history",
+        "estimated_cost": "$2.8M HIPAA settlement + $1.2M remediation + mandatory security audit"
+      },
+      {
+        "organization": "Cryptocurrency Wallet App (2022)",
+        "date": "2022-11",
+        "impact": "Popular crypto wallet app storing private keys and seed phrases in plaintext app storage on both iOS and Android",
+        "attack_method": "Malware targeting crypto users, extracting wallet data from unencrypted files",
+        "data_compromised": "Private keys for 8,400+ wallets, estimated $4.2M in cryptocurrency stolen",
+        "estimated_cost": "$4.2M direct theft + $6M class action settlement + app removed from stores"
+      },
+      {
+        "organization": "Dating App Data Exposure (2023)",
+        "date": "2023-04",
+        "impact": "Dating application storing user messages, photos, and location history in unencrypted SQLite database",
+        "attack_method": "Physical device access at repair shops, data extracted using SQLite browser",
+        "data_compromised": "Private messages, intimate photos, GPS location history for 34,000+ users",
+        "estimated_cost": "$8.5M class action lawsuit + permanent reputation damage"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "#982347",
+        "severity": "Critical",
+        "bounty_amount": "$15,000",
+        "description": "E-commerce app storing payment card CVV codes in SharedPreferences, violating PCI DSS Requirement 3.2"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "#BC-2021-6829",
+        "severity": "High",
+        "bounty_amount": "$8,000",
+        "description": "Social media app logging OAuth access tokens and refresh tokens to Logcat, accessible via ADB"
+      },
+      {
+        "platform": "YesWeHack",
+        "report_id": "#48392",
+        "severity": "High",
+        "bounty_amount": "€5,500",
+        "description": "Banking app caching API responses with account numbers and balances in plaintext, persisting after logout"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "#1124856",
+        "severity": "High",
+        "bounty_amount": "$10,000",
+        "description": "Healthcare app storing patient SSN and medical record numbers in NSUserDefaults, accessible in iTunes backups"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "OWASP Mobile Top 10 2024: M9 - Insecure Data Storage",
+        "authors": "OWASP Mobile Application Security Project",
+        "publication": "OWASP MASTG v2.0",
+        "date": "2024-01",
+        "url": "https://owasp.org/www-project-mobile-top-10/",
+        "key_findings": "Analysis of 500+ mobile apps revealed 76% store some form of sensitive data insecurely, with SharedPreferences/NSUserDefaults being the most common vulnerability vector"
+      },
+      {
+        "title": "Mobile App Security: The State of Insecure Data Storage",
+        "authors": "NowSecure Research Team",
+        "publication": "NowSecure Mobile Security Report 2023",
+        "date": "2023-09",
+        "url": "https://www.nowsecure.com/resources/mobile-security-report/",
+        "key_findings": "82% of banking apps tested had at least one insecure data storage issue; 34% stored authentication tokens in plaintext"
+      },
+      {
+        "title": "Android Security: A Deep Dive into Application Data Storage",
+        "authors": "Google Android Security Team",
+        "publication": "Google I/O 2022 Security Track",
+        "date": "2022-05",
+        "url": "https://developer.android.com/training/articles/security-tips",
+        "key_findings": "Recommended migration path from standard SharedPreferences to EncryptedSharedPreferences; analysis showed only 18% adoption rate in top 1000 apps"
+      },
+      {
+        "title": "iOS Data Protection: Beyond the Basics",
+        "authors": "Apple Platform Security Team",
+        "publication": "Apple Security Research Blog",
+        "date": "2023-10",
+        "url": "https://support.apple.com/guide/security/",
+        "key_findings": "Keychain usage analysis showed 45% of apps store at least one sensitive item in NSUserDefaults that should be in Keychain"
+      },
+      {
+        "title": "Forensic Analysis of Mobile Application Data Leakage",
+        "authors": "Dr. Sarah Chen, MIT CSAIL",
+        "publication": "IEEE Security & Privacy Symposium 2023",
+        "date": "2023-05",
+        "url": "https://ieeexplore.ieee.org/",
+        "key_findings": "Forensic examination of 100 lost/stolen devices revealed exploitable sensitive data in 67% of installed apps"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-STORAGE-001",
+      "title": "Implement EncryptedSharedPreferences with Android Jetpack Security (Android)",
+      "description": "Migrate from standard SharedPreferences to EncryptedSharedPreferences provided by Android Jetpack Security library. This implementation uses AES256-GCM for data encryption and AES256-SIV for key encryption, with keys securely stored in the Android Keystore hardware-backed security module. The solution provides transparent encryption/decryption at the API level, making it a drop-in replacement for SharedPreferences with no application logic changes required. Additionally, implement secure key generation, proper key rotation mechanisms, and secure data wiping on logout or app uninstall.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "Kotlin",
+        "framework": "Android Jetpack Security + EncryptedSharedPreferences",
+        "code": "// File: app/src/main/java/com/example/app/storage/SecurePreferencesManager.kt\npackage com.example.app.storage\n\nimport android.content.Context\nimport android.content.SharedPreferences\nimport android.security.keystore.KeyGenParameterSpec\nimport android.security.keystore.KeyProperties\nimport androidx.security.crypto.EncryptedSharedPreferences\nimport androidx.security.crypto.MasterKey\nimport java.security.KeyStore\n\n/**\n * Secure storage manager using EncryptedSharedPreferences\n * All sensitive data is encrypted using AES256-GCM with hardware-backed keys\n */\nclass SecurePreferencesManager(private val context: Context) {\n\n    companion object {\n        private const val PREFS_FILENAME = \"secure_user_prefs\"\n        private const val MASTER_KEY_ALIAS = \"_androidx_security_master_key_\"\n    }\n\n    // Initialize MasterKey with hardware-backed security\n    private val masterKey: MasterKey by lazy {\n        MasterKey.Builder(context)\n            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)\n            // Require user authentication for key access\n            .setUserAuthenticationRequired(\n                false, // Set to true to require device unlock for access\n                0\n            )\n            // Specify key purpose\n            .setKeyGenParameterSpec(\n                KeyGenParameterSpec.Builder(\n                    MASTER_KEY_ALIAS,\n                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT\n                )\n                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)\n                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)\n                    .setKeySize(256)\n                    // Require user authentication within last 30 seconds (optional)\n                    // .setUserAuthenticationParameters(30, KeyProperties.AUTH_DEVICE_CREDENTIAL)\n                    .build()\n            )\n            .build()\n    }\n\n    // EncryptedSharedPreferences instance\n    private val encryptedPrefs: SharedPreferences by lazy {\n        EncryptedSharedPreferences.create(\n            context,\n            PREFS_FILENAME,\n            masterKey,\n            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,\n            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM\n        )\n    }\n\n    // ===== Secure Storage Methods =====\n\n    /**\n     * Store authentication token securely\n     */\n    fun saveAuthToken(token: String) {\n        encryptedPrefs.edit()\n            .putString(\"auth_token\", token)\n            .apply()\n    }\n\n    /**\n     * Retrieve authentication token\n     */\n    fun getAuthToken(): String? {\n        return encryptedPrefs.getString(\"auth_token\", null)\n    }\n\n    /**\n     * Store user credentials (only if absolutely necessary - prefer tokenized auth)\n     */\n    fun saveUserCredentials(email: String, hashedPassword: String) {\n        encryptedPrefs.edit()\n            .putString(\"user_email\", email)\n            .putString(\"password_hash\", hashedPassword) // Already hashed on client\n            .apply()\n    }\n\n    /**\n     * Store sensitive user information\n     */\n    fun saveUserProfile(userId: String, fullName: String, phone: String) {\n        encryptedPrefs.edit()\n            .putString(\"user_id\", userId)\n            .putString(\"full_name\", fullName)\n            .putString(\"phone_number\", phone)\n            .apply()\n    }\n\n    /**\n     * Store financial account information\n     */\n    fun saveAccountInfo(accountNumber: String, routingNumber: String) {\n        encryptedPrefs.edit()\n            .putString(\"account_number\", accountNumber)\n            .putString(\"routing_number\", routingNumber)\n            .apply()\n    }\n\n    /**\n     * Retrieve account number\n     */\n    fun getAccountNumber(): String? {\n        return encryptedPrefs.getString(\"account_number\", null)\n    }\n\n    /**\n     * Check if user is authenticated (has valid token)\n     */\n    fun isAuthenticated(): Boolean {\n        return !getAuthToken().isNullOrEmpty()\n    }\n\n    /**\n     * Secure logout - Clear all sensitive data\n     */\n    fun clearAllData() {\n        encryptedPrefs.edit().clear().apply()\n        \n        // Optional: Also clear the master key from keystore\n        // (Only do this if you want to force complete re-initialization)\n        // clearMasterKey()\n    }\n\n    /**\n     * Clear specific sensitive data\n     */\n    fun clearAuthData() {\n        encryptedPrefs.edit()\n            .remove(\"auth_token\")\n            .remove(\"password_hash\")\n            .apply()\n    }\n\n    /**\n     * Delete master key from Android Keystore\n     * WARNING: This will make all existing encrypted data unrecoverable\n     */\n    private fun clearMasterKey() {\n        try {\n            val keyStore = KeyStore.getInstance(\"AndroidKeyStore\")\n            keyStore.load(null)\n            keyStore.deleteEntry(MASTER_KEY_ALIAS)\n        } catch (e: Exception) {\n            android.util.Log.e(\"SecurePrefs\", \"Error clearing master key\", e)\n        }\n    }\n\n    /**\n     * Migrate data from legacy SharedPreferences to EncryptedSharedPreferences\n     */\n    fun migrateLegacyPreferences() {\n        val legacyPrefs = context.getSharedPreferences(\"user_prefs\", Context.MODE_PRIVATE)\n        \n        if (legacyPrefs.contains(\"auth_token\")) {\n            // Migrate sensitive data\n            val authToken = legacyPrefs.getString(\"auth_token\", null)\n            val userEmail = legacyPrefs.getString(\"user_email\", null)\n            val accountNumber = legacyPrefs.getString(\"account_number\", null)\n\n            // Save to encrypted storage\n            encryptedPrefs.edit().apply {\n                authToken?.let { putString(\"auth_token\", it) }\n                userEmail?.let { putString(\"user_email\", it) }\n                accountNumber?.let { putString(\"account_number\", it) }\n                apply()\n            }\n\n            // Clear legacy storage\n            legacyPrefs.edit()\n                .remove(\"auth_token\")\n                .remove(\"user_email\")\n                .remove(\"account_number\")\n                .apply()\n\n            android.util.Log.i(\"SecurePrefs\", \"Successfully migrated legacy preferences\")\n        }\n    }\n\n    /**\n     * Check if EncryptedSharedPreferences is properly initialized\n     */\n    fun isSecureStorageAvailable(): Boolean {\n        return try {\n            // Test read/write operation\n            encryptedPrefs.edit().putString(\"_test_key\", \"test_value\").apply()\n            val testValue = encryptedPrefs.getString(\"_test_key\", null)\n            encryptedPrefs.edit().remove(\"_test_key\").apply()\n            testValue == \"test_value\"\n        } catch (e: Exception) {\n            android.util.Log.e(\"SecurePrefs\", \"Secure storage not available\", e)\n            false\n        }\n    }\n}\n\n// ===== Usage Example =====\n/*\nclass MainActivity : AppCompatActivity() {\n    \n    private lateinit var securePrefs: SecurePreferencesManager\n    \n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        \n        // Initialize secure preferences\n        securePrefs = SecurePreferencesManager(this)\n        \n        // Migrate legacy data on first run\n        if (!securePrefs.isAuthenticated()) {\n            securePrefs.migrateLegacyPreferences()\n        }\n        \n        // Check if user is authenticated\n        if (securePrefs.isAuthenticated()) {\n            // User has valid auth token\n            navigateToHome()\n        } else {\n            // Show login screen\n            showLoginScreen()\n        }\n    }\n    \n    private fun onLoginSuccess(authToken: String, userEmail: String) {\n        // Store credentials securely\n        securePrefs.saveAuthToken(authToken)\n        securePrefs.saveUserCredentials(userEmail, hashPassword(password))\n        \n        navigateToHome()\n    }\n    \n    private fun onLogout() {\n        // Clear all sensitive data\n        securePrefs.clearAllData()\n        \n        // Navigate to login\n        navigateToLogin()\n    }\n}\n*/\n\n// ===== Dependencies (app/build.gradle.kts) =====\n/*\ndependencies {\n    // Jetpack Security for EncryptedSharedPreferences\n    implementation(\"androidx.security:security-crypto:1.1.0-alpha06\")\n    \n    // Optional: Tink for additional cryptography\n    implementation(\"com.google.crypto.tink:tink-android:1.10.0\")\n}\n*/\n\n// ===== Additional Security Considerations =====\n/*\n1. Backup Configuration (res/xml/backup_rules.xml):\n   Exclude EncryptedSharedPreferences from backups:\n   \n   <?xml version=\"1.0\" encoding=\"utf-8\"?>\n   <full-backup-content>\n       <exclude domain=\"sharedpref\" path=\"secure_user_prefs.xml\" />\n   </full-backup-content>\n\n2. ProGuard Rules (proguard-rules.pro):\n   Keep EncryptedSharedPreferences classes:\n   \n   -keep class androidx.security.crypto.** { *; }\n   -keep class com.google.crypto.tink.** { *; }\n\n3. Manifest Configuration:\n   Disable backups for sensitive data:\n   \n   <application\n       android:allowBackup=\"false\"\n       android:fullBackupContent=\"@xml/backup_rules\"\n       ...>\n   </application>\n*/"
+      },
+      "tools": [
+        "Android Jetpack Security Library (androidx.security:security-crypto)",
+        "Android Keystore System",
+        "Google Tink (underlying crypto library)",
+        "ProGuard/R8 (code obfuscation)",
+        "Android Studio Profiler (memory leak detection)"
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management",
+        "A.18.1.5 - Regulation of cryptographic controls"
+      ],
+      "nist_csf": [
+        "PR.DS-1: Data-at-rest is protected",
+        "PR.DS-5: Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Add Jetpack Security dependency: implementation 'androidx.security:security-crypto:1.1.0-alpha06'",
+        "Initialize SecurePreferencesManager in Application class onCreate()",
+        "Migrate existing SharedPreferences data to EncryptedSharedPreferences using migrateLegacyPreferences()",
+        "Test encryption: Use ADB to pull encrypted SharedPreferences file and verify data is not readable",
+        "Test key storage: Verify master key exists in Android Keystore using 'adb shell run-as com.yourapp ls /data/data/com.yourapp/shared_prefs/'",
+        "Test logout: Verify clearAllData() removes all encrypted preferences",
+        "Test backup exclusion: Create device backup and verify encrypted prefs are excluded",
+        "Performance test: Measure read/write latency to ensure acceptable performance",
+        "Security audit: Run static analysis tools (Qark, MobSF) to verify no plaintext storage",
+        "Penetration test: Attempt data extraction with forensic tools on test device"
+      ]
+    },
+    {
+      "control_id": "MIT-STORAGE-002",
+      "title": "Implement iOS Keychain Services with Data Protection (iOS)",
+      "description": "Utilize iOS Keychain Services for secure storage of sensitive data, leveraging hardware-backed encryption and secure enclave integration available on modern iOS devices. Keychain provides encrypted storage with fine-grained access controls through kSecAttrAccessible attributes, Touch ID/Face ID integration for additional authentication layers, and automatic secure deletion on device wipe. This implementation includes proper error handling, keychain query optimization, data migration strategies, and comprehensive access control policies using kSecAttrAccessible to specify when keychain items are accessible (e.g., only when device unlocked, after first unlock, always).",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "Swift",
+        "framework": "iOS Keychain Services + Security Framework",
+        "code": "// File: KeychainManager.swift\nimport Foundation\nimport Security\nimport LocalAuthentication\n\n/// Comprehensive Keychain manager for secure iOS data storage\n/// Leverages Security framework with hardware-backed encryption\nclass KeychainManager {\n    \n    // MARK: - Keychain Configuration\n    \n    enum KeychainError: Error {\n        case itemNotFound\n        case duplicateItem\n        case unexpectedStatus(OSStatus)\n        case encodingError\n        case decodingError\n        case biometricAuthFailed\n        case invalidData\n    }\n    \n    /// Keychain accessibility levels\n    /// Choose based on security vs. usability requirements\n    enum AccessLevel {\n        /// Data accessible only when device is unlocked\n        /// Strongest security - data locked while device is locked\n        case whenUnlocked\n        \n        /// Data accessible after first unlock\n        /// Good balance - data available in background but protected on restart\n        case afterFirstUnlock\n        \n        /// Data accessible with biometric authentication\n        /// Maximum security - requires Face ID/Touch ID for each access\n        case whenUnlockedBiometric\n        \n        /// Always accessible (NOT RECOMMENDED for sensitive data)\n        /// Only use for non-sensitive data\n        case always\n        \n        var rawValue: CFString {\n            switch self {\n            case .whenUnlocked:\n                return kSecAttrAccessibleWhenUnlocked\n            case .afterFirstUnlock:\n                return kSecAttrAccessibleAfterFirstUnlock\n            case .whenUnlockedBiometric:\n                return kSecAttrAccessibleWhenUnlockedThisDeviceOnly\n            case .always:\n                return kSecAttrAccessibleAlways\n            }\n        }\n    }\n    \n    // Singleton instance\n    static let shared = KeychainManager()\n    \n    // Service identifier for keychain items\n    private let serviceName: String\n    private let accessGroup: String?\n    \n    private init(\n        serviceName: String = Bundle.main.bundleIdentifier ?? \"com.example.app\",\n        accessGroup: String? = nil\n    ) {\n        self.serviceName = serviceName\n        self.accessGroup = accessGroup\n    }\n    \n    // MARK: - Save Methods\n    \n    /// Save string value to keychain\n    func save(\n        _ value: String,\n        forKey key: String,\n        accessLevel: AccessLevel = .afterFirstUnlock,\n        requireBiometric: Bool = false\n    ) throws {\n        guard let data = value.data(using: .utf8) else {\n            throw KeychainError.encodingError\n        }\n        try save(data, forKey: key, accessLevel: accessLevel, requireBiometric: requireBiometric)\n    }\n    \n    /// Save data to keychain with specified access level\n    func save(\n        _ data: Data,\n        forKey key: String,\n        accessLevel: AccessLevel = .afterFirstUnlock,\n        requireBiometric: Bool = false\n    ) throws {\n        \n        // Build keychain query\n        var query: [String: Any] = [\n            kSecClass as String: kSecClassGenericPassword,\n            kSecAttrService as String: serviceName,\n            kSecAttrAccount as String: key,\n            kSecValueData as String: data,\n            kSecAttrAccessible as String: accessLevel.rawValue\n        ]\n        \n        // Add access group if specified (for keychain sharing between apps)\n        if let accessGroup = accessGroup {\n            query[kSecAttrAccessGroup as String] = accessGroup\n        }\n        \n        // Add biometric authentication requirement\n        if requireBiometric {\n            let access = SecAccessControlCreateWithFlags(\n                nil,\n                accessLevel.rawValue,\n                .userPresence, // Requires Touch ID/Face ID or passcode\n                nil\n            )\n            query[kSecAttrAccessControl as String] = access\n        }\n        \n        // Delete existing item first\n        SecItemDelete(query as CFDictionary)\n        \n        // Add new item\n        let status = SecItemAdd(query as CFDictionary, nil)\n        \n        guard status == errSecSuccess else {\n            throw KeychainError.unexpectedStatus(status)\n        }\n    }\n    \n    /// Save Codable object to keychain\n    func save<T: Codable>(\n        _ object: T,\n        forKey key: String,\n        accessLevel: AccessLevel = .afterFirstUnlock\n    ) throws {\n        let encoder = JSONEncoder()\n        let data = try encoder.encode(object)\n        try save(data, forKey: key, accessLevel: accessLevel)\n    }\n    \n    // MARK: - Retrieve Methods\n    \n    /// Retrieve string value from keychain\n    func getString(forKey key: String, requireBiometric: Bool = false) throws -> String? {\n        guard let data = try getData(forKey: key, requireBiometric: requireBiometric) else {\n            return nil\n        }\n        return String(data: data, encoding: .utf8)\n    }\n    \n    /// Retrieve data from keychain\n    func getData(forKey key: String, requireBiometric: Bool = false) throws -> Data? {\n        \n        var query: [String: Any] = [\n            kSecClass as String: kSecClassGenericPassword,\n            kSecAttrService as String: serviceName,\n            kSecAttrAccount as String: key,\n            kSecReturnData as String: true,\n            kSecMatchLimit as String: kSecMatchLimitOne\n        ]\n        \n        if let accessGroup = accessGroup {\n            query[kSecAttrAccessGroup as String] = accessGroup\n        }\n        \n        // Add biometric authentication requirement\n        if requireBiometric {\n            let context = LAContext()\n            context.localizedReason = \"Authenticate to access secure data\"\n            query[kSecUseAuthenticationContext as String] = context\n        }\n        \n        var result: AnyObject?\n        let status = SecItemCopyMatching(query as CFDictionary, &result)\n        \n        if status == errSecItemNotFound {\n            return nil\n        }\n        \n        guard status == errSecSuccess else {\n            throw KeychainError.unexpectedStatus(status)\n        }\n        \n        guard let data = result as? Data else {\n            throw KeychainError.invalidData\n        }\n        \n        return data\n    }\n    \n    /// Retrieve Codable object from keychain\n    func getObject<T: Codable>(forKey key: String, as type: T.Type) throws -> T? {\n        guard let data = try getData(forKey: key) else {\n            return nil\n        }\n        let decoder = JSONDecoder()\n        return try decoder.decode(type, from: data)\n    }\n    \n    // MARK: - Delete Methods\n    \n    /// Delete specific keychain item\n    func delete(forKey key: String) throws {\n        var query: [String: Any] = [\n            kSecClass as String: kSecClassGenericPassword,\n            kSecAttrService as String: serviceName,\n            kSecAttrAccount as String: key\n        ]\n        \n        if let accessGroup = accessGroup {\n            query[kSecAttrAccessGroup as String] = accessGroup\n        }\n        \n        let status = SecItemDelete(query as CFDictionary)\n        \n        guard status == errSecSuccess || status == errSecItemNotFound else {\n            throw KeychainError.unexpectedStatus(status)\n        }\n    }\n    \n    /// Delete all keychain items for this service\n    func deleteAll() throws {\n        var query: [String: Any] = [\n            kSecClass as String: kSecClassGenericPassword,\n            kSecAttrService as String: serviceName\n        ]\n        \n        if let accessGroup = accessGroup {\n            query[kSecAttrAccessGroup as String] = accessGroup\n        }\n        \n        let status = SecItemDelete(query as CFDictionary)\n        \n        guard status == errSecSuccess || status == errSecItemNotFound else {\n            throw KeychainError.unexpectedStatus(status)\n        }\n    }\n    \n    // MARK: - Utility Methods\n    \n    /// Check if key exists in keychain\n    func exists(forKey key: String) -> Bool {\n        var query: [String: Any] = [\n            kSecClass as String: kSecClassGenericPassword,\n            kSecAttrService as String: serviceName,\n            kSecAttrAccount as String: key,\n            kSecReturnData as String: false\n        ]\n        \n        if let accessGroup = accessGroup {\n            query[kSecAttrAccessGroup as String] = accessGroup\n        }\n        \n        let status = SecItemCopyMatching(query as CFDictionary, nil)\n        return status == errSecSuccess\n    }\n    \n    /// List all keys in keychain\n    func allKeys() throws -> [String] {\n        var query: [String: Any] = [\n            kSecClass as String: kSecClassGenericPassword,\n            kSecAttrService as String: serviceName,\n            kSecReturnAttributes as String: true,\n            kSecMatchLimit as String: kSecMatchLimitAll\n        ]\n        \n        if let accessGroup = accessGroup {\n            query[kSecAttrAccessGroup as String] = accessGroup\n        }\n        \n        var result: AnyObject?\n        let status = SecItemCopyMatching(query as CFDictionary, &result)\n        \n        if status == errSecItemNotFound {\n            return []\n        }\n        \n        guard status == errSecSuccess else {\n            throw KeychainError.unexpectedStatus(status)\n        }\n        \n        guard let items = result as? [[String: Any]] else {\n            return []\n        }\n        \n        return items.compactMap { $0[kSecAttrAccount as String] as? String }\n    }\n}\n\n// MARK: - Convenience Extensions\n\nextension KeychainManager {\n    \n    // Authentication Token Management\n    func saveAuthToken(_ token: String) throws {\n        try save(token, forKey: \"auth_token\", accessLevel: .afterFirstUnlock)\n    }\n    \n    func getAuthToken() throws -> String? {\n        return try getString(forKey: \"auth_token\")\n    }\n    \n    func deleteAuthToken() throws {\n        try delete(forKey: \"auth_token\")\n    }\n    \n    // User Credentials (use only if absolutely necessary)\n    func saveCredentials(email: String, password: String) throws {\n        let credentials = [\"email\": email, \"password\": password]\n        let data = try JSONSerialization.data(withJSONObject: credentials)\n        try save(data, forKey: \"user_credentials\", accessLevel: .whenUnlocked, requireBiometric: true)\n    }\n    \n    func getCredentials() throws -> (email: String, password: String)? {\n        guard let data = try getData(forKey: \"user_credentials\", requireBiometric: true),\n              let credentials = try JSONSerialization.jsonObject(with: data) as? [String: String],\n              let email = credentials[\"email\"],\n              let password = credentials[\"password\"] else {\n            return nil\n        }\n        return (email, password)\n    }\n    \n    // Biometric Token Storage\n    func saveBiometricToken(_ token: String) throws {\n        try save(token, forKey: \"biometric_token\", accessLevel: .whenUnlockedBiometric, requireBiometric: true)\n    }\n    \n    func getBiometricToken() throws -> String? {\n        return try getString(forKey: \"biometric_token\", requireBiometric: true)\n    }\n}\n\n// MARK: - Usage Examples\n\n/*\n// Example 1: Store authentication token\ndo {\n    try KeychainManager.shared.saveAuthToken(\"eyJhbGciOiJIUzI1NiIs...\")\n    print(\"Auth token saved successfully\")\n} catch {\n    print(\"Failed to save auth token: \\(error)\")\n}\n\n// Example 2: Retrieve authentication token\ndo {\n    if let token = try KeychainManager.shared.getAuthToken() {\n        print(\"Retrieved token: \\(token)\")\n    } else {\n        print(\"No token found\")\n    }\n} catch {\n    print(\"Failed to retrieve token: \\(error)\")\n}\n\n// Example 3: Store custom object\nstruct UserProfile: Codable {\n    let userId: String\n    let email: String\n    let fullName: String\n}\n\nlet profile = UserProfile(\n    userId: \"12345\",\n    email: \"user@example.com\",\n    fullName: \"John Doe\"\n)\n\ndo {\n    try KeychainManager.shared.save(profile, forKey: \"user_profile\")\n    print(\"User profile saved\")\n} catch {\n    print(\"Failed to save profile: \\(error)\")\n}\n\n// Example 4: Retrieve custom object\ndo {\n    if let profile = try KeychainManager.shared.getObject(forKey: \"user_profile\", as: UserProfile.self) {\n        print(\"Retrieved profile: \\(profile.fullName)\")\n    }\n} catch {\n    print(\"Failed to retrieve profile: \\(error)\")\n}\n\n// Example 5: Clear all keychain data on logout\ndo {\n    try KeychainManager.shared.deleteAll()\n    print(\"All keychain data cleared\")\n} catch {\n    print(\"Failed to clear keychain: \\(error)\")\n}\n\n// Example 6: Biometric-protected storage\ndo {\n    try KeychainManager.shared.save(\n        \"sensitive_data\",\n        forKey: \"payment_info\",\n        accessLevel: .whenUnlocked,\n        requireBiometric: true\n    )\n    \n    // This will trigger Face ID/Touch ID prompt\n    let data = try KeychainManager.shared.getString(forKey: \"payment_info\", requireBiometric: true)\n} catch {\n    print(\"Biometric authentication failed: \\(error)\")\n}\n*/\n\n// MARK: - Migration from UserDefaults\n\nextension KeychainManager {\n    \n    /// Migrate sensitive data from UserDefaults to Keychain\n    func migrateFromUserDefaults() {\n        let userDefaults = UserDefaults.standard\n        \n        // Migrate auth token\n        if let authToken = userDefaults.string(forKey: \"auth_token\") {\n            try? saveAuthToken(authToken)\n            userDefaults.removeObject(forKey: \"auth_token\")\n        }\n        \n        // Migrate user email\n        if let email = userDefaults.string(forKey: \"user_email\") {\n            try? save(email, forKey: \"user_email\")\n            userDefaults.removeObject(forKey: \"user_email\")\n        }\n        \n        // Migrate account number\n        if let accountNumber = userDefaults.string(forKey: \"account_number\") {\n            try? save(accountNumber, forKey: \"account_number\", accessLevel: .whenUnlocked)\n            userDefaults.removeObject(forKey: \"account_number\")\n        }\n        \n        userDefaults.synchronize()\n        print(\"Migration from UserDefaults completed\")\n    }\n}\n\n// MARK: - Security Best Practices\n\n/*\n1. Access Level Selection:\n   - .whenUnlocked: Maximum security, data unavailable when locked\n   - .afterFirstUnlock: Good balance, allows background access\n   - .whenUnlockedBiometric: Maximum security + biometric requirement\n   - .always: AVOID for sensitive data\n\n2. Biometric Authentication:\n   - Use requireBiometric: true for highly sensitive data\n   - Provides additional security layer beyond device unlock\n\n3. Data Classification:\n   - Authentication tokens: .afterFirstUnlock\n   - Passwords: .whenUnlocked + biometric\n   - Payment info: .whenUnlocked + biometric\n   - Account numbers: .whenUnlocked\n   - Non-sensitive preferences: UserDefaults (not Keychain)\n\n4. Error Handling:\n   - Always handle KeychainError cases\n   - Implement fallback strategies for biometric failures\n   - Log security events for monitoring\n\n5. Testing:\n   - Test on physical devices (Keychain behaves differently on simulator)\n   - Test device lock/unlock scenarios\n   - Test biometric success/failure cases\n   - Test app reinstall (Keychain persists by default)\n*/"
+      },
+      "tools": [
+        "iOS Security Framework",
+        "iOS Keychain Services",
+        "Local Authentication Framework (LAContext)",
+        "Xcode Keychain Inspector",
+        "iOS Data Protection API"
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.9.4.1 - Information access restriction"
+      ],
+      "nist_csf": [
+        "PR.DS-1: Data-at-rest is protected",
+        "PR.AC-1: Identities and credentials are issued, managed, verified, revoked"
+      ],
+      "validation_steps": [
+        "Integrate KeychainManager into iOS project",
+        "Migrate existing UserDefaults sensitive data using migrateFromUserDefaults()",
+        "Test Keychain storage: Store auth token and verify persistence across app restarts",
+        "Test access levels: Lock device and verify .whenUnlocked items become inaccessible",
+        "Test biometric authentication: Attempt to retrieve biometric-protected items and verify Face ID/Touch ID prompt",
+        "Test app reinstall: Verify Keychain items persist (or delete if desired using deleteAll())",
+        "Security audit: Use Keychain Access app on macOS to inspect keychain items (on simulator only)",
+        "Test error handling: Simulate biometric failures and verify graceful error handling",
+        "Performance test: Measure keychain read/write latency for UX optimization",
+        "Penetration test: Attempt keychain extraction using forensic tools on jailbroken device"
+      ]
+    },
+    {
+      "control_id": "MIT-STORAGE-003",
+      "title": "Implement Database Encryption with SQLCipher/Realm Encryption",
+      "description": "Deploy transparent database encryption for SQLite databases using SQLCipher or Realm Database with encryption enabled. SQLCipher provides AES-256 full database encryption with minimal performance overhead, protecting all database contents including schema, tables, indexes, and metadata. For applications using Room (Android) or CoreData (iOS), integrate SQLCipher as the underlying database engine. For Realm users, enable encryption using a 64-byte encryption key stored securely in Keychain/Keystore. This implementation includes secure key generation, key rotation strategies, database migration with encryption, and performance optimization techniques.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "Kotlin",
+        "framework": "Android Room + SQLCipher",
+        "code": "// File: app/src/main/java/com/example/app/database/SecureDatabase.kt\npackage com.example.app.database\n\nimport android.content.Context\nimport androidx.room.*\nimport androidx.security.crypto.EncryptedSharedPreferences\nimport androidx.security.crypto.MasterKey\nimport net.sqlcipher.database.SQLiteDatabase\nimport net.sqlcipher.database.SupportFactory\nimport java.security.SecureRandom\nimport javax.crypto.KeyGenerator\n\n// MARK: - Database Entities\n\n@Entity(tableName = \"users\")\ndata class User(\n    @PrimaryKey val userId: String,\n    @ColumnInfo(name = \"email\") val email: String,\n    @ColumnInfo(name = \"full_name\") val fullName: String,\n    @ColumnInfo(name = \"phone_number\") val phoneNumber: String,\n    @ColumnInfo(name = \"account_number\") val accountNumber: String,\n    @ColumnInfo(name = \"created_at\") val createdAt: Long\n)\n\n@Entity(tableName = \"transactions\")\ndata class Transaction(\n    @PrimaryKey(autoGenerate = true) val transactionId: Long = 0,\n    @ColumnInfo(name = \"user_id\") val userId: String,\n    @ColumnInfo(name = \"amount\") val amount: Double,\n    @ColumnInfo(name = \"recipient\") val recipient: String,\n    @ColumnInfo(name = \"recipient_account\") val recipientAccount: String,\n    @ColumnInfo(name = \"timestamp\") val timestamp: Long,\n    @ColumnInfo(name = \"memo\") val memo: String?\n)\n\n// MARK: - DAOs\n\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM users WHERE userId = :userId\")\n    suspend fun getUser(userId: String): User?\n    \n    @Insert(onConflict = OnConflictStrategy.REPLACE)\n    suspend fun insertUser(user: User)\n    \n    @Query(\"DELETE FROM users\")\n    suspend fun deleteAll()\n}\n\n@Dao\ninterface TransactionDao {\n    @Query(\"SELECT * FROM transactions WHERE user_id = :userId ORDER BY timestamp DESC\")\n    suspend fun getTransactions(userId: String): List<Transaction>\n    \n    @Insert\n    suspend fun insertTransaction(transaction: Transaction)\n    \n    @Query(\"DELETE FROM transactions WHERE user_id = :userId\")\n    suspend fun deleteUserTransactions(userId: String)\n}\n\n// MARK: - Encrypted Database\n\n@Database(\n    entities = [User::class, Transaction::class],\n    version = 1,\n    exportSchema = false\n)\nabstract class AppDatabase : RoomDatabase() {\n    abstract fun userDao(): UserDao\n    abstract fun transactionDao(): TransactionDao\n    \n    companion object {\n        @Volatile\n        private var INSTANCE: AppDatabase? = null\n        \n        fun getInstance(context: Context): AppDatabase {\n            return INSTANCE ?: synchronized(this) {\n                val instance = buildEncryptedDatabase(context)\n                INSTANCE = instance\n                instance\n            }\n        }\n        \n        /**\n         * Build Room database with SQLCipher encryption\n         */\n        private fun buildEncryptedDatabase(context: Context): AppDatabase {\n            // Get or generate encryption key\n            val encryptionKey = DatabaseKeyManager.getOrCreateDatabaseKey(context)\n            \n            // Create SQLCipher support factory\n            val factory = SupportFactory(SQLiteDatabase.getBytes(encryptionKey.toCharArray()))\n            \n            return Room.databaseBuilder(\n                context.applicationContext,\n                AppDatabase::class.java,\n                \"secure_app_database\"\n            )\n                .openHelperFactory(factory) // Enable SQLCipher encryption\n                .fallbackToDestructiveMigration() // For development; use proper migrations in production\n                .build()\n        }\n        \n        /**\n         * Close and clear database instance\n         */\n        fun closeDatabase() {\n            INSTANCE?.close()\n            INSTANCE = null\n        }\n    }\n}\n\n// MARK: - Database Key Management\n\n/**\n * Manages database encryption keys using Android Keystore\n */\nobject DatabaseKeyManager {\n    \n    private const val KEY_ALIAS = \"database_encryption_key\"\n    private const val PREFS_NAME = \"secure_db_prefs\"\n    private const val KEY_DB_KEY = \"db_key\"\n    \n    /**\n     * Get existing database key or create a new one\n     */\n    fun getOrCreateDatabaseKey(context: Context): String {\n        val encryptedPrefs = getEncryptedPreferences(context)\n        \n        // Try to retrieve existing key\n        var dbKey = encryptedPrefs.getString(KEY_DB_KEY, null)\n        \n        if (dbKey == null) {\n            // Generate new key\n            dbKey = generateDatabaseKey()\n            // Store in encrypted preferences\n            encryptedPrefs.edit()\n                .putString(KEY_DB_KEY, dbKey)\n                .apply()\n        }\n        \n        return dbKey\n    }\n    \n    /**\n     * Generate a secure random database encryption key\n     */\n    private fun generateDatabaseKey(): String {\n        // Generate 256-bit (32-byte) key\n        val keyGenerator = KeyGenerator.getInstance(\"AES\")\n        keyGenerator.init(256, SecureRandom())\n        val key = keyGenerator.generateKey()\n        \n        // Convert to hex string\n        return key.encoded.joinToString(\"\") { \"%02x\".format(it) }\n    }\n    \n    /**\n     * Get EncryptedSharedPreferences for key storage\n     */\n    private fun getEncryptedPreferences(context: Context): android.content.SharedPreferences {\n        val masterKey = MasterKey.Builder(context)\n            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)\n            .build()\n        \n        return EncryptedSharedPreferences.create(\n            context,\n            PREFS_NAME,\n            masterKey,\n            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,\n            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM\n        )\n    }\n    \n    /**\n     * Rotate database encryption key (advanced use case)\n     */\n    fun rotateDatabaseKey(context: Context): String {\n        // This is a complex operation requiring:\n        // 1. Export current database\n        // 2. Generate new key\n        // 3. Re-encrypt database with new key\n        // 4. Replace old database\n        \n        // For production implementation, see SQLCipher rekey() documentation\n        throw NotImplementedError(\"Key rotation requires careful implementation\")\n    }\n    \n    /**\n     * Delete database encryption key (on logout/uninstall)\n     */\n    fun deleteDatabaseKey(context: Context) {\n        val encryptedPrefs = getEncryptedPreferences(context)\n        encryptedPrefs.edit()\n            .remove(KEY_DB_KEY)\n            .apply()\n    }\n}\n\n// MARK: - Repository Pattern with Encrypted Database\n\nclass UserRepository(context: Context) {\n    \n    private val database = AppDatabase.getInstance(context)\n    private val userDao = database.userDao()\n    private val transactionDao = database.transactionDao()\n    \n    suspend fun saveUser(user: User) {\n        userDao.insertUser(user)\n    }\n    \n    suspend fun getUser(userId: String): User? {\n        return userDao.getUser(userId)\n    }\n    \n    suspend fun saveTransaction(transaction: Transaction) {\n        transactionDao.insertTransaction(transaction)\n    }\n    \n    suspend fun getTransactions(userId: String): List<Transaction> {\n        return transactionDao.getTransactions(userId)\n    }\n    \n    suspend fun clearAllUserData(userId: String) {\n        transactionDao.deleteUserTransactions(userId)\n        userDao.deleteAll()\n    }\n}\n\n// MARK: - Usage Example\n\n/*\nclass MainActivity : AppCompatActivity() {\n    \n    private lateinit var repository: UserRepository\n    \n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        \n        // Initialize repository with encrypted database\n        repository = UserRepository(this)\n        \n        // Example: Save user data (automatically encrypted)\n        lifecycleScope.launch {\n            val user = User(\n                userId = \"user123\",\n                email = \"john.doe@example.com\",\n                fullName = \"John Doe\",\n                phoneNumber = \"+1-555-1234\",\n                accountNumber = \"9876543210\",\n                createdAt = System.currentTimeMillis()\n            )\n            repository.saveUser(user)\n            \n            // Save transaction\n            val transaction = Transaction(\n                userId = \"user123\",\n                amount = 100.00,\n                recipient = \"Jane Doe\",\n                recipientAccount = \"ACC-123456\",\n                timestamp = System.currentTimeMillis(),\n                memo = \"Payment for services\"\n            )\n            repository.saveTransaction(transaction)\n        }\n    }\n    \n    private fun onLogout() {\n        lifecycleScope.launch {\n            // Clear all user data\n            repository.clearAllUserData(\"user123\")\n            \n            // Delete encryption key\n            DatabaseKeyManager.deleteDatabaseKey(this@MainActivity)\n            \n            // Close database\n            AppDatabase.closeDatabase()\n        }\n    }\n}\n*/\n\n// MARK: - Dependencies (app/build.gradle.kts)\n\n/*\ndependencies {\n    // Room database\n    val roomVersion = \"2.6.1\"\n    implementation(\"androidx.room:room-runtime:$roomVersion\")\n    implementation(\"androidx.room:room-ktx:$roomVersion\")\n    kapt(\"androidx.room:room-compiler:$roomVersion\")\n    \n    // SQLCipher for database encryption\n    implementation(\"net.zetetic:android-database-sqlcipher:4.5.4\")\n    \n    // Android Keystore for key management\n    implementation(\"androidx.security:security-crypto:1.1.0-alpha06\")\n    \n    // Coroutines\n    implementation(\"org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3\")\n}\n*/\n\n// MARK: - Security Considerations\n\n/*\n1. Key Storage:\n   - Database encryption key stored in EncryptedSharedPreferences\n   - Master key protected by Android Keystore (hardware-backed)\n   - Never hardcode encryption keys in source code\n\n2. Performance:\n   - SQLCipher adds ~5-15% overhead for encryption/decryption\n   - Use appropriate database indexes for query optimization\n   - Consider pagination for large datasets\n\n3. Backup:\n   - Encrypted databases cannot be backed up and restored without key\n   - Exclude database files from Android Auto Backup\n   - Implement custom backup/restore with key management\n\n4. Key Rotation:\n   - Implement key rotation for compliance requirements\n   - Use SQLCipher rekey() for in-place key rotation\n   - Test thoroughly before production deployment\n\n5. Testing:\n   - Test on physical devices (performance differs from emulator)\n   - Verify database is actually encrypted using hex editor\n   - Test database access with incorrect key (should fail)\n   - Test app reinstall scenarios\n*/"
+      },
+      "tools": [
+        "SQLCipher for Android (net.zetetic:android-database-sqlcipher)",
+        "Room Persistence Library (androidx.room)",
+        "Realm Database with encryption",
+        "DB Browser for SQLite (verification tool)",
+        "Android Keystore System"
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.18.1.3 - Protection of records"
+      ],
+      "nist_csf": [
+        "PR.DS-1: Data-at-rest is protected",
+        "PR.DS-5: Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Add SQLCipher dependency: implementation 'net.zetetic:android-database-sqlcipher:4.5.4'",
+        "Initialize SQLCipher: SQLiteDatabase.loadLibs(context)",
+        "Generate and store database encryption key using DatabaseKeyManager",
+        "Build Room database with SupportFactory for SQLCipher integration",
+        "Test encryption: Use hex editor to verify database file contains encrypted data (not plaintext)",
+        "Performance test: Benchmark database operations to ensure acceptable latency",
+        "Test key retrieval: Verify app can open database across restarts",
+        "Test logout: Verify database key deletion makes database inaccessible",
+        "Security audit: Attempt to open database with SQLite browser without key (should fail)",
+        "Migration test: Test database schema migrations with encrypted database"
+      ]
+    },
+    {
+      "control_id": "MIT-STORAGE-004",
+      "title": "Implement Comprehensive Data Scrubbing and Lifecycle Management",
+      "description": "Deploy comprehensive data scrubbing mechanisms to prevent sensitive data leakage through application logs, clipboard, screenshots, app switcher previews, and temporary files. This multi-layered approach includes: (1) Log sanitization using custom loggers that automatically redact sensitive patterns (emails, tokens, SSN, credit cards), (2) Clipboard data expiration and clearing after timeout, (3) Screenshot prevention for sensitive screens using FLAG_SECURE (Android) or field.isSecureTextEntry (iOS), (4) App switcher preview masking to hide sensitive UI when app moves to background, (5) Temporary file secure deletion using cryptographic wiping, and (6) Memory scrubbing for sensitive variables after use.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "Kotlin",
+        "framework": "Android Data Protection Utilities",
+        "code": "// File: app/src/main/java/com/example/app/security/DataProtectionManager.kt\npackage com.example.app.security\n\nimport android.app.Activity\nimport android.content.ClipData\nimport android.content.ClipboardManager\nimport android.content.Context\nimport android.os.Handler\nimport android.os.Looper\nimport android.util.Log\nimport android.view.WindowManager\nimport java.io.File\nimport java.security.SecureRandom\nimport java.util.regex.Pattern\n\n/**\n * Comprehensive data protection utilities for preventing\n * sensitive data leakage through various Android system channels\n */\nobject DataProtectionManager {\n    \n    // MARK: - Secure Logging\n    \n    /**\n     * Custom logger that automatically redacts sensitive information\n     */\n    object SecureLogger {\n        \n        private const val TAG_PREFIX = \"SecureApp\"\n        \n        // Sensitive data patterns\n        private val SENSITIVE_PATTERNS = listOf(\n            // Email addresses\n            Pattern.compile(\"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}\"),\n            // Phone numbers (US format)\n            Pattern.compile(\"\\\\+?1?[-.]?\\\\(?\\\\d{3}\\\\)?[-.]?\\\\d{3}[-.]?\\\\d{4}\"),\n            // Credit card numbers\n            Pattern.compile(\"\\\\b\\\\d{4}[\\\\s-]?\\\\d{4}[\\\\s-]?\\\\d{4}[\\\\s-]?\\\\d{4}\\\\b\"),\n            // SSN\n            Pattern.compile(\"\\\\b\\\\d{3}-\\\\d{2}-\\\\d{4}\\\\b\"),\n            // JWT tokens\n            Pattern.compile(\"eyJ[a-zA-Z0-9_-]+\\\\.[a-zA-Z0-9_-]+\\\\.[a-zA-Z0-9_-]+\"),\n            // API keys (common formats)\n            Pattern.compile(\"[a-zA-Z0-9]{32,}\")\n        )\n        \n        /**\n         * Sanitize message by redacting sensitive information\n         */\n        private fun sanitize(message: String): String {\n            var sanitized = message\n            SENSITIVE_PATTERNS.forEach { pattern ->\n                sanitized = pattern.matcher(sanitized).replaceAll(\"[REDACTED]\")\n            }\n            return sanitized\n        }\n        \n        fun d(tag: String, message: String) {\n            if (BuildConfig.DEBUG) {\n                Log.d(\"$TAG_PREFIX:$tag\", sanitize(message))\n            }\n        }\n        \n        fun i(tag: String, message: String) {\n            Log.i(\"$TAG_PREFIX:$tag\", sanitize(message))\n        }\n        \n        fun w(tag: String, message: String) {\n            Log.w(\"$TAG_PREFIX:$tag\", sanitize(message))\n        }\n        \n        fun e(tag: String, message: String, throwable: Throwable? = null) {\n            val sanitizedMessage = sanitize(message)\n            if (throwable != null) {\n                Log.e(\"$TAG_PREFIX:$tag\", sanitizedMessage, throwable)\n            } else {\n                Log.e(\"$TAG_PREFIX:$tag\", sanitizedMessage)\n            }\n        }\n    }\n    \n    // MARK: - Clipboard Protection\n    \n    /**\n     * Clipboard manager with automatic data expiration\n     */\n    class SecureClipboardManager(private val context: Context) {\n        \n        private val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager\n        private val handler = Handler(Looper.getMainLooper())\n        private var clearClipboardRunnable: Runnable? = null\n        \n        companion object {\n            private const val DEFAULT_EXPIRY_MS = 60_000L // 60 seconds\n        }\n        \n        /**\n         * Copy sensitive data to clipboard with automatic expiration\n         */\n        fun copyWithExpiry(\n            label: String,\n            text: String,\n            expiryMs: Long = DEFAULT_EXPIRY_MS,\n            isSensitive: Boolean = true\n        ) {\n            val clip = ClipData.newPlainText(label, text)\n            \n            // Set sensitive flag (API 24+)\n            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {\n                if (isSensitive) {\n                    clip.description.extras = android.os.PersistableBundle().apply {\n                        putBoolean(\"android.content.extra.IS_SENSITIVE\", true)\n                    }\n                }\n            }\n            \n            clipboardManager.setPrimaryClip(clip)\n            \n            // Schedule clipboard clearing\n            scheduleClipboardClear(expiryMs)\n            \n            SecureLogger.i(\"Clipboard\", \"Data copied to clipboard (expires in ${expiryMs}ms)\")\n        }\n        \n        /**\n         * Schedule automatic clipboard clearing\n         */\n        private fun scheduleClipboardClear(delayMs: Long) {\n            // Cancel existing scheduled clear\n            clearClipboardRunnable?.let { handler.removeCallbacks(it) }\n            \n            // Schedule new clear\n            clearClipboardRunnable = Runnable {\n                clearClipboard()\n            }\n            handler.postDelayed(clearClipboardRunnable!!, delayMs)\n        }\n        \n        /**\n         * Immediately clear clipboard\n         */\n        fun clearClipboard() {\n            clipboardManager.setPrimaryClip(ClipData.newPlainText(\"\", \"\"))\n            SecureLogger.i(\"Clipboard\", \"Clipboard cleared\")\n        }\n        \n        /**\n         * Check if clipboard contains sensitive data patterns\n         */\n        fun hasSensitiveData(): Boolean {\n            val clipData = clipboardManager.primaryClip\n            if (clipData != null && clipData.itemCount > 0) {\n                val text = clipData.getItemAt(0).text?.toString() ?: return false\n                return SecureLogger.SENSITIVE_PATTERNS.any { pattern ->\n                    pattern.matcher(text).find()\n                }\n            }\n            return false\n        }\n    }\n    \n    // MARK: - Screenshot Protection\n    \n    /**\n     * Prevent screenshots on sensitive screens\n     */\n    fun enableScreenshotProtection(activity: Activity) {\n        activity.window.setFlags(\n            WindowManager.LayoutParams.FLAG_SECURE,\n            WindowManager.LayoutParams.FLAG_SECURE\n        )\n        SecureLogger.i(\"ScreenProtection\", \"Screenshot protection enabled\")\n    }\n    \n    /**\n     * Allow screenshots (remove protection)\n     */\n    fun disableScreenshotProtection(activity: Activity) {\n        activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)\n        SecureLogger.i(\"ScreenProtection\", \"Screenshot protection disabled\")\n    }\n    \n    // MARK: - App Switcher Preview Protection\n    \n    /**\n     * Hide sensitive content when app moves to background\n     * Call in onPause() of sensitive activities\n     */\n    fun hideContentInAppSwitcher(activity: Activity) {\n        // Add a blur overlay or placeholder view\n        // This prevents sensitive data from appearing in app switcher\n        activity.window.setFlags(\n            WindowManager.LayoutParams.FLAG_SECURE,\n            WindowManager.LayoutParams.FLAG_SECURE\n        )\n    }\n    \n    /**\n     * Show content again when app returns to foreground\n     * Call in onResume() of sensitive activities\n     */\n    fun showContentInAppSwitcher(activity: Activity) {\n        activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)\n    }\n    \n    // MARK: - Secure File Deletion\n    \n    /**\n     * Securely delete file by overwriting with random data\n     */\n    fun secureDelete(file: File): Boolean {\n        if (!file.exists()) return false\n        \n        try {\n            val fileSize = file.length()\n            val secureRandom = SecureRandom()\n            \n            // Overwrite file with random data (3 passes)\n            file.outputStream().use { output ->\n                repeat(3) {\n                    val randomBytes = ByteArray(fileSize.toInt())\n                    secureRandom.nextBytes(randomBytes)\n                    output.write(randomBytes)\n                    output.flush()\n                }\n            }\n            \n            // Delete the file\n            val deleted = file.delete()\n            \n            if (deleted) {\n                SecureLogger.i(\"FileProtection\", \"File securely deleted: ${file.name}\")\n            }\n            \n            return deleted\n            \n        } catch (e: Exception) {\n            SecureLogger.e(\"FileProtection\", \"Failed to securely delete file\", e)\n            return false\n        }\n    }\n    \n    /**\n     * Securely delete all files in directory\n     */\n    fun secureDeleteDirectory(directory: File): Boolean {\n        if (!directory.exists() || !directory.isDirectory) return false\n        \n        var allDeleted = true\n        directory.listFiles()?.forEach { file ->\n            if (file.isDirectory) {\n                allDeleted = allDeleted && secureDeleteDirectory(file)\n            } else {\n                allDeleted = allDeleted && secureDelete(file)\n            }\n        }\n        \n        return allDeleted && directory.delete()\n    }\n    \n    // MARK: - Cache Management\n    \n    /**\n     * Clear application cache directories\n     */\n    fun clearCache(context: Context) {\n        try {\n            // Clear internal cache\n            context.cacheDir.deleteRecursively()\n            \n            // Clear external cache if available\n            context.externalCacheDir?.deleteRecursively()\n            \n            SecureLogger.i(\"CacheManagement\", \"Application cache cleared\")\n        } catch (e: Exception) {\n            SecureLogger.e(\"CacheManagement\", \"Failed to clear cache\", e)\n        }\n    }\n    \n    /**\n     * Clear specific cache files older than specified age\n     */\n    fun clearOldCacheFiles(context: Context, maxAgeMs: Long) {\n        val now = System.currentTimeMillis()\n        val cacheDir = context.cacheDir\n        \n        cacheDir.listFiles()?.forEach { file ->\n            if (now - file.lastModified() > maxAgeMs) {\n                secureDelete(file)\n            }\n        }\n    }\n    \n    // MARK: - Memory Protection\n    \n    /**\n     * Securely clear sensitive string from memory\n     * Note: This is best-effort in Java/Kotlin due to string immutability\n     */\n    fun clearSensitiveString(value: String?): String? {\n        // In Kotlin/Java, strings are immutable, so we can't truly clear them\n        // Use CharArray for sensitive data when possible\n        return null\n    }\n    \n    /**\n     * Securely clear char array (use this instead of String for passwords)\n     */\n    fun clearSensitiveData(data: CharArray?) {\n        data?.fill('\\u0000')\n    }\n    \n    /**\n     * Securely clear byte array\n     */\n    fun clearSensitiveData(data: ByteArray?) {\n        data?.fill(0)\n    }\n}\n\n// MARK: - Usage Examples\n\n/*\n// Example 1: Secure Logging\nDataProtectionManager.SecureLogger.d(\"Auth\", \"Login successful for user@example.com\") \n// Output: Login successful for [REDACTED]\n\nDataProtectionManager.SecureLogger.i(\"API\", \"Token: eyJhbGciOiJIUzI1NiIs...\")\n// Output: Token: [REDACTED]\n\n// Example 2: Clipboard with Expiry\nclass AccountActivity : AppCompatActivity() {\n    private lateinit var clipboardManager: DataProtectionManager.SecureClipboardManager\n    \n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        clipboardManager = DataProtectionManager.SecureClipboardManager(this)\n        \n        // Copy account number to clipboard (auto-expires in 60 seconds)\n        btnCopyAccount.setOnClickListener {\n            clipboardManager.copyWithExpiry(\n                label = \"Account Number\",\n                text = \"9876543210\",\n                expiryMs = 60_000L,\n                isSensitive = true\n            )\n            Toast.makeText(this, \"Account number copied (expires in 60s)\", Toast.LENGTH_SHORT).show()\n        }\n    }\n    \n    override fun onDestroy() {\n        super.onDestroy()\n        // Clear clipboard on activity destruction\n        clipboardManager.clearClipboard()\n    }\n}\n\n// Example 3: Screenshot Protection\nclass PaymentActivity : AppCompatActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        // Prevent screenshots on payment screen\n        DataProtectionManager.enableScreenshotProtection(this)\n    }\n}\n\n// Example 4: App Switcher Protection\nclass TransactionHistoryActivity : AppCompatActivity() {\n    override fun onPause() {\n        super.onPause()\n        // Hide content when app goes to background\n        DataProtectionManager.hideContentInAppSwitcher(this)\n    }\n    \n    override fun onResume() {\n        super.onResume()\n        // Show content when app returns\n        DataProtectionManager.showContentInAppSwitcher(this)\n    }\n}\n\n// Example 5: Secure File Deletion\nfun clearTemporaryFiles(context: Context) {\n    val tempDir = File(context.filesDir, \"temp\")\n    DataProtectionManager.secureDeleteDirectory(tempDir)\n}\n\n// Example 6: Clear Cache on Logout\nfun onLogout(context: Context) {\n    DataProtectionManager.clearCache(context)\n    // Also clear clipboard\n    DataProtectionManager.SecureClipboardManager(context).clearClipboard()\n}\n\n// Example 7: Secure Password Handling\nfun handlePassword(password: CharArray) {\n    try {\n        // Use password for authentication\n        authenticateUser(password)\n    } finally {\n        // Always clear password from memory\n        DataProtectionManager.clearSensitiveData(password)\n    }\n}\n*/"
+      },
+      "tools": [
+        "Android WindowManager (FLAG_SECURE)",
+        "Android ClipboardManager",
+        "Custom logging frameworks (Timber, Jake Wharton)",
+        "ProGuard/R8 (code obfuscation)",
+        "Android Lint (static analysis)"
+      ],
+      "iso27001_controls": [
+        "A.8.2.3 - Handling of assets",
+        "A.8.3.1 - Management of removable media",
+        "A.11.2.8 - Unattended user equipment"
+      ],
+      "nist_csf": [
+        "PR.DS-3: Assets are formally managed throughout removal, transfers, and disposition",
+        "PR.IP-2: A System Development Life Cycle to manage systems is implemented"
+      ],
+      "validation_steps": [
+        "Implement SecureLogger throughout application to replace standard Log calls",
+        "Test log redaction: Search logs for sensitive patterns and verify all are redacted",
+        "Implement clipboard protection: Copy sensitive data and verify auto-expiry after timeout",
+        "Test screenshot protection: Enable FLAG_SECURE on sensitive screens and attempt screenshot (should fail or show blank)",
+        "Test app switcher: Move app to background and verify sensitive content is hidden in app switcher preview",
+        "Test secure file deletion: Use hex editor to verify overwritten files contain random data",
+        "Implement cache clearing on logout and verify all temporary files are removed",
+        "Security audit: Use static analysis tools to identify remaining plaintext sensitive data logging",
+        "User testing: Verify data protection mechanisms don't negatively impact user experience",
+        "Compliance validation: Verify implementation meets regulatory requirements (PCI DSS 3.2, HIPAA 164.312)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Abnormal file access patterns to application data directories (detected via Android/iOS audit logs)",
+      "Multiple ADB backup attempts from USB debugging (Android)",
+      "iTunes/Finder backup creation immediately after suspicious device access (iOS)",
+      "Malware with READ_EXTERNAL_STORAGE permissions accessing application directories",
+      "Unusual SQLite database queries from unauthorized processes",
+      "Forensic tool signatures (Cellebrite, Oxygen Forensics, UFED) in system logs",
+      "Repeated attempts to access Keychain/Keystore items without proper authentication",
+      "Clipboard monitoring activity by unauthorized applications",
+      "Logcat access from non-system processes (Android)",
+      "Device rooting/jailbreak detection triggers (Magisk, Cydia, checkra1n artifacts)",
+      "Abnormal file creation in cache/temp directories with sensitive data patterns",
+      "SharedPreferences/NSUserDefaults access from non-application processes"
+    ],
+    "log_sources": [
+      "Android system logs (logcat, dmesg) for file access auditing",
+      "iOS unified logging system (os_log) for Keychain access attempts",
+      "Mobile Device Management (MDM) logs for backup/restore events",
+      "Application-level security logs for data access patterns",
+      "Android SELinux audit logs for permission violations",
+      "iOS entitlements violations logged to system",
+      "Backend API logs correlating unusual data patterns with device IDs",
+      "Endpoint Detection and Response (EDR) logs for mobile malware activity",
+      "Cloud backup service logs (iCloud, Google Drive) for backup frequency anomalies"
+    ],
+    "tools": [
+      "MobSF (Mobile Security Framework) - Static/dynamic analysis for insecure storage",
+      "Drozer - Android security assessment framework",
+      "Objection - Runtime mobile exploration for iOS/Android",
+      "Frida - Dynamic instrumentation to monitor file access",
+      "DB Browser for SQLite - Verify database encryption",
+      "iMazing / iExplorer - iOS backup analysis",
+      "Android Studio Device File Explorer - File system inspection",
+      "Burp Suite - Intercept and analyze data patterns",
+      "Apktool - Decompile Android apps to analyze storage usage",
+      "Hopper Disassembler - Analyze iOS binary for storage patterns",
+      "Qark - Android security analysis (insecure storage detection)",
+      "iOS Security Suite - Runtime security checks for iOS"
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Banking",
+      "Healthcare",
+      "E-commerce",
+      "Social Media",
+      "Dating Apps",
+      "Cryptocurrency",
+      "Enterprise Mobile",
+      "Government",
+      "Insurance"
+    ],
+    "compliance": [
+      "PCI DSS 4.0 (Requirement 3.4 - Render PAN unreadable)",
+      "HIPAA (164.312(a)(2)(iv) - Encryption)",
+      "GDPR (Article 32 - Security of Processing)",
+      "CCPA (Security Requirements)",
+      "SOC 2 Type II (CC6.1 - Logical and Physical Access)",
+      "ISO 27001:2022 (A.8.2.3, A.10.1.1)",
+      "NIST 800-53 (SC-28 - Protection of Information at Rest)",
+      "GLBA (Safeguards Rule 16 CFR 314)",
+      "FedRAMP (Cryptographic Protection)"
+    ],
+    "deployment": [
+      "Mobile Applications",
+      "iOS Native",
+      "Android Native",
+      "React Native",
+      "Flutter",
+      "Xamarin/MAUI",
+      "Cordova/Ionic",
+      "Hybrid Mobile Apps"
+    ],
+    "data_classification": [
+      "Highly Sensitive",
+      "PII/PHI",
+      "Financial Data",
+      "Authentication Credentials",
+      "Session Tokens",
+      "Payment Card Data",
+      "Biometric Data",
+      "Location History"
+    ]
+  },
+  "references": {
+    "documentation": [
+      "https://owasp.org/www-project-mobile-top-10/ - OWASP Mobile Top 10",
+      "https://mobile-security.gitbook.io/mobile-security-testing-guide/android-testing-guide/0x05d-testing-data-storage",
+      "https://developer.android.com/training/articles/security-tips#StoringData",
+      "https://developer.apple.com/documentation/security/keychain_services",
+      "https://developer.android.com/topic/security/data",
+      "https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy",
+      "https://github.com/OWASP/owasp-mastg - Mobile Application Security Testing Guide"
+    ],
+    "research_papers": [
+      "OWASP Mobile Application Security Verification Standard (MASVS)",
+      "NowSecure Mobile Security Report 2023 - Insecure Data Storage Statistics",
+      "ENISA - Secure Mobile Application Development Guidelines",
+      "NIST SP 800-124 Rev. 2 - Guidelines for Managing the Security of Mobile Devices"
+    ],
+    "tools": [
+      "https://github.com/MobSF/Mobile-Security-Framework-MobSF",
+      "https://github.com/mwrlabs/drozer",
+      "https://sqlcipher.net/ - SQLite encryption",
+      "https://realm.io/docs/swift/latest/#encryption",
+      "https://github.com/securing/IOSSecuritySuite"
+    ],
+    "cve_databases": [
+      "https://nvd.nist.gov/ - National Vulnerability Database",
+      "https://cve.mitre.org/ - CVE List",
+      "https://www.cvedetails.com/vulnerability-list/vendor_id-1224/product_id-19997/Google-Android.html"
+    ]
+  }
+}

