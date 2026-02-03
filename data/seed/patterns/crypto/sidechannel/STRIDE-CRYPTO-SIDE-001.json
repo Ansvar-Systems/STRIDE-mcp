@@ -1,0 +1,496 @@
+{
+  "id": "STRIDE-CRYPTO-SIDE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-03",
+    "last_updated": "2026-02-03",
+    "reviewed_by": [],
+    "confidence_score": 8.7,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A02:2021 - Cryptographic Failures",
+      "A04:2021 - Insecure Design"
+    ],
+    "mitre_attack": [
+      "T1600 - Weaken Encryption",
+      "T1005 - Data from Local System",
+      "T1056 - Input Capture",
+      "T1552.004 - Unsecured Credentials: Private Keys"
+    ],
+    "cwe": [
+      "CWE-208 - Observable Timing Discrepancy",
+      "CWE-385 - Covert Timing Channel",
+      "CWE-1300 - Improper Protection of Physical Side Channels",
+      "CWE-203 - Observable Discrepancy",
+      "CWE-1240 - Use of a Cryptographic Primitive with a Risky Implementation"
+    ]
+  },
+  "threat": {
+    "title": "Side-Channel Attacks - Timing, Cache, and Power Analysis on Cryptographic Operations",
+    "description": "Side-channel attacks exploit physical implementation characteristics of cryptographic algorithms rather than mathematical weaknesses. Attackers measure timing variations, power consumption, electromagnetic emissions, or cache behavior during cryptographic operations to extract secret keys. Timing attacks on RSA, AES, and ECDSA have successfully recovered private keys from web servers, TPMs, and smart cards. Notable examples include Lucky Thirteen (TLS padding oracle), Spectre/Meltdown (cache timing), and various timing attacks on OpenSSL implementations that leaked RSA private keys through measurable differences in execution time.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Cryptographic Implementations",
+    "versions_affected": ["Most cryptographic libraries without constant-time guarantees"],
+    "ecosystem": "OpenSSL, mbedTLS, BoringSSL, Java Cryptography, .NET Cryptography",
+    "dependencies": [
+      "OpenSSL < 1.1.0 (timing vulnerabilities)",
+      "Java JCE (Java Cryptography Extension)",
+      "libgcrypt",
+      "cryptography (Python)",
+      "Web Crypto API",
+      "Hardware: TPM, Smart Cards, Hardware Security Modules"
+    ],
+    "related_frameworks": [
+      "TLS/SSL implementations",
+      "SSH servers",
+      "PGP/GPG",
+      "Bitcoin/Cryptocurrency wallets",
+      "Payment card processors",
+      "Secure boot implementations"
+    ]
+  },
+  "attack": {
+    "scenario": "TIMING ATTACK SCENARIO:\n1. Attacker identifies target using RSA signature or decryption (e.g., TLS server, authentication API)\n2. Sends multiple specially crafted requests and precisely measures response times (microsecond precision)\n3. Analyzes timing variations during modular exponentiation or signature verification\n4. Identifies correlation between execution time and secret key bits\n5. After 10,000-1,000,000 samples, statistical analysis reveals private key bits\n6. Reconstructs partial or complete RSA private key\n7. Uses recovered key to impersonate server, decrypt communications, or forge signatures\n\nCACHE TIMING ATTACK (Spectre/Meltdown style):\n1. Attacker has local or co-located access (cloud VM, shared hosting)\n2. Triggers cryptographic operations in victim process\n3. Monitors CPU cache behavior (cache hits/misses) during AES encryption\n4. Cache timing leaks S-box lookups, revealing key material\n5. Reconstructs AES key after observing multiple encryptions\n\nPOWER ANALYSIS ATTACK (Hardware):\n1. Attacker has physical access to device (smart card, TPM, IoT device)\n2. Measures power consumption during cryptographic operations\n3. Differential Power Analysis (DPA) correlates power patterns with key bits\n4. Extracts secret keys from hardware security modules",
+    "prerequisites": [
+      "Cryptographic implementation lacks constant-time guarantees",
+      "Attacker can measure timing with sufficient precision (microseconds)",
+      "For cache attacks: Co-location on same CPU/cloud instance",
+      "For power analysis: Physical access to device",
+      "Multiple cryptographic operations observable by attacker",
+      "No timing jitter or blinding countermeasures"
+    ],
+    "attack_vector": "Network (timing attacks), Local (cache attacks), Physical (power analysis)",
+    "attack_complexity": "High",
+    "privileges_required": "None (remote timing) or Low (local cache attacks)",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2017-5753",
+        "description": "Spectre Variant 1 (Bounds Check Bypass): CPU speculative execution vulnerability allowing cache timing attacks to read arbitrary memory, including cryptographic keys",
+        "cvss_score": 5.6,
+        "published_date": "2018-01-03"
+      },
+      {
+        "cve_id": "CVE-2017-5754",
+        "description": "Meltdown (Rogue Data Cache Load): CPU vulnerability allowing user processes to read kernel memory via cache timing, exposing encryption keys and sensitive data",
+        "cvss_score": 5.6,
+        "published_date": "2018-01-03"
+      },
+      {
+        "cve_id": "CVE-2013-0169",
+        "description": "Lucky Thirteen: Timing attack on TLS CBC padding oracle allowing plaintext recovery. Affects OpenSSL, GnuTLS, PolarSSL",
+        "cvss_score": 5.1,
+        "published_date": "2013-02-08"
+      },
+      {
+        "cve_id": "CVE-2018-0737",
+        "description": "OpenSSL RSA key recovery via cache-timing side channel during modular exponentiation",
+        "cvss_score": 5.9,
+        "published_date": "2018-04-16"
+      },
+      {
+        "cve_id": "CVE-2019-1543",
+        "description": "OpenSSL ChaCha20-Poly1305 timing attack allowing recovery of plaintext",
+        "cvss_score": 5.9,
+        "published_date": "2019-03-06"
+      },
+      {
+        "cve_id": "CVE-2020-0601",
+        "description": "CurveBall: Windows CryptoAPI spoofing vulnerability allowing ECC certificate validation bypass via timing attacks",
+        "cvss_score": 8.1,
+        "published_date": "2020-01-14"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Spectre and Meltdown CPU Vulnerabilities",
+        "date": "2018-01-03",
+        "impact": "Affects billions of CPUs (Intel, AMD, ARM). Cache timing attacks can read arbitrary memory including cryptographic keys, passwords, and sensitive data from kernel and other processes. Required microcode updates and performance-impacting mitigations",
+        "root_cause": "CPU speculative execution and out-of-order execution leak data through cache side channels. Cryptographic implementations in user space vulnerable to key extraction",
+        "source_url": "https://meltdownattack.com/"
+      },
+      {
+        "incident": "Lucky Thirteen TLS Timing Attack",
+        "date": "2013-02-08",
+        "impact": "Timing attack on TLS CBC mode padding oracle affected OpenSSL, GnuTLS, and other implementations. Allowed recovery of plaintext from encrypted HTTPS sessions by measuring timing differences in padding validation",
+        "root_cause": "Variable-time MAC verification and padding checks in TLS implementations leaked information about padding validity through timing",
+        "source_url": "http://www.isg.rhul.ac.uk/tls/Lucky13.html"
+      },
+      {
+        "incident": "Bleichenbacher RSA Padding Oracle (ROBOT Attack)",
+        "date": "2017-12-12",
+        "impact": "Timing attack on RSA PKCS#1 v1.5 padding in TLS implementations. Affects Facebook, Paypal, and major websites. Allows decryption of TLS sessions and forging of RSA signatures",
+        "root_cause": "Implementation differences in RSA padding validation created timing oracle, allowing Bleichenbacher's attack from 1998 to remain exploitable",
+        "source_url": "https://robotattack.org/"
+      },
+      {
+        "incident": "TPM Key Extraction via Timing Analysis",
+        "date": "2018-02-15",
+        "impact": "Researchers demonstrated extraction of ECDSA private keys from TPM 2.0 chips (Intel fTPM, STMicroelectronics TPM) using timing attacks on signature generation",
+        "root_cause": "Non-constant-time implementation of elliptic curve scalar multiplication in TPM firmware",
+        "source_url": "https://tpm.fail/"
+      },
+      {
+        "incident": "Minerva ECDSA Timing Attack",
+        "date": "2020-09-01",
+        "impact": "Timing vulnerability in ECDSA signature generation across multiple cryptographic libraries (OpenSSL, LibreSSL, Amazon s2n). Allows remote key recovery",
+        "root_cause": "Variable-time scalar multiplication in ECDSA signing due to optimization that skipped leading zero bits",
+        "source_url": "https://minerva.crocs.fi.muni.cz/"
+      },
+      {
+        "incident": "BranchScope - Cache Timing Attack on AMD CPUs",
+        "date": "2018-03-29",
+        "impact": "New cache timing attack exploiting branch prediction in AMD processors. Similar to Spectre but uses different microarchitectural features",
+        "root_cause": "Branch prediction unit shares state between security contexts, enabling cache timing side channel",
+        "source_url": "https://www.cs.ucr.edu/~nael/pubs/asplos18.pdf"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-Timing-RSA-2019",
+        "bounty_amount": 12500,
+        "severity": "High",
+        "summary": "Timing attack on authentication API RSA signature verification allowing private key extraction through 500,000 measurements"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-Cache-Timing-2020",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "Cache timing side channel in password comparison allowing credential bypass on cloud platform"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Remote Timing Attacks are Practical",
+        "authors": ["David Brumley", "Dan Boneh"],
+        "published_date": "2003-08-13",
+        "source_url": "https://crypto.stanford.edu/~dabo/papers/ssl-timing.pdf",
+        "key_finding": "First demonstration that timing attacks on cryptographic implementations are practical over networks. Successfully extracted private RSA keys from OpenSSL server over LAN"
+      },
+      {
+        "title": "Lucky Thirteen: Breaking the TLS and DTLS Record Protocols",
+        "authors": ["Nadhem J. AlFardan", "Kenneth G. Paterson"],
+        "published_date": "2013-02-04",
+        "source_url": "http://www.isg.rhul.ac.uk/tls/TLStiming.pdf",
+        "key_finding": "Timing attack on TLS CBC padding validation. Demonstrated plaintext recovery from HTTPS traffic by exploiting 13-byte timing differences in MAC verification"
+      },
+      {
+        "title": "Cache-timing attacks on AES",
+        "authors": ["Daniel J. Bernstein"],
+        "published_date": "2005-04-20",
+        "source_url": "https://cr.yp.to/antiforgery/cachetiming-20050414.pdf",
+        "key_finding": "First practical cache-timing attack on AES. Demonstrated full key recovery by monitoring cache behavior during table lookups in AES encryption"
+      },
+      {
+        "title": "Meltdown and Spectre: Exploiting Speculative Execution",
+        "authors": ["Moritz Lipp", "Michael Schwarz", "et al."],
+        "published_date": "2018-01-03",
+        "source_url": "https://spectreattack.com/spectre.pdf",
+        "key_finding": "Discovered fundamental CPU vulnerabilities in speculative execution. Demonstrated arbitrary memory reads across security boundaries via cache timing"
+      },
+      {
+        "title": "The Bleichenbacher Attack Strikes Again: Breaking PKCS#1 v1.5 in XML Encryption",
+        "authors": ["Tibor Jager", "Sebastian Schinzel", "Juraj Somorovsky"],
+        "published_date": "2012-09-01",
+        "source_url": "https://www.nds.rub.de/media/nds/veroeffentlichungen/2012/12/19/XMLencBleichenbacher.pdf",
+        "key_finding": "Demonstrated that Bleichenbacher's 1998 timing attack on RSA padding remains exploitable in modern systems due to implementation flaws"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Constant-Time Cryptographic Operations",
+      "description": "Use constant-time implementations of cryptographic primitives that execute in the same time regardless of input values. Avoid conditional branches based on secret data. Use libraries specifically designed for timing-attack resistance.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Python 3.11+ with cryptography library",
+        "code": "import secrets\nimport hmac\nimport hashlib\nimport time\nfrom cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes\nfrom cryptography.hazmat.primitives import hashes, constant_time\nfrom cryptography.hazmat.backends import default_backend\n\n# VULNERABLE: Variable-time string comparison\ndef vulnerable_compare(a, b):\n    \"\"\"DO NOT USE - Timing attack vulnerable!\"\"\"\n    if len(a) != len(b):\n        return False\n    for i in range(len(a)):\n        if a[i] != b[i]:  # Early exit reveals position of mismatch!\n            return False\n    return True\n\n# SECURE: Constant-time comparison using hmac.compare_digest\ndef secure_compare(a, b):\n    \"\"\"\n    Constant-time string/bytes comparison.\n    Always takes same time regardless of where strings differ.\n    \"\"\"\n    return hmac.compare_digest(a, b)\n\n# SECURE: Using cryptography library's constant_time module\ndef secure_bytes_compare(a: bytes, b: bytes) -> bool:\n    \"\"\"\n    Constant-time bytes comparison using cryptography library.\n    \"\"\"\n    return constant_time.bytes_eq(a, b)\n\n# VULNERABLE: Timing-sensitive password verification\ndef vulnerable_verify_password(password, stored_hash):\n    \"\"\"DO NOT USE - Timing vulnerable!\"\"\"\n    computed_hash = hashlib.sha256(password.encode()).hexdigest()\n    return computed_hash == stored_hash  # Variable-time comparison!\n\n# SECURE: Constant-time password verification\ndef secure_verify_password(password, stored_hash):\n    \"\"\"\n    Secure password verification with constant-time comparison.\n    \"\"\"\n    computed_hash = hashlib.sha256(password.encode()).hexdigest()\n    return hmac.compare_digest(computed_hash, stored_hash)\n\n# SECURE: HMAC-based token verification (constant-time)\ndef verify_token_constant_time(token: str, expected_token: str) -> bool:\n    \"\"\"\n    Verify authentication token using constant-time comparison.\n    \"\"\"\n    return hmac.compare_digest(token, expected_token)\n\n# SECURE: Constant-time MAC verification\ndef verify_mac_constant_time(message: bytes, mac: bytes, key: bytes) -> bool:\n    \"\"\"\n    Verify HMAC in constant time.\n    \"\"\"\n    h = hmac.new(key, message, hashlib.sha256)\n    computed_mac = h.digest()\n    return hmac.compare_digest(mac, computed_mac)\n\n# VULNERABLE: Early abort in signature verification\ndef vulnerable_verify_signature(signature, message, public_key):\n    \"\"\"DO NOT USE - May leak timing information!\"\"\"\n    # Simplified example - real implementation is more complex\n    if len(signature) != 64:\n        return False  # Early abort leaks information!\n    # ... verification logic\n    return True\n\n# SECURE: Constant-time signature verification using cryptography library\nfrom cryptography.hazmat.primitives.asymmetric import rsa, padding\nfrom cryptography.exceptions import InvalidSignature\n\ndef secure_verify_signature(signature: bytes, message: bytes, public_key):\n    \"\"\"\n    Verify RSA signature using library with timing protections.\n    \"\"\"\n    try:\n        public_key.verify(\n            signature,\n            message,\n            padding.PSS(\n                mgf=padding.MGF1(hashes.SHA256()),\n                salt_length=padding.PSS.MAX_LENGTH\n            ),\n            hashes.SHA256()\n        )\n        return True\n    except InvalidSignature:\n        return False\n\n# SECURE: Add timing jitter to thwart precise measurements\nimport random\n\ndef add_timing_jitter(min_ms=1, max_ms=10):\n    \"\"\"\n    Add random delay to make timing measurements less precise.\n    Use as additional defense-in-depth measure.\n    \"\"\"\n    delay = random.uniform(min_ms / 1000, max_ms / 1000)\n    time.sleep(delay)\n\n# Example: API endpoint with timing protections\ndef secure_authentication_endpoint(username: str, password_hash: str):\n    \"\"\"\n    Authentication endpoint with timing attack mitigations.\n    \"\"\"\n    # Fetch user from database\n    user = database.get_user(username)  # Assume this exists\n    \n    # Always perform hash comparison even if user not found\n    # Use dummy hash if user doesn't exist to maintain constant time\n    stored_hash = user.password_hash if user else \"dummy_hash_same_length_as_real_hashes_123456\"\n    \n    # Constant-time comparison\n    is_valid = hmac.compare_digest(password_hash, stored_hash)\n    \n    # Add timing jitter (defense in depth)\n    add_timing_jitter(5, 15)\n    \n    # Only return success if user exists AND password matches\n    if user and is_valid:\n        return {\"authenticated\": True, \"token\": generate_session_token()}\n    else:\n        # Same response time whether user doesn't exist or password wrong\n        return {\"authenticated\": False, \"error\": \"Invalid credentials\"}\n\n# SECURE: Constant-time conditional selection\ndef constant_time_select(condition: bool, true_value: int, false_value: int) -> int:\n    \"\"\"\n    Select value based on condition without branching.\n    Useful in cryptographic implementations.\n    \"\"\"\n    # Convert boolean to int: True -> 1, False -> 0\n    mask = -int(condition)  # -1 (all bits set) or 0\n    return (true_value & mask) | (false_value & ~mask)\n\n# Test timing attack vulnerability\ndef test_timing_attack_vulnerability():\n    \"\"\"\n    Demonstrate timing difference between vulnerable and secure comparison.\n    \"\"\"\n    correct = \"secret_token_12345678\"\n    wrong_early = \"xrong_token_12345678\"  # Differs at position 0\n    wrong_late = \"secret_token_1234567x\"   # Differs at last position\n    \n    print(\"=== Timing Attack Demonstration ===\")\n    \n    # Vulnerable comparison\n    print(\"\\nVulnerable comparison (variable-time):\")\n    \n    iterations = 100000\n    \n    start = time.perf_counter()\n    for _ in range(iterations):\n        vulnerable_compare(correct, wrong_early)\n    time_early = time.perf_counter() - start\n    \n    start = time.perf_counter()\n    for _ in range(iterations):\n        vulnerable_compare(correct, wrong_late)\n    time_late = time.perf_counter() - start\n    \n    print(f\"  Time for early mismatch: {time_early:.6f}s\")\n    print(f\"  Time for late mismatch:  {time_late:.6f}s\")\n    print(f\"  Difference: {abs(time_early - time_late):.6f}s\")\n    print(f\"  Timing leak: {abs(time_early - time_late) > 0.0001}\")\n    \n    # Secure comparison\n    print(\"\\nSecure comparison (constant-time):\")\n    \n    start = time.perf_counter()\n    for _ in range(iterations):\n        secure_compare(correct, wrong_early)\n    time_early = time.perf_counter() - start\n    \n    start = time.perf_counter()\n    for _ in range(iterations):\n        secure_compare(correct, wrong_late)\n    time_late = time.perf_counter() - start\n    \n    print(f\"  Time for early mismatch: {time_early:.6f}s\")\n    print(f\"  Time for late mismatch:  {time_late:.6f}s\")\n    print(f\"  Difference: {abs(time_early - time_late):.6f}s\")\n    print(f\"  Timing leak: {abs(time_early - time_late) > 0.0001}\")\n\nif __name__ == '__main__':\n    test_timing_attack_vulnerability()\n    \n    print(\"\\n=== Constant-Time Operations Examples ===\")\n    \n    # Test constant-time comparison\n    token1 = secrets.token_hex(32)\n    token2 = secrets.token_hex(32)\n    \n    print(f\"\\nToken 1: {token1}\")\n    print(f\"Token 2: {token2}\")\n    print(f\"Constant-time equal: {secure_compare(token1, token2)}\")\n    print(f\"Constant-time equal (same): {secure_compare(token1, token1)}\")\n    \n    # Test MAC verification\n    key = secrets.token_bytes(32)\n    message = b\"Hello, World!\"\n    mac = hmac.new(key, message, hashlib.sha256).digest()\n    \n    print(f\"\\nMAC verification: {verify_mac_constant_time(message, mac, key)}\")\n    print(f\"Invalid MAC: {verify_mac_constant_time(message, secrets.token_bytes(32), key)}\")"
+      },
+      "tools": [
+        {
+          "name": "Python hmac.compare_digest",
+          "type": "Constant-time comparison",
+          "cost": "Free (built-in)"
+        },
+        {
+          "name": "cryptography library",
+          "type": "Timing-safe crypto primitives",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "libsodium",
+          "type": "Constant-time cryptography library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.IP-1 - Baseline configuration"
+      ],
+      "validation_steps": [
+        "Use hmac.compare_digest() for all secret comparisons",
+        "Verify cryptographic libraries provide constant-time guarantees",
+        "Test timing differences with microbenchmarks",
+        "Review code for conditional branches on secret data",
+        "Use constant-time implementations for signature verification",
+        "Add timing jitter as defense-in-depth measure"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Cryptographic Blinding for RSA Operations",
+      "description": "Use cryptographic blinding techniques for RSA private key operations to prevent timing and power analysis attacks. Blinding randomizes the input before decryption/signing and de-randomizes the output, making timing measurements uncorrelated with the secret key.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Python cryptography library",
+        "code": "from cryptography.hazmat.primitives.asymmetric import rsa, padding\nfrom cryptography.hazmat.primitives import hashes, serialization\nfrom cryptography.hazmat.backends import default_backend\nimport secrets\nimport time\n\n# Generate RSA key pair with proper parameters\ndef generate_rsa_keypair(key_size=4096):\n    \"\"\"\n    Generate RSA key pair for blinding demonstration.\n    \"\"\"\n    private_key = rsa.generate_private_key(\n        public_exponent=65537,\n        key_size=key_size,\n        backend=default_backend()\n    )\n    return private_key, private_key.public_key()\n\n# VULNERABLE: RSA decryption without blinding (simplified educational example)\ndef vulnerable_rsa_decrypt_timing(ciphertext, private_key):\n    \"\"\"\n    Educational example: RSA operation without blinding.\n    DO NOT USE - Vulnerable to timing attacks!\n    \"\"\"\n    # In real implementation, timing variations in modular exponentiation\n    # leak information about private key bits\n    plaintext = private_key.decrypt(\n        ciphertext,\n        padding.OAEP(\n            mgf=padding.MGF1(algorithm=hashes.SHA256()),\n            algorithm=hashes.SHA256(),\n            label=None\n        )\n    )\n    return plaintext\n\n# SECURE: Modern cryptography libraries implement blinding automatically\ndef secure_rsa_decrypt_with_blinding(ciphertext, private_key):\n    \"\"\"\n    Secure RSA decryption - cryptography library implements blinding internally.\n    \n    How blinding works:\n    1. Choose random blinding factor r\n    2. Compute blinded ciphertext: c' = c * r^e mod n\n    3. Perform RSA operation on c': m' = (c')^d mod n\n    4. Remove blinding: m = m' * r^-1 mod n\n    \n    This makes timing measurements uncorrelated with the private key.\n    \"\"\"\n    plaintext = private_key.decrypt(\n        ciphertext,\n        padding.OAEP(\n            mgf=padding.MGF1(algorithm=hashes.SHA256()),\n            algorithm=hashes.SHA256(),\n            label=None\n        )\n    )\n    return plaintext\n\n# SECURE: RSA signature with blinding\ndef secure_rsa_sign_with_blinding(message: bytes, private_key):\n    \"\"\"\n    Secure RSA signing with automatic blinding.\n    \"\"\"\n    signature = private_key.sign(\n        message,\n        padding.PSS(\n            mgf=padding.MGF1(hashes.SHA256()),\n            salt_length=padding.PSS.MAX_LENGTH\n        ),\n        hashes.SHA256()\n    )\n    return signature\n\n# Verify RSA signature\ndef verify_rsa_signature(signature: bytes, message: bytes, public_key):\n    \"\"\"\n    Verify RSA signature.\n    \"\"\"\n    try:\n        public_key.verify(\n            signature,\n            message,\n            padding.PSS(\n                mgf=padding.MGF1(hashes.SHA256()),\n                salt_length=padding.PSS.MAX_LENGTH\n            ),\n            hashes.SHA256()\n        )\n        return True\n    except Exception:\n        return False\n\n# Educational: Manual RSA blinding implementation (for understanding)\nclass RSABlinding:\n    \"\"\"\n    Educational implementation of RSA blinding.\n    In production, use libraries that implement blinding automatically.\n    \"\"\"\n    \n    def __init__(self, public_key, private_key):\n        self.public_key = public_key\n        self.private_key = private_key\n        self.public_numbers = public_key.public_numbers()\n        self.private_numbers = private_key.private_numbers()\n    \n    def _generate_blinding_factor(self):\n        \"\"\"\n        Generate random blinding factor r, where gcd(r, n) = 1\n        \"\"\"\n        n = self.public_numbers.n\n        while True:\n            r = secrets.randbelow(n - 2) + 2\n            # In production, check gcd(r, n) == 1\n            if r > 1:\n                return r\n    \n    def _mod_inverse(self, a, m):\n        \"\"\"\n        Compute modular multiplicative inverse of a modulo m.\n        \"\"\"\n        # Extended Euclidean Algorithm\n        def extended_gcd(a, b):\n            if a == 0:\n                return b, 0, 1\n            gcd, x1, y1 = extended_gcd(b % a, a)\n            x = y1 - (b // a) * x1\n            y = x1\n            return gcd, x, y\n        \n        gcd, x, _ = extended_gcd(a % m, m)\n        if gcd != 1:\n            raise ValueError(\"Modular inverse does not exist\")\n        return (x % m + m) % m\n    \n    def blind_decrypt(self, ciphertext_int: int) -> int:\n        \"\"\"\n        Perform blinded RSA decryption.\n        \"\"\"\n        n = self.public_numbers.n\n        e = self.public_numbers.e\n        d = self.private_numbers.d\n        \n        # Generate blinding factor\n        r = self._generate_blinding_factor()\n        \n        # Compute r^e mod n\n        r_e = pow(r, e, n)\n        \n        # Blind ciphertext: c' = c * r^e mod n\n        blinded_ciphertext = (ciphertext_int * r_e) % n\n        \n        # Decrypt blinded ciphertext: m' = (c')^d mod n\n        blinded_plaintext = pow(blinded_ciphertext, d, n)\n        \n        # Compute r^-1 mod n\n        r_inv = self._mod_inverse(r, n)\n        \n        # Unblind: m = m' * r^-1 mod n\n        plaintext = (blinded_plaintext * r_inv) % n\n        \n        return plaintext\n\ndef demonstrate_blinding():\n    \"\"\"\n    Demonstrate RSA blinding protection.\n    \"\"\"\n    print(\"=== RSA Blinding Demonstration ===\")\n    \n    # Generate key pair\n    print(\"\\nGenerating RSA 2048-bit key pair...\")\n    private_key, public_key = generate_rsa_keypair(2048)\n    \n    # Test message\n    message = b\"Secret message that needs protection from timing attacks\"\n    \n    # Encrypt message\n    print(f\"\\nOriginal message: {message.decode()}\")\n    ciphertext = public_key.encrypt(\n        message,\n        padding.OAEP(\n            mgf=padding.MGF1(algorithm=hashes.SHA256()),\n            algorithm=hashes.SHA256(),\n            label=None\n        )\n    )\n    print(f\"Ciphertext length: {len(ciphertext)} bytes\")\n    \n    # Decrypt with blinding (automatic in cryptography library)\n    print(\"\\nDecrypting with automatic blinding protection...\")\n    start = time.perf_counter()\n    decrypted = secure_rsa_decrypt_with_blinding(ciphertext, private_key)\n    elapsed = time.perf_counter() - start\n    \n    print(f\"Decrypted message: {decrypted.decode()}\")\n    print(f\"Decryption time: {elapsed*1000:.3f}ms\")\n    print(f\"Match: {decrypted == message}\")\n    \n    # Test RSA signing with blinding\n    print(\"\\nTesting RSA signature with blinding...\")\n    test_message = b\"Document to be signed\"\n    \n    signature = secure_rsa_sign_with_blinding(test_message, private_key)\n    print(f\"Signature generated: {len(signature)} bytes\")\n    \n    is_valid = verify_rsa_signature(signature, test_message, public_key)\n    print(f\"Signature valid: {is_valid}\")\n    \n    # Verify signature fails for tampered message\n    tampered_message = b\"Tampered document\"\n    is_valid_tampered = verify_rsa_signature(signature, tampered_message, public_key)\n    print(f\"Tampered signature valid: {is_valid_tampered}\")\n\ndef main():\n    print(\"=== RSA Blinding for Timing Attack Prevention ===\")\n    print(\"\\nBlinding randomizes inputs to cryptographic operations,\")\n    print(\"making timing measurements uncorrelated with secret keys.\")\n    print(\"\\nModern libraries (cryptography, OpenSSL 1.1.0+) implement\")\n    print(\"blinding automatically for RSA operations.\")\n    \n    demonstrate_blinding()\n    \n    print(\"\\n=== Security Recommendations ===\")\n    print(\"1. Use cryptography library (implements blinding automatically)\")\n    print(\"2. Keep OpenSSL updated (>= 1.1.0 for blinding by default)\")\n    print(\"3. For ECDSA, use RFC 6979 deterministic signatures\")\n    print(\"4. Prefer EdDSA (Ed25519) which is timing-attack resistant\")\n    print(\"5. Implement constant-time comparisons for all secret data\")\n    print(\"6. Add timing jitter in authentication endpoints\")\n\nif __name__ == '__main__':\n    main()"
+      },
+      "tools": [
+        {
+          "name": "cryptography (Python)",
+          "type": "RSA with automatic blinding",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "OpenSSL 1.1.0+",
+          "type": "RSA blinding enabled by default",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "BoringSSL",
+          "type": "Google's timing-safe crypto library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-2 - Data-in-transit is protected"
+      ],
+      "validation_steps": [
+        "Verify OpenSSL version >= 1.1.0 (blinding enabled by default)",
+        "Use cryptography library for Python (automatic blinding)",
+        "For Java, ensure Bouncy Castle or JCE with blinding",
+        "Test RSA operations show consistent timing across different inputs",
+        "Prefer EdDSA/Ed25519 over RSA/ECDSA when possible",
+        "Monitor cryptographic operation timing in production"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Use Timing-Attack Resistant Algorithms and Libraries",
+      "description": "Prefer cryptographic algorithms and implementations designed to resist timing attacks. Use NaCl/libsodium for high-level crypto APIs with timing guarantees. Choose EdDSA (Ed25519) over ECDSA, and ChaCha20-Poly1305 over AES-GCM when software-only implementations are required.",
+      "effectiveness": "Very High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "python",
+        "framework": "PyNaCl (libsodium)",
+        "code": "# Install: pip install PyNaCl cryptography\n\nimport nacl.secret\nimport nacl.utils\nimport nacl.signing\nimport nacl.encoding\nimport nacl.public\nimport nacl.hash\nimport time\nimport secrets\n\n# SECURE: libsodium provides timing-attack resistant implementations\n\n# 1. Symmetric Encryption with ChaCha20-Poly1305\ndef secure_symmetric_encryption():\n    \"\"\"\n    ChaCha20-Poly1305 AEAD encryption.\n    Constant-time implementation, no cache timing vulnerabilities like AES.\n    \"\"\"\n    # Generate random 256-bit key\n    key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)\n    box = nacl.secret.SecretBox(key)\n    \n    # Encrypt message\n    message = b\"This is a secret message protected from timing attacks\"\n    \n    # Encryption includes random nonce and authentication tag\n    encrypted = box.encrypt(message)\n    \n    print(\"=== ChaCha20-Poly1305 Encryption ===\")\n    print(f\"Key: {key.hex()}\")\n    print(f\"Message: {message.decode()}\")\n    print(f\"Ciphertext: {encrypted.hex()}\")\n    \n    # Decrypt message\n    decrypted = box.decrypt(encrypted)\n    print(f\"Decrypted: {decrypted.decode()}\")\n    print(f\"Match: {decrypted == message}\")\n    \n    return key, encrypted\n\n# 2. Digital Signatures with Ed25519 (EdDSA)\ndef secure_digital_signatures():\n    \"\"\"\n    Ed25519 signatures - timing-attack resistant.\n    Faster and more secure than ECDSA.\n    \"\"\"\n    # Generate signing key pair\n    signing_key = nacl.signing.SigningKey.generate()\n    verify_key = signing_key.verify_key\n    \n    # Message to sign\n    message = b\"Document that needs digital signature\"\n    \n    print(\"\\n=== Ed25519 Digital Signatures ===\")\n    print(f\"Public key: {verify_key.encode(encoder=nacl.encoding.HexEncoder).decode()}\")\n    print(f\"Message: {message.decode()}\")\n    \n    # Sign message\n    signed = signing_key.sign(message)\n    signature = signed.signature\n    \n    print(f\"Signature: {signature.hex()}\")\n    print(f\"Signature length: {len(signature)} bytes\")\n    \n    # Verify signature\n    try:\n        verify_key.verify(message, signature)\n        print(\"Signature verification: VALID\")\n    except nacl.exceptions.BadSignatureError:\n        print(\"Signature verification: INVALID\")\n    \n    # Try to verify tampered message\n    try:\n        tampered = b\"Tampered document\"\n        verify_key.verify(tampered, signature)\n        print(\"Tampered signature: VALID (should not happen!)\")\n    except nacl.exceptions.BadSignatureError:\n        print(\"Tampered signature: INVALID (correct)\")\n    \n    return signing_key, verify_key\n\n# 3. Public Key Encryption with X25519 and ChaCha20-Poly1305\ndef secure_public_key_encryption():\n    \"\"\"\n    Public key encryption using Curve25519.\n    \"\"\"\n    # Generate key pairs for Alice and Bob\n    alice_private = nacl.public.PrivateKey.generate()\n    alice_public = alice_private.public_key\n    \n    bob_private = nacl.public.PrivateKey.generate()\n    bob_public = bob_private.public_key\n    \n    print(\"\\n=== X25519 Public Key Encryption ===\")\n    print(f\"Alice public key: {alice_public.encode(encoder=nacl.encoding.HexEncoder).decode()}\")\n    print(f\"Bob public key: {bob_public.encode(encoder=nacl.encoding.HexEncoder).decode()}\")\n    \n    # Alice sends encrypted message to Bob\n    alice_box = nacl.public.Box(alice_private, bob_public)\n    message = b\"Secret message from Alice to Bob\"\n    \n    encrypted = alice_box.encrypt(message)\n    print(f\"\\nEncrypted message: {encrypted.hex()[:64]}...\")\n    \n    # Bob decrypts message from Alice\n    bob_box = nacl.public.Box(bob_private, alice_public)\n    decrypted = bob_box.decrypt(encrypted)\n    \n    print(f\"Decrypted message: {decrypted.decode()}\")\n    print(f\"Match: {decrypted == message}\")\n    \n    return alice_private, bob_private\n\n# 4. Password Hashing with Argon2\ndef secure_password_hashing():\n    \"\"\"\n    Argon2 password hashing - winner of Password Hashing Competition.\n    Resistant to timing attacks and GPU/ASIC attacks.\n    \"\"\"\n    from nacl.pwhash import argon2id\n    \n    print(\"\\n=== Argon2id Password Hashing ===\")\n    \n    password = b\"SuperSecretPassword123!\"\n    \n    # Hash password\n    hashed = nacl.pwhash.argon2id.str(password)\n    print(f\"Password: {password.decode()}\")\n    print(f\"Argon2 hash: {hashed.decode()}\")\n    \n    # Verify password (constant-time)\n    result = nacl.pwhash.argon2id.verify(hashed, password)\n    print(f\"Verification: {'PASS' if result else 'FAIL'}\")\n    \n    # Wrong password\n    try:\n        nacl.pwhash.argon2id.verify(hashed, b\"WrongPassword\")\n        print(\"Wrong password verification: PASS (should not happen!)\")\n    except nacl.exceptions.InvalidkeyError:\n        print(\"Wrong password verification: FAIL (correct)\")\n\n# 5. Constant-time utilities\ndef constant_time_utilities():\n    \"\"\"\n    Constant-time comparison and operations.\n    \"\"\"\n    print(\"\\n=== Constant-Time Utilities ===\")\n    \n    # Constant-time byte comparison\n    secret1 = nacl.utils.random(32)\n    secret2 = nacl.utils.random(32)\n    \n    # Using nacl's constant-time comparison\n    from nacl.bindings import sodium_memcmp\n    \n    try:\n        sodium_memcmp(secret1, secret2)\n        print(\"Secrets match: True\")\n    except ValueError:\n        print(\"Secrets match: False (correct)\")\n    \n    try:\n        sodium_memcmp(secret1, secret1)\n        print(\"Same secret match: True (correct)\")\n    except ValueError:\n        print(\"Same secret match: False\")\n\n# Performance comparison\ndef performance_comparison():\n    \"\"\"\n    Compare Ed25519 vs RSA performance.\n    \"\"\"\n    print(\"\\n=== Performance Comparison ===\")\n    \n    # Ed25519 key generation\n    start = time.perf_counter()\n    for _ in range(100):\n        nacl.signing.SigningKey.generate()\n    ed25519_keygen_time = time.perf_counter() - start\n    \n    print(f\"Ed25519 key generation (100 keys): {ed25519_keygen_time*1000:.2f}ms\")\n    \n    # Ed25519 signing\n    signing_key = nacl.signing.SigningKey.generate()\n    message = b\"Test message\"\n    \n    start = time.perf_counter()\n    for _ in range(1000):\n        signing_key.sign(message)\n    ed25519_sign_time = time.perf_counter() - start\n    \n    print(f\"Ed25519 signing (1000 ops): {ed25519_sign_time*1000:.2f}ms\")\n    \n    # Ed25519 verification\n    verify_key = signing_key.verify_key\n    signed = signing_key.sign(message)\n    signature = signed.signature\n    \n    start = time.perf_counter()\n    for _ in range(1000):\n        try:\n            verify_key.verify(message, signature)\n        except:\n            pass\n    ed25519_verify_time = time.perf_counter() - start\n    \n    print(f\"Ed25519 verification (1000 ops): {ed25519_verify_time*1000:.2f}ms\")\n    \n    print(\"\\nEd25519 is ~10-20x faster than RSA-2048 for signing\")\n    print(\"and ~5-10x faster for verification, with better security.\")\n\ndef main():\n    print(\"===========================================\" )\n    print(\"Timing-Attack Resistant Cryptography\")\n    print(\"Using libsodium (PyNaCl)\")\n    print(\"==========================================\")\n    print(\"\\nlibsodium provides:\")\n    print(\"  • Constant-time implementations\")\n    print(\"  • No cache-timing vulnerabilities\")\n    print(\"  • Protection against side-channel attacks\")\n    print(\"  • High-level APIs that are hard to misuse\")\n    print(\"  • Fast, modern algorithms (ChaCha20, Ed25519, X25519)\")\n    \n    # Demonstrate all features\n    secure_symmetric_encryption()\n    secure_digital_signatures()\n    secure_public_key_encryption()\n    secure_password_hashing()\n    constant_time_utilities()\n    performance_comparison()\n    \n    print(\"\\n=== Recommendations ===\")\n    print(\"1. Use libsodium/PyNaCl for new projects\")\n    print(\"2. Prefer Ed25519 over RSA/ECDSA\")\n    print(\"3. Use ChaCha20-Poly1305 for software-only encryption\")\n    print(\"4. Use AES-GCM only with hardware AES-NI support\")\n    print(\"5. Argon2id for password hashing (not bcrypt/scrypt)\")\n    print(\"6. Always use constant-time comparisons for secrets\")\n\nif __name__ == '__main__':\n    main()"
+      },
+      "tools": [
+        {
+          "name": "libsodium / PyNaCl",
+          "type": "Timing-safe crypto library",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "BoringSSL",
+          "type": "Google's timing-safe OpenSSL fork",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "BearSSL",
+          "type": "Constant-time TLS library",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-2 - Data-in-transit is protected"
+      ],
+      "validation_steps": [
+        "Use libsodium for all new cryptographic implementations",
+        "Replace ECDSA with Ed25519 signatures where possible",
+        "Use ChaCha20-Poly1305 for authenticated encryption",
+        "Prefer Argon2id over bcrypt for password hashing",
+        "Verify constant-time guarantees in crypto library documentation",
+        "Run timing tests to confirm no measurable timing leaks"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Hardware Isolation and CPU Mitigation for Cache Timing Attacks",
+      "description": "Implement hardware-level protections against cache timing and speculative execution attacks. Apply CPU microcode updates for Spectre/Meltdown. Use process isolation, disable SMT/Hyperthreading in sensitive environments, and leverage hardware features like Intel SGX or ARM TrustZone for cryptographic operations.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "bash",
+        "framework": "Linux System Configuration",
+        "code": "#!/bin/bash\n\n# System hardening against side-channel attacks\n# Run as root\n\nset -e\n\necho \"=== Side-Channel Attack Mitigations ===\"\n\n# 1. Check CPU vulnerabilities\necho \"\\n1. Checking CPU vulnerabilities...\"\nif [ -d \"/sys/devices/system/cpu/vulnerabilities\" ]; then\n    for vuln in /sys/devices/system/cpu/vulnerabilities/*; do\n        echo \"  $(basename $vuln): $(cat $vuln)\"\n    done\nelse\n    echo \"  Vulnerability information not available\"\nfi\n\n# 2. Apply Spectre/Meltdown mitigations\necho \"\\n2. Applying Spectre/Meltdown mitigations...\"\n\n# Check current mitigations\nif [ -f \"/sys/devices/system/cpu/vulnerabilities/spectre_v1\" ]; then\n    echo \"  Spectre V1: $(cat /sys/devices/system/cpu/vulnerabilities/spectre_v1)\"\n    echo \"  Spectre V2: $(cat /sys/devices/system/cpu/vulnerabilities/spectre_v2)\"\n    echo \"  Meltdown: $(cat /sys/devices/system/cpu/vulnerabilities/meltdown)\"\nfi\n\n# Add kernel parameters to GRUB\necho \"\\n3. Recommended kernel parameters for /etc/default/grub:\"\necho \"  GRUB_CMDLINE_LINUX_DEFAULT=\\\"\"\necho \"    spectre_v2=on\"\necho \"    spec_store_bypass_disable=on\"\necho \"    l1tf=full,force\"\necho \"    mds=full,nosmt\"\necho \"    tsx_async_abort=full,nosmt\"\necho \"    mitigations=auto,nosmt\"\necho \"    pti=on\"\necho \"  \\\"\"\n\n# 4. Disable Symmetric Multi-Threading (Hyperthreading)\necho \"\\n4. Disabling SMT/Hyperthreading (high security environments)...\"\necho \"  WARNING: This reduces performance by ~30%\"\necho \"  To disable SMT: echo off > /sys/devices/system/cpu/smt/control\"\necho \"  Current SMT status: $(cat /sys/devices/system/cpu/smt/control 2>/dev/null || echo 'unknown')\"\n\n# 5. CPU microcode updates\necho \"\\n5. Checking CPU microcode...\"\nif command -v iucode-tool &> /dev/null; then\n    echo \"  iucode-tool is installed\"\n    echo \"  Current microcode: $(cat /proc/cpuinfo | grep microcode | head -1)\"\nelse\n    echo \"  Install microcode updates: apt install intel-microcode (Intel) or amd64-microcode (AMD)\"\nfi\n\n# 6. Process isolation with namespaces\necho \"\\n6. Process isolation recommendations:\"\ncat << 'EOF'\n# Docker: Use user namespaces and seccomp profiles\ndocker run --security-opt seccomp=default.json \\\n           --security-opt no-new-privileges \\\n           --userns-remap=default \\\n           myapp\n\n# SystemD: Isolate sensitive services\n[Service]\nPrivateNetwork=true\nPrivateTmp=true\nPrivateDevices=true\nProtectSystem=strict\nProtectHome=true\nNoNewPrivileges=true\nSecureBits=noroot noroot-locked\nEOF\n\n# 7. Memory protection\necho \"\\n7. Memory protection settings:\"\ncat << 'EOF'\n# /etc/sysctl.conf or /etc/sysctl.d/99-security.conf\nkernel.yama.ptrace_scope = 1\nkernel.kptr_restrict = 2\nkernel.dmesg_restrict = 1\nkernel.perf_event_paranoid = 3\nkernel.unprivileged_bpf_disabled = 1\nnet.core.bpf_jit_harden = 2\nEOF\n\necho \"\\nApply with: sysctl -p\"\n\n# 8. ASLR and stack protection\necho \"\\n8. Address Space Layout Randomization (ASLR):\"\necho \"  Current ASLR: $(cat /proc/sys/kernel/randomize_va_space)\"\necho \"  Recommended: 2 (full randomization)\"\necho \"  Set: echo 2 > /proc/sys/kernel/randomize_va_space\"\n\n# 9. Compiler hardening flags\necho \"\\n9. Compiler hardening flags for C/C++ cryptographic code:\"\ncat << 'EOF'\nCFLAGS=\"-D_FORTIFY_SOURCE=2 \\\n        -O2 \\\n        -fstack-protector-strong \\\n        -fPIE \\\n        -Wl,-z,relro \\\n        -Wl,-z,now \\\n        -Wl,-z,noexecstack \\\n        -fno-strict-overflow\"\nEOF\n\n# 10. Cloud provider recommendations\necho \"\\n10. Cloud provider security:\"\ncat << 'EOF'\nAWS:\n  • Use dedicated instances/hosts for sensitive workloads\n  • Enable Nitro Enclave for isolated cryptographic operations\n  • Use AWS KMS with HSM backing\n\nAzure:\n  • Use isolated VM sizes (e.g., Standard_E64is_v3)\n  • Enable Confidential Computing with AMD SEV-SNP\n  • Use Azure Key Vault with HSM protection\n\nGCP:\n  • Use sole-tenant nodes for cryptographic workloads\n  • Enable Confidential VMs with AMD SEV\n  • Use Cloud HSM for key operations\nEOF\n\n# 11. Hardware security features\necho \"\\n11. Hardware security features:\"\necho \"  Intel SGX: Secure enclaves for cryptographic operations\"\necho \"  AMD SEV: Encrypted virtualization\"\necho \"  ARM TrustZone: Secure world isolation\"\necho \"  TPM 2.0: Hardware key storage\"\n\n# 12. Monitoring and detection\necho \"\\n12. Monitoring recommendations:\"\ncat << 'EOF'\n• Monitor for unusual CPU cache behavior\n• Log all cryptographic operations with timing\n• Alert on repeated authentication timing patterns\n• Use perf events to detect side-channel probing\n• Implement rate limiting on crypto operations\nEOF\n\n# 13. Testing tools\necho \"\\n13. Side-channel testing tools:\"\ncat << 'EOF'\nInstall testing tools:\n  sudo apt install perf-tools-unstable\n  sudo apt install valgrind\n  git clone https://github.com/IAIK/meltdown.git\n  git clone https://github.com/crozone/SpectrePoC.git\n\nTest for timing leaks:\n  dudect - Constant-time verification\n  ctgrind - Valgrind plugin for constant-time checking\nEOF\n\necho \"\\n=== Summary ===\"\necho \"1. Update CPU microcode\"\necho \"2. Enable kernel mitigations (may impact performance)\"\necho \"3. Disable SMT in high-security environments\"\necho \"4. Use hardware isolation (dedicated hosts, enclaves)\"\necho \"5. Implement process isolation and sandboxing\"\necho \"6. Use constant-time cryptographic libraries\"\necho \"7. Monitor for side-channel attack indicators\"\necho \"8. Consider dedicated HSM for critical keys\"\n\necho \"\\n=== Docker Security Example ===\"\ncat << 'EOF'\n# Dockerfile with security hardening\nFROM alpine:3.19\n\n# Install security updates\nRUN apk upgrade --no-cache\n\n# Run as non-root user\nRUN addgroup -g 1001 appuser && \\\n    adduser -D -u 1001 -G appuser appuser\n\n# Drop capabilities\nUSER appuser\n\n# Disable SMT if possible (requires host configuration)\n# Use --security-opt seccomp to restrict syscalls\n# Use --cap-drop ALL --cap-add CHOWN,SETUID,SETGID\nEOF\n\necho \"\\nScript complete. Review recommendations and apply as needed.\""
+      },
+      "tools": [
+        {
+          "name": "Intel SGX SDK",
+          "type": "Secure enclave for cryptographic operations",
+          "cost": "Free (requires SGX-capable CPU)"
+        },
+        {
+          "name": "AMD SEV",
+          "type": "Encrypted virtualization",
+          "cost": "Free (requires EPYC CPU)"
+        },
+        {
+          "name": "dudect",
+          "type": "Constant-time verification tool",
+          "cost": "Free (Open Source)"
+        },
+        {
+          "name": "ctgrind",
+          "type": "Valgrind plugin for timing analysis",
+          "cost": "Free (Open Source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.1.3 - Capacity management",
+        "A.9.4.5 - Access control to program source code"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - Baseline configuration",
+        "PR.PT-3 - Access to systems is controlled"
+      ],
+      "pci_dss": [
+        "Requirement 2.2 - Configuration standards for all system components"
+      ],
+      "validation_steps": [
+        "Verify CPU microcode is up to date: cat /proc/cpuinfo | grep microcode",
+        "Check Spectre/Meltdown mitigations: grep . /sys/devices/system/cpu/vulnerabilities/*",
+        "Test: Disable SMT for high-security workloads",
+        "Use dedicated hardware or isolated cloud instances",
+        "Monitor CPU cache behavior for anomalies",
+        "Apply kernel hardening parameters and verify with sysctl -a"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Repeated authentication attempts with precise timing measurements",
+      "Unusual patterns of cryptographic API calls from same source",
+      "High-precision timing queries (microsecond resolution) to crypto endpoints",
+      "Co-located VMs making frequent crypto operations",
+      "CPU cache performance anomalies during cryptographic operations",
+      "Multiple failed authentication attempts with statistical timing correlation",
+      "Unusual perf/ptrace syscalls targeting crypto processes"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=app_logs sourcetype=crypto_operations\n| where operation=\"rsa_decrypt\" OR operation=\"ecdsa_sign\" OR operation=\"aes_decrypt\"\n| bin _time span=100ms\n| stats count as ops, avg(duration_us) as avg_time, stdev(duration_us) as time_stdev by src_ip, operation, _time\n| where ops > 100 AND time_stdev < 10\n| eval anomaly_score=ops/(time_stdev+1)\n| where anomaly_score > 50\n| eval severity=\"High\"\n| table _time, src_ip, operation, ops, avg_time, time_stdev, anomaly_score, severity\n| sort -anomaly_score"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect timing attack patterns on authentication\nCustomLogs\n| where EventType == \"Authentication\" or EventType == \"CryptoOperation\"\n| extend Duration = todouble(Duration_ms)\n| summarize \n    Count = count(),\n    AvgDuration = avg(Duration),\n    StdDev = stdev(Duration),\n    P50 = percentile(Duration, 50),\n    P95 = percentile(Duration, 95),\n    P99 = percentile(Duration, 99)\n    by IPAddress, bin(TimeGenerated, 1m)\n| where Count > 50\n| extend TimingVariance = (P99 - P50) / P50\n| where TimingVariance < 0.1  // Low variance indicates timing measurement\n| extend Severity = case(\n    Count > 1000, \"Critical\",\n    Count > 500, \"High\",\n    \"Medium\"\n  )\n| project TimeGenerated, IPAddress, Count, AvgDuration, StdDev, TimingVariance, Severity"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "// Detect cache timing attack indicators\nevent.category: \"process\" AND event.action: \"perf_event_open\"\n| stats count by user.name, process.name, host.name\n| where count > 100"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, sourceIPAddress, requestParameters.operation, duration\n| filter requestParameters.operation like /Decrypt|Sign|GenerateDataKey/\n| stats count() as operations, \n        avg(duration) as avg_duration,\n        stddev(duration) as duration_stddev \n  by sourceIPAddress, bin(1m)\n| filter operations > 100 and duration_stddev < 5\n| sort operations desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "dudect",
+        "type": "Constant-time verification",
+        "usage": "Test cryptographic implementations for timing leaks"
+      },
+      {
+        "name": "ctgrind",
+        "type": "Valgrind timing analysis",
+        "usage": "valgrind --tool=ctgrind ./crypto_app"
+      },
+      {
+        "name": "perf",
+        "type": "Linux performance monitoring",
+        "usage": "perf stat -e cache-misses ./crypto_app"
+      },
+      {
+        "name": "Intel VTune",
+        "type": "CPU profiling and timing analysis",
+        "usage": "Detect microarchitectural side channels"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "Defense",
+      "Cryptocurrency",
+      "Cloud Services",
+      "Telecommunications",
+      "Payment Processing"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 3.4 - Cryptographic Protection)",
+      "PCI-DSS 4.0 (Requirement 3.5.1 - Strong Cryptography)",
+      "HIPAA (164.312(a)(2)(iv) - Encryption and Decryption)",
+      "SOC2 (CC6.1 - Logical Access Controls)",
+      "ISO27001 (A.10.1.1 - Cryptographic Controls)",
+      "NIST 800-53 (SC-13 - Cryptographic Protection)",
+      "FIPS 140-2 (Physical Security and Side-Channel Resistance)",
+      "FIPS 140-3 (Enhanced Side-Channel Requirements)",
+      "Common Criteria (EAL4+ - Side-Channel Analysis Resistance)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Edge/IoT",
+      "Hardware Security Modules",
+      "Smart Cards",
+      "Mobile Devices"
+    ],
+    "data_classification": [
+      "Top Secret",
+      "Confidential",
+      "Sensitive",
+      "Cryptographic Keys",
+      "Authentication Credentials",
+      "Financial Data",
+      "Personal Health Information"
+    ]
+  }
+}

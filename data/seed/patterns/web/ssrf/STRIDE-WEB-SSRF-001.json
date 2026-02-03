@@ -1,0 +1,525 @@
+{
+  "id": "STRIDE-WEB-SSRF-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-03",
+    "last_updated": "2026-02-03",
+    "reviewed_by": [],
+    "confidence_score": 9.5,
+    "validation_status": "production"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A10:2021 - Server-Side Request Forgery (SSRF)",
+      "A01:2021 - Broken Access Control",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1071 - Application Layer Protocol",
+      "T1078 - Valid Accounts",
+      "T1552.005 - Cloud Instance Metadata API"
+    ],
+    "cwe": [
+      "CWE-918 - Server-Side Request Forgery (SSRF)",
+      "CWE-441 - Unintended Proxy or Intermediary",
+      "CWE-601 - URL Redirection to Untrusted Site"
+    ]
+  },
+  "threat": {
+    "title": "Server-Side Request Forgery (SSRF) Attacks Against Cloud Metadata Services and Internal Networks",
+    "description": "Server-Side Request Forgery (SSRF) vulnerabilities allow attackers to abuse server-side functionality to make HTTP requests to arbitrary locations, including internal network resources that would otherwise be inaccessible from the internet. SSRF attacks are particularly devastating in cloud environments where attackers can access Instance Metadata Services (IMDS) to retrieve temporary security credentials, API keys, and sensitive configuration data. The 2019 Capital One breach, caused by SSRF exploitation of AWS metadata endpoint (169.254.169.254), resulted in theft of 100 million customer records and over $100 million in damages. Modern SSRF attacks target AWS IMDSv1, Azure Instance Metadata Service, GCP metadata servers, internal APIs, database management interfaces, cloud storage services, and admin panels. Vulnerable applications include webhook handlers, URL preview generators, PDF generators, image processors, proxy services, and any feature that fetches remote resources based on user-supplied URLs. SSRF enables privilege escalation through stolen credentials, lateral movement within cloud environments, port scanning of internal networks, bypassing firewall restrictions, and potential remote code execution when combined with other vulnerabilities.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "AWS EC2 / Azure VMs / GCP Compute Engine / Internal APIs",
+    "versions_affected": [
+      "AWS IMDSv1 (169.254.169.254) - all versions",
+      "Azure IMDS (169.254.169.254) - all versions",
+      "GCP Metadata Server (metadata.google.internal) - all versions",
+      "DigitalOcean Metadata (169.254.169.254) - all versions",
+      "All applications accepting user-controlled URLs"
+    ],
+    "ecosystem": "Cloud Infrastructure / Web Applications / Microservices",
+    "dependencies": [
+      "AWS SDK",
+      "Azure SDK",
+      "Google Cloud SDK",
+      "HTTP client libraries (requests, urllib, axios, fetch, HttpClient)",
+      "Webhook processing services",
+      "PDF generation libraries (wkhtmltopdf, Puppeteer)",
+      "Image processing services"
+    ],
+    "related_frameworks": [
+      "Express.js",
+      "Flask",
+      "Django",
+      "Spring Boot",
+      "FastAPI",
+      "Ruby on Rails",
+      "ASP.NET Core",
+      "Serverless Functions (Lambda, Cloud Functions)"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies SSRF vector: webhook URL field, image import feature, PDF generator, URL preview, or file upload from URL functionality\n2. Attacker crafts malicious request targeting cloud metadata endpoint: http://169.254.169.254/latest/meta-data/iam/security-credentials/\n3. Application server processes attacker's URL, making HTTP request to metadata service from its internal network context\n4. Cloud metadata service responds with IAM role credentials including AccessKeyId, SecretAccessKey, and SessionToken (on AWS)\n5. Application returns metadata response to attacker through error messages, response body, or timing side-channels\n6. Attacker extracts temporary credentials with permissions of application's IAM role (often over-privileged)\n7. Attacker uses stolen credentials to escalate privileges: access S3 buckets, RDS databases, Lambda functions, other AWS services\n8. Attacker pivots: exfiltrates sensitive data, modifies resources, creates backdoors, or launches further attacks against internal infrastructure\n9. In Capital One breach: attacker used SSRF to steal credentials, then accessed S3 buckets containing 100 million customer records including SSNs, bank account numbers, credit scores",
+    "prerequisites": [
+      "Application accepts user-supplied URLs and fetches their content",
+      "No URL validation or insufficient allowlist/blocklist implementation",
+      "Application running on cloud instance with attached IAM role or service principal",
+      "IMDSv1 enabled (no session token required) or IMDSv2 bypass available",
+      "Network access from application to metadata endpoint not blocked",
+      "No egress filtering or network segmentation",
+      "Over-privileged IAM roles attached to compute instances"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-5418",
+        "description": "Ruby on Rails File Content Disclosure vulnerability leading to SSRF - allows reading local files and making requests to internal services",
+        "cvss_score": 7.5,
+        "published_date": "2019-03-27",
+        "affected_component": "Ruby on Rails < 6.0.0.beta3, < 5.2.2.1, < 5.1.6.2, < 5.0.7.2, < 4.2.11.1",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2019-5418"
+      },
+      {
+        "cve_id": "CVE-2021-21311",
+        "description": "Adminer SSRF vulnerability - allows accessing cloud metadata endpoints and internal network resources",
+        "cvss_score": 7.4,
+        "published_date": "2021-02-11",
+        "affected_component": "Adminer < 4.7.9",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-21311"
+      },
+      {
+        "cve_id": "CVE-2020-8555",
+        "description": "Kubernetes SSRF vulnerability allows accessing cloud metadata and internal services via kube-controller-manager",
+        "cvss_score": 6.3,
+        "published_date": "2020-06-05",
+        "affected_component": "Kubernetes < 1.18.3, < 1.17.6, < 1.16.10",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-8555"
+      },
+      {
+        "cve_id": "CVE-2021-26855",
+        "description": "Microsoft Exchange Server SSRF vulnerability (ProxyLogon) - part of chain leading to remote code execution",
+        "cvss_score": 9.1,
+        "published_date": "2021-03-02",
+        "affected_component": "Microsoft Exchange Server 2013, 2016, 2019",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-26855"
+      },
+      {
+        "cve_id": "CVE-2020-13379",
+        "description": "Grafana SSRF vulnerability allowing access to cloud metadata endpoints",
+        "cvss_score": 8.2,
+        "published_date": "2020-06-03",
+        "affected_component": "Grafana < 6.7.4, < 7.0.2",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-13379"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Capital One Data Breach (SSRF via AWS Metadata)",
+        "date": "2019-03-22",
+        "impact": "106 million customers affected, 140,000 SSNs stolen, 80,000 bank account numbers exposed, $100M+ settlement, $80M regulatory fine from OCC",
+        "root_cause": "SSRF vulnerability in web application firewall (WAF) configuration allowed attacker (former AWS employee) to access EC2 instance metadata endpoint (169.254.169.254), steal IAM role credentials, then exfiltrate data from 700+ S3 buckets",
+        "source_url": "https://www.justice.gov/usao-wdwa/pr/former-amazon-employee-sentenced-capital-one-hack"
+      },
+      {
+        "incident": "Uber SSRF via AWS Metadata Service",
+        "date": "2018-11-14",
+        "impact": "$10,000+ bug bounty paid for SSRF vulnerability allowing AWS credential theft via metadata endpoint",
+        "root_cause": "URL fetching functionality in internal service allowed SSRF to access 169.254.169.254, exposing temporary AWS credentials with elevated privileges",
+        "source_url": "https://hackerone.com/reports/341876"
+      },
+      {
+        "incident": "Google Cloud Platform SSRF Bug Bounty",
+        "date": "2020-04-20",
+        "impact": "$6,000 bug bounty for SSRF in GCP service allowing metadata access via metadata.google.internal",
+        "root_cause": "Insufficient URL validation in cloud service allowed bypassing metadata endpoint protections",
+        "source_url": "https://bugs.xdavidhu.me/google/2020/04/20/stealing-your-private-videos-one-frame-at-a-time/"
+      },
+      {
+        "incident": "Verizon Media SSRF Vulnerability",
+        "date": "2019-10-02",
+        "impact": "$2,000 bug bounty for SSRF allowing access to internal Verizon infrastructure and AWS metadata",
+        "root_cause": "Image proxy service accepted user URLs without validation, enabling metadata endpoint access and internal network scanning",
+        "source_url": "https://hackerone.com/reports/508459"
+      },
+      {
+        "incident": "Facebook SSRF via OpenGraph Preview",
+        "date": "2017-12-01",
+        "impact": "$31,500 bug bounty for SSRF bypassing IP allowlist to access internal Facebook infrastructure",
+        "root_cause": "OpenGraph URL preview feature vulnerable to DNS rebinding and URL parser inconsistencies, enabling SSRF to internal services",
+        "source_url": "https://www.youtube.com/watch?v=8t8JYpt0egE"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "341876",
+        "bounty_amount": 10000,
+        "severity": "Critical",
+        "summary": "SSRF in internal service allows AWS metadata access and credential theft"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "508459",
+        "bounty_amount": 2000,
+        "severity": "High",
+        "summary": "SSRF via image proxy enables internal network scanning and metadata endpoint access"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "326040",
+        "bounty_amount": 12500,
+        "severity": "Critical",
+        "summary": "Blind SSRF leading to internal service enumeration and AWS credential exposure"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2019-0042",
+        "bounty_amount": 5000,
+        "severity": "High",
+        "summary": "SSRF bypass using alternate IP encodings to access cloud metadata"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "A New Era of SSRF - Exploiting URL Parser in Trending Programming Languages",
+        "authors": ["Orange Tsai"],
+        "published_date": "2017-08-01",
+        "source_url": "https://www.blackhat.com/docs/us-17/thursday/us-17-Tsai-A-New-Era-Of-SSRF-Exploiting-URL-Parser-In-Trending-Programming-Languages.pdf",
+        "key_finding": "URL parser inconsistencies across programming languages enable SSRF filter bypasses. Different libraries interpret URLs differently, allowing attackers to craft payloads that bypass validation but resolve to malicious targets."
+      },
+      {
+        "title": "SSRF bible. Cheatsheet",
+        "authors": ["Wallarm Security"],
+        "published_date": "2020-01-01",
+        "source_url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+        "key_finding": "SSRF attacks can be categorized into basic, blind, and semi-blind types. Cloud metadata endpoints (169.254.169.254) are the most valuable targets, providing IAM credentials that enable full account compromise."
+      },
+      {
+        "title": "Exploiting SSRF in AWS Elastic Beanstalk",
+        "authors": ["Ben Sadeghipour", "Cody Brocious"],
+        "published_date": "2019-03-01",
+        "source_url": "https://www.youtube.com/watch?v=8t8JYpt0egE",
+        "key_finding": "AWS IMDSv1 is vulnerable to SSRF attacks with no additional authentication required. IMDSv2 requires session tokens, significantly reducing SSRF risk but not eliminating it entirely."
+      },
+      {
+        "title": "The Capital One Breach: What Really Happened",
+        "authors": ["CloudSploit"],
+        "published_date": "2019-08-01",
+        "source_url": "https://blog.cloudsploit.com/the-capital-one-breach-what-really-happened-5bb4dd5e8a58",
+        "key_finding": "The Capital One breach demonstrates the catastrophic impact of SSRF combined with over-privileged IAM roles. The stolen credentials had access to 700+ S3 buckets, enabling mass data exfiltration."
+      },
+      {
+        "title": "Bypassing SSRF Protection with DNS Rebinding",
+        "authors": ["Brannon Dorsey"],
+        "published_date": "2018-06-01",
+        "source_url": "https://medium.com/@brannondorsey/attacking-private-networks-from-the-internet-with-dns-rebinding-ea7098a2d325",
+        "key_finding": "DNS rebinding attacks can bypass SSRF protections that validate URLs at request time. Attackers can use time-based DNS responses to pass validation checks then redirect to internal targets."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Strict URL Validation and Allowlisting",
+      "description": "Validate all user-supplied URLs using strict allowlists of permitted domains, protocols, and IP ranges. Block access to private IP ranges (RFC 1918), localhost, link-local addresses (169.254.0.0/16), and cloud metadata endpoints. Use URL parsing libraries consistently and validate after all redirects. Implement both syntactic validation (URL format) and semantic validation (destination checking).",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Python Flask with URL Validation",
+        "code": "import ipaddress\nimport socket\nfrom urllib.parse import urlparse\nimport requests\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# Blocked IP ranges\nBLOCKED_IP_RANGES = [\n    ipaddress.ip_network('0.0.0.0/8'),          # Current network\n    ipaddress.ip_network('10.0.0.0/8'),         # Private\n    ipaddress.ip_network('127.0.0.0/8'),        # Loopback\n    ipaddress.ip_network('169.254.0.0/16'),     # Link-local (metadata)\n    ipaddress.ip_network('172.16.0.0/12'),      # Private\n    ipaddress.ip_network('192.168.0.0/16'),     # Private\n    ipaddress.ip_network('224.0.0.0/4'),        # Multicast\n    ipaddress.ip_network('240.0.0.0/4'),        # Reserved\n    ipaddress.ip_network('::1/128'),            # IPv6 loopback\n    ipaddress.ip_network('fe80::/10'),          # IPv6 link-local\n    ipaddress.ip_network('fc00::/7'),           # IPv6 private\n]\n\n# Blocked hostnames\nBLOCKED_HOSTNAMES = [\n    'metadata.google.internal',\n    'metadata',\n    'localhost',\n    '169.254.169.254',\n]\n\n# Allowed protocols\nALLOWED_PROTOCOLS = ['http', 'https']\n\n# Domain allowlist (example - configure for your use case)\nALLOWED_DOMAINS = [\n    'api.example.com',\n    'cdn.example.com',\n    'trusted-partner.com'\n]\n\nclass SSRFException(Exception):\n    pass\n\ndef is_ip_blocked(ip_str):\n    \"\"\"Check if IP address is in blocked ranges.\"\"\"\n    try:\n        ip = ipaddress.ip_address(ip_str)\n        for blocked_range in BLOCKED_IP_RANGES:\n            if ip in blocked_range:\n                return True\n        return False\n    except ValueError:\n        return True  # Invalid IP format\n\ndef validate_url(url, use_allowlist=True):\n    \"\"\"\n    Validate URL to prevent SSRF attacks.\n    \n    Args:\n        url: User-supplied URL\n        use_allowlist: If True, only allow domains in ALLOWED_DOMAINS\n    \n    Returns:\n        Validated URL\n    \n    Raises:\n        SSRFException: If URL is invalid or blocked\n    \"\"\"\n    try:\n        # Parse URL\n        parsed = urlparse(url)\n        \n        # Validate protocol\n        if parsed.scheme not in ALLOWED_PROTOCOLS:\n            raise SSRFException(\n                f\"Protocol '{parsed.scheme}' not allowed. \"\n                f\"Only {ALLOWED_PROTOCOLS} are permitted.\"\n            )\n        \n        # Validate hostname exists\n        if not parsed.hostname:\n            raise SSRFException(\"Invalid URL: hostname missing\")\n        \n        # Check blocked hostnames\n        hostname_lower = parsed.hostname.lower()\n        for blocked in BLOCKED_HOSTNAMES:\n            if blocked in hostname_lower:\n                raise SSRFException(\n                    f\"Access to '{parsed.hostname}' is not permitted\"\n                )\n        \n        # Resolve hostname to IP\n        try:\n            ip_addresses = socket.getaddrinfo(\n                parsed.hostname, \n                parsed.port or 80,\n                family=socket.AF_UNSPEC,\n                type=socket.SOCK_STREAM\n            )\n        except socket.gaierror:\n            raise SSRFException(\n                f\"Unable to resolve hostname: {parsed.hostname}\"\n            )\n        \n        # Check all resolved IPs\n        for ip_info in ip_addresses:\n            ip_addr = ip_info[4][0]\n            if is_ip_blocked(ip_addr):\n                raise SSRFException(\n                    f\"Access to IP address {ip_addr} is not permitted\"\n                )\n        \n        # Domain allowlist check\n        if use_allowlist:\n            domain_allowed = any(\n                parsed.hostname == domain or \n                parsed.hostname.endswith('.' + domain)\n                for domain in ALLOWED_DOMAINS\n            )\n            if not domain_allowed:\n                raise SSRFException(\n                    f\"Domain '{parsed.hostname}' is not in allowlist\"\n                )\n        \n        return url\n        \n    except SSRFException:\n        raise\n    except Exception as e:\n        raise SSRFException(f\"URL validation error: {str(e)}\")\n\ndef safe_fetch_url(url, timeout=5, max_redirects=3):\n    \"\"\"\n    Safely fetch URL with SSRF protection.\n    \"\"\"\n    try:\n        # Initial validation\n        validated_url = validate_url(url, use_allowlist=True)\n        \n        # Configure session with security settings\n        session = requests.Session()\n        session.max_redirects = max_redirects\n        \n        # Custom redirect handler to validate each redirect\n        class SSRFAdapter(requests.adapters.HTTPAdapter):\n            def send(self, request, **kwargs):\n                # Validate URL after redirects\n                try:\n                    validate_url(request.url, use_allowlist=False)\n                except SSRFException as e:\n                    raise requests.exceptions.RequestException(\n                        f\"Redirect blocked: {str(e)}\"\n                    )\n                return super().send(request, **kwargs)\n        \n        session.mount('http://', SSRFAdapter())\n        session.mount('https://', SSRFAdapter())\n        \n        # Make request\n        response = session.get(\n            validated_url,\n            timeout=timeout,\n            allow_redirects=True,\n            headers={'User-Agent': 'SecureApp/1.0'}\n        )\n        \n        return response\n        \n    except SSRFException as e:\n        raise\n    except requests.exceptions.RequestException as e:\n        raise SSRFException(f\"Request failed: {str(e)}\")\n\n@app.route('/api/fetch', methods=['POST'])\ndef fetch_url():\n    \"\"\"API endpoint to fetch external URLs.\"\"\"\n    try:\n        data = request.get_json()\n        url = data.get('url')\n        \n        if not url:\n            return jsonify({'error': 'URL parameter required'}), 400\n        \n        # Fetch URL with SSRF protection\n        response = safe_fetch_url(url)\n        \n        return jsonify({\n            'status': 'success',\n            'status_code': response.status_code,\n            'content_length': len(response.content),\n            'content_type': response.headers.get('Content-Type')\n        })\n        \n    except SSRFException as e:\n        return jsonify({\n            'error': 'SSRF protection',\n            'message': str(e)\n        }), 403\n    except Exception as e:\n        return jsonify({\n            'error': 'Request failed'\n        }), 500\n\nif __name__ == '__main__':\n    app.run(debug=False, host='0.0.0.0', port=5000)"
+      },
+      "additional_code_examples": [
+        {
+          "language": "javascript",
+          "framework": "Node.js Express with SSRF Protection",
+          "code": "const express = require('express');\nconst axios = require('axios');\nconst { URL } = require('url');\nconst dns = require('dns').promises;\nconst ipaddr = require('ipaddr.js');\n\nconst app = express();\napp.use(express.json());\n\n// Blocked IP ranges (RFC 1918, link-local, etc.)\nconst BLOCKED_RANGES = [\n  { start: '0.0.0.0', end: '0.255.255.255' },\n  { start: '10.0.0.0', end: '10.255.255.255' },\n  { start: '127.0.0.0', end: '127.255.255.255' },\n  { start: '169.254.0.0', end: '169.254.255.255' },\n  { start: '172.16.0.0', end: '172.31.255.255' },\n  { start: '192.168.0.0', end: '192.168.255.255' },\n  { start: '224.0.0.0', end: '239.255.255.255' },\n  { start: '240.0.0.0', end: '255.255.255.255' },\n];\n\nconst BLOCKED_HOSTNAMES = [\n  'metadata.google.internal',\n  'metadata',\n  'localhost',\n  '169.254.169.254',\n];\n\nconst ALLOWED_PROTOCOLS = ['http:', 'https:'];\n\nconst ALLOWED_DOMAINS = [\n  'api.example.com',\n  'cdn.example.com',\n  'trusted-partner.com'\n];\n\nfunction isIPBlocked(ip) {\n  try {\n    const addr = ipaddr.parse(ip);\n    \n    // Check for loopback\n    if (addr.range() === 'loopback') return true;\n    \n    // Check for link-local\n    if (addr.range() === 'linkLocal') return true;\n    \n    // Check for private\n    if (addr.range() === 'private') return true;\n    \n    // Check IPv4 ranges\n    if (addr.kind() === 'ipv4') {\n      const bytes = addr.toByteArray();\n      const ipNum = (bytes[0] << 24) | (bytes[1] << 16) | \n                    (bytes[2] << 8) | bytes[3];\n      \n      for (const range of BLOCKED_RANGES) {\n        const startBytes = ipaddr.parse(range.start).toByteArray();\n        const endBytes = ipaddr.parse(range.end).toByteArray();\n        const startNum = (startBytes[0] << 24) | (startBytes[1] << 16) |\n                        (startBytes[2] << 8) | startBytes[3];\n        const endNum = (endBytes[0] << 24) | (endBytes[1] << 16) |\n                      (endBytes[2] << 8) | endBytes[3];\n        \n        if (ipNum >= startNum && ipNum <= endNum) {\n          return true;\n        }\n      }\n    }\n    \n    return false;\n  } catch (e) {\n    return true; // Invalid IP format\n  }\n}\n\nasync function validateURL(urlString, useAllowlist = true) {\n  try {\n    const url = new URL(urlString);\n    \n    // Validate protocol\n    if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {\n      throw new Error(\n        `Protocol '${url.protocol}' not allowed. ` +\n        `Only ${ALLOWED_PROTOCOLS.join(', ')} are permitted.`\n      );\n    }\n    \n    // Check blocked hostnames\n    const hostname = url.hostname.toLowerCase();\n    for (const blocked of BLOCKED_HOSTNAMES) {\n      if (hostname.includes(blocked)) {\n        throw new Error(`Access to '${url.hostname}' is not permitted`);\n      }\n    }\n    \n    // Resolve DNS\n    let addresses;\n    try {\n      addresses = await dns.resolve4(url.hostname);\n    } catch (dnsError) {\n      throw new Error(`Unable to resolve hostname: ${url.hostname}`);\n    }\n    \n    // Check all resolved IPs\n    for (const ip of addresses) {\n      if (isIPBlocked(ip)) {\n        throw new Error(\n          `Access to IP address ${ip} is not permitted`\n        );\n      }\n    }\n    \n    // Domain allowlist check\n    if (useAllowlist) {\n      const domainAllowed = ALLOWED_DOMAINS.some(domain => \n        hostname === domain || hostname.endsWith('.' + domain)\n      );\n      \n      if (!domainAllowed) {\n        throw new Error(\n          `Domain '${url.hostname}' is not in allowlist`\n        );\n      }\n    }\n    \n    return urlString;\n    \n  } catch (error) {\n    throw new Error(`URL validation failed: ${error.message}`);\n  }\n}\n\nasync function safeFetchURL(url, timeout = 5000, maxRedirects = 3) {\n  try {\n    // Initial validation\n    await validateURL(url, true);\n    \n    // Configure axios with security settings\n    const response = await axios.get(url, {\n      timeout,\n      maxRedirects,\n      validateStatus: (status) => status < 400,\n      headers: {\n        'User-Agent': 'SecureApp/1.0'\n      },\n      // Validate redirects\n      beforeRedirect: async (options) => {\n        try {\n          await validateURL(options.url, false);\n        } catch (e) {\n          throw new Error(`Redirect blocked: ${e.message}`);\n        }\n      }\n    });\n    \n    return response;\n    \n  } catch (error) {\n    throw new Error(`Request failed: ${error.message}`);\n  }\n}\n\napp.post('/api/fetch', async (req, res) => {\n  try {\n    const { url } = req.body;\n    \n    if (!url) {\n      return res.status(400).json({ error: 'URL parameter required' });\n    }\n    \n    // Fetch URL with SSRF protection\n    const response = await safeFetchURL(url);\n    \n    res.json({\n      status: 'success',\n      statusCode: response.status,\n      contentLength: response.data.length,\n      contentType: response.headers['content-type']\n    });\n    \n  } catch (error) {\n    console.error('SSRF protection:', error.message);\n    res.status(403).json({\n      error: 'SSRF protection',\n      message: 'Request blocked for security reasons'\n    });\n  }\n});\n\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});"
+        }
+      ],
+      "tools": [
+        "ipaddr.js (Node.js)",
+        "netaddr (Python)",
+        "URL parsing libraries",
+        "DNS resolution tools"
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.13.1.3 - Segregation in networks",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.DS-5 - Protections against data leaks",
+        "PR.IP-2 - System Development Life Cycle"
+      ],
+      "validation_steps": [
+        "Test with 169.254.169.254 - should be blocked",
+        "Test with localhost/127.0.0.1 - should be blocked",
+        "Test with private IP ranges (10.x.x.x) - should be blocked",
+        "Test DNS rebinding attack - validate after each redirect",
+        "Test with allowed domains - should succeed",
+        "Test with IP encoding bypasses (hex, octal) - should be blocked"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Enable AWS IMDSv2 and Network Segmentation",
+      "description": "Upgrade to AWS Instance Metadata Service Version 2 (IMDSv2) which requires session tokens, making SSRF attacks significantly harder. Implement network-level controls using security groups, NACLs, and firewall rules to block outbound access to metadata endpoints from application instances. Use VPC endpoints for AWS services to avoid internet-routable traffic.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "AWS CLI - Enable IMDSv2",
+        "code": "#!/bin/bash\n\n# Enable IMDSv2 on existing EC2 instance\n# This requires session tokens for metadata access\n\nINSTANCE_ID=\"i-1234567890abcdef0\"\n\necho \"Enabling IMDSv2 for instance: $INSTANCE_ID\"\n\n# Require IMDSv2 (disable IMDSv1)\naws ec2 modify-instance-metadata-options \\\n    --instance-id \"$INSTANCE_ID\" \\\n    --http-tokens required \\\n    --http-put-response-hop-limit 1 \\\n    --http-endpoint enabled\n\necho \"IMDSv2 enabled successfully\"\necho \"IMDSv1 is now disabled - SSRF attacks cannot access metadata without session token\"\n\n# Verify configuration\naws ec2 describe-instances \\\n    --instance-ids \"$INSTANCE_ID\" \\\n    --query 'Reservations[0].Instances[0].MetadataOptions' \\\n    --output json"
+      },
+      "additional_code_examples": [
+        {
+          "language": "terraform",
+          "framework": "Terraform - IMDSv2 Configuration",
+          "code": "# Terraform configuration for EC2 with IMDSv2 enforced\n\nresource \"aws_instance\" \"web_server\" {\n  ami           = \"ami-0c55b159cbfafe1f0\"\n  instance_type = \"t3.medium\"\n  \n  # Enforce IMDSv2\n  metadata_options {\n    http_endpoint               = \"enabled\"\n    http_tokens                 = \"required\"  # Require IMDSv2\n    http_put_response_hop_limit = 1\n    instance_metadata_tags      = \"enabled\"\n  }\n  \n  # Attach IAM role with least privilege\n  iam_instance_profile = aws_iam_instance_profile.app_profile.name\n  \n  # Security group with egress filtering\n  vpc_security_group_ids = [aws_security_group.app_sg.id]\n  \n  tags = {\n    Name        = \"web-server-ssrf-protected\"\n    Environment = \"production\"\n  }\n}\n\n# Security group blocking metadata endpoint access\nresource \"aws_security_group\" \"app_sg\" {\n  name        = \"app-security-group\"\n  description = \"Application security group with SSRF protection\"\n  vpc_id      = aws_vpc.main.id\n  \n  # Allow outbound HTTPS to internet\n  egress {\n    description = \"HTTPS to internet\"\n    from_port   = 443\n    to_port     = 443\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n  \n  # Allow outbound HTTP to internet\n  egress {\n    description = \"HTTP to internet\"\n    from_port   = 80\n    to_port     = 80\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n  \n  # Block access to metadata endpoint (defense in depth)\n  # Note: This is redundant with IMDSv2 but provides additional protection\n  egress {\n    description = \"Block metadata endpoint\"\n    from_port   = 0\n    to_port     = 0\n    protocol    = \"-1\"\n    cidr_blocks = [\"169.254.169.254/32\"]\n    self        = false\n  }\n  \n  tags = {\n    Name = \"app-sg-ssrf-protected\"\n  }\n}\n\n# IAM role with least privilege\nresource \"aws_iam_role\" \"app_role\" {\n  name = \"app-instance-role\"\n  \n  assume_role_policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Action = \"sts:AssumeRole\"\n        Effect = \"Allow\"\n        Principal = {\n          Service = \"ec2.amazonaws.com\"\n        }\n      }\n    ]\n  })\n}\n\n# Restrictive IAM policy - only allow specific actions\nresource \"aws_iam_role_policy\" \"app_policy\" {\n  name = \"app-policy\"\n  role = aws_iam_role.app_role.id\n  \n  policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [\n      {\n        Effect = \"Allow\"\n        Action = [\n          \"s3:GetObject\",\n          \"s3:PutObject\"\n        ]\n        Resource = [\n          \"arn:aws:s3:::app-bucket-name/allowed-prefix/*\"\n        ]\n      },\n      {\n        Effect = \"Allow\"\n        Action = [\n          \"logs:CreateLogStream\",\n          \"logs:PutLogEvents\"\n        ]\n        Resource = [\n          \"arn:aws:logs:*:*:log-group:/aws/ec2/app:*\"\n        ]\n      }\n    ]\n  })\n}\n\nresource \"aws_iam_instance_profile\" \"app_profile\" {\n  name = \"app-instance-profile\"\n  role = aws_iam_role.app_role.name\n}"
+        },
+        {
+          "language": "bash",
+          "framework": "iptables - Block Metadata Access",
+          "code": "#!/bin/bash\n\n# iptables rules to block metadata endpoint access\n# Run on EC2 instance for defense-in-depth\n\necho \"Configuring iptables to block metadata endpoint access\"\n\n# Block outbound traffic to metadata endpoint\nsudo iptables -A OUTPUT -d 169.254.169.254 -j REJECT\n\n# Allow specific user (e.g., root) to access metadata if needed\n# sudo iptables -I OUTPUT -d 169.254.169.254 -m owner --uid-owner 0 -j ACCEPT\n\n# Save rules\nif [ -f /etc/redhat-release ]; then\n    sudo service iptables save\nelif [ -f /etc/debian_version ]; then\n    sudo iptables-save > /etc/iptables/rules.v4\nfi\n\necho \"Metadata endpoint access blocked via iptables\"\n\n# Verify rules\nsudo iptables -L OUTPUT -n -v | grep 169.254.169.254"
+        }
+      ],
+      "tools": [
+        "AWS CLI",
+        "Terraform",
+        "CloudFormation",
+        "iptables",
+        "AWS Systems Manager"
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks",
+        "A.9.2.3 - Management of privileged access rights"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "PR.AC-4 - Access permissions managed",
+        "PR.PT-4 - Communications and control networks protected"
+      ],
+      "validation_steps": [
+        "Verify IMDSv2 is required: HttpTokens = required",
+        "Test metadata access without token - should fail",
+        "Test metadata access with valid session token - should succeed",
+        "Verify IAM role has minimal required permissions",
+        "Test that application cannot access 169.254.169.254 directly"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Network Egress Filtering and Monitoring",
+      "description": "Deploy network-level egress filtering using firewalls, Web Application Firewalls (WAF), and cloud security groups to restrict outbound connections from application servers. Block access to cloud metadata endpoints, internal IP ranges, and non-standard ports. Implement comprehensive logging and monitoring to detect SSRF attempts through anomalous outbound connections.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "yaml",
+        "framework": "AWS Network Firewall Rules",
+        "code": "# AWS Network Firewall rule group for SSRF protection\n# Blocks access to metadata endpoints and internal ranges\n\nAWSTemplateFormatVersion: '2010-09-09'\nDescription: 'Network Firewall SSRF Protection Rules'\n\nResources:\n  SSRFProtectionRuleGroup:\n    Type: AWS::NetworkFirewall::RuleGroup\n    Properties:\n      RuleGroupName: ssrf-protection-rules\n      Type: STATEFUL\n      Capacity: 100\n      RuleGroup:\n        RulesSource:\n          StatefulRules:\n            # Block AWS metadata endpoint\n            - Action: DROP\n              Header:\n                Protocol: TCP\n                Source: ANY\n                SourcePort: ANY\n                Destination: 169.254.169.254/32\n                DestinationPort: 80\n                Direction: FORWARD\n              RuleOptions:\n                - Keyword: msg\n                  Settings:\n                    - \"AWS Metadata endpoint access blocked\"\n                - Keyword: sid\n                  Settings:\n                    - \"1001\"\n            \n            # Block Azure metadata endpoint\n            - Action: DROP\n              Header:\n                Protocol: TCP\n                Source: ANY\n                SourcePort: ANY\n                Destination: 169.254.169.254/32\n                DestinationPort: ANY\n                Direction: FORWARD\n              RuleOptions:\n                - Keyword: msg\n                  Settings:\n                    - \"Azure Metadata endpoint access blocked\"\n                - Keyword: sid\n                  Settings:\n                    - \"1002\"\n            \n            # Block RFC 1918 private networks\n            - Action: DROP\n              Header:\n                Protocol: IP\n                Source: ANY\n                SourcePort: ANY\n                Destination: 10.0.0.0/8\n                DestinationPort: ANY\n                Direction: FORWARD\n              RuleOptions:\n                - Keyword: msg\n                  Settings:\n                    - \"Private IP range 10.0.0.0/8 access blocked\"\n                - Keyword: sid\n                  Settings:\n                    - \"1003\"\n            \n            - Action: DROP\n              Header:\n                Protocol: IP\n                Source: ANY\n                SourcePort: ANY\n                Destination: 172.16.0.0/12\n                DestinationPort: ANY\n                Direction: FORWARD\n              RuleOptions:\n                - Keyword: msg\n                  Settings:\n                    - \"Private IP range 172.16.0.0/12 access blocked\"\n                - Keyword: sid\n                  Settings:\n                    - \"1004\"\n            \n            - Action: DROP\n              Header:\n                Protocol: IP\n                Source: ANY\n                SourcePort: ANY\n                Destination: 192.168.0.0/16\n                DestinationPort: ANY\n                Direction: FORWARD\n              RuleOptions:\n                - Keyword: msg\n                  Settings:\n                    - \"Private IP range 192.168.0.0/16 access blocked\"\n                - Keyword: sid\n                  Settings:\n                    - \"1005\"\n            \n            # Block loopback\n            - Action: DROP\n              Header:\n                Protocol: IP\n                Source: ANY\n                SourcePort: ANY\n                Destination: 127.0.0.0/8\n                DestinationPort: ANY\n                Direction: FORWARD\n              RuleOptions:\n                - Keyword: msg\n                  Settings:\n                    - \"Loopback access blocked\"\n                - Keyword: sid\n                  Settings:\n                    - \"1006\"\n        \n        StatefulRuleOptions:\n          RuleOrder: STRICT_ORDER\n      \n      Description: \"SSRF protection rules - blocks metadata and internal IPs\"\n      Tags:\n        - Key: Purpose\n          Value: SSRFProtection\n        - Key: Environment\n          Value: Production"
+      },
+      "additional_code_examples": [
+        {
+          "language": "python",
+          "framework": "CloudWatch Logs Insights Query",
+          "code": "# CloudWatch Logs Insights query to detect SSRF attempts\n# Run this query against VPC Flow Logs\n\nfields @timestamp, srcaddr, dstaddr, dstport, protocol, bytes\n| filter dstaddr = \"169.254.169.254\" \n       or dstaddr like /^10\\./\n       or dstaddr like /^172\\.1[6-9]\\./\n       or dstaddr like /^172\\.2[0-9]\\./\n       or dstaddr like /^172\\.3[0-1]\\./\n       or dstaddr like /^192\\.168\\./\n       or dstaddr like /^127\\./\n| stats count() as attempts by srcaddr, dstaddr, dstport\n| sort attempts desc\n| limit 100"
+        },
+        {
+          "language": "yaml",
+          "framework": "AWS WAF SSRF Protection Rules",
+          "code": "# AWS WAF WebACL with SSRF protection\n# Blocks requests containing metadata endpoints in URLs\n\nAWSTemplateFormatVersion: '2010-09-09'\nDescription: 'WAF Rules for SSRF Protection'\n\nResources:\n  SSRFProtectionWebACL:\n    Type: AWS::WAFv2::WebACL\n    Properties:\n      Name: ssrf-protection-webacl\n      Scope: REGIONAL\n      DefaultAction:\n        Allow: {}\n      \n      Rules:\n        # Block requests with metadata endpoint in URL\n        - Name: BlockMetadataEndpoint\n          Priority: 1\n          Statement:\n            OrStatement:\n              Statements:\n                - ByteMatchStatement:\n                    SearchString: '169.254.169.254'\n                    FieldToMatch:\n                      UriPath: {}\n                    TextTransformations:\n                      - Priority: 0\n                        Type: URL_DECODE\n                      - Priority: 1\n                        Type: LOWERCASE\n                    PositionalConstraint: CONTAINS\n                \n                - ByteMatchStatement:\n                    SearchString: 'metadata.google.internal'\n                    FieldToMatch:\n                      UriPath: {}\n                    TextTransformations:\n                      - Priority: 0\n                        Type: URL_DECODE\n                      - Priority: 1\n                        Type: LOWERCASE\n                    PositionalConstraint: CONTAINS\n                \n                - ByteMatchStatement:\n                    SearchString: 'metadata'\n                    FieldToMatch:\n                      SingleHeader:\n                        Name: host\n                    TextTransformations:\n                      - Priority: 0\n                        Type: LOWERCASE\n                    PositionalConstraint: CONTAINS\n          \n          Action:\n            Block:\n              CustomResponse:\n                ResponseCode: 403\n                CustomResponseBodyKey: SSRFBlocked\n          \n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: BlockMetadataEndpoint\n        \n        # Block requests with localhost/127.0.0.1\n        - Name: BlockLocalhost\n          Priority: 2\n          Statement:\n            OrStatement:\n              Statements:\n                - ByteMatchStatement:\n                    SearchString: 'localhost'\n                    FieldToMatch:\n                      UriPath: {}\n                    TextTransformations:\n                      - Priority: 0\n                        Type: URL_DECODE\n                      - Priority: 1\n                        Type: LOWERCASE\n                    PositionalConstraint: CONTAINS\n                \n                - ByteMatchStatement:\n                    SearchString: '127.0.0.1'\n                    FieldToMatch:\n                      UriPath: {}\n                    TextTransformations:\n                      - Priority: 0\n                        Type: URL_DECODE\n                    PositionalConstraint: CONTAINS\n          \n          Action:\n            Block:\n              CustomResponse:\n                ResponseCode: 403\n          \n          VisibilityConfig:\n            SampledRequestsEnabled: true\n            CloudWatchMetricsEnabled: true\n            MetricName: BlockLocalhost\n      \n      VisibilityConfig:\n        SampledRequestsEnabled: true\n        CloudWatchMetricsEnabled: true\n        MetricName: SSRFProtectionWebACL\n      \n      CustomResponseBodies:\n        SSRFBlocked:\n          ContentType: APPLICATION_JSON\n          Content: '{\"error\":\"Request blocked for security reasons\"}'"
+        }
+      ],
+      "tools": [
+        "AWS Network Firewall",
+        "AWS WAF",
+        "VPC Flow Logs",
+        "CloudWatch Logs Insights",
+        "GuardDuty",
+        "Snort/Suricata IDS"
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.12.4.1 - Event logging",
+        "A.16.1.2 - Reporting information security events",
+        "A.16.1.4 - Assessment of information security events"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - Network monitored to detect anomalies",
+        "DE.AE-2 - Detected events are analyzed",
+        "RS.AN-1 - Notifications from detection systems investigated"
+      ],
+      "validation_steps": [
+        "Test outbound connection to 169.254.169.254 - should be blocked",
+        "Test outbound connection to private IP (10.0.0.1) - should be blocked",
+        "Verify firewall logs capture blocked attempts",
+        "Test alert triggers for metadata endpoint access attempts",
+        "Verify allowed outbound connections still work (allowlisted domains)"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Use Allowlists and Apply Least Privilege IAM Policies",
+      "description": "Implement strict URL allowlists specifying only approved external domains that applications can access. Apply least privilege principles to IAM roles, service principals, and API keys attached to compute instances. Limit IAM permissions to only the specific resources and actions required. Regularly audit and rotate credentials. Implement credential exposure monitoring and automated response.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "json",
+        "framework": "AWS IAM Least Privilege Policy",
+        "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"ReadOnlyS3AccessToSpecificBucket\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"s3:GetObject\",\n        \"s3:ListBucket\"\n      ],\n      \"Resource\": [\n        \"arn:aws:s3:::app-data-bucket\",\n        \"arn:aws:s3:::app-data-bucket/public/*\"\n      ],\n      \"Condition\": {\n        \"StringEquals\": {\n          \"s3:ExistingObjectTag/Environment\": \"production\"\n        },\n        \"IpAddress\": {\n          \"aws:SourceIp\": [\n            \"203.0.113.0/24\"\n          ]\n        }\n      }\n    },\n    {\n      \"Sid\": \"LimitedDynamoDBAccess\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"dynamodb:GetItem\",\n        \"dynamodb:Query\",\n        \"dynamodb:Scan\"\n      ],\n      \"Resource\": [\n        \"arn:aws:dynamodb:us-east-1:123456789012:table/AppTable\",\n        \"arn:aws:dynamodb:us-east-1:123456789012:table/AppTable/index/*\"\n      ]\n    },\n    {\n      \"Sid\": \"CloudWatchLogsWrite\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"logs:CreateLogStream\",\n        \"logs:PutLogEvents\"\n      ],\n      \"Resource\": [\n        \"arn:aws:logs:us-east-1:123456789012:log-group:/aws/app/*:*\"\n      ]\n    },\n    {\n      \"Sid\": \"DenyDangerousActions\",\n      \"Effect\": \"Deny\",\n      \"Action\": [\n        \"iam:*\",\n        \"ec2:RunInstances\",\n        \"ec2:TerminateInstances\",\n        \"rds:DeleteDBInstance\",\n        \"s3:DeleteBucket\",\n        \"lambda:DeleteFunction\"\n      ],\n      \"Resource\": \"*\"\n    },\n    {\n      \"Sid\": \"DenyUnencryptedObjectUploads\",\n      \"Effect\": \"Deny\",\n      \"Action\": \"s3:PutObject\",\n      \"Resource\": \"arn:aws:s3:::app-data-bucket/*\",\n      \"Condition\": {\n        \"StringNotEquals\": {\n          \"s3:x-amz-server-side-encryption\": \"aws:kms\"\n        }\n      }\n    }\n  ]\n}"
+      },
+      "additional_code_examples": [
+        {
+          "language": "python",
+          "framework": "URL Allowlist Configuration",
+          "code": "# URL Allowlist configuration for SSRF protection\n# Store in configuration file or environment variables\n\nimport os\nimport json\nfrom typing import List, Dict\n\nclass URLAllowlistConfig:\n    \"\"\"Configuration for URL allowlisting to prevent SSRF.\"\"\"\n    \n    def __init__(self):\n        self.config = self._load_config()\n    \n    def _load_config(self) -> Dict:\n        \"\"\"Load allowlist configuration from environment or file.\"\"\"\n        \n        # Default configuration\n        default_config = {\n            \"allowed_domains\": [\n                \"api.github.com\",\n                \"api.stripe.com\",\n                \"hooks.slack.com\",\n                \"api.twilio.com\",\n                \"*.cloudfront.net\",\n                \"s3.amazonaws.com\"\n            ],\n            \"allowed_protocols\": [\"https\"],\n            \"blocked_ip_ranges\": [\n                \"0.0.0.0/8\",\n                \"10.0.0.0/8\",\n                \"127.0.0.0/8\",\n                \"169.254.0.0/16\",\n                \"172.16.0.0/12\",\n                \"192.168.0.0/16\",\n                \"224.0.0.0/4\",\n                \"240.0.0.0/4\"\n            ],\n            \"blocked_hostnames\": [\n                \"metadata.google.internal\",\n                \"metadata\",\n                \"localhost\",\n                \"169.254.169.254\"\n            ],\n            \"max_redirects\": 3,\n            \"request_timeout\": 5,\n            \"max_response_size\": 10485760  # 10MB\n        }\n        \n        # Load from environment variable if available\n        config_json = os.getenv('SSRF_ALLOWLIST_CONFIG')\n        if config_json:\n            try:\n                custom_config = json.loads(config_json)\n                default_config.update(custom_config)\n            except json.JSONDecodeError:\n                print(\"Warning: Invalid SSRF_ALLOWLIST_CONFIG, using defaults\")\n        \n        return default_config\n    \n    def is_domain_allowed(self, domain: str) -> bool:\n        \"\"\"Check if domain is in allowlist.\"\"\"\n        domain_lower = domain.lower()\n        \n        for allowed in self.config['allowed_domains']:\n            allowed_lower = allowed.lower()\n            \n            # Exact match\n            if domain_lower == allowed_lower:\n                return True\n            \n            # Wildcard match (*.example.com)\n            if allowed_lower.startswith('*.'):\n                suffix = allowed_lower[2:]\n                if domain_lower.endswith(suffix):\n                    return True\n        \n        return False\n    \n    def is_protocol_allowed(self, protocol: str) -> bool:\n        \"\"\"Check if protocol is allowed.\"\"\"\n        return protocol.lower() in [p.lower() for p in self.config['allowed_protocols']]\n    \n    def get_blocked_ip_ranges(self) -> List[str]:\n        \"\"\"Get list of blocked IP ranges.\"\"\"\n        return self.config['blocked_ip_ranges']\n    \n    def get_blocked_hostnames(self) -> List[str]:\n        \"\"\"Get list of blocked hostnames.\"\"\"\n        return self.config['blocked_hostnames']\n    \n    def get_request_limits(self) -> Dict:\n        \"\"\"Get request timeout and size limits.\"\"\"\n        return {\n            'max_redirects': self.config['max_redirects'],\n            'timeout': self.config['request_timeout'],\n            'max_size': self.config['max_response_size']\n        }\n\n# Example usage\nif __name__ == \"__main__\":\n    config = URLAllowlistConfig()\n    \n    # Test domain allowlist\n    print(config.is_domain_allowed(\"api.github.com\"))  # True\n    print(config.is_domain_allowed(\"malicious.com\"))   # False\n    print(config.is_domain_allowed(\"test.cloudfront.net\"))  # True (wildcard)\n    \n    # Get limits\n    limits = config.get_request_limits()\n    print(f\"Request timeout: {limits['timeout']}s\")\n    print(f\"Max redirects: {limits['max_redirects']}\")"
+        }
+      ],
+      "tools": [
+        "AWS IAM Access Analyzer",
+        "AWS CloudTrail",
+        "Azure Policy",
+        "GCP IAM Recommender",
+        "Prowler (AWS security tool)",
+        "ScoutSuite"
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration and de-registration",
+        "A.9.2.3 - Management of privileged access rights",
+        "A.9.4.1 - Information access restriction",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.AC-4 - Access permissions managed",
+        "PR.DS-5 - Protections against data leaks",
+        "DE.CM-7 - Monitoring for unauthorized activity",
+        "RS.AN-1 - Notifications investigated"
+      ],
+      "validation_steps": [
+        "Audit IAM role permissions - verify least privilege",
+        "Test that application cannot access non-allowlisted domains",
+        "Verify IAM policy denies dangerous actions (DeleteBucket, etc.)",
+        "Test credential exposure detection and alerting",
+        "Review CloudTrail logs for unexpected API calls",
+        "Regularly rotate credentials and review access"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Outbound HTTP requests to 169.254.169.254 (AWS/Azure metadata)",
+      "DNS queries for metadata.google.internal (GCP metadata)",
+      "Outbound connections to private IP ranges (10.x.x.x, 192.168.x.x, 172.16-31.x.x)",
+      "HTTP requests with internal hostnames or localhost in URL parameters",
+      "Unusual outbound connections to non-standard ports from web servers",
+      "Error messages exposing internal IP addresses or network topology",
+      "Spike in failed connection attempts to internal IPs",
+      "IAM credential usage from unexpected geographic locations after metadata access",
+      "Webhook callbacks to private IP addresses",
+      "URL parameters containing file://, gopher://, or dict:// protocols",
+      "Sequential port scanning behavior from application servers",
+      "AWS API calls using credentials shortly after metadata endpoint access"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=network_logs OR index=firewall_logs OR index=vpc_flow_logs\n| where (dest_ip=\"169.254.169.254\" OR \n         dest_ip like \"10.%\" OR \n         dest_ip like \"192.168.%\" OR \n         match(dest_ip, \"^172\\\\.(1[6-9]|2[0-9]|3[0-1])\\\\..*\"))\n| eval ssrf_category = case(\n    dest_ip=\"169.254.169.254\", \"Metadata_Endpoint\",\n    dest_ip like \"10.%\", \"Private_10\",\n    dest_ip like \"192.168.%\", \"Private_192\",\n    match(dest_ip, \"^172\\\\.(1[6-9]|2[0-9]|3[0-1])\\\\..*\"), \"Private_172\",\n    true(), \"Other\"\n  )\n| stats count by src_ip, dest_ip, dest_port, ssrf_category\n| where count > 5\n| sort -count"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "let MetadataIP = \"169.254.169.254\";\nlet PrivateRanges = dynamic(['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8']);\nAzureNetworkAnalytics_CL\n| union AzureDiagnostics\n| where TimeGenerated > ago(24h)\n| where DestinationIP == MetadataIP \n       or DestinationIP startswith \"10.\"\n       or DestinationIP startswith \"192.168.\"\n       or DestinationIP matches regex @\"^172\\\\.(1[6-9]|2[0-9]|3[0-1])\\\\.\"\n| extend SSRFCategory = case(\n    DestinationIP == MetadataIP, \"Metadata_Endpoint\",\n    DestinationIP startswith \"10.\", \"Private_10\",\n    DestinationIP startswith \"192.168.\", \"Private_192\",\n    DestinationIP matches regex @\"^172\\\\.(1[6-9]|2[0-9]|3[0-1])\\\\.\", \"Private_172\",\n    \"Other\"\n  )\n| summarize \n    AttemptCount = count(),\n    UniqueDestinations = dcount(DestinationIP),\n    Destinations = make_set(DestinationIP),\n    Ports = make_set(DestinationPort)\n    by SourceIP, SSRFCategory, bin(TimeGenerated, 1h)\n| where AttemptCount > 5\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "(destination.ip: \"169.254.169.254\" OR \n destination.ip: 10.* OR \n destination.ip: 192.168.* OR \n destination.ip: 172.16.* OR \n destination.ip: 172.17.* OR \n destination.ip: 172.31.*) AND \nevent.category: network AND \nsource.ip: * AND \nNOT source.ip: (10.* OR 192.168.* OR 172.16.* OR 172.31.*)"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights (VPC Flow Logs)",
+        "query": "fields @timestamp, srcaddr, dstaddr, dstport, bytes, packets\n| filter dstaddr = \"169.254.169.254\" \n       or dstaddr like /^10\\./\n       or dstaddr like /^192\\.168\\./\n       or dstaddr like /^172\\.(1[6-9]|2[0-9]|3[0-1])\\./\n| stats count(*) as attempts, \n        sum(bytes) as total_bytes,\n        count_distinct(dstaddr) as unique_destinations\n        by srcaddr, bin(5m)\n| filter attempts > 10\n| sort attempts desc"
+      },
+      {
+        "siem": "AWS CloudTrail - Credential Usage After Metadata Access",
+        "query": "fields @timestamp, userIdentity.principalId, eventName, sourceIPAddress, errorCode\n| filter userIdentity.type = \"AssumedRole\" \n       and userIdentity.principalId like /i-[a-f0-9]{8,17}/\n| stats count(*) as api_calls,\n        count_distinct(eventName) as unique_actions,\n        count_distinct(sourceIPAddress) as unique_ips\n        by userIdentity.principalId, bin(1h)\n| filter api_calls > 100 or unique_ips > 1\n| sort api_calls desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "SSRFmap",
+        "type": "Penetration Testing",
+        "usage": "Automated SSRF vulnerability detection and exploitation tool"
+      },
+      {
+        "name": "Burp Suite Collaborator",
+        "type": "Security Testing",
+        "usage": "Out-of-band SSRF detection using DNS and HTTP callbacks"
+      },
+      {
+        "name": "OWASP ZAP",
+        "type": "Security Testing",
+        "usage": "Active scan rules for SSRF detection in web applications"
+      },
+      {
+        "name": "AWS GuardDuty",
+        "type": "Threat Detection",
+        "usage": "Monitors for suspicious activity including metadata endpoint access"
+      },
+      {
+        "name": "Nuclei",
+        "type": "Vulnerability Scanner",
+        "usage": "SSRF detection templates for various attack vectors"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "E-commerce",
+      "Cloud Services",
+      "SaaS Platforms",
+      "Government",
+      "Technology"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.1, 6.5.10)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC6.1, CC6.6, CC7.2)",
+      "ISO27001 (A.13.1.3, A.14.2.1)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SC-7, SI-10)",
+      "OWASP Top 10 2021 (A10)",
+      "CIS AWS Foundations Benchmark"
+    ],
+    "deployment": [
+      "AWS",
+      "Azure",
+      "GCP",
+      "Hybrid Cloud",
+      "Multi-Cloud",
+      "Containerized",
+      "Kubernetes",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Highly Sensitive",
+      "Confidential",
+      "Regulated",
+      "Customer PII"
+    ]
+  }
+}

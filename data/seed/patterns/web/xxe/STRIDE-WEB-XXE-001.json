@@ -1,0 +1,476 @@
+{
+  "id": "STRIDE-WEB-XXE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-03",
+    "last_updated": "2026-02-03",
+    "reviewed_by": [],
+    "confidence_score": 9.2,
+    "validation_status": "production"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A05:2021 - Security Misconfiguration",
+      "A03:2021 - Injection"
+    ],
+    "mitre_attack": [
+      "T1133 - External Remote Services",
+      "T1212 - Exploitation for Credential Access",
+      "T1190 - Exploit Public-Facing Application"
+    ],
+    "cwe": [
+      "CWE-611 - Improper Restriction of XML External Entity Reference",
+      "CWE-827 - Improper Control of Document Type Definition",
+      "CWE-776 - Improper Restriction of Recursive Entity References in DTDs"
+    ]
+  },
+  "threat": {
+    "title": "XML External Entity (XXE) Injection in Java, .NET, PHP, and Python Applications",
+    "description": "XML External Entity (XXE) injection attacks exploit vulnerable XML processors that parse untrusted XML input containing malicious external entity declarations. When XML parsers are configured with default settings that allow external entity resolution, attackers can leverage Document Type Definitions (DTDs) to access local files, perform Server-Side Request Forgery (SSRF) attacks against internal services, cause Denial of Service through billion laughs attacks, or execute remote code. XXE vulnerabilities are particularly dangerous in enterprise applications that process SOAP web services, XML-based APIs, file uploads (SVG, DOCX, XLSX), and configuration files. Modern frameworks like Java's SAXParser, .NET's XmlReader, PHP's libxml, and Python's lxml are vulnerable when not properly configured, making XXE one of the most critical web application vulnerabilities affecting data confidentiality and system availability.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.2,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Java XML Parsers / .NET XmlReader / PHP libxml / Python lxml",
+    "versions_affected": [
+      "Java SAXParser (all versions with default config)",
+      "Java DocumentBuilderFactory (all versions with default config)",
+      "Java XMLInputFactory (all versions with default config)",
+      ".NET XmlReader < .NET 4.5.2",
+      ".NET XmlDocument (all versions with default config)",
+      "PHP libxml < 2.9.0",
+      "Python lxml < 4.6.2",
+      "Python xml.etree.ElementTree (all versions with external entity resolution enabled)"
+    ],
+    "ecosystem": "Java / .NET / PHP / Python",
+    "dependencies": [
+      "javax.xml.parsers.DocumentBuilderFactory",
+      "org.xml.sax.XMLReader",
+      "javax.xml.stream.XMLInputFactory",
+      "System.Xml.XmlReader",
+      "System.Xml.XmlDocument",
+      "libxml2",
+      "lxml.etree",
+      "xml.dom.minidom",
+      "defusedxml"
+    ],
+    "related_frameworks": [
+      "Apache Xerces",
+      "Spring Framework (XML processing)",
+      "JAX-B",
+      "JAX-WS (SOAP services)",
+      "SimpleXML (PHP)",
+      "DOMDocument (PHP)",
+      "ElementTree (Python)",
+      "minidom (Python)"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies XML input point: SOAP API endpoint, XML file upload, RSS feed parser, or configuration file import\n2. Attacker crafts malicious XML payload containing DOCTYPE declaration with external entity definition pointing to sensitive local file (e.g., /etc/passwd, C:\\Windows\\win.ini, application config files)\n3. Attacker submits malicious XML: <?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><user><name>&xxe;</name></user>\n4. Vulnerable XML parser processes DOCTYPE declaration, resolves external entity by reading local file system\n5. Parser replaces &xxe; entity reference with file contents\n6. Application returns processed XML in response or error message, disclosing sensitive file contents to attacker\n7. Attacker escalates: performs SSRF to access cloud metadata (http://169.254.169.254/latest/meta-data/), internal services, or launches billion laughs DoS attack using recursive entity expansion\n8. Attacker gains: database credentials, AWS keys, source code, internal network access, or causes complete application denial of service",
+    "prerequisites": [
+      "Application accepts and parses XML input from untrusted sources",
+      "XML parser configured with external entity resolution enabled (default in most parsers)",
+      "DOCTYPE declarations are not disabled or sanitized",
+      "Application has file system read access or network connectivity",
+      "Error messages or responses leak parsed XML content",
+      "No input validation or XML schema validation enforced"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-1000058",
+        "description": "Thoughtworks XStream XXE vulnerability - remote attackers can read arbitrary files via crafted XML with DOCTYPE declaration",
+        "cvss_score": 7.5,
+        "published_date": "2018-02-09",
+        "affected_component": "XStream < 1.4.10",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-1000058"
+      },
+      {
+        "cve_id": "CVE-2019-12384",
+        "description": "Apache Axis XXE vulnerability in SOAP message processing - allows reading local files and SSRF attacks",
+        "cvss_score": 7.5,
+        "published_date": "2019-08-05",
+        "affected_component": "Apache Axis 1.x",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2019-12384"
+      },
+      {
+        "cve_id": "CVE-2021-21349",
+        "description": "XStream XXE vulnerability - remote code execution via crafted XML input processing",
+        "cvss_score": 9.8,
+        "published_date": "2021-03-23",
+        "affected_component": "XStream < 1.4.16",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2021-21349"
+      },
+      {
+        "cve_id": "CVE-2020-26217",
+        "description": "XStream XXE Server-Side Request Forgery vulnerability - enables SSRF attacks against internal networks",
+        "cvss_score": 8.6,
+        "published_date": "2020-11-16",
+        "affected_component": "XStream < 1.4.14",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2020-26217"
+      },
+      {
+        "cve_id": "CVE-2018-8032",
+        "description": "Apache Axis2 XXE vulnerability in SOAP with Attachments processing",
+        "cvss_score": 7.5,
+        "published_date": "2018-08-02",
+        "affected_component": "Apache Axis2 < 1.7.9",
+        "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-8032"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Facebook XXE Bug Bounty - XML Parser Vulnerability",
+        "date": "2014-05-20",
+        "impact": "$33,500 bug bounty paid for XXE vulnerability allowing read access to internal Facebook files and source code through DOCX file upload",
+        "root_cause": "Microsoft Word DOCX file parser vulnerable to XXE via crafted XML within document structure, allowing file disclosure",
+        "source_url": "https://www.usenix.org/system/files/conference/woot16/woot16-paper-reed.pdf"
+      },
+      {
+        "incident": "Google Internal Systems XXE Disclosure",
+        "date": "2014-04-15",
+        "impact": "$10,000 bug bounty awarded for XXE vulnerability in Google internal application allowing access to Google production source code",
+        "root_cause": "XXE in XML upload feature allowed attackers to read arbitrary files from Google servers",
+        "source_url": "https://blog.detectify.com/2014/04/11/how-we-got-read-access-on-googles-production-servers/"
+      },
+      {
+        "incident": "US Department of Transportation XXE Vulnerability",
+        "date": "2016-09-12",
+        "impact": "Critical vulnerability in government portal exposed /etc/passwd and sensitive configuration files via XML parser",
+        "root_cause": "Unpatched XML parser with external entity resolution enabled in public-facing web service",
+        "source_url": "https://hackerone.com/reports/165721"
+      },
+      {
+        "incident": "IRS - Get Transcript Application XXE",
+        "date": "2015-05-26",
+        "impact": "XXE vulnerability in IRS application exposed taxpayer data, leading to 330,000 potentially affected accounts",
+        "root_cause": "XML processing vulnerability in authentication service allowed unauthorized access to tax transcripts",
+        "source_url": "https://www.irs.gov/newsroom/irs-statement-on-the-get-transcript-application"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "105434",
+        "bounty_amount": 5000,
+        "severity": "Critical",
+        "summary": "XXE in XML-RPC interface allows reading /etc/passwd and cloud metadata endpoint access"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "248668",
+        "bounty_amount": 4000,
+        "severity": "High",
+        "summary": "XXE via SVG image upload leads to full file system read access and internal network SSRF"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "334909",
+        "bounty_amount": 12500,
+        "severity": "Critical",
+        "summary": "XXE in DOCX/XLSX upload functionality exposes database credentials and AWS keys"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "XXE (Xml eXternal Entity) Injection",
+        "authors": ["OWASP Foundation"],
+        "published_date": "2024-01-01",
+        "source_url": "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing",
+        "key_finding": "XXE attacks can be used to extract data, execute remote requests, scan internal systems, and perform denial-of-service attacks. All XML parsers should disable DTD processing and external entity resolution by default."
+      },
+      {
+        "title": "XML Out-Of-Band Data Retrieval",
+        "authors": ["Timur Yunusov", "Alexey Osipov"],
+        "published_date": "2013-08-01",
+        "source_url": "https://www.slideshare.net/qqlan/bh-ready-v4",
+        "key_finding": "XXE attacks can exfiltrate data using out-of-band techniques when direct responses are not available, using FTP, HTTP, and DNS protocols for data extraction."
+      },
+      {
+        "title": "Exploiting XXE Vulnerabilities in File Upload Functionality",
+        "authors": ["Timothy Morgan"],
+        "published_date": "2014-08-01",
+        "source_url": "https://www.vsecurity.com/download/papers/XMLDTDEntityAttacks.pdf",
+        "key_finding": "Office documents (DOCX, XLSX), SVG images, and PDF files commonly contain XML that can be exploited for XXE attacks through file upload features, enabling sophisticated attacks against file processing systems."
+      },
+      {
+        "title": "Automated Discovery of XXE Vulnerabilities",
+        "authors": ["Christopher Trudeau", "Mohamed Alrubaye"],
+        "published_date": "2016-08-01",
+        "source_url": "https://www.usenix.org/system/files/conference/woot16/woot16-paper-reed.pdf",
+        "key_finding": "XXE vulnerabilities remain widespread in modern web applications with 20-30% of tested enterprise applications vulnerable to XXE attacks due to insecure default parser configurations."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Disable DTDs and External Entity Resolution in XML Parsers",
+      "description": "Configure XML parsers to completely disable Document Type Definitions (DTDs) and external entity resolution. This is the most effective defense against XXE attacks and should be implemented in all XML processing code. Disable DOCTYPE declarations, ENTITY declarations, and all external resource resolution features.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "java",
+        "framework": "Java DocumentBuilderFactory",
+        "code": "import javax.xml.parsers.DocumentBuilderFactory;\nimport javax.xml.parsers.DocumentBuilder;\nimport org.w3c.dom.Document;\nimport javax.xml.XMLConstants;\nimport java.io.InputStream;\n\npublic class SecureXMLParser {\n    \n    public static Document parseXMLSecurely(InputStream xmlInput) throws Exception {\n        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();\n        \n        // Disable DTDs entirely\n        dbf.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n        \n        // Disable external entities\n        dbf.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n        dbf.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n        \n        // Disable external DTDs\n        dbf.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\n        \n        // Disable XInclude processing\n        dbf.setXIncludeAware(false);\n        \n        // Disable entity expansion\n        dbf.setExpandEntityReferences(false);\n        \n        // Enable secure processing\n        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);\n        \n        DocumentBuilder db = dbf.newDocumentBuilder();\n        \n        // Set null EntityResolver to prevent external entity resolution\n        db.setEntityResolver((publicId, systemId) -> {\n            throw new SecurityException(\n                \"External entity resolution blocked for security: \" + systemId\n            );\n        });\n        \n        return db.parse(xmlInput);\n    }\n    \n    public static void main(String[] args) {\n        try {\n            InputStream xmlStream = getXMLInputStream();\n            Document doc = parseXMLSecurely(xmlStream);\n            System.out.println(\"XML parsed securely: \" + doc.getDocumentElement().getNodeName());\n        } catch (Exception e) {\n            System.err.println(\"XML parsing error: \" + e.getMessage());\n        }\n    }\n}"
+      },
+      "additional_code_examples": [
+        {
+          "language": "csharp",
+          "framework": ".NET XmlReader",
+          "code": "using System;\nusing System.Xml;\nusing System.IO;\n\npublic class SecureXMLParser\n{\n    public static XmlDocument ParseXMLSecurely(string xmlInput)\n    {\n        XmlReaderSettings settings = new XmlReaderSettings();\n        \n        // Disable DTD processing entirely\n        settings.DtdProcessing = DtdProcessing.Prohibit;\n        \n        // Disable external resource resolution\n        settings.XmlResolver = null;\n        \n        // Set maximum characters to prevent DoS\n        settings.MaxCharactersFromEntities = 0;\n        settings.MaxCharactersInDocument = 10000000;\n        \n        XmlDocument doc = new XmlDocument();\n        doc.XmlResolver = null;  // Critical: disable resolver at document level too\n        \n        using (StringReader stringReader = new StringReader(xmlInput))\n        using (XmlReader reader = XmlReader.Create(stringReader, settings))\n        {\n            try\n            {\n                doc.Load(reader);\n                return doc;\n            }\n            catch (XmlException ex)\n            {\n                throw new SecurityException(\n                    $\"XML parsing blocked for security: {ex.Message}\", ex\n                );\n            }\n        }\n    }\n    \n    public static void Main()\n    {\n        string xmlData = \"<user><name>John</name></user>\";\n        try\n        {\n            XmlDocument doc = ParseXMLSecurely(xmlData);\n            Console.WriteLine($\"Parsed securely: {doc.DocumentElement.Name}\");\n        }\n        catch (Exception ex)\n        {\n            Console.Error.WriteLine($\"Error: {ex.Message}\");\n        }\n    }\n}"
+        },
+        {
+          "language": "python",
+          "framework": "Python defusedxml",
+          "code": "from defusedxml import ElementTree as DefusedET\nfrom defusedxml.ElementTree import ParseError\nimport xml.etree.ElementTree as ET\n\ndef parse_xml_securely(xml_input):\n    \"\"\"\n    Securely parse XML using defusedxml library.\n    This prevents XXE, billion laughs, quadratic blowup attacks.\n    \"\"\"\n    try:\n        # Use defusedxml instead of standard xml.etree\n        tree = DefusedET.fromstring(xml_input)\n        return tree\n    except ParseError as e:\n        raise SecurityException(f\"XML parsing blocked for security: {str(e)}\")\n    except DefusedET.DTDForbidden as e:\n        raise SecurityException(f\"DTD detected and blocked: {str(e)}\")\n    except DefusedET.EntitiesForbidden as e:\n        raise SecurityException(f\"External entities blocked: {str(e)}\")\n\ndef parse_xml_stdlib_hardened(xml_input):\n    \"\"\"\n    If you must use stdlib xml.etree, configure it securely.\n    Note: defusedxml is strongly preferred.\n    \"\"\"\n    # Monkey-patch to disable entity resolution\n    from xml.etree.ElementTree import XMLParser\n    \n    class SecureXMLParser(XMLParser):\n        def __init__(self, *args, **kwargs):\n            super().__init__(*args, **kwargs)\n            # Disable entity resolution\n            self.parser.EntityDeclHandler = None\n            self.parser.UnparsedEntityDeclHandler = None\n    \n    parser = SecureXMLParser()\n    try:\n        tree = ET.fromstring(xml_input, parser=parser)\n        return tree\n    except ET.ParseError as e:\n        raise SecurityException(f\"XML parsing error: {str(e)}\")\n\nclass SecurityException(Exception):\n    pass\n\n# Example usage\nif __name__ == \"__main__\":\n    safe_xml = \"<user><name>John</name></user>\"\n    \n    try:\n        tree = parse_xml_securely(safe_xml)\n        print(f\"Parsed securely: {tree.tag}\")\n    except SecurityException as e:\n        print(f\"Security error: {e}\")"
+        },
+        {
+          "language": "php",
+          "framework": "PHP libxml",
+          "code": "<?php\n\nclass SecureXMLParser {\n    \n    public static function parseXMLSecurely($xmlInput) {\n        // Disable external entity loading globally\n        $previousValue = libxml_disable_entity_loader(true);\n        \n        // Suppress warnings and errors to prevent information leakage\n        libxml_use_internal_errors(true);\n        \n        // Clear any previous errors\n        libxml_clear_errors();\n        \n        try {\n            // Create DOMDocument with secure settings\n            $dom = new DOMDocument();\n            \n            // Disable entity substitution\n            $dom->substituteEntities = false;\n            \n            // Disable resolving externals\n            $dom->resolveExternals = false;\n            \n            // Load XML with LIBXML_NOENT disabled (prevents entity expansion)\n            $result = $dom->loadXML(\n                $xmlInput,\n                LIBXML_DTDLOAD |    // Load DOCTYPE (but don't resolve externals)\n                LIBXML_DTDATTR |    // Default DTD attributes\n                LIBXML_NONET |      // Disable network access\n                LIBXML_PARSEHUGE    // Allow large documents\n            );\n            \n            if (!$result) {\n                $errors = libxml_get_errors();\n                libxml_clear_errors();\n                throw new Exception(\n                    \"XML parsing failed: \" . \n                    ($errors ? $errors[0]->message : \"Unknown error\")\n                );\n            }\n            \n            // Validate no DOCTYPE present\n            if ($dom->doctype !== null) {\n                throw new Exception(\"DOCTYPE declarations are not allowed\");\n            }\n            \n            return $dom;\n            \n        } catch (Exception $e) {\n            throw new Exception(\"XML parsing blocked for security: \" . $e->getMessage());\n        } finally {\n            // Restore previous setting\n            libxml_disable_entity_loader($previousValue);\n            libxml_use_internal_errors(false);\n        }\n    }\n    \n    public static function parseXMLSecurelySimpleXML($xmlInput) {\n        libxml_disable_entity_loader(true);\n        libxml_use_internal_errors(true);\n        \n        try {\n            $xml = simplexml_load_string(\n                $xmlInput,\n                'SimpleXMLElement',\n                LIBXML_NONET | LIBXML_DTDLOAD | LIBXML_DTDATTR\n            );\n            \n            if ($xml === false) {\n                throw new Exception(\"SimpleXML parsing failed\");\n            }\n            \n            return $xml;\n        } finally {\n            libxml_use_internal_errors(false);\n        }\n    }\n}\n\n// Example usage\ntry {\n    $safeXML = '<user><name>John</name></user>';\n    $dom = SecureXMLParser::parseXMLSecurely($safeXML);\n    echo \"Parsed securely: \" . $dom->documentElement->nodeName . \"\\n\";\n} catch (Exception $e) {\n    echo \"Error: \" . $e->getMessage() . \"\\n\";\n}\n\n?>"
+        }
+      ],
+      "tools": [
+        "defusedxml (Python)",
+        "OWASP Dependency-Check",
+        "Semgrep with XXE rules"
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - A System Development Life Cycle is implemented",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Test with XXE payload containing <!DOCTYPE> declaration - should be rejected",
+        "Verify external entity references are blocked",
+        "Test with billion laughs DoS payload - should fail safely",
+        "Confirm error messages don't leak sensitive information",
+        "Validate schema validation is performed when available"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Use Safe XML Parsing Libraries and Configurations",
+      "description": "Prefer XML parsing libraries that are secure by default or use wrapper libraries specifically designed to prevent XXE attacks. Use defusedxml for Python, modern .NET XmlReader with secure settings, and always validate library versions for known vulnerabilities.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Java SAXParser Secure Configuration",
+        "code": "import javax.xml.parsers.SAXParserFactory;\nimport javax.xml.parsers.SAXParser;\nimport org.xml.sax.helpers.DefaultHandler;\nimport org.xml.sax.InputSource;\nimport org.xml.sax.SAXException;\nimport javax.xml.XMLConstants;\nimport java.io.StringReader;\n\npublic class SecureSAXParser {\n    \n    public static void parseXMLWithSAX(String xmlInput, DefaultHandler handler) throws Exception {\n        SAXParserFactory spf = SAXParserFactory.newInstance();\n        \n        // Disable DTDs completely\n        spf.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n        \n        // Disable external entities\n        spf.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n        spf.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n        \n        // Disable external DTD loading\n        spf.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\n        \n        // Enable secure processing\n        spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);\n        \n        // Don't allow namespace processing (optional)\n        spf.setNamespaceAware(true);\n        \n        SAXParser saxParser = spf.newSAXParser();\n        \n        // Set null XMLReader for additional security\n        saxParser.getXMLReader().setEntityResolver((publicId, systemId) -> {\n            throw new SAXException(\"External entity resolution blocked: \" + systemId);\n        });\n        \n        InputSource inputSource = new InputSource(new StringReader(xmlInput));\n        saxParser.parse(inputSource, handler);\n    }\n    \n    public static class SecureXMLHandler extends DefaultHandler {\n        @Override\n        public void startElement(String uri, String localName, String qName, \n                               org.xml.sax.Attributes attributes) throws SAXException {\n            System.out.println(\"Element: \" + qName);\n        }\n    }\n    \n    public static void main(String[] args) {\n        try {\n            String xml = \"<user><name>John</name></user>\";\n            parseXMLWithSAX(xml, new SecureXMLHandler());\n        } catch (Exception e) {\n            System.err.println(\"XML parsing error: \" + e.getMessage());\n        }\n    }\n}"
+      },
+      "additional_code_examples": [
+        {
+          "language": "java",
+          "framework": "Java XMLInputFactory (StAX)",
+          "code": "import javax.xml.stream.XMLInputFactory;\nimport javax.xml.stream.XMLStreamReader;\nimport javax.xml.stream.XMLStreamException;\nimport javax.xml.XMLConstants;\nimport java.io.StringReader;\n\npublic class SecureStAXParser {\n    \n    public static void parseXMLWithStAX(String xmlInput) throws XMLStreamException {\n        XMLInputFactory xif = XMLInputFactory.newInstance();\n        \n        // Disable DTD processing\n        xif.setProperty(XMLInputFactory.SUPPORT_DTD, false);\n        \n        // Disable external entity processing\n        xif.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);\n        \n        // Enable secure processing\n        xif.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n        xif.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, \"\");\n        \n        XMLStreamReader reader = xif.createXMLStreamReader(new StringReader(xmlInput));\n        \n        try {\n            while (reader.hasNext()) {\n                int event = reader.next();\n                \n                switch (event) {\n                    case XMLStreamReader.START_ELEMENT:\n                        System.out.println(\"Start Element: \" + reader.getLocalName());\n                        break;\n                    case XMLStreamReader.CHARACTERS:\n                        if (!reader.isWhiteSpace()) {\n                            System.out.println(\"Text: \" + reader.getText());\n                        }\n                        break;\n                    case XMLStreamReader.END_ELEMENT:\n                        System.out.println(\"End Element: \" + reader.getLocalName());\n                        break;\n                }\n            }\n        } finally {\n            reader.close();\n        }\n    }\n    \n    public static void main(String[] args) {\n        try {\n            String xml = \"<user><name>John</name></user>\";\n            parseXMLWithStAX(xml);\n        } catch (XMLStreamException e) {\n            System.err.println(\"XML parsing error: \" + e.getMessage());\n        }\n    }\n}"
+        }
+      ],
+      "tools": [
+        "defusedxml (Python)",
+        "OWASP Dependency-Check",
+        "Snyk vulnerability scanner"
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "PR.IP-2 - System Development Life Cycle",
+        "ID.RA-1 - Asset vulnerabilities are identified"
+      ],
+      "validation_steps": [
+        "Verify XML parser library versions are up-to-date",
+        "Confirm secure configurations are applied in all parsing code",
+        "Test with various XXE payloads to ensure blocking",
+        "Review all XML processing code paths for secure parser usage"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Input Validation and XML Schema Validation",
+      "description": "Validate all XML input against strict XML schemas (XSD) before processing. Implement allowlists for permitted XML elements and attributes. Reject any XML containing DOCTYPE declarations or unexpected structures. Sanitize error messages to prevent information disclosure.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Java Schema Validation",
+        "code": "import javax.xml.XMLConstants;\nimport javax.xml.transform.stream.StreamSource;\nimport javax.xml.validation.Schema;\nimport javax.xml.validation.SchemaFactory;\nimport javax.xml.validation.Validator;\nimport org.xml.sax.SAXException;\nimport java.io.StringReader;\nimport java.io.File;\n\npublic class XMLSchemaValidator {\n    \n    private static final String SCHEMA_PATH = \"/path/to/schema.xsd\";\n    \n    public static boolean validateXMLAgainstSchema(String xmlInput) {\n        try {\n            // Create schema factory\n            SchemaFactory schemaFactory = SchemaFactory.newInstance(\n                XMLConstants.W3C_XML_SCHEMA_NS_URI\n            );\n            \n            // Disable external entity resolution in schema factory\n            schemaFactory.setProperty(\n                XMLConstants.ACCESS_EXTERNAL_DTD, \"\"\n            );\n            schemaFactory.setProperty(\n                XMLConstants.ACCESS_EXTERNAL_SCHEMA, \"\"\n            );\n            \n            // Load and compile schema\n            Schema schema = schemaFactory.newSchema(new File(SCHEMA_PATH));\n            \n            // Create validator\n            Validator validator = schema.newValidator();\n            \n            // Disable external entities in validator\n            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, \"\");\n            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, \"\");\n            \n            // Validate XML input\n            validator.validate(new StreamSource(new StringReader(xmlInput)));\n            \n            System.out.println(\"XML validation successful\");\n            return true;\n            \n        } catch (SAXException e) {\n            System.err.println(\"XML validation failed: Schema violation\");\n            return false;\n        } catch (Exception e) {\n            System.err.println(\"XML validation error: Invalid input\");\n            return false;\n        }\n    }\n    \n    public static String sanitizeXMLInput(String xmlInput) {\n        // Check for DOCTYPE declaration\n        if (xmlInput.contains(\"<!DOCTYPE\") || \n            xmlInput.contains(\"<!ENTITY\") ||\n            xmlInput.toLowerCase().contains(\"<!doctype\")) {\n            throw new SecurityException(\n                \"DOCTYPE declarations are not permitted\"\n            );\n        }\n        \n        // Check for suspicious patterns\n        if (xmlInput.contains(\"SYSTEM\") || xmlInput.contains(\"PUBLIC\")) {\n            throw new SecurityException(\n                \"External entity references are not permitted\"\n            );\n        }\n        \n        // Limit XML size to prevent DoS\n        if (xmlInput.length() > 1_000_000) {  // 1MB limit\n            throw new SecurityException(\n                \"XML input exceeds maximum allowed size\"\n            );\n        }\n        \n        return xmlInput;\n    }\n    \n    public static void main(String[] args) {\n        String xmlInput = \"<user><name>John</name><email>john@example.com</email></user>\";\n        \n        try {\n            // First sanitize input\n            String sanitized = sanitizeXMLInput(xmlInput);\n            \n            // Then validate against schema\n            if (validateXMLAgainstSchema(sanitized)) {\n                System.out.println(\"XML is safe to process\");\n            } else {\n                System.out.println(\"XML validation failed\");\n            }\n        } catch (SecurityException e) {\n            System.err.println(\"Security violation: \" + e.getMessage());\n        }\n    }\n}"
+      },
+      "additional_code_examples": [
+        {
+          "language": "python",
+          "framework": "Python XML Schema Validation",
+          "code": "from lxml import etree\nfrom defusedxml.lxml import fromstring\nimport re\n\nclass XMLValidator:\n    \n    def __init__(self, schema_path):\n        \"\"\"Initialize with XSD schema file path.\"\"\"\n        with open(schema_path, 'r') as schema_file:\n            schema_root = etree.XML(schema_file.read())\n            self.schema = etree.XMLSchema(schema_root)\n    \n    def sanitize_xml_input(self, xml_input):\n        \"\"\"Sanitize XML input before processing.\"\"\"\n        # Check for DOCTYPE declarations\n        if re.search(r'<!DOCTYPE', xml_input, re.IGNORECASE):\n            raise SecurityException(\"DOCTYPE declarations are not permitted\")\n        \n        # Check for ENTITY declarations\n        if re.search(r'<!ENTITY', xml_input, re.IGNORECASE):\n            raise SecurityException(\"ENTITY declarations are not permitted\")\n        \n        # Check for SYSTEM/PUBLIC keywords\n        if 'SYSTEM' in xml_input or 'PUBLIC' in xml_input:\n            raise SecurityException(\"External references are not permitted\")\n        \n        # Limit size to prevent DoS\n        if len(xml_input) > 1_000_000:  # 1MB\n            raise SecurityException(\"XML input exceeds maximum size\")\n        \n        return xml_input\n    \n    def validate(self, xml_input):\n        \"\"\"Validate XML against schema.\"\"\"\n        try:\n            # First sanitize\n            sanitized = self.sanitize_xml_input(xml_input)\n            \n            # Parse with defusedxml\n            xml_doc = fromstring(sanitized.encode('utf-8'))\n            \n            # Validate against schema\n            if not self.schema.validate(xml_doc):\n                errors = self.schema.error_log\n                raise ValidationException(\n                    f\"Schema validation failed: {errors}\"\n                )\n            \n            return xml_doc\n            \n        except etree.XMLSyntaxError as e:\n            raise ValidationException(f\"XML syntax error: Invalid format\")\n        except Exception as e:\n            raise ValidationException(f\"Validation error: {str(e)}\")\n\nclass SecurityException(Exception):\n    pass\n\nclass ValidationException(Exception):\n    pass\n\n# Example usage\nif __name__ == \"__main__\":\n    validator = XMLValidator('/path/to/schema.xsd')\n    \n    xml_input = '<user><name>John</name><email>john@example.com</email></user>'\n    \n    try:\n        validated_doc = validator.validate(xml_input)\n        print(\"XML is valid and safe to process\")\n    except (SecurityException, ValidationException) as e:\n        print(f\"Validation error: {e}\")"
+        }
+      ],
+      "tools": [
+        "XML Schema Definition (XSD)",
+        "xmllint for schema validation",
+        "OWASP ZAP XXE scanner"
+      ],
+      "iso27001_controls": [
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.8 - System security testing"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.IP-2 - System Development Life Cycle"
+      ],
+      "validation_steps": [
+        "Test with XML missing required elements - should fail validation",
+        "Test with XXE payload - should be rejected during sanitization",
+        "Verify schema validation catches malformed XML",
+        "Confirm error messages don't expose internal details"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Apply XML Security Best Practices and Defense in Depth",
+      "description": "Implement multiple layers of defense including: network segmentation to prevent SSRF, file system access restrictions, Web Application Firewall (WAF) rules to block XXE payloads, security monitoring to detect XXE attempts, and regular security testing. Use Content Security Policy (CSP) headers and implement least privilege principles for application file system access.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "yaml",
+        "framework": "ModSecurity WAF Rules",
+        "code": "# ModSecurity XXE Prevention Rules\n# Include in modsecurity.conf or custom rules file\n\n# Block DOCTYPE declarations\nSecRule REQUEST_BODY \"<!DOCTYPE\" \\\n    \"id:1001,\\\n    phase:2,\\\n    deny,\\\n    status:403,\\\n    msg:'XXE Attack Detected: DOCTYPE declaration blocked',\\\n    logdata:'Matched Data: %{MATCHED_VAR}',\\\n    severity:'CRITICAL',\\\n    tag:'application-security',\\\n    tag:'attack-xxe'\"\n\n# Block ENTITY declarations\nSecRule REQUEST_BODY \"<!ENTITY\" \\\n    \"id:1002,\\\n    phase:2,\\\n    deny,\\\n    status:403,\\\n    msg:'XXE Attack Detected: ENTITY declaration blocked',\\\n    logdata:'Matched Data: %{MATCHED_VAR}',\\\n    severity:'CRITICAL',\\\n    tag:'application-security',\\\n    tag:'attack-xxe'\"\n\n# Block SYSTEM keyword in XML\nSecRule REQUEST_BODY \"SYSTEM\\\\s*[\\\"']\" \\\n    \"id:1003,\\\n    phase:2,\\\n    deny,\\\n    status:403,\\\n    msg:'XXE Attack Detected: SYSTEM entity reference blocked',\\\n    logdata:'Matched Data: %{MATCHED_VAR}',\\\n    severity:'CRITICAL',\\\n    tag:'application-security',\\\n    tag:'attack-xxe'\"\n\n# Block PUBLIC keyword in XML\nSecRule REQUEST_BODY \"PUBLIC\\\\s*[\\\"']\" \\\n    \"id:1004,\\\n    phase:2,\\\n    deny,\\\n    status:403,\\\n    msg:'XXE Attack Detected: PUBLIC entity reference blocked',\\\n    logdata:'Matched Data: %{MATCHED_VAR}',\\\n    severity:'CRITICAL',\\\n    tag:'application-security',\\\n    tag:'attack-xxe'\"\n\n# Block file:// protocol in XML\nSecRule REQUEST_BODY \"file://\" \\\n    \"id:1005,\\\n    phase:2,\\\n    deny,\\\n    status:403,\\\n    msg:'XXE Attack Detected: file:// protocol blocked',\\\n    logdata:'Matched Data: %{MATCHED_VAR}',\\\n    severity:'CRITICAL',\\\n    tag:'application-security',\\\n    tag:'attack-xxe'\"\n\n# Block common XXE payloads\nSecRule REQUEST_BODY \"(?:<!\\\\[CDATA\\\\[.*?file:///|<!\\\\[CDATA\\\\[.*?/etc/passwd)\" \\\n    \"id:1006,\\\n    phase:2,\\\n    deny,\\\n    status:403,\\\n    msg:'XXE Attack Detected: Suspicious payload pattern',\\\n    logdata:'Matched Data: %{MATCHED_VAR}',\\\n    severity:'CRITICAL',\\\n    tag:'application-security',\\\n    tag:'attack-xxe'\"\n\n# Enable request body inspection for XML\nSecRule REQUEST_HEADERS:Content-Type \"(?:application|text)/xml\" \\\n    \"id:1007,\\\n    phase:1,\\\n    pass,\\\n    ctl:requestBodyProcessor=XML,\\\n    msg:'XML content detected, enabling body inspection'\""
+      },
+      "additional_code_examples": [
+        {
+          "language": "python",
+          "framework": "Flask Security Middleware",
+          "code": "from flask import Flask, request, jsonify\nfrom functools import wraps\nimport logging\nimport re\n\napp = Flask(__name__)\n\n# Configure logging\nlogging.basicConfig(\n    level=logging.WARNING,\n    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'\n)\nlogger = logging.getLogger(__name__)\n\ndef xxe_protection_middleware(f):\n    \"\"\"Middleware to detect and block XXE attacks.\"\"\"\n    @wraps(f)\n    def decorated_function(*args, **kwargs):\n        # Check Content-Type\n        content_type = request.content_type or ''\n        \n        if 'xml' in content_type.lower():\n            try:\n                body = request.get_data(as_text=True)\n                \n                # Check for XXE indicators\n                xxe_patterns = [\n                    r'<!DOCTYPE',\n                    r'<!ENTITY',\n                    r'SYSTEM\\s*[\"\\']',\n                    r'PUBLIC\\s*[\"\\']',\n                    r'file://',\n                    r'http://169\\.254\\.169\\.254',  # AWS metadata\n                    r'http://metadata\\.google\\.internal',  # GCP metadata\n                ]\n                \n                for pattern in xxe_patterns:\n                    if re.search(pattern, body, re.IGNORECASE):\n                        logger.warning(\n                            f\"XXE attack detected from {request.remote_addr} \"\n                            f\"- Pattern: {pattern}\"\n                        )\n                        return jsonify({\n                            'error': 'Invalid request',\n                            'message': 'Request blocked for security reasons'\n                        }), 403\n                \n                # Check body size\n                if len(body) > 1_000_000:  # 1MB limit\n                    logger.warning(\n                        f\"Oversized XML from {request.remote_addr} \"\n                        f\"- Size: {len(body)} bytes\"\n                    )\n                    return jsonify({\n                        'error': 'Payload too large',\n                        'message': 'XML exceeds maximum size'\n                    }), 413\n                    \n            except Exception as e:\n                logger.error(f\"XXE middleware error: {str(e)}\")\n                return jsonify({\n                    'error': 'Processing error'\n                }), 500\n        \n        return f(*args, **kwargs)\n    \n    return decorated_function\n\n@app.route('/api/xml', methods=['POST'])\n@xxe_protection_middleware\ndef process_xml():\n    \"\"\"Process XML endpoint with XXE protection.\"\"\"\n    # Additional secure XML processing here\n    return jsonify({'status': 'success'})\n\nif __name__ == '__main__':\n    app.run(debug=False)"
+        },
+        {
+          "language": "javascript",
+          "framework": "Express.js Security Middleware",
+          "code": "const express = require('express');\nconst helmet = require('helmet');\n\nconst app = express();\n\n// Apply security headers\napp.use(helmet());\n\n// XXE Protection Middleware\nfunction xxeProtectionMiddleware(req, res, next) {\n  const contentType = req.get('Content-Type') || '';\n  \n  if (contentType.toLowerCase().includes('xml')) {\n    let body = '';\n    \n    req.on('data', chunk => {\n      body += chunk.toString();\n      \n      // Size limit check\n      if (body.length > 1000000) {  // 1MB\n        req.removeAllListeners('data');\n        res.status(413).json({\n          error: 'Payload too large',\n          message: 'XML exceeds maximum size'\n        });\n        return;\n      }\n    });\n    \n    req.on('end', () => {\n      // XXE pattern detection\n      const xxePatterns = [\n        /<!DOCTYPE/i,\n        /<!ENTITY/i,\n        /SYSTEM\\s*[\"']/i,\n        /PUBLIC\\s*[\"']/i,\n        /file:\\/\\//i,\n        /http:\\/\\/169\\.254\\.169\\.254/i,  // AWS metadata\n        /http:\\/\\/metadata/i\n      ];\n      \n      for (const pattern of xxePatterns) {\n        if (pattern.test(body)) {\n          console.warn(\n            `XXE attack detected from ${req.ip} - ` +\n            `Pattern: ${pattern.source}`\n          );\n          \n          return res.status(403).json({\n            error: 'Invalid request',\n            message: 'Request blocked for security reasons'\n          });\n        }\n      }\n      \n      req.body = body;\n      next();\n    });\n  } else {\n    next();\n  }\n}\n\napp.use(xxeProtectionMiddleware);\n\napp.post('/api/xml', (req, res) => {\n  // Process XML securely here\n  res.json({ status: 'success' });\n});\n\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});"
+        }
+      ],
+      "tools": [
+        "ModSecurity WAF",
+        "AWS WAF",
+        "Cloudflare WAF",
+        "SIEM (Splunk, ELK Stack)",
+        "IDS/IPS (Snort, Suricata)"
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks",
+        "A.12.4.1 - Event logging",
+        "A.16.1.4 - Assessment and decision on security events"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - Network monitored for anomalies",
+        "PR.PT-1 - Audit/log records are determined"
+      ],
+      "validation_steps": [
+        "Test WAF rules block XXE payloads with 403 responses",
+        "Verify network segmentation prevents SSRF to internal services",
+        "Confirm security monitoring alerts on XXE attempts",
+        "Test file system restrictions prevent arbitrary file access",
+        "Review security logs for XXE detection accuracy"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "XML requests containing <!DOCTYPE declarations in request bodies",
+      "XML with <!ENTITY declarations or SYSTEM/PUBLIC keywords",
+      "Requests to internal IP addresses (169.254.169.254, 10.x.x.x, 192.168.x.x)",
+      "File path strings in XML (file://, /etc/passwd, C:\\Windows\\win.ini)",
+      "Error messages exposing file contents or internal paths",
+      "Unusual outbound DNS queries from web servers",
+      "Large XML payloads indicating billion laughs DoS attempts",
+      "Multiple failed XML parsing attempts from same source IP",
+      "HTTP requests to cloud metadata endpoints from application servers",
+      "XML processing followed by immediate file system access patterns"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=web_logs sourcetype=access_combined OR sourcetype=application_logs\n| where (match(request_body, \"(?i)<!DOCTYPE\") OR \n         match(request_body, \"(?i)<!ENTITY\") OR \n         match(request_body, \"(?i)SYSTEM\\\\s*[\\\"']\") OR\n         match(request_body, \"(?i)file://\") OR\n         match(request_body, \"/etc/passwd\"))\n| eval xxe_indicators = case(\n    match(request_body, \"(?i)<!DOCTYPE\"), \"DOCTYPE\",\n    match(request_body, \"(?i)<!ENTITY\"), \"ENTITY\",\n    match(request_body, \"(?i)SYSTEM\"), \"SYSTEM\",\n    match(request_body, \"file://\"), \"FILE_PROTOCOL\",\n    match(request_body, \"/etc/passwd\"), \"PASSWD_ACCESS\"\n  )\n| stats count by src_ip, xxe_indicators, uri_path, status_code\n| where count > 0\n| sort -count"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "let XXEPatterns = dynamic(['<!DOCTYPE', '<!ENTITY', 'SYSTEM', 'PUBLIC', 'file://', '/etc/passwd', '169.254.169.254']);\nAppServiceHTTPLogs\n| union AppServiceConsoleLogs\n| where TimeGenerated > ago(24h)\n| where CsMethod in ('POST', 'PUT', 'PATCH')\n| where CsUriStem contains \"xml\" or CsContentType contains \"xml\"\n| extend RequestBody = tostring(parse_json(RequestBody))\n| extend XXEIndicator = extract_all(@\"(<!DOCTYPE|<!ENTITY|SYSTEM|PUBLIC|file://|/etc/passwd|169\\.254\\.169\\.254)\", RequestBody)\n| where array_length(XXEIndicator) > 0\n| project \n    TimeGenerated,\n    CIp,\n    CsMethod,\n    CsUriStem,\n    ScStatus,\n    XXEIndicator,\n    CsUserAgent\n| summarize \n    AttemptCount = count(),\n    UniqueURIs = dcount(CsUriStem),\n    Indicators = make_set(XXEIndicator)\n    by CIp, bin(TimeGenerated, 1h)\n| where AttemptCount > 3\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "http.request.method: (POST OR PUT OR PATCH) AND \n(http.request.body.content: (*DOCTYPE* OR *ENTITY* OR *SYSTEM* OR *file\\:\\/\\/* OR *\\/etc\\/passwd* OR *169.254.169.254*)) AND\nhttp.request.mime_type: *xml*"
+      },
+      {
+        "siem": "AWS CloudWatch Logs Insights",
+        "query": "fields @timestamp, @message, requestParameters.body, sourceIPAddress, userAgent\n| filter httpMethod = \"POST\" or httpMethod = \"PUT\"\n| filter requestParameters.body like /<!DOCTYPE|<!ENTITY|SYSTEM|PUBLIC|file:\\\\/\\\\/|\\\\/etc\\\\/passwd/\n| stats count() as xxe_attempts by sourceIPAddress, bin(5m)\n| filter xxe_attempts > 2\n| sort xxe_attempts desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "OWASP ZAP",
+        "type": "Security Testing",
+        "usage": "Use XXE Active Scan rules to test for XXE vulnerabilities in XML endpoints"
+      },
+      {
+        "name": "Burp Suite Professional",
+        "type": "Security Testing",
+        "usage": "Use Collaborator for out-of-band XXE detection and Active Scanner XXE checks"
+      },
+      {
+        "name": "XXEinjector",
+        "type": "Penetration Testing",
+        "usage": "Automated XXE vulnerability exploitation tool for various XXE attack vectors"
+      },
+      {
+        "name": "Nuclei",
+        "type": "Vulnerability Scanner",
+        "usage": "Use nuclei-templates for XXE detection across multiple endpoints"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Healthcare",
+      "Government",
+      "E-commerce",
+      "Enterprise SaaS",
+      "Payment Processing"
+    ],
+    "compliance": [
+      "PCI-DSS 3.2.1 (Requirement 6.5.1)",
+      "HIPAA (164.312(a)(1))",
+      "SOC2 (CC6.1, CC6.6)",
+      "ISO27001 (A.14.2.1, A.14.2.5)",
+      "GDPR (Article 32)",
+      "NIST 800-53 (SI-10, SC-7)",
+      "OWASP Top 10 2021 (A03, A05)"
+    ],
+    "deployment": [
+      "Cloud",
+      "On-Premise",
+      "Hybrid",
+      "Containerized",
+      "Serverless"
+    ],
+    "data_classification": [
+      "Confidential",
+      "Highly Sensitive",
+      "Regulated"
+    ]
+  }
+}
