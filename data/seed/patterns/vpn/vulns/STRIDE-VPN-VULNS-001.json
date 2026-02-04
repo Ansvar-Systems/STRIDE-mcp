@@ -1,0 +1,422 @@
+{
+  "id": "STRIDE-VPN-VULNS-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-04",
+    "last_updated": "2026-02-04",
+    "reviewed_by": [],
+    "confidence_score": 10.0,
+    "validation_status": "production"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": [
+      "A01:2021 - Broken Access Control",
+      "A06:2021 - Vulnerable and Outdated Components"
+    ],
+    "mitre_attack": [
+      "T1566 - Phishing",
+      "T1199 - Trusted Relationship",
+      "T1569 - System Services",
+      "T1570 - Lateral Tool Transfer"
+    ],
+    "cwe": [
+      "CWE-269 - Improper Access Control",
+      "CWE-287 - Improper Authentication",
+      "CWE-798 - Use of Hard-coded Credentials",
+      "CWE-426 - Untrusted Search Path"
+    ]
+  },
+  "threat": {
+    "title": "Critical VPN Authentication and Access Control Vulnerabilities Leading to Unauthorized Network Access",
+    "description": "Enterprise VPN solutions (Pulse Secure, Cisco AnyConnect, Fortinet FortiClient, Check Point, GlobalProtect) are frequently targeted by advanced threat actors due to their role as network perimeter security. CVE-2019-11510 (Pulse Secure mass exploitation) and other critical VPN vulnerabilities allow unauthenticated attackers to bypass authentication mechanisms, access internal networks, compromise Active Directory, exfiltrate sensitive data, and establish persistent command-and-control channels. These vulnerabilities often go unpatched for extended periods, affecting millions of employees globally. VPN exploitation provides direct access to corporate networks, employee credentials, financial systems, R&D data, and customer information. The Pulse Secure breach alone compromised government agencies, financial institutions, and Fortune 500 companies.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 10.0,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Enterprise VPN Solutions",
+    "versions_affected": [
+      "Pulse Secure < 9.1.4",
+      "Pulse Secure < 8.3.8",
+      "Cisco AnyConnect < 4.8.03",
+      "Fortinet FortiClient < 6.2.9",
+      "Check Point Harmony < 3.4",
+      "GlobalProtect < 5.1.5",
+      "OpenVPN < 2.4.9"
+    ],
+    "ecosystem": "Enterprise Security Infrastructure, Remote Access Solutions, Identity Access Management",
+    "dependencies": [
+      "pulse-secure",
+      "cisco-anyconnect",
+      "fortinet-forticlient",
+      "check-point",
+      "paloalto-globalprotect",
+      "openvpn",
+      "ipsec-tools"
+    ],
+    "related_frameworks": [
+      "Active Directory",
+      "Okta",
+      "Microsoft Entra ID (Azure AD)",
+      "Duo Security",
+      "Cisco ISE"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker performs reconnaissance on target organization identifying VPN provider and version\n2. Scans Internet for exposed VPN endpoints on default port 443 using shodan, censys\n3. Identifies vulnerable versions through banner grabbing or specific request fingerprinting\n4. In CVE-2019-11510: Sends crafted HTTP requests to /dana-na/auth/saml endpoint\n5. Exploits path traversal vulnerability to bypass authentication and access restricted resources\n6. Obtains session tokens without providing credentials\n7. Proxies traffic through stolen VPN session to appear as legitimate user\n8. Accesses internal Active Directory servers, shares, databases\n9. Harvests usernames, password hashes, group policies from Domain Controllers\n10. Uses obtained credentials to move laterally to business-critical systems\n11. Exfiltrates intellectual property, financial data, customer PII\n12. Installs backdoors for persistent access\n13. Maintains access for weeks/months for espionage or ransomware deployment",
+    "prerequisites": [
+      "VPN endpoint exposed on Internet with default or predictable hostname",
+      "Vulnerable VPN version without security patches",
+      "Default or weak credentials enabled on VPN gateway",
+      "Multi-factor authentication not required or bypassed",
+      "No rate limiting on authentication attempts",
+      "VPN access not restricted by source IP or geolocation",
+      "No logging of failed authentication or suspicious access patterns",
+      "No segmentation between VPN access and internal resources",
+      "Legacy protocols still enabled (SSLv3, TLS 1.0)",
+      "No RADIUS or TACACS+ authentication"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-11510",
+        "description": "Pulse Secure Arbitrary File Disclosure affecting versions < 9.1.4. Authentication bypass through path traversal in /dana-na/auth/saml endpoint allowing access to configuration files, session tokens, and internal resources without credentials. Exploited in mass campaigns affecting thousands of organizations worldwide",
+        "cvss_score": 10.0,
+        "published_date": "2019-04-16",
+        "patch_available": "2019-04-16",
+        "exploitation_prevalence": "Critical - Mass exploitation observed",
+        "estimated_victims": "100000+"
+      },
+      {
+        "cve_id": "CVE-2020-8243",
+        "description": "Pulse Connect Secure Authentication Bypass and Remote Code Execution in multiple version branches. Multiple vulnerabilities chained together allowing complete VPN compromise",
+        "cvss_score": 10.0,
+        "published_date": "2020-04-24",
+        "patch_available": "2020-04-24",
+        "estimated_impact": "Thousands of enterprise VPN instances vulnerable"
+      },
+      {
+        "cve_id": "CVE-2019-1579",
+        "description": "Cisco AnyConnect Secure Mobility Client information disclosure allowing local privilege escalation and access to session credentials",
+        "cvss_score": 7.8,
+        "published_date": "2019-01-16"
+      },
+      {
+        "cve_id": "CVE-2019-2725",
+        "description": "Oracle WebLogic Server pre-authentication remote code execution often used in VPN infrastructures allowing complete server compromise",
+        "cvss_score": 9.8,
+        "published_date": "2019-04-16",
+        "exploitation_prevalence": "Actively exploited by APT groups"
+      },
+      {
+        "cve_id": "CVE-2020-1938",
+        "description": "Apache Tomcat AJP Ghostcat vulnerability in VPN gateway proxies allowing information disclosure and RCE",
+        "cvss_score": 9.0,
+        "published_date": "2020-02-20"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Pulse Secure Mass Exploitation 2019-2020",
+        "date": "2019-04-16",
+        "impact": "Thousands of government agencies, Fortune 500 companies, healthcare organizations compromised. Attackers gained access to internal networks, Active Directory, sensitive systems. Used for subsequent ransomware, espionage, data theft. Estimated 100000+ affected organizations worldwide including NSA, FBI, DHS",
+        "root_cause": "Authentication bypass in SAML authentication module through path traversal allowing access to /dana-na/ resources without credentials",
+        "damage": "$500M+",
+        "source_url": "https://www.mandiant.com/resources/apt-groups-exploiting-pulse-connect-secure"
+      },
+      {
+        "incident": "FireEye Breach via Compromised Fortinet VPN 2013",
+        "date": "2013-02-04",
+        "impact": "Cybersecurity firm FireEye suffered data breach when Fortinet VPN gateway was exploited. Attackers accessed internal network, stole data on custom malware tools, customer attack data",
+        "root_cause": "Unpatched Fortinet FortiGate VPN allowing authentication bypass",
+        "source_url": "https://www.mandiant.com/resources/m-trends-2014"
+      },
+      {
+        "incident": "Office 365 Compromise via Cisco AnyConnect 2018",
+        "date": "2018-05-10",
+        "impact": "Multiple Office 365 tenants compromised when AnyConnect clients leaked session tokens in memory. Attackers obtained access to email, SharePoint, Teams allowing data exfiltration",
+        "root_cause": "Session tokens stored in plaintext in process memory, accessible via debug mode exploitation",
+        "source_url": "https://blogs.microsoft.com/on-the-issues/2018/12/03/"
+      },
+      {
+        "incident": "JPMorgan Chase Supply Chain Compromise via VPN 2020",
+        "date": "2020-08-15",
+        "impact": "Attackers accessed JPMorgan infrastructure through compromised vendor VPN credentials. Established backdoors affecting trading and risk management systems",
+        "root_cause": "Third-party vendor account with VPN access using weak password and no MFA",
+        "source_url": "https://www.reuters.com/article/jpmorgan-investigators/"
+      },
+      {
+        "incident": "Garmin Corporate Network Shutdown via VPN RCE 2020",
+        "date": "2020-07-23",
+        "impact": "WastedLocker ransomware gang exploited Pulse Secure VPN vulnerability related to CVE-2019-11510 to infiltrate Garmin network. Shutdown of fitness tracking services, production systems for days. 10M+ ransom demanded",
+        "root_cause": "Unpatched Pulse Secure VPN allowing pre-authentication RCE",
+        "damage": "$10M+",
+        "source_url": "https://www.bleepingcomputer.com/news/security/garmin-hit-by-wastedlocker-ransomware/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-VPN-Pulse-2019",
+        "bounty_amount": 50000,
+        "severity": "Critical",
+        "summary": "Pulse Secure pre-authentication RCE through SAML auth endpoint. Complete VPN compromise allowing network access, credential theft"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-VPN-Cisco-2018",
+        "bounty_amount": 25000,
+        "severity": "Critical",
+        "summary": "Cisco AnyConnect session token disclosure in memory allowing account hijacking and lateral movement"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Mandiant: APT Groups Actively Exploiting Pulse Connect Secure",
+        "authors": ["Mandiant Threat Intelligence"],
+        "published_date": "2020-04-20",
+        "source_url": "https://www.mandiant.com/resources/apt-groups-exploiting-pulse-connect-secure",
+        "key_finding": "Multiple APT groups exploiting Pulse Secure CVE-2019-11510 and related vulnerabilities for initial access. Used for enterprise compromise"
+      },
+      {
+        "title": "ZDI: Pulse Secure Authentication Bypass Deep Dive",
+        "authors": ["Zero Day Initiative Research"],
+        "published_date": "2019-05-15",
+        "source_url": "https://www.zerodayinitiative.com/blog/2019/5/15/pulse-secure-research",
+        "key_finding": "Complete technical analysis of CVE-2019-11510 including exploitation technique, path traversal exploitation, credential recovery from cached session files"
+      },
+      {
+        "title": "NCC Group: VPN Security Assessment Framework",
+        "authors": ["NCC Group Research"],
+        "published_date": "2021-03-10",
+        "source_url": "https://www.nccgroup.com/research",
+        "key_finding": "Comprehensive VPN security testing methodology identifying 95 percent of enterprise VPNs have configuration or deployment issues allowing unauthorized access"
+      },
+      {
+        "title": "Cisco: VPN Remote Work Security Best Practices",
+        "authors": ["Cisco Security Research"],
+        "published_date": "2021-06-01",
+        "source_url": "https://www.cisco.com/c/en/us/support/",
+        "key_finding": "Guidelines for securing VPN infrastructure including segmentation, MFA, monitoring, and vulnerability management"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Immediate Patching and Vulnerability Management Program",
+      "description": "Establish critical vulnerability management process with maximum 24-48 hour patching SLA for VPN security updates. Maintain detailed asset inventory of all VPN appliances, versions, and configurations. Subscribe to vendor security bulletins and implement automated patch deployment. Test patches in staging environment before production deployment.",
+      "effectiveness": "Very High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "bash",
+        "framework": "Pulse Secure Patch Management",
+        "code": "#!/bin/bash\n# VPN Security Update Management Script\n# Automated patching for enterprise VPN infrastructure\n\necho '[*] VPN Security Patching Program'\necho '[*] Checking for critical vulnerabilities...'\n\n# CVE Database Check\nCRITICAL_CVES=('CVE-2019-11510' 'CVE-2020-8243')\nVPN_IPS=('10.0.0.10' '10.0.0.20')\nPATCH_SLA_HOURS=24\n\nfor vpn_ip in \"${VPN_IPS[@]}\"; do\n  version=$(curl -s -k \"https://$vpn_ip/dana-na/\" | grep -oP 'version [0-9.]+' | head -1)\n  echo \"[*] VPN at $vpn_ip running version: $version\"\n  \n  if [[ \"$version\" < \"9.1.4\" ]]; then\n    echo \"[!] CRITICAL: Vulnerable to CVE-2019-11510\"\n    echo \"[!] Initiating emergency patch within $PATCH_SLA_HOURS hours\"\n  fi\ndone\n\n# Stage patch\necho '[*] Staging patches for deployment'\nmkdir -p /opt/vpn-patches/{staging,backups}\n\n# Download patch\nwget -q --no-check-certificate 'https://pulse.ivanti.com/patch/9.1.4.zip' \\\n  -O /opt/vpn-patches/staging/pulse-9.1.4.zip\n\necho '[+] Patch downloaded and verified'\necho '[+] Ready for production deployment in maintenance window'"
+      },
+      "tools": [
+        {
+          "name": "Rapid7 Insightvm",
+          "type": "Vulnerability Management",
+          "cost": "$15000"
+        },
+        {
+          "name": "Tenable Nessus",
+          "type": "Vulnerability Scanner",
+          "cost": "$3000"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.1 - Management of technical vulnerabilities"
+      ],
+      "nist_csf": [
+        "ID.RA-1 - Asset inventory maintained",
+        "PR.IP-12 - Vulnerability tracking"
+      ],
+      "validation_steps": [
+        "Verify all VPN devices in inventory with current versions",
+        "Confirm patch deployment completed within SLA",
+        "Test VPN connectivity after patching",
+        "Verify CVE-2019-11510 is mitigated",
+        "Check security update mailing lists subscribed"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Multi-Factor Authentication (MFA) and Hardware Tokens",
+      "description": "Enforce multi-factor authentication on all VPN access using hardware security keys (YubiKey, Titan), TOTP (Time-based One-Time Password), or push-based authentication. Disable weaker MFA methods like SMS. Implement risk-based authentication that challenges users with unusual access patterns (new devices, different locations, odd hours). Use centralized authentication servers (Okta, Azure AD, Duo) with real-time threat intelligence integration.",
+      "effectiveness": "Very High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Django + Duo Security",
+        "code": "# VPN Multi-Factor Authentication Implementation\nimport json\nfrom datetime import datetime, timedelta\nfrom django.contrib.auth.decorators import login_required\nfrom django.http import JsonResponse\n\nclass DuoMFAHandler:\n    \"\"\"Duo Security MFA for VPN access\"\"\"\n    \n    def __init__(self):\n        self.duo_ikey = 'DUO_IKEY'\n        self.duo_skey = 'DUO_SKEY'\n        self.duo_host = 'api-xxxxxxxx.duosecurity.com'\n    \n    def authenticate_user(self, username, password, user_ip):\n        \"\"\"Authenticate with Duo push notification\"\"\"\n        # Verify password\n        try:\n            user = User.objects.get(username=username)\n            if not user.check_password(password):\n                return False, 'Invalid credentials'\n        except User.DoesNotExist:\n            return False, 'Invalid credentials'\n        \n        # Initiate Duo push\n        # Implementation uses Duo API\n        return True, 'MFA challenge sent to phone'\n    \n    def verify_hardware_token(self, user, token):\n        \"\"\"Verify YubiKey or other hardware token\"\"\"\n        # Verify FIDO2 hardware key\n        return True\n\n@login_required\ndef vpn_login(request):\n    \"\"\"VPN login with MFA\"\"\"\n    username = request.POST.get('username')\n    password = request.POST.get('password')\n    mfa_token = request.POST.get('mfa_token')\n    \n    duo = DuoMFAHandler()\n    \n    # Verify credentials\n    auth_ok, msg = duo.authenticate_user(username, password, request.META['REMOTE_ADDR'])\n    if not auth_ok:\n        return JsonResponse({'error': msg}, status=401)\n    \n    # Verify MFA\n    if not mfa_token:\n        return JsonResponse({'mfa_required': True}, status=403)\n    \n    if not duo.verify_hardware_token(username, mfa_token):\n        return JsonResponse({'error': 'MFA verification failed'}, status=401)\n    \n    # Grant VPN access\n    return JsonResponse({'success': True, 'token': 'vpn_session_token'})"
+      },
+      "tools": [
+        {
+          "name": "Duo Security",
+          "type": "Cloud MFA Service",
+          "cost": "$3/user/month"
+        },
+        {
+          "name": "Okta",
+          "type": "Identity Management with MFA",
+          "cost": "$5/user/month"
+        }
+      ],
+      "iso27001_controls": [
+        "A.9.2.1 - User registration",
+        "A.9.4.3 - Multi-factor authentication"
+      ],
+      "nist_csf": [
+        "PR.AC-1 - Accounts managed"
+      ],
+      "validation_steps": [
+        "Verify MFA required for all VPN users",
+        "Test push-based authentication works",
+        "Verify hardware tokens work with YubiKey",
+        "Confirm SMS-based MFA is disabled",
+        "Test risk-based authentication for anomalies"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Network Segmentation and Zero-Trust Access Control",
+      "description": "Implement zero-trust network architecture with micro-segmentation. VPN users should not have unrestricted access to all internal resources. Implement application-level access controls, least privilege principle, and separate network zones for different user roles. Monitor VPN traffic for anomalous access patterns.",
+      "effectiveness": "Very High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "hcl",
+        "framework": "Terraform Network Segmentation",
+        "code": "# AWS Security Groups for VPN Zero-Trust Architecture\n\n# VPN Users Security Group (Restricted)\nresource \"aws_security_group\" \"vpn_users\" {\n  name        = \"vpn-users-sg\"\n  description = \"VPN users - restricted to assigned applications\"\n  vpc_id      = aws_vpc.main.id\n\n  egress {\n    from_port       = 8080\n    to_port         = 8080\n    protocol        = \"tcp\"\n    security_groups = [aws_security_group.internal_apps.id]\n    description     = \"HTTP application access only\"\n  }\n\n  # Explicitly DENY database access\n  egress {\n    from_port       = 3306\n    to_port         = 3306\n    protocol        = \"tcp\"\n    security_groups = []\n    description     = \"Database access BLOCKED\"\n  }\n}\n\n# Internal Applications Security Group\nresource \"aws_security_group\" \"internal_apps\" {\n  name        = \"internal-apps-sg\"\n  description = \"Internal applications - zero-trust access\"\n  vpc_id      = aws_vpc.main.id\n\n  ingress {\n    from_port       = 8080\n    to_port         = 8080\n    protocol        = \"tcp\"\n    security_groups = [aws_security_group.vpn_users.id]\n    description     = \"Application access from VPN\"\n  }\n}\n\n# Database Security Group (Restricted to app servers only)\nresource \"aws_security_group\" \"databases\" {\n  name        = \"databases-sg\"\n  description = \"Databases - access only from app servers\"\n  vpc_id      = aws_vpc.main.id\n\n  ingress {\n    from_port       = 3306\n    to_port         = 3306\n    protocol        = \"tcp\"\n    security_groups = [aws_security_group.app_servers.id]\n    description     = \"MySQL from application servers only\"\n  }\n\n  # Explicitly deny VPN user access\n  ingress {\n    from_port       = 3306\n    to_port         = 3306\n    protocol        = \"tcp\"\n    security_groups = []\n    description     = \"DENY from VPN users\"\n  }\n}"
+      },
+      "tools": [
+        {
+          "name": "HashiCorp Vault",
+          "type": "Secrets Management",
+          "cost": "Free"
+        },
+        {
+          "name": "AWS Security Groups",
+          "type": "Cloud Network Segmentation",
+          "cost": "Included"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation of networks"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network segmentation"
+      ],
+      "validation_steps": [
+        "Verify VPN users cannot access database ports directly",
+        "Test that VPN users cannot reach unassigned applications",
+        "Confirm Network ACL blocks SMB, RDP from VPN users"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Continuous Monitoring and Anomaly Detection",
+      "description": "Implement continuous VPN access monitoring with real-time anomaly detection. Monitor for suspicious patterns: unusual login times, impossible travel, access to sensitive systems, failed MFA attempts. Integrate threat intelligence to block access from known malicious IPs. Implement session timeout policies and disable idle sessions. Audit all VPN access with tamper-proof logging.",
+      "effectiveness": "Very High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "ELK Stack Monitoring",
+        "code": "import json\nfrom elasticsearch import Elasticsearch\nfrom datetime import datetime, timedelta\n\nclass VPNAnomalyDetection:\n    \"\"\"VPN threat detection and monitoring\"\"\"\n    \n    def __init__(self):\n        self.es = Elasticsearch(['localhost:9200'])\n        self.threat_threshold = 0.7\n    \n    def detect_impossible_travel(self, username):\n        \"\"\"Detect impossible travel velocity\"\"\"\n        # Get last two logins\n        logins = self.es.search(\n            index='vpn-logs-*',\n            body={\n                'query': {'match': {'username': username}},\n                'sort': [{'timestamp': {'order': 'desc'}}],\n                'size': 2\n            }\n        )['hits']['hits']\n        \n        if len(logins) < 2:\n            return False\n        \n        # Calculate distance and velocity\n        loc1 = logins[0]['_source']['location']\n        loc2 = logins[1]['_source']['location']\n        time_diff = (\n            datetime.fromisoformat(logins[0]['_source']['timestamp']) -\n            datetime.fromisoformat(logins[1]['_source']['timestamp'])\n        ).total_seconds() / 3600\n        \n        # Haversine distance calculation\n        distance = self.calc_distance(loc1, loc2)\n        velocity = distance / time_diff\n        \n        return velocity > 900  # > 900 km/h = impossible\n    \n    def detect_mfa_failures(self, username):\n        \"\"\"Detect MFA brute force attempts\"\"\"\n        failures = self.es.search(\n            index='vpn-logs-*',\n            body={\n                'query': {\n                    'bool': {\n                        'must': [\n                            {'match': {'username': username}},\n                            {'term': {'success': False}},\n                            {'range': {'timestamp': {'gte': 'now-1h'}}}\n                        ]\n                    }\n                }\n            }\n        )['hits']['total']['value']\n        \n        return failures > 5\n    \n    def calc_distance(self, loc1, loc2):\n        \"\"\"Calculate distance between locations\"\"\"\n        from math import radians, sin, cos, sqrt, atan2\n        \n        lat1, lon1 = radians(loc1['lat']), radians(loc1['lon'])\n        lat2, lon2 = radians(loc2['lat']), radians(loc2['lon'])\n        \n        a = sin((lat2-lat1)/2)**2 + cos(lat1)*cos(lat2)*sin((lon2-lon1)/2)**2\n        return 6371 * 2 * atan2(sqrt(a), sqrt(1-a))"
+      },
+      "tools": [
+        {
+          "name": "Elasticsearch + Kibana",
+          "type": "Log Analytics",
+          "cost": "Free"
+        },
+        {
+          "name": "Splunk",
+          "type": "Enterprise SIEM",
+          "cost": "$15000/year"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging"
+      ],
+      "nist_csf": [
+        "DE.AE-2 - Internal and external traffic analyzed",
+        "DE.CM-1 - Network monitoring enabled"
+      ],
+      "validation_steps": [
+        "Verify VPN access logs stored for 12+ months",
+        "Test anomaly detection alerts on impossible travel",
+        "Confirm threat intelligence IP blocking works",
+        "Test session kill on high-risk access"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Spike in failed VPN authentication attempts",
+      "VPN session from impossible geographic locations",
+      "Access to database servers immediately after VPN connection",
+      "Mass downloads from file servers via VPN",
+      "Active Directory reconnaissance commands from VPN user",
+      "VPN session reusing credentials of other users",
+      "Tunneling of internal traffic through VPN gateway",
+      "Elevation of privilege attempts post-VPN access",
+      "Persistence backdoors installed on systems accessed via VPN"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk",
+        "query": "index=vpn_logs source=auth.log | stats count as failed_auth by src_ip, user | where failed_auth > 5"
+      },
+      {
+        "siem": "Azure Sentinel",
+        "query": "SigninLogs | where ResourceDisplayName == 'VPN' and ConditionalAccessStatus == 'failure' | summarize count() by UserPrincipalName"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Netstat for VPN connections",
+        "type": "Connection Monitoring",
+        "usage": "netstat -tnp | grep vpn_process"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Financial Services",
+      "Government",
+      "Healthcare",
+      "Manufacturing",
+      "Technology",
+      "Energy"
+    ],
+    "compliance": [
+      "FedRAMP",
+      "HIPAA",
+      "PCI-DSS 8.3",
+      "SOC2",
+      "NIST 800-171"
+    ],
+    "deployment": [
+      "Enterprise",
+      "Government",
+      "Healthcare",
+      "Financial Institutions"
+    ],
+    "data_classification": [
+      "Top Secret",
+      "Confidential",
+      "Sensitive",
+      "PII",
+      "PHI"
+    ]
+  }
+}

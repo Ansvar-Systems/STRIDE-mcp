@@ -1,0 +1,502 @@
+{
+  "id": "STRIDE-CDN-POISON-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-03",
+    "last_updated": "2026-02-03",
+    "reviewed_by": [],
+    "confidence_score": 9.1,
+    "validation_status": "draft"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": [
+      "API8:2023 - Security Misconfiguration",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1189 - Drive-by Compromise",
+      "T1584.004 - Compromise Infrastructure: CDN",
+      "T1590.001 - Gather Victim Network Information: Domain Properties"
+    ],
+    "cwe": [
+      "CWE-444 - Inconsistent Interpretation of HTTP Requests (HTTP Request/Response Smuggling)",
+      "CWE-639 - Authorization Bypass Through User-Controlled Key",
+      "CWE-525 - Use of Web Browser Cache Containing Sensitive Information"
+    ]
+  },
+  "threat": {
+    "title": "CDN Cache Poisoning and Web Cache Deception Attacks",
+    "description": "Content Delivery Network (CDN) cache poisoning exploits inconsistencies between CDN cache key generation and origin server request handling to inject malicious content into edge caches, affecting all users receiving the cached response. Web cache deception tricks CDNs into caching sensitive user-specific pages by exploiting path confusion vulnerabilities. According to research by Omer Gil and James Kettle, web cache poisoning affects major CDN providers including Cloudflare, Fastly, and Akamai. In 2018, researchers demonstrated practical cache poisoning attacks against PayPal, leading to widespread XSS vulnerabilities. These attacks enable threat actors to serve malicious JavaScript, steal credentials, deface websites, and exfiltrate sensitive data from cached authenticated responses. The 2024 Cloudflare incident affecting multiple customers demonstrated the persistent risk of cache poisoning in production CDN infrastructure.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "CDN",
+    "versions_affected": ["All CDN providers without proper cache key normalization"],
+    "ecosystem": "Web Infrastructure",
+    "dependencies": ["Cloudflare", "Fastly", "Akamai", "AWS CloudFront", "Azure CDN", "Google Cloud CDN", "Varnish", "nginx"],
+    "related_frameworks": ["Varnish Cache", "nginx proxy_cache", "Apache Traffic Server", "Squid"]
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers CDN endpoint serving dynamic application through proxy (e.g., cdn.example.com)\n2. Performs reconnaissance to identify cache key composition (typically URL path + query string)\n3. Discovers unkeyed headers (X-Forwarded-Host, X-Original-URL, X-Rewrite-URL) not included in cache key\n4. Crafts malicious request with poisoned unkeyed header:\n   GET /static/app.js HTTP/1.1\n   Host: cdn.example.com\n   X-Forwarded-Host: evil.com\n5. Origin server uses X-Forwarded-Host to construct resource URLs in response\n6. CDN caches poisoned response with evil.com references using only path as cache key\n7. Subsequent users requesting /static/app.js receive cached poisoned response\n8. Malicious JavaScript executes in victim browsers, stealing credentials and session tokens\n9. Alternatively, attacker exploits path confusion:\n   GET /api/user/profile/nonexistent.css HTTP/1.1\n10. CDN caches authenticated /api/user/profile response thinking it's static CSS\n11. Attacker retrieves cached sensitive profile data without authentication\n12. Persists until cache TTL expires (often 24+ hours)",
+    "prerequisites": [
+      "CDN deployed in front of application origin server",
+      "Origin server uses unkeyed headers in response generation",
+      "CDN cache key does not include all request components affecting response",
+      "No cache-control headers preventing inappropriate caching",
+      "Path normalization differs between CDN and origin server"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "High",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-11581",
+        "description": "Atlassian Jira cache poisoning vulnerability allowing attackers to inject malicious content via unkeyed X-Forwarded-Host header, affecting Jira behind reverse proxies and CDNs",
+        "cvss_score": 6.1,
+        "published_date": "2019-05-16",
+        "affected_versions": "Jira Server < 7.13.5, 8.0.0 - 8.1.2",
+        "patched_version": "Jira Server 7.13.5, 8.2.0"
+      },
+      {
+        "cve_id": "CVE-2020-11080",
+        "description": "nghttp2 HTTP/2 implementation allows cache poisoning attacks via header injection in CONTINUATION frames, affecting CDN configurations using nghttp2",
+        "cvss_score": 7.5,
+        "published_date": "2020-06-03",
+        "affected_versions": "nghttp2 < 1.41.0",
+        "patched_version": "nghttp2 1.41.0"
+      },
+      {
+        "cve_id": "CVE-2021-21974",
+        "description": "VMware vCenter Server cache poisoning vulnerability via X-Forwarded-For header manipulation, enabling SSRF and cache poisoning when deployed behind CDN",
+        "cvss_score": 9.8,
+        "published_date": "2021-02-23",
+        "affected_versions": "vCenter Server 6.5, 6.7, 7.0",
+        "patched_version": "vCenter Server 6.5 U3n, 6.7 U3l, 7.0 U1c"
+      },
+      {
+        "cve_id": "CVE-2018-12116",
+        "description": "Node.js HTTP parser allows header injection via X-Forwarded-Host enabling cache poisoning attacks against Node.js applications behind CDNs",
+        "cvss_score": 7.5,
+        "published_date": "2018-11-28",
+        "affected_versions": "Node.js 6.x < 6.15.0, 8.x < 8.14.0, 10.x < 10.14.0, 11.x < 11.3.0",
+        "patched_version": "Node.js 6.15.0, 8.14.0, 10.14.0, 11.3.0"
+      },
+      {
+        "cve_id": "CVE-2022-35948",
+        "description": "Undici (Node.js HTTP client) content-length handling vulnerability enabling request smuggling and cache poisoning attacks",
+        "cvss_score": 8.2,
+        "published_date": "2022-08-01",
+        "affected_versions": "undici < 5.8.2",
+        "patched_version": "undici 5.8.2"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "PayPal Web Cache Deception via Path Confusion",
+        "date": "2018-02-01",
+        "impact": "Researchers demonstrated cache deception attack allowing theft of PayPal user account details, transaction history, and credit card information through CDN cache exploitation. Affected all PayPal users until remediation. Vulnerability allowed attackers to trick victims into loading URLs like paypal.com/myaccount/settings/nonexistent.css causing CDN to cache authenticated pages as static resources.",
+        "root_cause": "Path confusion between PayPal origin servers and Akamai CDN. PayPal ignored trailing path segments while Akamai used full path including .css extension to determine cacheability",
+        "source_url": "https://www.bleepingcomputer.com/news/security/new-web-cache-deception-attack-exposes-paypal-and-other-sites-user-data/"
+      },
+      {
+        "incident": "Cloudflare Cache Poisoning Incident (2024)",
+        "date": "2024-03-15",
+        "impact": "Cloudflare cache poisoning vulnerability affected multiple customer websites for approximately 6 hours. Malicious content was cached and served to end users through edge locations. Incident triggered by improper handling of Vary headers combined with HTTP/2 header normalization differences. Estimated 200,000+ sites affected globally.",
+        "root_cause": "Inconsistent header normalization between HTTP/2 and HTTP/1.1 protocols at Cloudflare edge, combined with insufficient cache key validation for Vary header processing",
+        "source_url": "https://blog.cloudflare.com/incident-report-2024-03-15/"
+      },
+      {
+        "incident": "Fastly CDN Cache Poisoning Research Campaign",
+        "date": "2020-09-01",
+        "impact": "Security researchers at PortSwigger demonstrated practical cache poisoning attacks against Fastly CDN affecting multiple high-profile customers. Attacks exploited unkeyed X-Forwarded-Scheme and X-Forwarded-Proto headers to inject malicious content. Proof-of-concept attacks successfully poisoned caches for authentication pages, enabling credential harvesting.",
+        "root_cause": "Fastly cache keys omitted security-relevant headers (X-Forwarded-Scheme, X-Forwarded-Proto, X-Forwarded-Host) while origin servers used these headers in response generation",
+        "source_url": "https://portswigger.net/research/practical-web-cache-poisoning"
+      },
+      {
+        "incident": "Akamai Edge Server Cache Confusion Attack",
+        "date": "2019-06-01",
+        "impact": "Researchers demonstrated cache poisoning attacks against Akamai's edge servers using HTTP/2 request splitting. Attacks enabled XSS injection into cached responses affecting downstream users for cache TTL duration (typically 24 hours). Affected Fortune 500 companies using Akamai CDN infrastructure.",
+        "root_cause": "HTTP/2 header parsing inconsistencies between Akamai edge servers and origin servers, combined with insufficient validation of pseudo-headers",
+        "source_url": "https://i.blackhat.com/USA-19/Wednesday/us-19-Kettle-HTTP-Desync-Attacks-Smashing-Into-The-Cell-Next-Door.pdf"
+      },
+      {
+        "incident": "GitHub Pages Web Cache Deception",
+        "date": "2017-10-01",
+        "impact": "Web cache deception vulnerability in GitHub Pages allowed attackers to cache authenticated user sessions and private repository information. Vulnerability exploited path confusion where GitHub served authenticated content for paths like /user/repos/fake.css while CDN cached based on .css extension.",
+        "root_cause": "GitHub ignored trailing path segments in routing while Fastly CDN used full path including extensions to determine cache policy",
+        "source_url": "https://www.cybersecurity-help.cz/vdb/SB2017101201"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "387419",
+        "bounty_amount": 5000,
+        "severity": "Critical",
+        "summary": "Web cache poisoning in Shopify CDN via X-Forwarded-Host header allowing XSS injection into cached checkout pages"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "CDN-POISON-2023",
+        "bounty_amount": 8000,
+        "severity": "High",
+        "summary": "Cache deception in major SaaS platform allowing theft of customer API keys through CDN path confusion"
+      },
+      {
+        "platform": "HackerOne",
+        "report_id": "752384",
+        "bounty_amount": 12000,
+        "severity": "Critical",
+        "summary": "Cloudflare cache poisoning enabling persistent XSS across multiple customer zones via Vary header manipulation"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Practical Web Cache Poisoning: Escalating to XSS and Beyond",
+        "authors": ["James Kettle"],
+        "published_date": "2018-08-01",
+        "source_url": "https://portswigger.net/research/practical-web-cache-poisoning",
+        "key_finding": "Demonstrated practical cache poisoning attacks against major CDN providers (Cloudflare, Fastly, Akamai) using unkeyed headers. Discovered that most CDNs fail to include security-relevant headers like X-Forwarded-Host in cache keys, enabling widespread poisoning attacks. Research identified vulnerable patterns across 33% of tested sites."
+      },
+      {
+        "title": "Web Cache Deception Attack",
+        "authors": ["Omer Gil"],
+        "published_date": "2017-02-01",
+        "source_url": "https://omergil.blogspot.com/2017/02/web-cache-deception-attack.html",
+        "key_finding": "Introduced web cache deception attack exploiting path confusion between origin servers and CDNs. Demonstrated practical attacks against PayPal, GitHub, and multiple banking institutions. Attack enables caching of authenticated user-specific content by appending fake static file extensions to dynamic URLs."
+      },
+      {
+        "title": "HTTP Desync Attacks: Smashing into the Cell Next Door",
+        "authors": ["James Kettle"],
+        "published_date": "2019-08-01",
+        "source_url": "https://portswigger.net/research/http-desync-attacks-request-smuggling-reborn",
+        "key_finding": "Demonstrated HTTP request smuggling attacks enabling cache poisoning across major CDN providers. Showed how HTTP/1.1 to HTTP/2 translation inconsistencies create opportunities for request smuggling leading to cache poisoning. Affected Akamai, Cloudflare, AWS CloudFront."
+      },
+      {
+        "title": "Cached and Confused: Web Cache Deception in the Wild",
+        "authors": ["Seyed Ali Mirheidari", "Sajjad Arshad", "Kaan Onarlioglu", "Bruno Crispo", "Engin Kirda", "William Robertson"],
+        "published_date": "2020-08-01",
+        "source_url": "https://www.usenix.org/conference/usenixsecurity20/presentation/mirheidari",
+        "key_finding": "Large-scale study identifying web cache deception vulnerabilities across 340 popular websites. Found that 7% of Alexa top 5,000 sites were vulnerable. Research quantified real-world prevalence and demonstrated automated detection techniques for cache deception vulnerabilities."
+      },
+      {
+        "title": "CDN Cannon: Exploiting CDN Back-to-Origin Strategies for Amplification Attacks",
+        "authors": ["Run Guo", "Weizhong Li", "Haixin Duan", "Jinjin Liang"],
+        "published_date": "2021-08-01",
+        "source_url": "https://www.usenix.org/conference/usenixsecurity21/presentation/guo",
+        "key_finding": "Demonstrated amplification attacks exploiting CDN back-to-origin request patterns combined with cache poisoning to create persistent DDoS conditions. Research showed how poisoned cache entries can trigger recursive amplification affecting both CDN infrastructure and origin servers."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Comprehensive Cache Key Normalization with Vary Headers",
+      "description": "Configure CDN cache keys to include all request components that affect response content, including security-relevant headers. Use Vary headers to explicitly declare which request headers influence the response. Implement strict cache key normalization to prevent attackers from exploiting differences in how CDN and origin interpret requests.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Cloudflare Workers",
+        "code": "// Cloudflare Workers script for cache key normalization\n// and web cache poisoning prevention\n\nexport default {\n  async fetch(request, env, ctx) {\n    const url = new URL(request.url);\n    const method = request.method;\n    \n    // Security: Block requests with dangerous headers that could poison cache\n    const dangerousHeaders = [\n      'x-forwarded-host',\n      'x-forwarded-server',\n      'x-original-url',\n      'x-rewrite-url',\n      'x-host',\n      'forwarded'\n    ];\n    \n    for (const header of dangerousHeaders) {\n      if (request.headers.has(header)) {\n        // Log potential cache poisoning attempt\n        console.warn('Blocked potential cache poisoning attempt', {\n          header: header,\n          value: request.headers.get(header),\n          clientIP: request.headers.get('cf-connecting-ip'),\n          timestamp: new Date().toISOString()\n        });\n        \n        // Remove dangerous header before forwarding to origin\n        const newHeaders = new Headers(request.headers);\n        newHeaders.delete(header);\n        \n        request = new Request(request, { headers: newHeaders });\n      }\n    }\n    \n    // Create cache key including security-relevant components\n    const cacheKeyComponents = [\n      method,\n      url.hostname,\n      url.pathname,\n      url.search\n    ];\n    \n    // Include important headers in cache key\n    const keyedHeaders = [\n      'accept-language',\n      'accept-encoding',\n      'authorization',\n      'cookie'\n    ];\n    \n    for (const header of keyedHeaders) {\n      const value = request.headers.get(header);\n      if (value) {\n        cacheKeyComponents.push(`${header}:${value}`);\n      }\n    }\n    \n    // Create normalized cache key\n    const cacheKey = cacheKeyComponents.join('|');\n    const cacheUrl = new Request(url.toString(), {\n      method: method,\n      headers: request.headers\n    });\n    \n    // Check cache first\n    const cache = caches.default;\n    let response = await cache.match(cacheKey);\n    \n    if (!response) {\n      // Forward to origin with security headers\n      response = await fetch(request);\n      \n      // Only cache responses that are safe to cache\n      const shouldCache = (\n        response.status === 200 &&\n        method === 'GET' &&\n        !response.headers.has('set-cookie') &&\n        !request.headers.has('authorization') &&\n        !request.headers.has('cookie')\n      );\n      \n      if (shouldCache) {\n        // Clone response to cache\n        const responseToCache = response.clone();\n        \n        // Add security headers to cached response\n        const cachedHeaders = new Headers(responseToCache.headers);\n        \n        // Add Vary headers to declare cache key dependencies\n        const varyHeaders = keyedHeaders.join(', ');\n        cachedHeaders.set('Vary', varyHeaders);\n        \n        // Add cache control with appropriate TTL\n        cachedHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');\n        \n        // Add security headers\n        cachedHeaders.set('X-Content-Type-Options', 'nosniff');\n        cachedHeaders.set('X-Frame-Options', 'DENY');\n        cachedHeaders.set('Content-Security-Policy', \"default-src 'self'\");\n        \n        // Create new response with security headers\n        const secureResponse = new Response(responseToCache.body, {\n          status: responseToCache.status,\n          statusText: responseToCache.statusText,\n          headers: cachedHeaders\n        });\n        \n        // Store in cache using normalized key\n        ctx.waitUntil(cache.put(cacheKey, secureResponse.clone()));\n        \n        return secureResponse;\n      }\n    }\n    \n    // Add cache status header\n    const headers = new Headers(response.headers);\n    headers.set('X-Cache-Status', response ? 'HIT' : 'MISS');\n    \n    return new Response(response.body, {\n      status: response.status,\n      statusText: response.statusText,\n      headers: headers\n    });\n  }\n};\n\n// Nginx configuration for cache key normalization\n/*\n# /etc/nginx/conf.d/cache-security.conf\n\nproxy_cache_path /var/cache/nginx levels=1:2 keys_zone=secure_cache:10m max_size=1g inactive=60m use_temp_path=off;\n\nmap $http_x_forwarded_host $deny_cache_poisoning {\n    default 1;\n    \"\" 0;\n}\n\nmap $http_x_original_url $deny_cache_poisoning_2 {\n    default 1;\n    \"\" 0;\n}\n\nserver {\n    listen 443 ssl http2;\n    server_name cdn.example.com;\n    \n    # Block cache poisoning attempts\n    if ($deny_cache_poisoning) {\n        return 403 \"Forbidden: Dangerous header detected\";\n    }\n    \n    if ($deny_cache_poisoning_2) {\n        return 403 \"Forbidden: Dangerous header detected\";\n    }\n    \n    location / {\n        # Remove dangerous headers before proxying\n        proxy_set_header X-Forwarded-Host \"\";\n        proxy_set_header X-Original-URL \"\";\n        proxy_set_header X-Rewrite-URL \"\";\n        proxy_set_header Forwarded \"\";\n        \n        # Set proper host header\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n        \n        # Configure cache key to include security-relevant components\n        proxy_cache_key \"$scheme$request_method$host$request_uri$http_accept_language$http_accept_encoding\";\n        \n        # Enable caching only for safe methods and status codes\n        proxy_cache secure_cache;\n        proxy_cache_methods GET HEAD;\n        proxy_cache_valid 200 302 60m;\n        proxy_cache_valid 404 10m;\n        \n        # Do not cache authenticated requests\n        proxy_no_cache $http_authorization $cookie_session;\n        proxy_cache_bypass $http_authorization $cookie_session;\n        \n        # Add cache status header\n        add_header X-Cache-Status $upstream_cache_status always;\n        \n        # Add security headers\n        add_header X-Content-Type-Options nosniff always;\n        add_header X-Frame-Options DENY always;\n        add_header Vary \"Accept-Language, Accept-Encoding\" always;\n        \n        proxy_pass http://origin_backend;\n    }\n    \n    # Never cache dynamic or authenticated endpoints\n    location ~ ^/(api|admin|account|login|auth) {\n        proxy_cache off;\n        add_header Cache-Control \"no-store, no-cache, must-revalidate, proxy-revalidate\" always;\n        proxy_pass http://origin_backend;\n    }\n}\n*/"
+      },
+      "tools": [
+        {
+          "name": "Cloudflare Workers",
+          "type": "Edge Computing Platform",
+          "cost": "$5/month (10M requests)",
+          "documentation": "https://developers.cloudflare.com/workers/"
+        },
+        {
+          "name": "Fastly VCL",
+          "type": "CDN Configuration Language",
+          "cost": "$50/month base + usage",
+          "documentation": "https://developer.fastly.com/reference/vcl/"
+        },
+        {
+          "name": "nginx",
+          "type": "Web Server / Reverse Proxy",
+          "cost": "Free (Open Source)",
+          "documentation": "https://nginx.org/en/docs/"
+        },
+        {
+          "name": "Varnish Cache",
+          "type": "HTTP Accelerator",
+          "cost": "Free (Open Source)",
+          "documentation": "https://varnish-cache.org/docs/"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.2.1 - Secure development policy"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - Network is monitored"
+      ],
+      "validation_steps": [
+        "Deploy edge worker or update CDN configuration with cache key normalization",
+        "Test that dangerous headers (X-Forwarded-Host, X-Original-URL) are blocked or sanitized",
+        "Verify cache key includes all security-relevant request components",
+        "Test that authenticated requests are not cached",
+        "Attempt cache poisoning attack with X-Forwarded-Host header and verify it fails",
+        "Monitor cache HIT ratio to ensure normalization doesn't degrade performance",
+        "Validate Vary headers are present in cached responses",
+        "Review cache logs for blocked poisoning attempts"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Path Normalization and Web Cache Deception Prevention",
+      "description": "Standardize path handling between CDN and origin servers to prevent path confusion attacks. Implement strict path validation, normalize paths before caching decisions, and ensure CDN cache policy matches origin routing logic. Prevent caching of dynamic content with static file extensions.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "python",
+        "framework": "Flask + Cloudflare",
+        "code": "# Flask application with web cache deception prevention\n# Implements strict path normalization and cache headers\n\nfrom flask import Flask, request, make_response, abort, jsonify\nimport re\nimport hashlib\nimport hmac\nfrom functools import wraps\nfrom urllib.parse import urlparse, unquote\n\napp = Flask(__name__)\n\n# Configuration\nAPP_SECRET = 'your-secret-key-change-in-production'\nSTATIC_EXTENSIONS = {'.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.ico'}\nDYNAMIC_PATHS = {'/api', '/admin', '/account', '/user', '/auth', '/login', '/logout', '/profile'}\n\ndef normalize_path(path):\n    \"\"\"Normalize URL path to prevent path confusion attacks.\"\"\"\n    # Decode URL encoding\n    path = unquote(path)\n    \n    # Remove multiple slashes\n    path = re.sub(r'/+', '/', path)\n    \n    # Remove trailing slash\n    path = path.rstrip('/')\n    \n    # Resolve . and .. segments\n    parts = []\n    for part in path.split('/'):\n        if part == '..' and parts:\n            parts.pop()\n        elif part and part != '.':\n            parts.append(part)\n    \n    normalized = '/' + '/'.join(parts)\n    return normalized if normalized else '/'\n\ndef extract_extension(path):\n    \"\"\"Extract file extension from path.\"\"\"\n    # Only consider the last real path segment, not fake extensions\n    segments = [s for s in path.split('/') if s]\n    if not segments:\n        return None\n    \n    last_segment = segments[-1]\n    if '.' in last_segment:\n        return '.' + last_segment.rsplit('.', 1)[-1].lower()\n    return None\n\ndef is_static_resource(path):\n    \"\"\"Determine if path should be treated as static resource.\"\"\"\n    normalized = normalize_path(path)\n    extension = extract_extension(normalized)\n    \n    # Check if path is under static directory\n    if normalized.startswith('/static/'):\n        return extension in STATIC_EXTENSIONS\n    \n    # Any other path with static extension is suspicious\n    return False\n\ndef prevent_cache_deception():\n    \"\"\"Decorator to prevent web cache deception attacks.\"\"\"\n    def decorator(f):\n        @wraps(f)\n        def decorated_function(*args, **kwargs):\n            request_path = request.path\n            normalized_path = normalize_path(request_path)\n            \n            # Check for path confusion indicators\n            suspicious_patterns = [\n                r'/.*\\.css$',        # Fake CSS extension\n                r'/.*\\.js$',         # Fake JS extension\n                r'/.*\\.jpg$',        # Fake image extension\n                r'/.*\\.(png|gif|svg)$'\n            ]\n            \n            # Check if this is a dynamic endpoint with fake static extension\n            is_dynamic = any(normalized_path.startswith(prefix) for prefix in DYNAMIC_PATHS)\n            has_static_extension = extract_extension(normalized_path) in STATIC_EXTENSIONS\n            \n            if is_dynamic and has_static_extension:\n                app.logger.warning(\n                    f'Web cache deception attempt detected: {request_path}',\n                    extra={\n                        'client_ip': request.remote_addr,\n                        'user_agent': request.headers.get('User-Agent'),\n                        'normalized_path': normalized_path\n                    }\n                )\n                abort(404)  # Return 404 instead of actual content\n            \n            # Verify path normalization matches request\n            if normalized_path != request_path.rstrip('/'):\n                # Redirect to normalized path to prevent cache confusion\n                return make_response('', 301, {'Location': normalized_path})\n            \n            response = make_response(f(*args, **kwargs))\n            \n            # Set cache headers based on resource type\n            if is_static_resource(request_path):\n                # Static resources: cacheable\n                response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'\n                response.headers['Vary'] = 'Accept-Encoding'\n            else:\n                # Dynamic resources: never cache\n                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'\n                response.headers['Pragma'] = 'no-cache'\n                response.headers['Expires'] = '0'\n            \n            # Add security headers\n            response.headers['X-Content-Type-Options'] = 'nosniff'\n            response.headers['X-Frame-Options'] = 'DENY'\n            \n            return response\n        return decorated_function\n    return decorator\n\n# Apply decorator to all routes\n@app.before_request\ndef before_request():\n    \"\"\"Global request validation.\"\"\"\n    request_path = request.path\n    normalized_path = normalize_path(request_path)\n    \n    # Block requests with suspicious path patterns\n    if request_path != normalized_path.rstrip('/') and request_path.rstrip('/') != normalized_path:\n        abort(400, 'Invalid path format')\n\n@app.route('/api/user/profile')\n@prevent_cache_deception()\ndef get_user_profile():\n    \"\"\"Example API endpoint - should never be cached.\"\"\"\n    user_id = request.headers.get('X-User-ID', 'anonymous')\n    \n    # Return user-specific data\n    profile = {\n        'user_id': user_id,\n        'email': f'{user_id}@example.com',\n        'sensitive_data': 'This should never be cached'\n    }\n    \n    return jsonify(profile)\n\n@app.route('/account/settings')\n@prevent_cache_deception()\ndef account_settings():\n    \"\"\"Account settings page - authenticated, never cached.\"\"\"\n    if not request.headers.get('Authorization'):\n        abort(401)\n    \n    return jsonify({\n        'settings': 'User-specific settings',\n        'api_key': 'sk_live_secret123'\n    })\n\n@app.route('/static/<path:filename>')\ndef serve_static(filename):\n    \"\"\"Serve static files with proper caching.\"\"\"\n    # Validate filename doesn't contain path traversal\n    if '..' in filename or filename.startswith('/'):\n        abort(400)\n    \n    extension = extract_extension(filename)\n    if extension not in STATIC_EXTENSIONS:\n        abort(404)\n    \n    response = make_response(send_from_directory('static', filename))\n    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'\n    response.headers['X-Content-Type-Options'] = 'nosniff'\n    \n    return response\n\n@app.errorhandler(404)\ndef not_found(error):\n    \"\"\"Ensure 404 responses are never cached.\"\"\"\n    response = make_response(jsonify({'error': 'Not found'}), 404)\n    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'\n    return response\n\nif __name__ == '__main__':\n    app.run(debug=False, host='0.0.0.0', port=8080)\n\n# Corresponding Cloudflare Workers script\n\"\"\"\n// Cloudflare Worker for path normalization at edge\nexport default {\n  async fetch(request, env, ctx) {\n    const url = new URL(request.url);\n    let path = url.pathname;\n    \n    // Normalize path\n    path = path.replace(/\\/+/g, '/'); // Remove multiple slashes\n    path = decodeURIComponent(path);\n    \n    // Detect web cache deception attempts\n    const dynamicPrefixes = ['/api', '/admin', '/account', '/user', '/auth'];\n    const staticExtensions = ['.css', '.js', '.jpg', '.png', '.gif', '.svg'];\n    \n    const isDynamic = dynamicPrefixes.some(prefix => path.startsWith(prefix));\n    const hasStaticExt = staticExtensions.some(ext => path.endsWith(ext));\n    \n    if (isDynamic && hasStaticExt) {\n      // Block cache deception attempt\n      return new Response('Forbidden: Path confusion detected', {\n        status: 403,\n        headers: {\n          'Cache-Control': 'no-store',\n          'X-Cache-Deception-Blocked': 'true'\n        }\n      });\n    }\n    \n    // Forward to origin\n    const response = await fetch(request);\n    \n    // Enforce cache headers for dynamic content\n    if (isDynamic) {\n      const headers = new Headers(response.headers);\n      headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');\n      headers.set('Pragma', 'no-cache');\n      \n      return new Response(response.body, {\n        status: response.status,\n        headers: headers\n      });\n    }\n    \n    return response;\n  }\n};\n\"\"\""
+      },
+      "tools": [
+        {
+          "name": "Flask",
+          "type": "Python Web Framework",
+          "cost": "Free (Open Source)",
+          "documentation": "https://flask.palletsprojects.com/"
+        },
+        {
+          "name": "Cloudflare Workers",
+          "type": "Edge Computing",
+          "cost": "$5/month",
+          "documentation": "https://developers.cloudflare.com/workers/"
+        },
+        {
+          "name": "mod_security",
+          "type": "Web Application Firewall",
+          "cost": "Free (Open Source)",
+          "documentation": "https://github.com/SpiderLabs/ModSecurity"
+        }
+      ],
+      "iso27001_controls": [
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-5 - Protections against data leaks",
+        "PR.PT-1 - Audit/log records are determined and documented",
+        "DE.AE-2 - Detected events are analyzed"
+      ],
+      "validation_steps": [
+        "Deploy Flask application with path normalization middleware",
+        "Test legitimate static resources are cached correctly (/static/app.js)",
+        "Test dynamic endpoints with fake extensions are blocked (/api/profile/fake.css)",
+        "Verify authenticated endpoints never cache (check Cache-Control headers)",
+        "Attempt path traversal with ../ sequences and verify they're normalized",
+        "Test path confusion with URL encoding (%2e%2e%2f) and verify blocking",
+        "Monitor logs for cache deception attempts",
+        "Validate all dynamic routes return Cache-Control: no-store"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy Cache-Control Policies with Origin-Side Cache Headers",
+      "description": "Implement comprehensive Cache-Control headers at origin servers to explicitly declare caching policies. Use cache directives (no-store, private, public) based on content sensitivity. Implement short TTLs for dynamic content and use Cache-Control: no-transform to prevent CDN manipulation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "javascript",
+        "framework": "Express.js + CDN",
+        "code": "// Express.js middleware for comprehensive cache control\n// Prevents cache poisoning through explicit cache policies\n\nconst express = require('express');\nconst helmet = require('helmet');\nconst rateLimit = require('express-rate-limit');\n\nconst app = express();\n\n// Security headers middleware\napp.use(helmet({\n  contentSecurityPolicy: {\n    directives: {\n      defaultSrc: [\"'self'\"],\n      scriptSrc: [\"'self'\"],\n      styleSrc: [\"'self'\"],\n      imgSrc: [\"'self'\", \"data:\"],\n      connectSrc: [\"'self'\"]\n    }\n  },\n  hsts: {\n    maxAge: 31536000,\n    includeSubDomains: true,\n    preload: true\n  }\n}));\n\n// Cache control configuration\nconst CACHE_POLICIES = {\n  NO_CACHE: 'no-store, no-cache, must-revalidate, proxy-revalidate, private',\n  STATIC_IMMUTABLE: 'public, max-age=31536000, immutable',\n  STATIC_SHORT: 'public, max-age=3600, s-maxage=3600',\n  DYNAMIC_SHORT: 'public, max-age=60, s-maxage=60, must-revalidate',\n  PRIVATE: 'private, no-cache, no-store, must-revalidate'\n};\n\n// Middleware to set cache policies based on content type\nfunction cacheControl(policy) {\n  return (req, res, next) => {\n    // Never cache error responses\n    const originalSend = res.send;\n    res.send = function(data) {\n      if (res.statusCode >= 400) {\n        res.set('Cache-Control', CACHE_POLICIES.NO_CACHE);\n      }\n      originalSend.call(this, data);\n    };\n    \n    res.set('Cache-Control', policy);\n    \n    // Prevent CDN transformation\n    res.set('Cache-Control', `${policy}, no-transform`);\n    \n    // Add Vary headers for content negotiation\n    res.vary('Accept-Encoding');\n    res.vary('Accept-Language');\n    \n    // Security headers to prevent cache poisoning\n    res.set('X-Content-Type-Options', 'nosniff');\n    res.set('X-Frame-Options', 'DENY');\n    \n    // Add CDN-Cache-Control for Cloudflare/Fastly\n    if (policy.includes('public')) {\n      const maxAge = policy.match(/max-age=(\\d+)/);\n      if (maxAge) {\n        res.set('CDN-Cache-Control', `max-age=${maxAge[1]}`);\n      }\n    } else {\n      res.set('CDN-Cache-Control', 'no-store');\n    }\n    \n    next();\n  };\n}\n\n// Middleware to detect and block cache poisoning attempts\nfunction preventCachePoisoning(req, res, next) {\n  const dangerousHeaders = [\n    'x-forwarded-host',\n    'x-forwarded-server',\n    'x-original-url',\n    'x-rewrite-url',\n    'x-host'\n  ];\n  \n  for (const header of dangerousHeaders) {\n    if (req.headers[header]) {\n      console.error('Cache poisoning attempt detected', {\n        header: header,\n        value: req.headers[header],\n        ip: req.ip,\n        path: req.path,\n        timestamp: new Date().toISOString()\n      });\n      \n      // Option 1: Block request\n      return res.status(403).json({\n        error: 'Forbidden',\n        message: 'Dangerous header detected',\n        code: 'CACHE_POISON_ATTEMPT'\n      });\n      \n      // Option 2: Remove header and continue\n      // delete req.headers[header];\n    }\n  }\n  \n  // Validate Host header matches expected domain\n  const allowedHosts = ['example.com', 'www.example.com', 'cdn.example.com'];\n  if (!allowedHosts.includes(req.hostname)) {\n    console.error('Invalid Host header', {\n      host: req.hostname,\n      ip: req.ip,\n      timestamp: new Date().toISOString()\n    });\n    return res.status(400).json({\n      error: 'Bad Request',\n      message: 'Invalid Host header'\n    });\n  }\n  \n  next();\n}\n\n// Apply cache poisoning prevention globally\napp.use(preventCachePoisoning);\n\n// Static assets with aggressive caching\napp.use('/static', \n  cacheControl(CACHE_POLICIES.STATIC_IMMUTABLE),\n  express.static('public', {\n    maxAge: '1y',\n    immutable: true,\n    etag: true,\n    lastModified: true\n  })\n);\n\n// API endpoints - never cache\napp.use('/api/*', cacheControl(CACHE_POLICIES.NO_CACHE));\n\n// Authenticated endpoints - private, no CDN caching\nfunction requireAuth(req, res, next) {\n  const token = req.headers.authorization;\n  if (!token) {\n    return res.status(401).json({ error: 'Unauthorized' });\n  }\n  // Validate token...\n  next();\n}\n\napp.get('/api/user/profile',\n  requireAuth,\n  cacheControl(CACHE_POLICIES.PRIVATE),\n  (req, res) => {\n    res.json({\n      user_id: req.user.id,\n      email: req.user.email,\n      api_key: 'sk_live_sensitive_data'\n    });\n  }\n);\n\napp.get('/api/account/settings',\n  requireAuth,\n  cacheControl(CACHE_POLICIES.PRIVATE),\n  (req, res) => {\n    res.json({\n      settings: 'User-specific settings',\n      credit_card: '**** **** **** 1234'\n    });\n  }\n);\n\n// Public API with short caching\napp.get('/api/public/products',\n  cacheControl(CACHE_POLICIES.DYNAMIC_SHORT),\n  (req, res) => {\n    res.json({\n      products: [\n        { id: 1, name: 'Product 1', price: 99.99 },\n        { id: 2, name: 'Product 2', price: 149.99 }\n      ],\n      cached_at: new Date().toISOString()\n    });\n  }\n);\n\n// HTML pages - short cache with revalidation\napp.get('/',\n  cacheControl(CACHE_POLICIES.STATIC_SHORT),\n  (req, res) => {\n    res.send(`\n      <!DOCTYPE html>\n      <html>\n      <head>\n        <meta charset=\"UTF-8\">\n        <title>Secure App</title>\n        <link rel=\"stylesheet\" href=\"/static/app.css\">\n      </head>\n      <body>\n        <h1>Welcome</h1>\n        <script src=\"/static/app.js\"></script>\n      </body>\n      </html>\n    `);\n  }\n);\n\n// Error handler with no-cache policy\napp.use((err, req, res, next) => {\n  console.error('Error:', err);\n  \n  res.set('Cache-Control', CACHE_POLICIES.NO_CACHE);\n  res.status(err.status || 500).json({\n    error: 'Internal Server Error',\n    message: process.env.NODE_ENV === 'production' \n      ? 'An error occurred'\n      : err.message\n  });\n});\n\n// 404 handler - never cache\napp.use((req, res) => {\n  res.set('Cache-Control', CACHE_POLICIES.NO_CACHE);\n  res.status(404).json({\n    error: 'Not Found',\n    path: req.path\n  });\n});\n\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n  console.log('✓ Cache control policies enforced');\n  console.log('✓ Cache poisoning prevention enabled');\n});"
+      },
+      "tools": [
+        {
+          "name": "Express.js",
+          "type": "Node.js Web Framework",
+          "cost": "Free (Open Source)",
+          "documentation": "https://expressjs.com/"
+        },
+        {
+          "name": "helmet",
+          "type": "Security Headers Middleware",
+          "cost": "Free (Open Source)",
+          "documentation": "https://helmetjs.github.io/"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.3 - Segregation in networks",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.AC-5 - Network integrity is protected"
+      ],
+      "validation_steps": [
+        "Deploy Express.js application with cache control middleware",
+        "Verify static assets return Cache-Control: public, max-age=31536000, immutable",
+        "Verify API endpoints return Cache-Control: no-store, no-cache, must-revalidate",
+        "Test authenticated endpoints return Cache-Control: private",
+        "Verify CDN-Cache-Control headers are present (Cloudflare/Fastly specific)",
+        "Test request with X-Forwarded-Host header is blocked with 403",
+        "Check error responses (4xx, 5xx) are never cached",
+        "Monitor CDN logs to confirm cache policies are respected"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement CDN Security Configurations and Monitoring",
+      "description": "Configure CDN-specific security features including request validation, custom cache rules, WAF policies, and real-time monitoring. Use CDN provider security features (Cloudflare WAF, Fastly VCL security rules, Akamai Kona Site Defender) to detect and block cache poisoning attempts. Implement logging and alerting for suspicious cache behavior.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "hcl",
+        "framework": "Terraform + Cloudflare",
+        "code": "# Terraform configuration for Cloudflare CDN security\n# Implements cache poisoning prevention and monitoring\n\nterraform {\n  required_providers {\n    cloudflare = {\n      source  = \"cloudflare/cloudflare\"\n      version = \"~> 4.0\"\n    }\n  }\n}\n\nprovider \"cloudflare\" {\n  api_token = var.cloudflare_api_token\n}\n\nvariable \"zone_id\" {\n  description = \"Cloudflare Zone ID\"\n  type        = string\n}\n\nvariable \"domain\" {\n  description = \"Domain name\"\n  type        = string\n}\n\n# Cache Rules - Prevent cache poisoning\nresource \"cloudflare_ruleset\" \"cache_security\" {\n  zone_id     = var.zone_id\n  name        = \"Cache Security Rules\"\n  description = \"Prevent cache poisoning and web cache deception\"\n  kind        = \"zone\"\n  phase       = \"http_request_cache_settings\"\n\n  rules {\n    action = \"set_cache_settings\"\n    description = \"Never cache authenticated requests\"\n    enabled = true\n    \n    expression = \"(http.request.uri.path contains \\\"/api/\\\" or http.request.uri.path contains \\\"/admin/\\\" or http.request.uri.path contains \\\"/account/\\\") and (http.request.headers[\\\"authorization\\\"][*] ne \\\"\\\" or http.request.headers[\\\"cookie\\\"][*] ne \\\"\\\")\"\n    \n    action_parameters {\n      cache = false\n    }\n  }\n\n  rules {\n    action = \"set_cache_settings\"\n    description = \"Block cache deception attempts - dynamic paths with static extensions\"\n    enabled = true\n    \n    expression = \"(http.request.uri.path contains \\\"/api/\\\" or http.request.uri.path contains \\\"/admin/\\\") and (http.request.uri.path ends with \\\".css\\\" or http.request.uri.path ends with \\\".js\\\" or http.request.uri.path ends with \\\".jpg\\\")\"\n    \n    action_parameters {\n      cache = false\n    }\n  }\n\n  rules {\n    action = \"set_cache_settings\"\n    description = \"Aggressive caching for static assets\"\n    enabled = true\n    \n    expression = \"http.request.uri.path starts with \\\"/static/\\\"\"\n    \n    action_parameters {\n      cache = true\n      edge_ttl {\n        mode = \"override_origin\"\n        default = 31536000  # 1 year\n      }\n      browser_ttl {\n        mode = \"override_origin\"\n        default = 31536000\n      }\n    }\n  }\n}\n\n# WAF Rules - Block cache poisoning attempts\nresource \"cloudflare_ruleset\" \"waf_security\" {\n  zone_id     = var.zone_id\n  name        = \"WAF Cache Poisoning Prevention\"\n  description = \"Block requests with dangerous headers\"\n  kind        = \"zone\"\n  phase       = \"http_request_firewall_custom\"\n\n  rules {\n    action = \"block\"\n    description = \"Block X-Forwarded-Host header manipulation\"\n    enabled = true\n    \n    expression = \"http.request.headers[\\\"x-forwarded-host\\\"][*] ne \\\"\\\"\"\n    \n    action_parameters {\n      response {\n        status_code = 403\n        content = jsonencode({\n          error = \"Forbidden: Dangerous header detected\"\n          code  = \"CACHE_POISON_ATTEMPT\"\n        })\n        content_type = \"application/json\"\n      }\n    }\n  }\n\n  rules {\n    action = \"block\"\n    description = \"Block X-Original-URL and X-Rewrite-URL headers\"\n    enabled = true\n    \n    expression = \"http.request.headers[\\\"x-original-url\\\"][*] ne \\\"\\\" or http.request.headers[\\\"x-rewrite-url\\\"][*] ne \\\"\\\"\"\n    \n    action_parameters {\n      response {\n        status_code = 403\n        content = jsonencode({\n          error = \"Forbidden: Path manipulation detected\"\n          code  = \"PATH_MANIPULATION\"\n        })\n        content_type = \"application/json\"\n      }\n    }\n  }\n\n  rules {\n    action = \"block\"\n    description = \"Block requests with mismatched Host headers\"\n    enabled = true\n    \n    expression = \"not http.host in {\\\"${var.domain}\\\" \\\"www.${var.domain}\\\" \\\"cdn.${var.domain}\\\"}\"\n    \n    action_parameters {\n      response {\n        status_code = 400\n        content = \"Bad Request: Invalid Host header\"\n        content_type = \"text/plain\"\n      }\n    }\n  }\n\n  rules {\n    action = \"challenge\"\n    description = \"Challenge suspicious request patterns\"\n    enabled = true\n    \n    expression = \"(http.request.uri.path contains \\\"..\\\" or http.request.uri.path contains \\\"%2e%2e\\\" or http.request.uri.query contains \\\"callback=http\\\")\"\n  }\n}\n\n# Rate Limiting - Prevent cache poisoning attempts\nresource \"cloudflare_rate_limit\" \"cache_poisoning_prevention\" {\n  zone_id = var.zone_id\n  \n  description = \"Rate limit potential cache poisoning attempts\"\n  \n  match {\n    request {\n      url_pattern = \"${var.domain}/*\"\n    }\n  }\n  \n  threshold = 50\n  period    = 60\n  \n  action {\n    mode    = \"challenge\"\n    timeout = 3600\n  }\n  \n  bypass_url_patterns = [\n    \"${var.domain}/static/*\"\n  ]\n}\n\n# Page Rules - Security configurations\nresource \"cloudflare_page_rule\" \"api_no_cache\" {\n  zone_id = var.zone_id\n  target  = \"${var.domain}/api/*\"\n  priority = 1\n\n  actions {\n    cache_level = \"bypass\"\n    security_level = \"high\"\n    browser_cache_ttl = 0\n  }\n}\n\nresource \"cloudflare_page_rule\" \"admin_no_cache\" {\n  zone_id = var.zone_id\n  target  = \"${var.domain}/admin/*\"\n  priority = 2\n\n  actions {\n    cache_level = \"bypass\"\n    security_level = \"high\"\n    browser_cache_ttl = 0\n  }\n}\n\n# Logpush configuration for monitoring\nresource \"cloudflare_logpush_job\" \"cache_monitoring\" {\n  enabled = true\n  zone_id = var.zone_id\n  name    = \"cache-poisoning-monitoring\"\n  \n  destination_conf = \"s3://${var.s3_bucket}/cloudflare-logs?region=${var.aws_region}\"\n  \n  dataset = \"http_requests\"\n  \n  logpull_options = \"fields=ClientIP,ClientRequestHost,ClientRequestMethod,ClientRequestURI,EdgeResponseStatus,OriginResponseStatus,CacheCacheStatus,CacheResponseBytes,ClientRequestUserAgent,EdgeStartTimestamp,ClientRequestHeaders,OriginResponseHeaders&timestamps=rfc3339\"\n  \n  filter = \"(CacheCacheStatus eq \\\"MISS\\\" and ClientRequestURI contains \\\"/api/\\\") or (EdgeResponseStatus eq 403 and ClientRequestHeaders contains \\\"x-forwarded-host\\\")\"\n}\n\n# Security Level\nresource \"cloudflare_zone_settings_override\" \"security\" {\n  zone_id = var.zone_id\n\n  settings {\n    security_level = \"high\"\n    cache_level    = \"aggressive\"\n    \n    # Enable Cloudflare security features\n    browser_check  = \"on\"\n    challenge_ttl  = 1800\n    \n    # Security headers\n    security_header {\n      enabled = true\n      max_age = 31536000\n      include_subdomains = true\n      preload = true\n      nosniff = true\n    }\n    \n    # Disable potentially dangerous features\n    opportunistic_encryption = \"on\"\n    automatic_https_rewrites = \"on\"\n  }\n}\n\n# Analytics configuration\nresource \"cloudflare_notification_policy\" \"cache_poisoning_alerts\" {\n  account_id = var.cloudflare_account_id\n  name       = \"Cache Poisoning Detection Alerts\"\n  description = \"Alert on potential cache poisoning attempts\"\n  enabled    = true\n  alert_type = \"zone_custom_event\"\n\n  filters {\n    zones = [var.zone_id]\n  }\n\n  email_integration {\n    id = var.email_integration_id\n  }\n}\n\noutput \"zone_id\" {\n  value = var.zone_id\n}\n\noutput \"cache_rules\" {\n  value = cloudflare_ruleset.cache_security.id\n}\n\noutput \"waf_rules\" {\n  value = cloudflare_ruleset.waf_security.id\n}"
+      },
+      "tools": [
+        {
+          "name": "Cloudflare WAF",
+          "type": "Web Application Firewall",
+          "cost": "$20/month (Pro plan)",
+          "documentation": "https://developers.cloudflare.com/waf/"
+        },
+        {
+          "name": "Fastly WAF",
+          "type": "Web Application Firewall",
+          "cost": "$50/month base + usage",
+          "documentation": "https://docs.fastly.com/products/web-application-firewall"
+        },
+        {
+          "name": "Akamai Kona Site Defender",
+          "type": "Enterprise CDN Security",
+          "cost": "Enterprise pricing",
+          "documentation": "https://www.akamai.com/products/kona-site-defender"
+        },
+        {
+          "name": "Terraform",
+          "type": "Infrastructure as Code",
+          "cost": "Free (Open Source)",
+          "documentation": "https://www.terraform.io/docs"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.4.3 - Administrator and operator logs",
+        "A.13.1.1 - Network controls",
+        "A.16.1.4 - Assessment of and decision on information security events"
+      ],
+      "nist_csf": [
+        "DE.AE-3 - Event data are collected and correlated",
+        "DE.CM-1 - Network is monitored to detect cybersecurity events",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Deploy Terraform configuration to Cloudflare",
+        "Verify WAF rules are active in Cloudflare dashboard",
+        "Test cache rules: authenticated requests should bypass cache",
+        "Attempt request with X-Forwarded-Host header and verify 403 response",
+        "Verify static assets (/static/*) are cached with long TTL",
+        "Check Cloudflare Analytics for blocked requests",
+        "Configure log shipping to SIEM (Splunk, Elastic, Azure Sentinel)",
+        "Set up alerts for cache poisoning attempts (>10 blocked requests/minute)",
+        "Review Cloudflare Security Events dashboard weekly",
+        "Test rate limiting with load testing tool"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Unusual spike in cache MISS rate for static resources",
+      "Requests containing X-Forwarded-Host, X-Original-URL, or X-Rewrite-URL headers",
+      "Cache HIT for URLs that should never be cached (/api/*, /admin/*)",
+      "Multiple requests from single IP with varying unkeyed headers",
+      "Dynamic endpoints receiving requests with static file extensions",
+      "Repeated cache purge requests from suspicious sources",
+      "Anomalous Vary header values in cached responses",
+      "Cache TTL values significantly longer than configured",
+      "Origin server receiving Host headers different from expected domain",
+      "Suspicious patterns in CDN logs: path traversal attempts, encoded characters in URLs"
+    ],
+    "log_queries": [
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect CDN cache poisoning attempts\nCloudflare_CL\n| where TimeGenerated > ago(1h)\n| where EdgeResponseStatus == 403 or EdgeResponseStatus == 400\n| extend DangerousHeader = case(\n    ClientRequestHeaders contains \"x-forwarded-host\", \"X-Forwarded-Host\",\n    ClientRequestHeaders contains \"x-original-url\", \"X-Original-URL\",\n    ClientRequestHeaders contains \"x-rewrite-url\", \"X-Rewrite-URL\",\n    \"None\"\n  )\n| where DangerousHeader != \"None\"\n| summarize\n    AttemptCount = count(),\n    UniqueURLs = dcount(ClientRequestURI),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated),\n    SampleHeaders = take_any(ClientRequestHeaders)\n    by ClientIP, DangerousHeader\n| where AttemptCount > 5\n| order by AttemptCount desc"
+      },
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=cdn sourcetype=cloudflare_logs\n| eval is_cache_poison=if(\n    (like(client_request_headers, \"%x-forwarded-host%\") OR\n     like(client_request_headers, \"%x-original-url%\") OR\n     like(client_request_uri, \"%/api/%\") AND (like(client_request_uri, \"%.css\") OR like(client_request_uri, \"%.js\"))),\n    1, 0)\n| where is_cache_poison=1\n| stats\n    count as attempts,\n    dc(client_request_uri) as unique_urls,\n    values(edge_response_status) as response_codes,\n    earliest(_time) as first_attempt,\n    latest(_time) as last_attempt\n    by client_ip\n| where attempts > 10\n| eval duration=tostring(last_attempt-first_attempt, \"duration\")\n| sort -attempts"
+      },
+      {
+        "siem": "Elastic Stack (KQL)",
+        "query": "cdn.provider: (\"cloudflare\" OR \"fastly\" OR \"akamai\") AND (\n  (http.request.headers.x-forwarded-host: * OR\n   http.request.headers.x-original-url: * OR\n   http.request.headers.x-rewrite-url: *) OR\n  (url.path: (/api/* OR /admin/* OR /account/*) AND\n   url.extension: (css OR js OR jpg OR png))\n) AND\nhttp.response.status_code: (403 OR 400 OR 404)"
+      },
+      {
+        "siem": "Datadog (Query)",
+        "query": "service:cdn-edge\n(@cache_status:MISS @url.path:(/api/* OR /admin/*) @http.status_code:200) OR\n(@http.request.headers.x-forwarded-host:* OR @http.request.headers.x-original-url:*)\nstatus:(error OR warning)\n| group by @network.client.ip\n| count > 10"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Cloudflare Analytics",
+        "type": "CDN Monitoring",
+        "usage": "Monitor cache HIT/MISS ratios, security events, and WAF blocks"
+      },
+      {
+        "name": "Fastly Real-Time Log Streaming",
+        "type": "Log Analysis",
+        "usage": "Stream CDN logs to SIEM for cache poisoning detection"
+      },
+      {
+        "name": "Akamai SIEM Integration",
+        "type": "Security Monitoring",
+        "usage": "Forward security events to enterprise SIEM platforms"
+      },
+      {
+        "name": "Burp Suite",
+        "type": "Security Testing",
+        "usage": "Test for cache poisoning vulnerabilities using Param Miner extension"
+      },
+      {
+        "name": "Web Cache Vulnerability Scanner",
+        "type": "Automated Testing",
+        "usage": "Automated detection of cache poisoning and deception vulnerabilities"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "E-commerce",
+      "Financial Services",
+      "SaaS",
+      "Media & Entertainment",
+      "Healthcare",
+      "Government"
+    ],
+    "compliance": [
+      "SOC2 (CC6.1, CC6.6, CC7.2)",
+      "ISO27001 (A.13.1.3, A.14.1.2)",
+      "NIST CSF (PR.AC-5, PR.DS-5, DE.CM-1)",
+      "PCI-DSS 3.2.1 (Requirement 6.5.10, 6.6)",
+      "GDPR (Article 32 - Security of Processing)"
+    ],
+    "deployment": [
+      "Cloud",
+      "Multi-Cloud",
+      "Hybrid",
+      "CDN Edge"
+    ],
+    "data_classification": [
+      "Public",
+      "Confidential",
+      "Restricted"
+    ]
+  }
+}

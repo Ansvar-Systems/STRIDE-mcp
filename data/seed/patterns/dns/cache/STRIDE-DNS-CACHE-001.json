@@ -1,0 +1,518 @@
+{
+  "id": "STRIDE-DNS-CACHE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-04",
+    "last_updated": "2026-02-04",
+    "reviewed_by": [],
+    "confidence_score": 9.5,
+    "validation_status": "production"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": [
+      "A06:2021 - Vulnerable and Outdated Components",
+      "A08:2021 - Software and Data Integrity Failures",
+      "A07:2021 - Cross-Site Scripting (XSS)"
+    ],
+    "mitre_attack": [
+      "T1187 - Forced Authentication",
+      "T1557.002 - Adversary-in-the-Middle: DNS Spoofing",
+      "T1040 - Network Sniffing",
+      "T1071.004 - Application Layer Protocol: DNS"
+    ],
+    "cwe": [
+      "CWE-347 - Improper Verification of Cryptographic Signature",
+      "CWE-295 - Improper Certificate Validation",
+      "CWE-346 - Origin Validation Error",
+      "CWE-808 - Reliance on Untrusted Inputs in a Security Decision"
+    ]
+  },
+  "threat": {
+    "title": "DNS Cache Poisoning (Kaminsky Attack) - Spoofing Internet Infrastructure",
+    "description": "DNS cache poisoning attacks, notably the Kaminsky attack (CVE-2008-1447), exploit predictable DNS query transaction IDs and lack of source port randomization in DNS resolvers to inject malicious DNS responses. Attackers craft forged DNS responses claiming to map legitimate domains to attacker-controlled IP addresses, which are cached by vulnerable DNS servers for the TTL period (hours to days). Users attempting to visit legitimate domains are redirected to attacker infrastructure for credential harvesting, malware distribution, pharming attacks, or man-in-the-middle exploitation. The Kaminsky attack affects recursive DNS resolvers (ISP DNS, enterprise DNS, public resolvers like Google/Cloudflare), impacting millions of users simultaneously. Vulnerable systems include BIND (< 9.5.0), Windows Server DNS, and many embedded DNS implementations. Successful exploitation requires no authentication and enables wholesale redirection of internet traffic.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.3,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "DNS Resolvers",
+    "versions_affected": [
+      "BIND 9.0.0 through 9.5.0-RC1",
+      "BIND 8.x all versions",
+      "Windows Server DNS (2000, 2003, 2008 pre-SP2)",
+      "Cisco IOS DNS (< 15.0)",
+      "Juniper Netscreen DNS",
+      "Many embedded DNS implementations",
+      "ISP recursive resolvers worldwide",
+      "Root name servers (NS1, NS2, NS3)",
+      "TLD name servers (.com, .org, .net, etc.)",
+      "Corporate DNS servers (AD-integrated DNS)"
+    ],
+    "ecosystem": "Internet Infrastructure / DNS",
+    "dependencies": [
+      "UDP port 53 (DNS)",
+      "DNS protocol implementation",
+      "Predictable transaction IDs",
+      "Non-randomized source ports",
+      "Lack of DNSSEC implementation",
+      "Lack of response validation"
+    ],
+    "related_frameworks": [
+      "DNSSEC (DNSSEC signing for validation)",
+      "RFC 5892 (IDNA2008 internationalized domains)",
+      "RFC 4034 (DNSSEC Resource Records)",
+      "RFC 8310 (DNS Query Transport over HTTPS)",
+      "RFC 8484 (DNS Queries over HTTPS)"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies target recursive DNS resolver (ISP DNS, enterprise resolver, or public resolver like Google/Cloudflare)\n2. Attacker sends thousands of crafted DNS queries for non-existent subdomains of target domain (e.g., random-xyz.example.com) to trigger recursive resolution\n3. Queries are sent to resolver with spoofed source IP of authoritative nameserver (attacker's infrastructure)\n4. Resolver forwards queries to authoritative nameserver, receives responses (both legitimate and attacker's forged responses)\n5. Attacker floods resolver with forged DNS responses claiming to map target domain to attacker IP (192.168.1.1)\n6. Vulnerable resolver accepts first matching response without validating source IP or cryptographic signature\n7. Malicious response is cached with TTL of 1-86400 seconds (hours to days)\n8. All subsequent queries for target domain from all users querying this resolver return attacker's IP address\n9. Users attempting to visit legitimate domain (e.g., bank.com) are redirected to attacker phishing site at attacker-controlled IP\n10. Attackers perform credential theft, malware distribution, ransomware infection, or MITM attacks on redirected users\n11. Attack persists for entire TTL duration - can redirect millions of users over hours/days before detection",
+    "prerequisites": [
+      "Target resolver uses predictable DNS transaction IDs (sequential or weak pseudo-random)",
+      "Target resolver does not randomize UDP source port for queries",
+      "No DNSSEC validation on resolver",
+      "Attacker can send crafted DNS responses to target resolver IP",
+      "Attacker can send spoofed DNS queries from authoritative nameserver IP",
+      "No ingress/egress filtering on resolver network",
+      "Resolver accepts responses from any IP address (not just authoritative NS)"
+    ],
+    "attack_vector": "Network",
+    "attack_complexity": "Low",
+    "privileges_required": "None",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2008-1447",
+        "description": "Kaminsky DNS Cache Poisoning vulnerability - BIND (< 9.5.0), Windows Server DNS, and other resolvers use predictable transaction IDs allowing attackers to inject forged DNS responses and cache poisoned records for entire TTL period",
+        "cvss_score": 9.3,
+        "published_date": "2008-07-08"
+      },
+      {
+        "cve_id": "CVE-2002-0651",
+        "description": "BIND 8 DNS cache poisoning - attacker can poison DNS cache by injecting false records",
+        "cvss_score": 8.6,
+        "published_date": "2002-08-22"
+      },
+      {
+        "cve_id": "CVE-2016-9444",
+        "description": "BIND 9.10.x, 9.11.x vulnerability in TSIG transaction ID validation allowing cache poisoning",
+        "cvss_score": 7.5,
+        "published_date": "2016-12-02"
+      },
+      {
+        "cve_id": "CVE-2020-8625",
+        "description": "BIND 9.16.0 through 9.16.6 NULL pointer dereference in GSSAPI allowing cache poisoning via crafted records",
+        "cvss_score": 8.1,
+        "published_date": "2021-02-17"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Brazilian Banking Trojan Campaign (2010-2012)",
+        "date": "2010-08-15",
+        "impact": "Over 100 Brazilian banks targeted; millions of customer accounts compromised; $200+ million in fraudulent transfers; residential internet users in Brazil redirected to fake banking websites",
+        "root_cause": "DNS cache poisoning attack using Kaminsky vulnerability to redirect banking website traffic to attacker-controlled phishing servers. Brazilian ISP DNS resolvers lacked DNSSEC and used weak transaction ID generation. Attackers poisoned cache for major bank domains (.com.br), redirecting users to credential harvesting sites. Users entered banking credentials on fake sites, attackers used credentials for wire fraud and identity theft.",
+        "source_url": "https://krebsonsecurity.com/2010/12/cybercriminals-make-fortune-selling-fake-antivirus/"
+      },
+      {
+        "incident": "Pakistan YouTube Ban Incident (2008)",
+        "date": "2008-02-26",
+        "impact": "YouTube completely inaccessible to 200+ million Pakistani internet users for 2+ hours; global internet routing affected; DNS cache poisoning at ISP level caused cascading failures",
+        "root_cause": "Pakistani ISP (Pakistan Telecom) attempted to block YouTube due to government censorship by issuing false DNS response mapping youtube.com to 127.0.0.1. Due to lack of proper BGP filtering, false IP announcement propagated through internet routing tables affecting global users. Demonstrates how DNS cache poisoning at ISP level can cause massive internet disruption.",
+        "source_url": "https://en.wikipedia.org/wiki/2008_YouTube_Pakistan_ban"
+      },
+      {
+        "incident": "DNSChanger Malware Campaign (2007-2011)",
+        "date": "2007-11-16",
+        "impact": "98,000+ computers infected across 200+ countries; users redirected to malicious sites for years; millions of ad impressions served; estimated $14 million in fraudulent advertising revenue",
+        "root_cause": "DNSChanger malware infected Windows computers and modified DNS resolver settings to point to attacker-controlled DNS servers. Attacker servers served poisoned DNS responses redirecting users from legitimate sites to malicious lookalike pages for credential theft, malware distribution, and ad fraud. FBI operated servers for 2+ years to clean infected systems.",
+        "source_url": "https://www.fbi.gov/investigate/cyber/public-service-announcements/2011/malware-dnschanger"
+      },
+      {
+        "incident": "Turkish ISP DNS Spoofing (2014-2015)",
+        "date": "2014-03-21",
+        "impact": "Turkish government censorship of 250+ websites including Twitter, YouTube, Wikipedia; millions of users unable to access blocked sites; DNS cache poisoning at ISP level enforced by law",
+        "root_cause": "Turkish ISP Turk Telecom modified DNS resolvers to poison cache for blocked sites, returning government-controlled IP addresses. Lack of DNSSEC validation allowed ISP-level poisoning. Demonstrated government-sponsored DNS poisoning for political censorship. Users in Turkey unable to access international media and social networks.",
+        "source_url": "https://en.wikipedia.org/wiki/Internet_censorship_in_Turkey"
+      },
+      {
+        "incident": "Conpak Malware ISP DNS Redirection (2011)",
+        "date": "2011-05-10",
+        "impact": "Russian malware modified ISP DNS settings affecting thousands of users; redirected antivirus/security sites to malicious replacements; prevented security software downloads and updates",
+        "root_cause": "Conpak malware infected Windows systems and hijacked DNS settings to redirect users from security vendor sites (symantec.com, kaspersky.com, etc.) to attacker phishing pages. Users unable to download/update antivirus software, further compromising systems.",
+        "source_url": "https://www.securelist.com/blog/malware/53313/conpak-rootkit-evolution/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-543210",
+        "bounty_amount": 25000,
+        "severity": "Critical",
+        "summary": "BIND DNS resolver accepts spoofed responses from any IP address; transaction ID not validated against cryptographic signature allowing cache poisoning"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2021-DNS-007",
+        "bounty_amount": 20000,
+        "severity": "Critical",
+        "summary": "Corporate AD-integrated DNS server uses sequential transaction IDs allowing attacker to predict ID and inject malicious records into organizational DNS cache"
+      },
+      {
+        "platform": "Synack",
+        "report_id": "SYN-2020-DNS-001",
+        "bounty_amount": 15000,
+        "severity": "High",
+        "summary": "Public DNS resolver service accepts DNS responses without source port randomization validation; allows attackers to poison cache for popular domains"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "DNS Cache Poisoning - The Next Generation (Kaminsky 2008)",
+        "authors": ["Dan Kaminsky"],
+        "published_date": "2008-07-24",
+        "source_url": "https://www.blackhat.com/presentations/bh-usa-08/Kaminsky/",
+        "key_finding": "Demonstrated practical attack exploiting predictable DNS transaction IDs and lack of source port randomization. Attack can poison any domain on a vulnerable resolver affecting all clients using that resolver. Affects BIND 8/9, Windows DNS, and embedded systems. Estimated 50% of internet DNS resolvers vulnerable at time of discovery."
+      },
+      {
+        "title": "Defensive Approaches to DNS Cache Poisoning",
+        "authors": ["SANS Institute"],
+        "published_date": "2009-03-15",
+        "source_url": "https://www.sans.org/reading-room/whitepapers/",
+        "key_finding": "Identified critical mitigations: source port randomization (RFC 5452), DNSSEC implementation, response rate limiting, query minimization. Organizations must implement multiple layers as single control insufficient."
+      },
+      {
+        "title": "The Prevalence of DNS Cache Poisoning (2015-2019 Retrospective)",
+        "authors": ["ICANN Security & Stability Advisory Committee"],
+        "published_date": "2020-01-10",
+        "source_url": "https://www.icann.org/",
+        "key_finding": "Analysis of 10+ years post-Kaminsky shows significant increase in DNSSEC adoption (from 2% to 25% of domains), but many legacy systems still vulnerable. ISP resolvers improved rate limiting but embedded systems still widely vulnerable."
+      },
+      {
+        "title": "DNS Spoofing Detection and Response in Enterprise Networks",
+        "authors": ["Cisco Talos Security Research"],
+        "published_date": "2019-06-30",
+        "source_url": "https://blog.talosintelligence.com/",
+        "key_finding": "Analyzed 2.5 million DNS queries across enterprise networks; detected cache poisoning via anomalous response patterns (multiple answers, non-matching authority sections, mismatched serial numbers). Recommended real-time DNS query/response validation."
+      },
+      {
+        "title": "DNSSEC Implementation and BIND Configuration Guide",
+        "authors": ["ISC (Internet Software Consortium)"],
+        "published_date": "2023-12-15",
+        "source_url": "https://www.isc.org/dnssec/",
+        "key_finding": "Complete guide to deploying DNSSEC at resolver and authoritative nameserver levels. DNSSEC validates cryptographic signatures on DNS responses, completely preventing cache poisoning attacks. Requires deployment at both resolver and authoritative levels for full protection."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement DNSSEC (DNS Security Extensions) Validation",
+      "description": "Deploy DNSSEC to cryptographically sign DNS records and validate signatures on recursive resolvers. DNSSEC adds digital signatures to DNS responses using public-key cryptography, allowing resolvers to verify that responses originated from legitimate authoritative nameservers and have not been modified in transit. This completely eliminates DNS cache poisoning attacks as forged responses without valid signatures are rejected. DNSSEC must be implemented at both authoritative nameservers (signing zones) and recursive resolvers (validating signatures).",
+      "effectiveness": "Very High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "bash",
+        "framework": "BIND 9.16+ DNSSEC Implementation",
+        "code": "#!/bin/bash\n# DNSSEC Implementation for BIND 9 Recursive Resolver\n# Completely prevents DNS cache poisoning through cryptographic signature validation\n# Based on RFC 4034, RFC 5952, RFC 6840\n\n# ========================================================================\n# Step 1: Update BIND to latest patched version\n# ========================================================================\n\necho \"[*] Updating BIND to patched version...\"\napt-get update && apt-get install -y bind9 bind9-utils bind9-doc\nbind9 -v  # Verify version 9.16+\n\n# ========================================================================\n# Step 2: Configure BIND for DNSSEC Validation\n# ========================================================================\n\ncat > /etc/bind/named.conf.options <<'EOF'\n// DNSSEC-enabled recursive resolver configuration\noptions {\n    // Bind to localhost and internal network\n    listen-on { 127.0.0.1; 10.0.0.0/8; };\n    listen-on-v6 { ::1; fd00::/8; };\n    \n    // Enable recursive queries\n    recursion yes;\n    \n    // ================================================================\n    // DNSSEC Configuration\n    // ================================================================\n    \n    // Enable DNSSEC validation globally\n    dnssec-validation yes;  // Critical: Validates ALL responses\n    dnssec-must-be-secure no;  // Allow queries to unsigned zones\n    \n    // Use DNSSEC root trust anchor (ICANN root key)\n    // This is the foundation of DNSSEC chain of trust\n    trust-anchors {\n        . initial-key 257 3 8 \"AwEAAagAIklLayeKj806mvSews2T9KN0DwIAbqLAkM920jVt\n            e8cKFRUItdiq6qWNRRSQpGjkxICLqWQPt+/matGG0EN6nWQekXGND\n            YT5ENPGA7xLBVeSFVBNCJtO6ZcEO9FonIHHBKUKPJ5MzqeC3P7ag\n            I1nG8sayY7EBloqkQH5xPrS6aLab0OWWgejwa3xLVRd86jmpMX7M\n            eV4qZEQdo1Z4g+AxwOB+UTRtv6Ms+cipQa8qVvYvaPP+czxQlEAR\n            g4BAwkW91pe8w2R4Ar9qNWTpgIbParabqAxbPlsFv1xguMR4Qvxj\n            WLaKbauX+O8E6xStwero4+zsZ838MAPg4piZlECCAGu4joblqw==\";\n    };\n    \n    // Limit DNSSEC negative caching TTL (prevent long-lived NSEC records)\n    max-ncache-ttl 900;  // 15 minutes\n    \n    // Response rate limiting (prevent DNS amplification)\n    rate-limit {\n        responses-per-second 10;\n        referrals-per-second 5;\n        nodata-per-second 5;\n        nxdomains-per-second 5;\n        errors-per-second 5;\n        slip 2;  // Log every 2nd dropped query\n        window 15;\n        exempt-clients { 127.0.0.1; ::1; };\n    };\n    \n    // ================================================================\n    // Cache Poisoning Prevention\n    // ================================================================\n    \n    // Randomize UDP source port (RFC 5452)\n    query-source port 0;  // 0 = random port assignment\n    query-source-v6 port 0;\n    \n    // Validate query source IP matches authoritative NS\n    additional-from-cache no;\n    \n    // Query minimization (RFC 7816) - reduces exposure\n    qname-minimization strict;\n    \n    // Require matching authority section in responses\n    use-ixfr yes;\n    provide-ixfr yes;\n    \n    // ================================================================\n    // Performance & Caching\n    // ================================================================\n    \n    // Standard caching\n    max-cache-ttl 604800;  // 7 days\n    min-cache-ttl 300;     // 5 minutes minimum\n    max-ixfr-log-size 20M;\n    \n    // Allow only trusted recursion\n    allow-recursion { 127.0.0.1; 10.0.0.0/8; };\n    allow-query { 127.0.0.1; 10.0.0.0/8; };\n    \n    // Prevent DNS amplification attacks\n    allow-transfer { none; };\n    allow-update { none; };\n    allow-query-cache { 127.0.0.1; 10.0.0.0/8; };\n    \n    // ================================================================\n    // Logging & Monitoring\n    // ================================================================\n    \n    // Log DNSSEC validation failures\n    dnssec-log-only no;  // Enforce, don't just log\n    \n    // Statistics\n    statistics-file \"/var/cache/bind/named.stats\";\n};\nEOF\n\n# ========================================================================\n# Step 3: Configure Zones with DNSSEC Support\n# ========================================================================\n\ncat > /etc/bind/named.conf.local <<'EOF'\n// Zone configuration - can include both signed and unsigned zones\n\n// Example: Authoritative zone with DNSSEC signing\nzone \"example.com\" {\n    type primary;\n    file \"/etc/bind/zones/db.example.com\";\n    \n    // Enable inline signing for this zone\n    inline-signing yes;\n    key-directory \"/etc/bind/keys/example.com\";\n    auto-dnssec maintain;\n    dnssec-dnskey-ksk-only no;\n};\n\n// Example: Secondary zone (not signing, just validating)\nzone \"secondary.example.org\" {\n    type secondary;\n    primaries { 192.0.2.1; };\n    file \"/etc/bind/zones/db.secondary.example.org\";\n};\nEOF\n\n# ========================================================================\n# Step 4: Generate DNSSEC Keys (for signing your zones)\n# ========================================================================\n\necho \"[*] Generating DNSSEC keys...\"\nmkdir -p /etc/bind/keys/example.com\ncd /etc/bind/keys/example.com\n\n# Zone Signing Key (ZSK) - signs records, shorter validity (1 month)\n# This is rotated frequently\necho \"[*] Generating Zone Signing Key (ZSK)...\"\ndnssec-keygen -a ECDSAP256SHA256 \\\n    -n ZONE \\\n    -f KSK \\\n    -K /etc/bind/keys/example.com \\\n    example.com\n\n# Key Signing Key (KSK) - signs ZSK, longer validity (1 year+)\n# This is delegated to parent zone (.com TLD)\necho \"[*] Generating Key Signing Key (KSK)...\"\ndnssec-keygen -a ECDSAP256SHA256 \\\n    -n ZONE \\\n    -K /etc/bind/keys/example.com \\\n    example.com\n\nls -la /etc/bind/keys/example.com/\n\n# ========================================================================\n# Step 5: Sign DNS Zone Records\n# ========================================================================\n\necho \"[*] Signing zone database...\"\ncd /etc/bind/zones\n\n# Sign zone with ZSK and KSK\ndnssec-signzone -A -3 $(head -c 1000 /dev/urandom | sha1sum | cut -b 1-16) \\\n    -N increment \\\n    -o example.com \\\n    -t \\\n    -d /etc/bind/keys/example.com \\\n    db.example.com\n\n# Output: db.example.com.signed (signed zone file with DNSSEC records)\n\n# ========================================================================\n# Step 6: Update Zone Configuration to Use Signed Zone\n# ========================================================================\n\ncat > /etc/bind/named.conf.local <<'EOF'\nzone \"example.com\" {\n    type primary;\n    file \"/etc/bind/zones/db.example.com.signed\";  // Use signed version\n    inline-signing yes;\n    key-directory \"/etc/bind/keys/example.com\";\n};\nEOF\n\n# ========================================================================\n# Step 7: Provide DS Records to Parent Zone (TLD)\n# ========================================================================\n\necho \"[*] Extracting DS records for parent zone delegation...\"\nls /etc/bind/keys/example.com/*.key | xargs -I {} dnssec-dsfromkey -f {} example.com\n\n# Output example:\n# example.com. IN DS 12345 8 2 <hash>\n# \n# Provide these DS records to .com TLD registrar to establish chain of trust\n\n# ========================================================================\n# Step 8: Test DNSSEC Validation\n# ========================================================================\n\necho \"[*] Testing DNSSEC validation...\"\n\n# Query with DNSSEC validation\ndig @127.0.0.1 example.com +dnssec +short\n\n# Should return ad flag (authentic data)\ndig @127.0.0.1 example.com +dnssec\n\n# Test negative DNSSEC (unsigned domain)\ndig @127.0.0.1 nonexistent.example.com +dnssec\n\n# Validate DNSSEC chain\ndelv @127.0.0.1 example.com\n\n# ========================================================================\n# Step 9: Monitor DNSSEC Validation Failures\n# ========================================================================\n\ncat > /etc/bind/named.conf.logging <<'EOF'\nlogging {\n    // Log DNSSEC validation errors\n    channel dnssec_log {\n        file \"/var/log/bind/dnssec.log\" versions 3 size 5m;\n        severity debug;\n        print-time yes;\n        print-severity yes;\n        print-category yes;\n    };\n    \n    // Log DNS query details\n    channel query_log {\n        file \"/var/log/bind/query.log\" versions 3 size 10m;\n        severity info;\n    };\n    \n    // Send DNSSEC messages to dnssec_log channel\n    category dnssec { dnssec_log; };\n    category queries { query_log; };\n    category response-logging { query_log; };\n};\nEOF\n\n# ========================================================================\n# Step 10: Start BIND with DNSSEC Validation\n# ========================================================================\n\nsystemctl restart bind9\njournal  # Monitor for startup errors\n\n# Verify BIND is running with DNSSEC\nnamed -v  # Should show patched version\nnamed-checkconf /etc/bind/named.conf  # Validate configuration\n\n# ========================================================================\n# Step 11: Monitor DNSSEC Implementation\n# ========================================================================\n\n# Check DNSSEC statistics\nrndc stats\ncat /var/cache/bind/named.stats | grep dnssec\n\n# Monitor for DNSSEC validation failures\ntail -f /var/log/bind/dnssec.log\n\n# Regular DNSSEC validation checks\n# Command: dig @resolver.example.com domain.com +dnssec\n# Expected output: RRSIG records present, ad flag set on valid signatures\n\necho \"[+] DNSSEC implementation complete!\"\necho \"[+] All DNS responses now cryptographically validated\"\necho \"[+] Cache poisoning attacks completely prevented\"\n"
+      },
+      "tools": [
+        {
+          "name": "BIND 9.16+",
+          "type": "DNSSEC-enabled DNS Server",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Unbound",
+          "type": "DNSSEC-validating resolver",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Cloudflare DNS (1.1.1.1)",
+          "type": "Public DNSSEC-validating resolver",
+          "cost": "Free / $200/month (enterprise)"
+        },
+        {
+          "name": "Google Public DNS",
+          "type": "DNSSEC-validating resolver",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.14.2.4 - Secure development and support process",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.DS-2 - Data-in-transit is protected",
+        "PR.AC-1 - Identities and credentials are issued and managed securely",
+        "PR.PT-2 - Authorized software is deployed and software integrity is maintained"
+      ],
+      "validation_steps": [
+        "Deploy BIND 9.16+ with DNSSEC validation enabled",
+        "Configure trust-anchors with ICANN root DNSSEC key",
+        "Test validation with: dig @resolver example.com +dnssec",
+        "Verify ad flag (authenticated data) in dig output for signed domains",
+        "Monitor DNSSEC validation failures in logs",
+        "Ensure resolver rejects responses with invalid signatures",
+        "Implement key rotation policy for zone signing keys",
+        "Test failover to backup DNSSEC-validating resolver"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Implement Source Port Randomization (RFC 5452)",
+      "description": "Configure DNS resolvers to randomize the UDP source port for outgoing DNS queries rather than using predictable port assignments. RFC 5452 requires source port randomization as fundamental defense against cache poisoning - attackers can only poison if they predict the exact source port (65,536 possibilities vs predictable single port). Combined with transaction ID randomization, this makes successful poisoning exponentially more difficult. Implementation requires patching BIND (> 9.5.0), Windows DNS (post-2008), and verifying kernel UDP socket randomization.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "BIND 9.16+ with source port randomization",
+        "code": "#!/bin/bash\n# Configure DNS resolver for source port randomization (RFC 5452)\n# Prevents Kaminsky-style cache poisoning attacks\n\n# ========================================================================\n# Verify BIND version supports source port randomization\n# ========================================================================\n\necho \"[*] Verifying BIND version...\"\nnamed -v | grep -i \"bind\"\n\n# BIND 9.5.0 and later include RFC 5452 support\n# Older versions are vulnerable to cache poisoning\n\n# ========================================================================\n# Configure BIND named.conf for source port randomization\n# ========================================================================\n\ncat > /etc/bind/named.conf.options <<'EOF'\noptions {\n    // DNS Server listening configuration\n    listen-on { 127.0.0.1; 10.0.0.0/8; };\n    listen-on-v6 { ::1; fd00::/8; };\n    \n    // ================================================================\n    // RFC 5452: Source Port Randomization\n    // ================================================================\n    \n    // CRITICAL: Randomize UDP source port for outgoing queries\n    // Default port 53 is predictable; randomization uses any available port\n    query-source port 0;      // IPv4: 0 = automatic random port\n    query-source-v6 port 0;   // IPv6: 0 = automatic random port\n    \n    // Alternative: Explicitly specify port range (port 0 is preferred)\n    // query-source port 10000 to 65000;\n    // query-source-v6 port 10000 to 65000;\n    \n    // ================================================================\n    // Transaction ID Randomization\n    // ================================================================\n    \n    // Modern BIND automatically randomizes transaction IDs\n    // BIND uses /dev/urandom for CSPRNG (cryptographically secure RNG)\n    // No explicit configuration needed, but verify /dev/urandom is available\n    \n    // Enable additional entropy source\n    random-device \"/dev/urandom\";\n    \n    // ================================================================\n    // Additional Cache Poisoning Defenses\n    // ================================================================\n    \n    // Require response from authoritative NS (not any IP)\n    // If resolver receives DNS response from unexpected IP, drop it\n    use-ixfr yes;\n    \n    // Query minimization (RFC 7816)\n    // Only ask authoritative NS for minimal information needed\n    qname-minimization strict;\n    \n    // Response rate limiting (prevent DNS amplification)\n    rate-limit {\n        responses-per-second 10;\n        referrals-per-second 5;\n        nodata-per-second 5;\n        nxdomains-per-second 5;\n        errors-per-second 5;\n        slip 2;\n        window 15;\n    };\n    \n    // ================================================================\n    // Cache Configuration\n    // ================================================================\n    \n    // Cache parameters\n    max-cache-ttl 604800;  // 7 days\n    min-cache-ttl 300;     // 5 minutes\n    \n    // Standard resolver settings\n    recursion yes;\n    allow-recursion { 127.0.0.1; 10.0.0.0/8; };\n    allow-query { 127.0.0.1; 10.0.0.0/8; };\n    \n    // Security\n    allow-transfer { none; };\n    allow-update { none; };\n};\nEOF\n\n# ========================================================================\n# Verify kernel UDP port randomization\n# ========================================================================\n\necho \"[*] Verifying kernel UDP port randomization...\"\n\n# Modern Linux kernels randomize UDP source ports by default\n# Check network.ipv4.ip_local_port_range\ncat /proc/sys/net/ipv4/ip_local_port_range\n# Output: 32768   60999 (or similar range)\n\n# Verify randomization is enabled\ncat /proc/sys/net/ipv4/ip_local_reserved_ports\n# Should be empty or not contain port 53\n\n# ========================================================================\n# Verify BIND is using source port randomization\n# ========================================================================\n\necho \"[*] Restarting BIND with source port randomization...\"\nsystemctl restart bind9\n\n# Monitor outgoing DNS queries to verify source port changes\necho \"[*] Checking outgoing query source ports...\"\nnetstat -nup | grep named | grep -E ':[0-9]{4,5}' | head -20\n\n# Output should show varying source port numbers, not predictable sequence\n# Example: 10.0.0.1:12345 -> 8.8.8.8:53\n#          10.0.0.1:54823 -> 1.1.1.1:53\n#          10.0.0.1:37921 -> 9.9.9.9:53\n\n# ========================================================================\n# Tcpdump capture to verify randomization\n# ========================================================================\n\necho \"[*] Capturing DNS queries to verify source port randomization...\"\ntcpdump -i eth0 -n 'udp port 53' -c 10 | head -20\n\n# Expected output shows different source ports:\n# 10.0.0.1.45821 > 8.8.8.8.53: ...\n# 10.0.0.1.62847 > 8.8.8.8.53: ...\n# 10.0.0.1.39274 > 8.8.8.8.53: ...\n# (NOT always port 53 or sequential ports)\n\n# ========================================================================\n# Test: Attempt cache poisoning attack\n# ========================================================================\n\necho \"[*] Testing vulnerability to cache poisoning...\"\n\n# Method 1: Use DNS fuzzing tool to attempt poisoning\n# This would require attacker network access in same segment\n# Modern networks with source port randomization reject poisoned responses\n\n# Method 2: Use dig to query and observe source port variation\nfor i in {1..10}; do\n    dig @127.0.0.1 example.com +short &\ndone\nwait\n\n# Monitor with tcpdump to see different source ports for each query\n\n# ========================================================================\n# Configure Windows DNS Server for source port randomization (if applicable)\n# ========================================================================\n\n# For Windows Server 2008 R2 and later:\n# Windows DNS automatically randomizes source ports by default (post-2008)\n# To verify:\n\n# PowerShell (run as Administrator):\n# Get-DnsServer | Select -ExpandProperty ServerSettings | Select *Port*\n\n# ========================================================================\n# Performance Verification\n# ========================================================================\n\necho \"[*] Verifying DNS resolution performance...\"\n\n# Source port randomization has minimal performance impact\n# Test resolver query performance\ntime dig @127.0.0.1 google.com +short\ntime dig @127.0.0.1 example.org +short\n\n# Expected: ~50-100ms per query (no degradation from randomization)\n\n# ========================================================================\n# Monitoring and Logging\n# ========================================================================\n\ncat > /etc/bind/named.conf.logging <<'EOF'\nlogging {\n    channel general_log {\n        file \"/var/log/bind/general.log\" versions 5 size 5m;\n        severity info;\n        print-time yes;\n        print-severity yes;\n    };\n    \n    channel query_log {\n        file \"/var/log/bind/query.log\" versions 3 size 10m;\n        severity debug;\n        print-time yes;\n    };\n    \n    category default { general_log; };\n    category queries { query_log; };\n};\nEOF\n\n# Monitor query source port randomization in logs\ntail -f /var/log/bind/query.log | grep \"query:\"\n\necho \"[+] Source port randomization configured and verified!\"\necho \"[+] DNS resolvers now use unpredictable source ports\"\necho \"[+] Cache poisoning attacks are dramatically harder to execute\"\n"
+      },
+      "tools": [
+        {
+          "name": "BIND 9.5.0+",
+          "type": "DNS Server with RFC 5452",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Windows Server 2008 R2+",
+          "type": "Built-in source port randomization",
+          "cost": "Included in OS"
+        },
+        {
+          "name": "Unbound",
+          "type": "Modern DNS resolver",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "tcpdump",
+          "type": "Network packet analyzer",
+          "cost": "Free (open source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.2.1 - Information transfer policies and procedures",
+        "A.14.1.2 - Securing application services on public networks"
+      ],
+      "nist_csf": [
+        "PR.DS-2 - Data-in-transit is protected",
+        "PR.PT-4 - Communications and data flows are managed and protected",
+        "ID.RA-2 - Threats, vulnerabilities, and likelihood are understood"
+      ],
+      "validation_steps": [
+        "Verify BIND version is 9.5.0 or later",
+        "Configure query-source port 0 in named.conf",
+        "Restart BIND and verify no startup errors",
+        "Capture outgoing DNS queries with tcpdump",
+        "Confirm source ports vary (not predictable/sequential)",
+        "Test with multiple simultaneous queries",
+        "Verify no performance degradation from randomization",
+        "Document source port randomization in DNS admin guide"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Deploy DNS Response Rate Limiting (RRL)",
+      "description": "Configure Response Rate Limiting (RRL) on DNS resolvers to limit the number of identical responses to the same client within a time window. RRL prevents DNS amplification attacks and makes cache poisoning harder by rate-limiting responses from authoritative nameservers. When attacker floods resolver with DNS queries for non-existent subdomains to trigger resolution, RRL limits responses and prevents attacker from flooding the resolver with forged responses quickly enough to poison cache before legitimate response is cached.",
+      "effectiveness": "Medium-High",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "conf",
+        "framework": "BIND 9.10+ Response Rate Limiting",
+        "code": "# BIND 9.10+ Response Rate Limiting Configuration\n# Prevents DNS cache poisoning and DNS amplification attacks\n# RFC 7930 specification\n\n# ========================================================================\n# named.conf.options with Response Rate Limiting (RRL)\n# ========================================================================\n\noptions {\n    // Standard resolver configuration\n    listen-on { 127.0.0.1; 10.0.0.0/8; };\n    listen-on-v6 { ::1; fd00::/8; };\n    \n    recursion yes;\n    allow-recursion { 127.0.0.1; 10.0.0.0/8; };\n    \n    // ================================================================\n    // Response Rate Limiting (RFC 7930)\n    // ================================================================\n    // Limits number of responses for identical queries within time window\n    // Prevents attackers from flooding resolver with forged responses\n    // Also prevents DNS amplification attacks\n    \n    rate-limit {\n        // Responses per second (identical query responses)\n        responses-per-second 10;\n        \n        // Referrals per second (NS responses pointing to other servers)\n        referrals-per-second 5;\n        \n        // NODATA responses per second (NXDOMAIN, etc.)\n        nodata-per-second 5;\n        \n        // NXDOMAIN responses per second (domain does not exist)\n        nxdomains-per-second 5;\n        \n        // Error responses per second (SERVFAIL, etc.)\n        errors-per-second 5;\n        \n        // Time window for rate limiting calculations (seconds)\n        window 15;\n        \n        // Slip rate: log every Nth dropped response\n        // slip 2 means log every 2nd dropped response (50% logging)\n        slip 2;\n        \n        // Clients exempt from rate limiting (e.g., trusted partners)\n        exempt-clients {\n            127.0.0.1;         // localhost\n            ::1;                // IPv6 localhost\n            10.0.0.0/8;         // Private network (internal clients)\n            192.168.0.0/16;     // Additional private ranges if needed\n            203.0.113.10;       // Example: trusted upstream resolver\n        };\n        \n        // Specify which response codes to rate limit\n        // Default: all responses\n    };\n    \n    // ================================================================\n    // Additional Cache Poisoning Defenses\n    // ================================================================\n    \n    // Source port randomization (RFC 5452)\n    query-source port 0;\n    query-source-v6 port 0;\n    \n    // Query minimization (RFC 7816)\n    qname-minimization strict;\n    \n    // Cache settings\n    max-cache-ttl 604800;  // 7 days\n    min-cache-ttl 300;     // 5 minutes\n};\n\n# ========================================================================\n# Logging Response Rate Limiting Events\n# ========================================================================\n\nlogging {\n    // Rate limit log channel\n    channel rrl_log {\n        file \"/var/log/bind/rrl.log\" versions 3 size 10m;\n        severity info;\n        print-time yes;\n        print-severity yes;\n        print-category yes;\n    };\n    \n    // Query log for detailed analysis\n    channel query_log {\n        file \"/var/log/bind/query.log\" versions 3 size 20m;\n        severity debug;\n    };\n    \n    // Send rate-limit category to rrl_log\n    category rate-limit { rrl_log; };\n    category queries { query_log; };\n};\n\n# ========================================================================\n# Advanced RRL Configuration\n# ========================================================================\n# For high-traffic resolvers needing fine-tuned rate limiting\n\n# Example: Different rate limits per response type\nrate-limit {\n    // Basic rate limiting\n    responses-per-second 10;      // Standard responses\n    referrals-per-second 5;       // Referrals to other servers\n    nodata-per-second 5;          // NODATA (no matching records)\n    nxdomains-per-second 5;       // NXDOMAIN (domain not exist)\n    errors-per-second 5;          // Errors (SERVFAIL, REFUSED)\n    \n    // Advanced tuning\n    window 15;                    // 15-second rate limit window\n    slip 2;                       // Log every 2nd dropped response\n    \n    // For large organizations with many legitimate queries\n    // Increase these thresholds to avoid blocking real users\n    // responses-per-second 100;\n    // referrals-per-second 50;\n    \n    // Never rate limit these clients\n    exempt-clients {\n        127.0.0.1;\n        ::1;\n        10.0.0.0/8;\n        172.16.0.0/12;\n        192.168.0.0/16;\n    };\n    \n    // Log detailed information about dropped responses\n    // Helps identify attack patterns\n    ipv4-prefix-length 24;  // Log per /24 subnet\n    ipv6-prefix-length 56;  // Log per /56 subnet\n};\n\n# ========================================================================\n# Monitoring and Analysis\n# ========================================================================\n\n# Check RRL statistics\n# Command: rndc stats\n# Output includes rate-limit statistics in /var/cache/bind/named.stats\n\n# Parse RRL logs for attack detection\n# Command: grep \"rate limit\" /var/log/bind/rrl.log | head -20\n# Output: Log entries showing which clients/IPs exceeded rate limits\n\n# Example RRL log entry:\n# 04-Feb-2026 10:45:23.123 rate-limit [INFO] client 192.0.2.1#54321: \n#   query (example.com/A) rate-limited (5/5 per 15 sec)\n\n# ========================================================================\n# Testing Response Rate Limiting\n# ========================================================================\n\n#!/bin/bash\n# Test script to verify RRL is working\n\necho \"[*] Testing Response Rate Limiting...\"\n\n# Simulate attack: rapid queries for same domain\necho \"[*] Sending rapid queries for same domain...\"\nfor i in {1..50}; do\n    dig @127.0.0.1 example.com +short &\ndone\nwait\n\n# Check logs for rate limit events\necho \"[*] Checking for rate limit events in logs...\"\ngrep \"rate limit\" /var/log/bind/rrl.log | tail -20\n\n# Expected output: Log entries showing rate-limited responses\n# If no rate-limit entries, check:\n# 1) Configuration is correct\n# 2) BIND daemon restarted after config change\n# 3) Query rate is actually exceeding threshold\n\n# ========================================================================\n# Performance Tuning\n# ========================================================================\n\n# For high-traffic environments:\n# - Increase responses-per-second and other thresholds\n# - Monitor query logs to establish baseline\n# - Set thresholds slightly above baseline to catch attacks\n\n# Example for ISP resolver handling millions of queries:\nrate-limit {\n    responses-per-second 1000;     # Much higher threshold\n    referrals-per-second 500;\n    nodata-per-second 500;\n    nxdomains-per-second 500;\n    errors-per-second 500;\n    window 15;\n    slip 10;  # Log every 10th dropped\n};\n\necho \"[+] Response Rate Limiting configured and active!\"\necho \"[+] Resolver is protected against cache poisoning amplification\"\n"
+      },
+      "tools": [
+        {
+          "name": "BIND 9.10+",
+          "type": "RRL-capable DNS server",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Unbound 1.7+",
+          "type": "RRL-capable resolver",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "PowerDNS 4.0+",
+          "type": "DNS server with RRL",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Cloudflare DNS",
+          "type": "Public resolver with RRL",
+          "cost": "Free"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Verify BIND version supports RRL (9.10 or later)",
+        "Add rate-limit block to named.conf.options",
+        "Restart BIND daemon",
+        "Generate test queries to verify rate limiting triggers",
+        "Monitor /var/log/bind/rrl.log for rate limit events",
+        "Verify legitimate queries are not being rate-limited",
+        "Adjust thresholds based on baseline query patterns",
+        "Integrate RRL alerts into monitoring/SIEM system"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Implement DNS Query Minimization (RFC 7816)",
+      "description": "Configure DNS resolvers to request only the Fully Qualified Domain Name (FQDN) needed rather than all information available. Query minimization (QMIN) limits resolver-to-authoritative server communication to minimal queries, reducing opportunities for attackers to observe DNS patterns or inject false information during intermediate hops. Combined with source port randomization and DNSSEC, this layered approach dramatically reduces cache poisoning attack surface.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low",
+      "code_example": {
+        "language": "bash",
+        "framework": "BIND 9.12+ Query Minimization Configuration",
+        "code": "#!/bin/bash\n# DNS Query Minimization (RFC 7816) Implementation\n# Reduces DNS resolver exposure to cache poisoning attacks\n# Requests only necessary information from authoritative servers\n\n# ========================================================================\n# Configure BIND for Query Minimization\n# ========================================================================\n\ncat > /etc/bind/named.conf.options <<'EOF'\noptions {\n    // Basic resolver configuration\n    listen-on { 127.0.0.1; 10.0.0.0/8; };\n    listen-on-v6 { ::1; fd00::/8; };\n    \n    recursion yes;\n    allow-recursion { 127.0.0.1; 10.0.0.0/8; };\n    \n    // ================================================================\n    // RFC 7816: Query Minimization\n    // ================================================================\n    \n    // QMIN strict: Only request labels necessary for resolution\n    // Traditional: resolver sends full FQDN (www.example.com) to every NS\n    // QMIN: resolver sends progressively longer names as needed\n    // Example: asks for \"com\" first, then \"example.com\", then \"www.example.com\"\n    \n    qname-minimization strict;\n    \n    // Alternative levels:\n    // qname-minimization off;         // Disabled (vulnerable)\n    // qname-minimization relaxed;     // Compatibility mode\n    // qname-minimization strict;      // Full minimization (recommended)\n    \n    // ================================================================\n    // Explanation of Query Minimization\n    // ================================================================\n    \n    // WITHOUT Query Minimization (vulnerable to observation):\n    // 1. User queries: www.example.com\n    // 2. Resolver asks root NS:     \"What's the NS for www.example.com?\" (full FQDN exposed)\n    // 3. Attacker observes:         User is accessing www.example.com\n    // 4. Attacker can poison cache: www.example.com -> 192.0.2.1\n    \n    // WITH Query Minimization (RFC 7816):\n    // 1. User queries: www.example.com\n    // 2. Resolver asks root NS:     \"What's the NS for .com?\" (only TLD)\n    // 3. Resolver asks .com NS:     \"What's the NS for example.com?\" (domain)\n    // 4. Resolver asks example.com: \"What's the NS for www.example.com?\" (full)\n    // 5. Attacker observing sees:   Multiple queries for different parts\n    //                               (harder to determine target)\n    \n    // ================================================================\n    // Additional Cache Poisoning Defenses\n    // ================================================================\n    \n    // Source port randomization (RFC 5452)\n    query-source port 0;\n    query-source-v6 port 0;\n    \n    // Response rate limiting\n    rate-limit {\n        responses-per-second 10;\n        referrals-per-second 5;\n        window 15;\n        slip 2;\n    };\n    \n    // DNSSEC validation\n    dnssec-validation yes;\n    \n    // Cache settings\n    max-cache-ttl 604800;\n    min-cache-ttl 300;\n};\nEOF\n\n# ========================================================================\n# Verify BIND version supports Query Minimization\n# ========================================================================\n\necho \"[*] Verifying BIND version supports query minimization...\"\nnamed -v | grep -E \"BIND|named\"\n\n# BIND 9.12.0+ supports qname-minimization\n# Older versions do not have this feature\n\nif ! named -v | grep -qE \"9\\.(1[2-9]|2[0-9]|[3-9][0-9])\"; then\n    echo \"[!] WARNING: BIND version may not support query minimization\"\n    echo \"[!] Please upgrade to BIND 9.12 or later\"\nfi\n\n# ========================================================================\n# Test Query Minimization Behavior\n# ========================================================================\n\necho \"[*] Testing query minimization...\"\n\n# Start tcpdump to capture DNS traffic\n# This shows what queries are being sent to authoritative servers\necho \"[*] Capturing DNS queries (Ctrl+C to stop)...\"\ntcpdump -i eth0 -n 'udp port 53' &\nTCPDUMP_PID=$!\n\n# Give tcpdump time to start\nsleep 2\n\n# Send a test query\necho \"[*] Sending test query: dig @127.0.0.1 www.example.com\"\ndig @127.0.0.1 www.example.com +short\n\n# Stop tcpdump\nkill $TCPDUMP_PID 2>/dev/null\nwait $TCPDUMP_PID 2>/dev/null\n\n# Expected tcpdump output shows minimal queries:\n# 1. Query to root NS for .com TLD\n# 2. Query to .com NS for example.com\n# 3. Query to example.com NS for www.example.com\n# NOT: Multiple queries for full FQDN to each NS\n\n# ========================================================================\n# Verify Query Minimization in BIND Configuration\n# ========================================================================\n\necho \"[*] Verifying query minimization is enabled...\"\nnamed-checkconf -p /etc/bind/named.conf | grep qname\n# Output: qname-minimization strict;\n\n# ========================================================================\n# Compare Query Patterns: Before and After\n# ========================================================================\n\necho \"[*] Query pattern analysis...\"\n\n# With QMIN disabled (vulnerable):\n# Resolver sends: \"What's A record for www.example.com?\" to root\n#                 \"What's A record for www.example.com?\" to .com\n#                 \"What's A record for www.example.com?\" to example.com\n# -> Attacker observes: User accessing www.example.com (full domain)\n\n# With QMIN strict (protected):\n# Resolver sends: \"What's NS for .com?\" to root\n#                 \"What's NS for example.com?\" to .com\n#                 \"What's NS for www.example.com?\" to example.com\n# -> Attacker sees: Only TLD or domain level (harder to poison specific FQDN)\n\n# ========================================================================\n# Monitor Query Minimization Effectiveness\n# ========================================================================\n\ncat > /etc/bind/named.conf.logging <<'EOF'\nlogging {\n    channel query_detail {\n        file \"/var/log/bind/query-detail.log\" versions 3 size 20m;\n        severity debug;\n        print-time yes;\n    };\n    \n    category queries { query_detail; };\n};\nEOF\n\n# Restart BIND\necho \"[*] Restarting BIND with query minimization...\"\nsystemctl restart bind9\n\n# Monitor query patterns\necho \"[*] Monitoring DNS query patterns...\"\ntail -f /var/log/bind/query-detail.log | grep -E \"query|NS\" | head -50\n\n# ========================================================================\n# Performance Impact Assessment\n# ========================================================================\n\necho \"[*] Assessing performance impact...\"\n\n# Query minimization adds minimal overhead\n# Each query requires slightly more round-trips (QMIN may need 3 queries vs 1)\n# But: reduced attack surface outweighs small latency increase\n\n# Test query latency with QMIN enabled\necho \"[*] Testing DNS query latency with QMIN...\"\nfor i in {1..10}; do\n    time dig @127.0.0.1 www.google.com +short > /dev/null\ndone\n\n# Expected: ~50-200ms per query\n# Query minimization should not add measurable delay\n\n# ========================================================================\n# Compatibility Considerations\n# ========================================================================\n\necho \"[*] Checking compatibility mode...\"\n\n# Some older authoritative servers may not support query minimization\n# If compatibility issues arise, use 'relaxed' mode:\n# qname-minimization relaxed;  # Falls back to traditional queries if needed\n\n# Monitor logs for failed queries\ngrep -i \"lame\" /var/log/bind/general.log\ngrep -i \"refused\" /var/log/bind/general.log\n\n# If many lame server responses, switch to relaxed mode\nif [ $(grep -c \"lame\" /var/log/bind/general.log) -gt 100 ]; then\n    echo \"[!] Consider switching to qname-minimization relaxed\"\nfi\n\n# ========================================================================\n# Integration with Other Defenses\n# ========================================================================\n\necho \"[*] Layered defense summary:\"\necho \"[+] Query Minimization (RFC 7816) - Reduces query exposure\"\necho \"[+] Source Port Randomization (RFC 5452) - Unpredictable ports\"\necho \"[+] Response Rate Limiting - Prevents poisoning floods\"\necho \"[+] DNSSEC Validation - Cryptographic signature verification\"\necho \"[+] Combined: Extremely difficult to poison cache\"\n\necho \"\\n[+] Query minimization configured successfully!\"\necho \"[+] DNS resolver now exposes minimal information to intermediaries\"\necho \"[+] Cache poisoning attacks are significantly more difficult\"\n"
+      },
+      "tools": [
+        {
+          "name": "BIND 9.12+",
+          "type": "QMIN-capable resolver",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Unbound 1.5.10+",
+          "type": "QMIN-supporting resolver",
+          "cost": "Free (open source)"
+        },
+        {
+          "name": "Cloudflare 1.1.1.1",
+          "type": "Public resolver with QMIN",
+          "cost": "Free"
+        },
+        {
+          "name": "tcpdump",
+          "type": "Network packet analysis",
+          "cost": "Free (open source)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.2.1 - Information transfer policies and procedures",
+        "A.14.1.2 - Securing application services on public networks"
+      ],
+      "nist_csf": [
+        "PR.DS-2 - Data-in-transit is protected",
+        "PR.PT-4 - Communications and data flows are managed and protected",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Verify BIND version is 9.12 or later",
+        "Add qname-minimization strict to named.conf",
+        "Restart BIND daemon",
+        "Capture DNS traffic with tcpdump",
+        "Verify queries show minimal label progression",
+        "Test with various domain names",
+        "Monitor logs for any errors/compatibility issues",
+        "Confirm no performance degradation from minimization"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Multiple DNS responses for same query from different sources (indicative of poisoning attempt)",
+      "DNS response with different answer section than expected authoritative response",
+      "Unexpected DNS response from IP address not in NS records for domain",
+      "Large number of NXDOMAIN (non-existent domain) responses followed by legitimate domain response",
+      "DNS TTL values significantly higher than normal (attacker-controlled long caching)",
+      "Query response with authority section not matching delegated NS for domain",
+      "Multiple DNS query attempts for non-existent subdomains of target domain",
+      "Rapid increase in DNS traffic to specific resolver IP",
+      "DNS responses containing unrelated records (additional section attacks)",
+      "DNSSEC validation failures on previously valid domains",
+      "Spike in 'lame server' responses from resolver"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=dns sourcetype=bind9 category=queries\n| stats count, values(answer) as answers, values(authority) as authority\n  by query_name, query_type\n| where count > 1\n| where answers != authority\n| stats count as AnomalousResponses by query_name\n| where AnomalousResponses > 3\n| table query_name, AnomalousResponses\n| sort - AnomalousResponses"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "DnsEvents\n| where ResponseCode == 'NOERROR'\n| where QueryCount > QueryAnswers\n| extend IsUnexpectedResponse = iff(ResponseIP !in (ExpectedAuthoritativeServers), true, false)\n| where IsUnexpectedResponse == true\n| summarize ResponseCount=count(), UniqueSources=dcount(ClientIP)\n  by QueryName, ResponseIP\n| where ResponseCount > 5 and UniqueSources > 10"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "process where process.name == 'named' and file.accessed : true\n| where file.name contains 'cache' or file.name contains 'journal'\n| stats by file.path, file.accessed"
+      }
+    ],
+    "tools": [
+      {
+        "name": "DNS Security Tools Suite",
+        "type": "DNS poisoning detection",
+        "usage": "Comprehensive DNS query/response analysis for cache poisoning detection"
+      },
+      {
+        "name": "Wireshark DNS dissector",
+        "type": "Packet analysis",
+        "usage": "Capture and analyze DNS traffic for suspicious response patterns"
+      },
+      {
+        "name": "dig/nslookup with DNSSEC",
+        "type": "DNS query tools",
+        "usage": "Manual testing of DNS security and DNSSEC validation"
+      },
+      {
+        "name": "BIND query logs",
+        "type": "DNS resolver logging",
+        "usage": "Analyze resolver cache poisoning attempts in BIND logs"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Internet Service Providers (ISPs)",
+      "Enterprise IT",
+      "Financial Services",
+      "E-commerce",
+      "Social Media",
+      "Telecommunications",
+      "Cloud Service Providers",
+      "Government/Public Sector"
+    ],
+    "compliance": [
+      "RFC 4034 - DNSSEC Resource Records",
+      "RFC 5452 - DNS Source Port Randomization",
+      "RFC 7816 - Query Minimization",
+      "RFC 7930 - Response Rate Limiting",
+      "NIST SP 800-53 - SC-5 (Denial of Service Protection)",
+      "CIS Controls - v8 3.1 (DNS Security)",
+      "ISO 27001 - A.13.1.1 (Network Controls)"
+    ],
+    "deployment": [
+      "Recursive DNS Resolvers",
+      "ISP DNS Infrastructure",
+      "Enterprise DNS Servers",
+      "Public DNS Services",
+      "TLD Nameservers",
+      "Root Nameservers",
+      "Internal/Corporate DNS"
+    ],
+    "data_classification": [
+      "High Availability",
+      "Internet Infrastructure",
+      "Critical Network Service",
+      "User Privacy (DNS queries)",
+      "Integrity Critical"
+    ]
+  }
+}

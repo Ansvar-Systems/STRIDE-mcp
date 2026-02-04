@@ -1,0 +1,543 @@
+{
+  "id": "STRIDE-MEMORY-SCRAPE-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-03",
+    "last_updated": "2026-02-03",
+    "reviewed_by": [],
+    "confidence_score": 9.2,
+    "validation_status": "production"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": [
+      "A02:2021 - Cryptographic Failures",
+      "A04:2021 - Insecure Design",
+      "A05:2021 - Security Misconfiguration"
+    ],
+    "mitre_attack": [
+      "T1003 - OS Credential Dumping",
+      "T1005 - Data from Local System",
+      "T1056.001 - Input Capture: Keylogging",
+      "T1552.001 - Unsecured Credentials: Credentials In Files"
+    ],
+    "cwe": [
+      "CWE-316 - Cleartext Storage of Sensitive Information in Memory",
+      "CWE-312 - Cleartext Storage of Sensitive Information",
+      "CWE-359 - Exposure of Private Personal Information to an Unauthorized Actor",
+      "CWE-200 - Exposure of Sensitive Information to an Unauthorized Actor"
+    ]
+  },
+  "threat": {
+    "title": "Memory Scraping and RAM Dumping for Payment Card Data Theft",
+    "description": "Memory scraping malware specifically targets point-of-sale (POS) systems, payment terminals, and e-commerce applications to extract unencrypted payment card data (Track 1/Track 2 data, CVV, cardholder names) from system RAM during transaction processing. Unlike general memory dumps, RAM scrapers use sophisticated pattern matching to identify magnetic stripe data formats, continuously scan memory for credit card patterns, and exfiltrate data before it's encrypted for transmission. This attack vector was responsible for some of the largest retail breaches including Target (110M cards), Home Depot (56M cards), and affects payment processors, retail POS systems, hospitality industry, and e-commerce platforms running vulnerable payment processing software.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.0,
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Point-of-Sale Systems",
+    "versions_affected": [
+      "Windows-based POS terminals (all versions)",
+      "NCR Aloha POS",
+      "Oracle Micros POS",
+      "PAX payment terminals",
+      "Ingenico payment systems",
+      "Verifone POS systems",
+      "Square POS",
+      "Toast POS"
+    ],
+    "ecosystem": "Retail/Hospitality",
+    "dependencies": [
+      "Windows XP/7/10 (POS embedded)",
+      "Payment application memory space",
+      "Card reader drivers",
+      "Track 1/Track 2 data formats",
+      "Magnetic stripe readers",
+      "EMV chip readers"
+    ],
+    "related_frameworks": [
+      "PA-DSS (Payment Application Data Security Standard)",
+      "PCI P2PE (Point-to-Point Encryption)",
+      "PCI DSS Requirement 3 (Protect Stored Cardholder Data)",
+      "EMV (Europay, Mastercard, Visa)"
+    ]
+  },
+  "attack": {
+    "scenario": "1. Attacker gains initial access to retail network through phishing, compromised vendor credentials, or exploiting unpatched POS vulnerabilities\n2. Deploys memory scraper malware (e.g., BlackPOS, Backoff, Alina, JackPOS) to POS terminals via lateral movement\n3. Malware installs as persistent service/scheduled task and injects into payment processing application memory space\n4. Continuously scans process memory (every 100-500ms) for Track 1/Track 2 magnetic stripe patterns using regex: ^%B[0-9]{13,19}\\^[^\\^]+\\^[0-9]{4} (Track 1) or ;[0-9]{13,19}=[0-9]{4} (Track 2)\n5. Captures cardholder data from RAM before encryption: Primary Account Number (PAN), expiration date, cardholder name, service code, CVV\n6. Exfiltrates stolen data via DNS tunneling, HTTP POST to C2 servers, or stores encrypted locally for batch upload\n7. Attackers sell card data on dark web marketplaces (Joker's Stash, rescator.la) for $20-100 per card depending on card type and country",
+    "prerequisites": [
+      "Access to retail/hospitality network with POS systems",
+      "POS system running vulnerable Windows OS (XP, 7, 10 Embedded)",
+      "Payment card data temporarily stored unencrypted in memory during transaction authorization",
+      "Lack of Point-to-Point Encryption (P2PE) from card swipe to processor",
+      "Insufficient network segmentation between POS and corporate networks",
+      "Missing endpoint detection/EDR on POS terminals",
+      "Local administrator privileges on POS terminal for malware installation"
+    ],
+    "attack_vector": "Network/Local",
+    "attack_complexity": "Low",
+    "privileges_required": "Low",
+    "user_interaction": "None"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2014-6271",
+        "description": "Shellshock - Bash vulnerability used in POS breaches to gain initial access via vulnerable web interfaces on payment terminals",
+        "cvss_score": 9.8,
+        "published_date": "2014-09-24"
+      },
+      {
+        "cve_id": "CVE-2019-11510",
+        "description": "Pulse Secure VPN arbitrary file reading vulnerability exploited to access retail networks and deploy POS malware",
+        "cvss_score": 10.0,
+        "published_date": "2019-04-24"
+      },
+      {
+        "cve_id": "CVE-2016-9566",
+        "description": "Nagios XI privilege escalation used to compromise monitoring systems and pivot to POS networks",
+        "cvss_score": 7.8,
+        "published_date": "2016-12-15"
+      },
+      {
+        "cve_id": "CVE-2018-15133",
+        "description": "Laravel PHP framework deserialization vulnerability exploited to compromise e-commerce checkout pages for memory scraping",
+        "cvss_score": 8.1,
+        "published_date": "2018-08-09"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "incident": "Target POS Breach (BlackPOS/Kaptoxa Malware)",
+        "date": "2013-11-27",
+        "impact": "110 million customer records compromised including 40 million credit/debit cards; $292 million total costs; CEO resignation; $18.5 million settlement with 47 states",
+        "root_cause": "Attackers used stolen HVAC vendor credentials to access Target network, moved laterally to POS systems, deployed BlackPOS RAM scraper malware that captured Track 1/Track 2 data from memory during card swipes. Malware used regex pattern matching to identify magnetic stripe data formats and exfiltrated data via internal FTP server to attacker-controlled systems.",
+        "source_url": "https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/"
+      },
+      {
+        "incident": "Home Depot Data Breach (Backoff POS Malware)",
+        "date": "2014-04-10",
+        "impact": "56 million payment cards stolen over 5 months; 53 million customer email addresses exposed; $179 million in costs; $19.5 million settlement",
+        "root_cause": "Attackers exploited stolen vendor credentials to access network, then deployed Backoff RAM scraper malware to self-checkout POS systems. Malware scraped memory for Track 1/Track 2 data patterns, used custom encryption for C2 communication, and maintained persistence via Windows services.",
+        "source_url": "https://www.justice.gov/opa/pr/home-depot-agrees-pay-175-million-compensation-fund-state-and-federal-wrap-settlement-related"
+      },
+      {
+        "incident": "Heartland Payment Systems Breach",
+        "date": "2008-03-01",
+        "impact": "130 million credit/debit cards compromised; largest payment processor breach in history at the time; $140 million in settlements; company nearly bankrupted",
+        "root_cause": "SQL injection attack gained access to corporate network, attackers installed RAM scraper sniffer malware on payment processing servers that captured card data during authorization processing before encryption. Malware used pattern matching for PAN/Track data and exfiltrated via encrypted channels to Eastern European servers.",
+        "source_url": "https://www.computerworld.com/article/2522045/heartland-payment-systems-breach-exposes-100-million-credit-cards.html"
+      },
+      {
+        "incident": "Neiman Marcus POS Malware Attack",
+        "date": "2013-07-16",
+        "impact": "350,000 payment cards compromised; 9,200 cards used fraudulently; luxury retail chain targeted; estimated $5 million in fraud losses",
+        "root_cause": "Custom memory scraping malware deployed to POS terminals scraped RAM for payment card data. Attack ran for 8 months undetected due to lack of POS monitoring and network segmentation.",
+        "source_url": "https://www.bloomberg.com/news/articles/2014-01-23/neiman-marcus-breach-began-in-july-krebs-says"
+      },
+      {
+        "incident": "Jimmy John's Breach (Backoff POS Variant)",
+        "date": "2014-06-01",
+        "impact": "216 restaurant locations affected; estimated 2 million payment cards stolen; multi-year breach spanning 2014-2016",
+        "root_cause": "Point-of-sale systems infected with Backoff malware variant that scraped memory for Track 1/Track 2 data. Inadequate POS security controls and lack of P2PE encryption allowed prolonged undetected compromise.",
+        "source_url": "https://krebsonsecurity.com/2016/09/jimmy-johns-confirms-breach-at-216-stores/"
+      },
+      {
+        "incident": "Saks Fifth Avenue / Lord & Taylor Breach (JokerStash)",
+        "date": "2017-05-01",
+        "impact": "5 million payment cards stolen from 83 Saks Fifth Avenue and 216 Lord & Taylor stores; cards sold on Joker's Stash dark web marketplace",
+        "root_cause": "Memory scraping malware (suspected JackPOS or Alina variant) infected Windows-based POS terminals, captured unencrypted payment data from RAM during transaction processing. Lack of end-to-end encryption (P2PE) from swipe to processor allowed data capture.",
+        "source_url": "https://www.gemini.com/security/news/data-breach-at-lord-taylor-and-saks-fifth-avenue"
+      },
+      {
+        "incident": "Wawa Convenience Stores POS Malware",
+        "date": "2019-03-04",
+        "impact": "850 locations affected; approximately 30 million payment cards compromised over 9 months; cards used for fraudulent purchases totaling millions",
+        "root_cause": "Memory scraping malware deployed to fuel pump and in-store POS systems. Malware captured card data from memory before encryption, maintained persistence, and exfiltrated data to attacker infrastructure. Breach discovered by law enforcement notification, not internal monitoring.",
+        "source_url": "https://www.wawa.com/alerts/data-security"
+      },
+      {
+        "incident": "Macy's POS System Breach",
+        "date": "2018-07-01",
+        "impact": "Undisclosed number of payment cards from online and in-store transactions; lasted 10 days before detection",
+        "root_cause": "Third-party wallet application used on POS systems was compromised. Memory scraper captured payment information during checkout before encryption.",
+        "source_url": "https://www.macys.com/social/privacy-policy/data-security-statement/"
+      }
+    ],
+    "bug_bounty_reports": [
+      {
+        "platform": "HackerOne",
+        "report_id": "H1-876432",
+        "bounty_amount": 15000,
+        "severity": "Critical",
+        "summary": "E-commerce checkout page JavaScript loads payment card data into browser memory unencrypted, vulnerable to memory scraping via browser extensions or malicious scripts"
+      },
+      {
+        "platform": "Bugcrowd",
+        "report_id": "BC-2022-POS-003",
+        "bounty_amount": 12000,
+        "severity": "Critical",
+        "summary": "POS application stores full magnetic stripe Track 1/Track 2 data in plaintext in process memory after transaction completion, violating PCI DSS 3.4"
+      },
+      {
+        "platform": "Synack",
+        "report_id": "SYN-2023-RETAIL-001",
+        "bounty_amount": 10000,
+        "severity": "High",
+        "summary": "Payment terminal software logs full PAN and CVV to memory-mapped log file accessible by low-privilege users"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "RAM Scrapers: How Point-of-Sale Malware Works",
+        "authors": ["Trustwave SpiderLabs"],
+        "published_date": "2014-08-15",
+        "source_url": "https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/",
+        "key_finding": "Analyzed 15 POS malware families including BlackPOS, Backoff, Alina, Dexter. All use regex pattern matching for Track 1/Track 2 data: Track 1 starts with %B followed by 13-19 digits, Track 2 starts with ; followed by 13-19 digits. Malware scans memory every 100-500ms and captures data in 2-3 second window when unencrypted in RAM."
+      },
+      {
+        "title": "The Evolution of POS Malware: From BlackPOS to ModPipe",
+        "authors": ["Visa Payment Fraud Disruption"],
+        "published_date": "2019-06-20",
+        "source_url": "https://usa.visa.com/support/consumer/security.html",
+        "key_finding": "POS malware has evolved from simple memory scanners to sophisticated multi-stage frameworks. Modern variants use process hollowing, reflective DLL injection, and encrypt exfiltration via DNS tunneling. 89% of POS malware targets Windows XP/7 embedded systems still in production."
+      },
+      {
+        "title": "Memory Scraping Techniques in Financial Malware",
+        "authors": ["MITRE ATT&CK Team"],
+        "published_date": "2023-09-15",
+        "source_url": "https://attack.mitre.org/techniques/T1005/",
+        "key_finding": "Memory scraping is T1005 (Data from Local System) technique. Used in 78% of retail breaches 2013-2020. Mitigation requires P2PE (Point-to-Point Encryption) from card reader hardware through entire authorization chain, eliminating cleartext windows."
+      },
+      {
+        "title": "PCI DSS 4.0: Enhanced Requirements for Memory Scraping Protection",
+        "authors": ["PCI Security Standards Council"],
+        "published_date": "2024-03-31",
+        "source_url": "https://www.pcisecuritystandards.org/",
+        "key_finding": "PCI DSS 4.0 Requirement 3.5.1 now mandates that PAN must never be stored unencrypted in volatile memory except during active authorization processing (maximum 5 seconds). Requirement 11.6.1 requires deployment of change detection mechanisms on POS systems to detect memory scraper installation."
+      },
+      {
+        "title": "BlackPOS/Kaptoxa Malware Analysis",
+        "authors": ["US-CERT"],
+        "published_date": "2014-01-15",
+        "source_url": "https://www.cisa.gov/sites/default/files/publications/",
+        "key_finding": "BlackPOS (aka Kaptoxa) uses CreateToolhelp32Snapshot to enumerate processes, reads memory via ReadProcessMemory API, uses regex to find Track 1/Track 2 patterns. Persists via scheduled tasks and registry Run keys. Exfiltrates via FTP or HTTP POST. Cost attackers $2,000-3,000 on underground forums."
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "MIT-001",
+      "title": "Implement Point-to-Point Encryption (P2PE) for Payment Terminals",
+      "description": "Deploy PCI-validated Point-to-Point Encryption (P2PE) solutions that encrypt payment card data from the moment of card interaction (swipe/dip/tap) through the entire payment processing chain. P2PE-validated devices encrypt Track 1/Track 2 data in hardware before it ever enters system memory, completely eliminating the attack surface for RAM scrapers. This is the most effective defense against memory scraping attacks as there is no cleartext window for malware to exploit.",
+      "effectiveness": "Very High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "java",
+        "framework": "Ingenico Telium Tetra SDK + P2PE",
+        "code": "import com.ingenico.telium.payment.*;\nimport com.ingenico.telium.crypto.*;\nimport com.ingenico.security.p2pe.*;\nimport javax.crypto.SecretKey;\nimport java.security.KeyStore;\nimport java.util.logging.Logger;\n\n/**\n * P2PE-compliant payment terminal integration\n * Card data is encrypted in hardware, never exposed in application memory\n */\npublic class SecurePaymentTerminal {\n    private static final Logger logger = Logger.getLogger(SecurePaymentTerminal.class.getName());\n    private final P2PECryptoService cryptoService;\n    private final String merchantId;\n    private final KeyStore terminalKeyStore;\n    \n    public SecurePaymentTerminal(String merchantId, KeyStore keyStore) {\n        this.merchantId = merchantId;\n        this.terminalKeyStore = keyStore;\n        this.cryptoService = P2PECryptoService.getInstance();\n    }\n    \n    /**\n     * Process payment with P2PE - card data never in memory unencrypted\n     * @param amount Transaction amount in cents\n     * @return Encrypted payment token (no PAN exposure)\n     */\n    public EncryptedPaymentResponse processPayment(long amount) {\n        try {\n            // Initialize payment terminal with P2PE mode\n            PaymentTerminal terminal = new PaymentTerminal();\n            terminal.setEncryptionMode(EncryptionMode.P2PE_DUKPT);\n            \n            // Configure terminal to encrypt in hardware (SRED - Secure Reading and Exchange of Data)\n            TerminalConfig config = new TerminalConfig.Builder()\n                .enableP2PE(true)\n                .setEncryptionAlgorithm(\"AES-256\")\n                .setKeyManagementScheme(\"DUKPT\") // Derived Unique Key Per Transaction\n                .setMerchantId(merchantId)\n                .build();\n            \n            terminal.configure(config);\n            \n            // Prompt for card - data encrypted by terminal hardware before entering system RAM\n            logger.info(\"Waiting for card presentation...\");\n            CardPresentationRequest request = new CardPresentationRequest.Builder()\n                .setAmount(amount)\n                .setCurrency(\"USD\")\n                .setTransactionType(TransactionType.SALE)\n                .setPrompt(\"Insert, Swipe, or Tap Card\")\n                .setTimeout(30000) // 30 second timeout\n                .build();\n            \n            // CRITICAL: This returns ENCRYPTED data only - PAN never in memory\n            // Track 1/Track 2 data encrypted in terminal hardware using injected DUKPT key\n            CardPresentationResult result = terminal.presentCard(request);\n            \n            if (result.getStatus() != CardStatus.SUCCESS) {\n                throw new PaymentException(\"Card read failed: \" + result.getStatusMessage());\n            }\n            \n            // Get encrypted card data - this is a cryptogram, not plaintext PAN\n            EncryptedCardData encryptedData = result.getEncryptedCardData();\n            \n            // IMPORTANT: Never log, store, or process plaintext card data\n            // Only work with encrypted payloads and tokens\n            \n            // Build encrypted payment request for processor\n            EncryptedPaymentRequest paymentRequest = EncryptedPaymentRequest.builder()\n                .merchantId(merchantId)\n                .amount(amount)\n                .currency(\"USD\")\n                // Encrypted Track 1/Track 2 data (AES-256 encrypted by terminal)\n                .encryptedTrackData(encryptedData.getEncryptedTracks())\n                // KSN - Key Serial Number for DUKPT key derivation\n                .keySerialNumber(encryptedData.getKSN())\n                // Device ID for P2PE validation\n                .deviceId(encryptedData.getDeviceId())\n                // EMV tags if chip transaction (also encrypted)\n                .emvData(encryptedData.getEMVTags())\n                .build();\n            \n            // Send encrypted payment to P2PE-certified processor\n            // Processor decrypts in HSM (Hardware Security Module) - never in application\n            EncryptedPaymentResponse response = sendToProcessor(paymentRequest);\n            \n            // Log transaction with token only (no PAN)\n            logger.info(String.format(\n                \"Transaction approved. Token: %s, Amount: $%.2f, Auth Code: %s\",\n                response.getPaymentToken(),\n                amount / 100.0,\n                response.getAuthorizationCode()\n            ));\n            \n            return response;\n            \n        } catch (TerminalException e) {\n            logger.severe(\"Terminal error: \" + e.getMessage());\n            throw new PaymentException(\"Payment processing failed\", e);\n        }\n    }\n    \n    /**\n     * Send encrypted payment to P2PE processor (HSM decryption)\n     * @param request Encrypted payment request\n     * @return Payment response with token (not PAN)\n     */\n    private EncryptedPaymentResponse sendToProcessor(EncryptedPaymentRequest request) {\n        // Send to P2PE-certified processor like Shift4, Bluefin, TokenEx\n        // Processor uses HSM to decrypt and authorize transaction\n        // Returns payment token (not PAN) for storage/reconciliation\n        \n        ProcessorClient processor = new ProcessorClient(\n            \"https://api.p2pe-processor.com/v3/authorize\",\n            terminalKeyStore\n        );\n        \n        return processor.authorize(request);\n    }\n    \n    /**\n     * Tokenize card for recurring payments (still P2PE encrypted)\n     * @param customerId Customer identifier\n     * @return Payment token for future use\n     */\n    public String tokenizeCard(String customerId) {\n        // Card data encrypted in terminal hardware\n        EncryptedPaymentResponse response = processPayment(0); // $0 auth for tokenization\n        \n        // Store token (not PAN) for recurring payments\n        String token = response.getPaymentToken();\n        \n        // Log tokenization event (no PAN exposure)\n        logger.info(String.format(\n            \"Card tokenized for customer %s. Token: %s (last 4: %s)\",\n            customerId,\n            token,\n            response.getLast4Digits()\n        ));\n        \n        return token;\n    }\n    \n    /**\n     * Verify P2PE terminal compliance\n     * @return true if terminal is P2PE-compliant\n     */\n    public boolean verifyP2PECompliance() {\n        try {\n            PaymentTerminal terminal = new PaymentTerminal();\n            \n            // Verify terminal is P2PE-validated by PCI SSC\n            TerminalInfo info = terminal.getTerminalInfo();\n            \n            boolean isP2PEValidated = info.isP2PEValidated();\n            boolean hasValidCertificate = info.hasValidP2PECertificate();\n            boolean sredEnabled = info.isSREDEnabled();\n            \n            logger.info(String.format(\n                \"Terminal P2PE Status - Validated: %s, Certificate Valid: %s, SRED: %s, Device ID: %s\",\n                isP2PEValidated,\n                hasValidCertificate,\n                sredEnabled,\n                info.getDeviceId()\n            ));\n            \n            return isP2PEValidated && hasValidCertificate && sredEnabled;\n            \n        } catch (TerminalException e) {\n            logger.severe(\"Failed to verify P2PE compliance: \" + e.getMessage());\n            return false;\n        }\n    }\n}\n\n// Example usage\npublic class POSApplication {\n    public static void main(String[] args) {\n        try {\n            // Load merchant keystore with terminal certificates\n            KeyStore keyStore = KeyStore.getInstance(\"PKCS12\");\n            keyStore.load(\n                new FileInputStream(\"/secure/merchant-keystore.p12\"),\n                \"keystorePassword\".toCharArray()\n            );\n            \n            SecurePaymentTerminal terminal = new SecurePaymentTerminal(\n                \"MERCHANT_123456\",\n                keyStore\n            );\n            \n            // Verify terminal is P2PE-compliant before accepting payments\n            if (!terminal.verifyP2PECompliance()) {\n                System.err.println(\"FATAL: Terminal is not P2PE-compliant!\");\n                System.exit(1);\n            }\n            \n            // Process payment - card data never exposed in memory\n            EncryptedPaymentResponse response = terminal.processPayment(4999); // $49.99\n            \n            System.out.println(\"Payment successful!\");\n            System.out.println(\"Token: \" + response.getPaymentToken());\n            System.out.println(\"Auth Code: \" + response.getAuthorizationCode());\n            \n        } catch (Exception e) {\n            e.printStackTrace();\n        }\n    }\n}"
+      },
+      "tools": [
+        {
+          "name": "Ingenico P2PE Terminals",
+          "type": "Hardware Encryption",
+          "cost": "$300-800 per terminal"
+        },
+        {
+          "name": "Verifone VX520 P2PE",
+          "type": "PCI P2PE-Validated Device",
+          "cost": "$400-600 per terminal"
+        },
+        {
+          "name": "Shift4 P2PE Solution",
+          "type": "Software + Hardware Encryption",
+          "cost": "$99/month + $0.05 per transaction"
+        },
+        {
+          "name": "Bluefin PayConex",
+          "type": "P2PE Gateway",
+          "cost": "$0.10-0.15 per transaction"
+        }
+      ],
+      "iso27001_controls": [
+        "A.10.1.1 - Policy on the use of cryptographic controls",
+        "A.10.1.2 - Key management",
+        "A.14.1.2 - Securing application services on public networks",
+        "A.14.1.3 - Protecting application services transactions"
+      ],
+      "nist_csf": [
+        "PR.DS-1 - Data-at-rest is protected",
+        "PR.DS-2 - Data-in-transit is protected",
+        "PR.DS-5 - Protections against data leaks are implemented"
+      ],
+      "validation_steps": [
+        "Verify payment terminal is PCI P2PE-validated (check PCI SSC website)",
+        "Confirm terminal uses SRED (Secure Reading and Exchange of Data)",
+        "Test that Track 1/Track 2 data is encrypted before leaving terminal hardware",
+        "Validate DUKPT key injection and key management procedures",
+        "Verify application never receives plaintext PAN in any form",
+        "Test memory scraping tools - should find no card data in RAM",
+        "Conduct PCI DSS assessment with P2PE scope reduction",
+        "Verify processor is PCI P2PE-validated decryption provider"
+      ]
+    },
+    {
+      "control_id": "MIT-002",
+      "title": "Deploy EDR with POS-Specific Memory Scraper Detection",
+      "description": "Implement Endpoint Detection and Response (EDR) solutions specifically configured to detect POS malware behaviors including process memory scanning, Track 1/Track 2 pattern matching, and data exfiltration from retail environments. EDR should monitor for suspicious API calls (ReadProcessMemory, CreateToolhelp32Snapshot), regex pattern matching activity, and unauthorized network connections from POS terminals.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "yaml",
+        "framework": "CrowdStrike Falcon + Custom IOAs",
+        "code": "# CrowdStrike Falcon Custom IOA (Indicator of Attack) Rules for POS Malware Detection\n# Deploy via Falcon Console > Configuration > Custom IOA Rules\n\n---\napiVersion: crowdstrike.com/v1\nkind: CustomIOA\nmetadata:\n  name: pos-memory-scraper-detection\n  severity: Critical\n  category: Malware\n  platform: Windows\nspec:\n  description: |\n    Detects memory scraping behavior characteristic of POS malware\n    including Track 1/Track 2 regex pattern matching and ReadProcessMemory calls\n  \n  # Rule 1: Detect Track 1/Track 2 regex pattern usage\n  pattern_matching:\n    - name: track-data-regex-detection\n      enabled: true\n      severity: High\n      conditions:\n        process:\n          commandline_regex: |\n            # Track 1 pattern: %B followed by 13-19 digits\n            .*%B[0-9]{13,19}.*\n            # Track 2 pattern: ; followed by 13-19 digits\n            .*;[0-9]{13,19}=[0-9]{4}.*\n          excluded_processes:\n            - \"pos_application.exe\"  # Legitimate POS app\n            - \"payment_processor.exe\"\n        actions:\n          - alert:\n              title: \"POS Memory Scraper Regex Pattern Detected\"\n              description: \"Process using Track 1/Track 2 regex patterns\"\n          - quarantine_process: true\n          - collect_memory_dump: true\n\n  # Rule 2: Detect suspicious ReadProcessMemory API calls\n  api_monitoring:\n    - name: readprocessmemory-monitoring\n      enabled: true\n      severity: High\n      api_calls:\n        - name: \"ReadProcessMemory\"\n          filters:\n            - target_process: \n                - \"pos_application.exe\"\n                - \"paymentprocessor.exe\"\n                - \"aloha.exe\"\n                - \"micros.exe\"\n            - calling_process_not_in:\n                - \"C:\\\\Windows\\\\System32\\\\\"\n                - \"C:\\\\Program Files\\\\POSVendor\\\\\"\n            - call_frequency: \"> 100 per minute\"  # Rapid memory scanning\n      actions:\n        - alert:\n            title: \"Suspicious Memory Access to POS Application\"\n            description: \"Non-authorized process reading POS application memory\"\n        - kill_process: true\n        - network_contain: true\n\n  # Rule 3: Detect process enumeration (common in POS malware)\n  process_enumeration:\n    - name: createtoolhelp32snapshot-abuse\n      enabled: true\n      severity: Medium\n      conditions:\n        api_calls:\n          - \"CreateToolhelp32Snapshot\"\n          - \"Process32First\"\n          - \"Process32Next\"\n        followed_by:\n          - \"OpenProcess\" with PROCESS_VM_READ | PROCESS_QUERY_INFORMATION\n        within: \"5 seconds\"\n        exclude_known_good:\n          - \"taskmgr.exe\"\n          - \"procexp.exe\"\n          - \"EDR_agent.exe\"\n      actions:\n        - alert:\n            title: \"Process Enumeration Followed by Memory Access\"\n            severity: High\n\n  # Rule 4: Detect data exfiltration from POS terminals\n  network_monitoring:\n    - name: pos-data-exfiltration\n      enabled: true\n      severity: Critical\n      conditions:\n        network_connection:\n          - direction: outbound\n          - protocol: [\"HTTP\", \"HTTPS\", \"DNS\", \"FTP\"]\n          - destination_not_in:\n            - \"known_payment_processors.txt\"  # Whitelist legitimate processors\n          - data_size: \"> 1KB\"  # Typical card dump size\n        source_process:\n          - path_contains: [\"pos\", \"payment\", \"retail\"]\n          - or_signed_by_not: [\"Verifone\", \"Ingenico\", \"PAX\", \"NCR\"]\n      actions:\n        - alert:\n            title: \"Suspicious Network Activity from POS System\"\n            description: \"POS process communicating with unknown external host\"\n        - block_connection: true\n        - isolate_host: true\n        - create_forensic_snapshot: true\n\n  # Rule 5: Detect persistence mechanisms used by POS malware\n  persistence_detection:\n    - name: pos-malware-persistence\n      enabled: true\n      severity: High\n      conditions:\n        registry_modification:\n          - key: \"HKLM\\\\SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\"\n          - value_data_contains: [\"pos\", \"payment\", \"retail\"]\n          - creating_process_not_signed: true\n        or:\n          scheduled_task_creation:\n            - task_name_regex: \".*update.*|.*cache.*|.*service.*\"\n            - action_path_not_in:\n              - \"C:\\\\Windows\\\\System32\\\\\"\n              - \"C:\\\\Program Files\\\\\"\n        or:\n          service_installation:\n            - service_name_suspicious: true\n            - binary_path_writeable_by_users: true\n      actions:\n        - alert:\n            title: \"POS Malware Persistence Mechanism Detected\"\n        - remove_persistence: true\n        - quarantine_file: true\n\n  # Rule 6: Detect known POS malware families by behavior\n  malware_families:\n    - name: blackpos-behavior\n      signatures:\n        - file_operations:\n          - create_file: \"C:\\\\Windows\\\\Temp\\\\*.tmp\"\n          - write_pattern: \"^%B[0-9]{13,19}\"  # Track 1 data\n        - network:\n          - ftp_connection: true\n          - or_http_post: true\n      actions:\n        - alert:\n            title: \"BlackPOS/Kaptoxa Malware Behavior Detected\"\n            severity: Critical\n    \n    - name: backoff-behavior\n      signatures:\n        - process_injection:\n          - technique: \"CreateRemoteThread\"\n          - target: \"explorer.exe\"\n        - memory_scanning:\n          - pattern: \"Track 1/Track 2 regex\"\n          - interval: \"< 500ms\"\n      actions:\n        - alert:\n            title: \"Backoff POS Malware Behavior Detected\"\n            severity: Critical\n    \n    - name: alina-behavior\n      signatures:\n        - string_operations:\n          - base64_encode: true\n          - xor_encryption: true\n        - contains_string: [\"track1\", \"track2\", \"cvv\"]\n      actions:\n        - alert:\n            title: \"Alina POS Malware Behavior Detected\"\n            severity: Critical\n\n  # Rule 7: Memory forensics - scan for card data in process memory\n  memory_forensics:\n    - name: live-memory-card-data-scan\n      enabled: true\n      severity: Critical\n      schedule: \"every 15 minutes\"\n      scan_targets:\n        - \"pos_application.exe\"\n        - \"all non-system processes\"\n      scan_patterns:\n        - regex: \"^%B[0-9]{13,19}\\\\^[^^]+\\\\^[0-9]{4}\"  # Track 1\n        - regex: \";[0-9]{13,19}=[0-9]{4}\"  # Track 2\n        - regex: \"[0-9]{13,19}\"  # PAN (Primary Account Number)\n      exclude_if:\n        - process_is: \"pos_application.exe\"\n        - and_data_age: \"< 5 seconds\"  # Allow brief window for legitimate processing\n      actions:\n        - alert:\n            title: \"CRITICAL: Card Data Found in Process Memory\"\n            description: \"Cleartext payment card data persisting in memory\"\n        - kill_process: true\n        - memory_dump: true\n        - incident_response: \"escalate to SOC\"\n\n# Deploy Falcon sensor with custom IOA rules\n---\ndeployment:\n  sensor_version: \"7.10+\"\n  update_policy: \"automatic\"\n  prevention_policy:\n    name: \"POS_Terminals_High_Security\"\n    settings:\n      - quarantine_on_write: true\n      - network_containment: \"automatic\"\n      - memory_protection: \"enabled\"\n      - script_based_execution_monitoring: \"enabled\"\n  \n  exclusions:\n    # Exclude legitimate POS applications from some checks\n    processes:\n      - path: \"C:\\\\POSVendor\\\\Aloha\\\\*.exe\"\n        reason: \"Legitimate Aloha POS application\"\n        excluded_from: [\"process_enumeration\"]\n      - path: \"C:\\\\Micros\\\\*.exe\"\n        reason: \"Legitimate Oracle Micros POS\"\n        excluded_from: [\"process_enumeration\"]\n  \n  # Real-time response capabilities\n  rtr_enabled: true\n  forensics_collection: \"automatic\"\n  \n  # Integration with SIEM\n  siem_integration:\n    type: \"Splunk\"\n    endpoint: \"https://splunk.retail.com:8088/services/collector\"\n    events:\n      - \"DetectionSummaryEvent\"\n      - \"ProcessExecutionEvent\"\n      - \"NetworkConnectionEvent\"\n      - \"MemoryForensicEvent\"\n\n# Response automation\n---\nincident_response:\n  auto_remediation:\n    - condition: \"severity >= High AND confidence >= 80\"\n      actions:\n        - isolate_host: true\n        - kill_malicious_process: true\n        - collect_forensics:\n          - memory_dump\n          - disk_image\n          - network_pcap\n        - notify:\n          - email: \"security-team@retail.com\"\n          - slack: \"#security-incidents\"\n          - pagerduty: \"P1-incident\"\n  \n  forensics_retention: \"90 days\"\n  compliance_reporting:\n    - pci_dss: true\n    - format: \"PDF\"\n    - frequency: \"quarterly\""
+      },
+      "tools": [
+        {
+          "name": "CrowdStrike Falcon",
+          "type": "EDR with Behavioral Detection",
+          "cost": "$8.99/endpoint/month"
+        },
+        {
+          "name": "Carbon Black Response",
+          "type": "EDR with Memory Forensics",
+          "cost": "$60-100/endpoint/year"
+        },
+        {
+          "name": "SentinelOne",
+          "type": "AI-Powered EDR",
+          "cost": "$6-12/endpoint/month"
+        },
+        {
+          "name": "Microsoft Defender for Endpoint",
+          "type": "Native Windows EDR",
+          "cost": "$5.20/user/month (E5 license)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.4.1 - Event logging",
+        "A.12.6.1 - Management of technical vulnerabilities",
+        "A.16.1.2 - Reporting information security events"
+      ],
+      "nist_csf": [
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events",
+        "DE.CM-4 - Malicious code is detected",
+        "DE.CM-7 - Monitoring for unauthorized personnel, connections, devices, and software is performed",
+        "RS.AN-1 - Notifications from detection systems are investigated"
+      ],
+      "validation_steps": [
+        "Deploy EDR agent to all POS terminals and servers",
+        "Configure custom IOA rules for POS malware behaviors",
+        "Whitelist legitimate payment processor communications",
+        "Test detection with POS malware samples (in isolated environment)",
+        "Verify memory forensics scan detects Track 1/Track 2 patterns",
+        "Enable automatic containment and remediation",
+        "Integrate EDR alerts with SOC/SIEM platform",
+        "Conduct monthly detection efficacy testing"
+      ]
+    },
+    {
+      "control_id": "MIT-003",
+      "title": "Implement Network Segmentation and POS Isolation",
+      "description": "Isolate POS systems on dedicated network segments (VLANs) with strict firewall rules allowing only payment processor communication. Implement application-level whitelisting, disable unnecessary services, and use jump boxes for administrative access. This prevents lateral movement from compromised corporate networks to POS systems and restricts malware exfiltration channels.",
+      "effectiveness": "High",
+      "implementation_complexity": "High",
+      "code_example": {
+        "language": "cisco",
+        "framework": "Cisco ASA Firewall + 802.1Q VLANs",
+        "code": "! Cisco ASA Firewall Configuration for POS Network Segmentation\n! PCI DSS Requirement 1.2.1 and 1.3 compliant\n\n!==========================================================================\n! VLAN Configuration\n!==========================================================================\ninterface GigabitEthernet0/0\n description Corporate Network\n nameif corporate\n security-level 50\n ip address 10.0.10.1 255.255.255.0\n!\ninterface GigabitEthernet0/1\n description POS Network (Cardholder Data Environment)\n nameif pos-cde\n security-level 100\n ip address 10.0.20.1 255.255.255.0\n!\ninterface GigabitEthernet0/2\n description Payment Processor Network\n nameif payment-processor\n security-level 75\n ip address 10.0.30.1 255.255.255.0\n!\ninterface GigabitEthernet0/3\n description POS Management Network (Jump Box)\n nameif pos-mgmt\n security-level 80\n ip address 10.0.40.1 255.255.255.0\n!\n\n!==========================================================================\n! Object Groups for POS Systems and Payment Processors\n!==========================================================================\nobject-group network POS-TERMINALS\n description All POS terminal IP addresses\n network-object 10.0.20.10 255.255.255.255  ! POS-Terminal-01\n network-object 10.0.20.11 255.255.255.255  ! POS-Terminal-02\n network-object 10.0.20.12 255.255.255.255  ! POS-Terminal-03\n network-object 10.0.20.13 255.255.255.255  ! POS-Terminal-04\n network-object 10.0.20.14 255.255.255.255  ! POS-Terminal-05\n network-object 10.0.20.0 255.255.255.0     ! Entire POS subnet\n!\nobject-group network PAYMENT-PROCESSORS\n description Authorized payment processor IPs (whitelist)\n network-object host 203.0.113.10  ! Visa/Mastercard Processor\n network-object host 203.0.113.11  ! Shift4 P2PE Gateway\n network-object host 203.0.113.12  ! First Data\n network-object host 203.0.113.13  ! Worldpay Gateway\n!\nobject-group service PAYMENT-SERVICES\n description Allowed payment processing services\n service-object tcp eq 443   ! HTTPS for payment authorization\n service-object tcp eq 8443  ! Alternate HTTPS port\n!\nobject-group network POS-MANAGEMENT\n description Jump box for POS administration\n network-object host 10.0.40.10  ! Jump box IP\n!\n\n!==========================================================================\n! Access Control Lists (ACLs) - Default Deny, Explicit Allow\n!==========================================================================\n\n! ACL 1: POS to Payment Processors ONLY (PCI DSS 1.2.1)\naccess-list POS-OUT extended permit tcp object-group POS-TERMINALS object-group PAYMENT-PROCESSORS object-group PAYMENT-SERVICES\naccess-list POS-OUT extended permit udp object-group POS-TERMINALS host 8.8.8.8 eq domain ! DNS for payment processor lookup\naccess-list POS-OUT extended deny ip any any log  ! Deny all other traffic and log\n!\n! ACL 2: Payment Processors to POS (responses only)\naccess-list PROCESSOR-IN extended permit tcp object-group PAYMENT-PROCESSORS object-group POS-TERMINALS established\naccess-list PROCESSOR-IN extended deny ip any any log\n!\n! ACL 3: Corporate network CANNOT directly access POS (PCI DSS 1.3.2)\naccess-list CORP-TO-POS extended deny ip any object-group POS-TERMINALS log\n!\n! ACL 4: Management access via Jump Box only (PCI DSS 1.3.7)\naccess-list MGMT-TO-POS extended permit tcp object-group POS-MANAGEMENT object-group POS-TERMINALS eq 3389  ! RDP\naccess-list MGMT-TO-POS extended permit tcp object-group POS-MANAGEMENT object-group POS-TERMINALS eq 22    ! SSH\naccess-list MGMT-TO-POS extended permit icmp object-group POS-MANAGEMENT object-group POS-TERMINALS echo   ! Ping\naccess-list MGMT-TO-POS extended deny ip any any log\n!\n! Apply ACLs to interfaces\naccess-group POS-OUT in interface pos-cde\naccess-group PROCESSOR-IN in interface payment-processor\naccess-group CORP-TO-POS in interface corporate\naccess-group MGMT-TO-POS in interface pos-mgmt\n\n!==========================================================================\n! Threat Detection and Inspection\n!==========================================================================\n\n! Enable threat detection for anomaly detection\nthreat-detection statistics access-list\nthreat-detection statistics port\nthreat-detection statistics protocol\nthreat-detection statistics tcp-intercept rate-interval 30 burst-rate 400 average-rate 200\n\n! Scan for memory scraper exfiltration patterns\nthreat-detection scanning-threat shun duration 3600\n\n! Deep packet inspection for payment data (alert if cleartext PAN detected)\nclass-map type inspect http match-all CLEARTEXT-PAN-DETECTION\n match request body regex class PAN-PATTERNS\n!\nregex PAN-PATTERNS \"[0-9]{13,19}\"  ! PAN pattern (should NEVER be in HTTP traffic)\n!\npolicy-map type inspect http HTTP-PAYMENT-INSPECTION\n parameters\n  protocol-violation action drop-connection log\n class CLEARTEXT-PAN-DETECTION\n  drop-connection log\n  ! Alert security team if cleartext PAN detected (possible exfiltration)\n  log-level alert\n!\npolicy-map global_policy\n class inspection_default\n  inspect http HTTP-PAYMENT-INSPECTION\n!\nservice-policy global_policy global\n\n!==========================================================================\n! Logging and Monitoring (PCI DSS 10.6.1)\n!==========================================================================\n\n! Send logs to SIEM for analysis\nlogging enable\nlogging timestamp\nlogging trap informational\nlogging host corporate 10.0.10.50 ! SIEM server IP\nlogging host corporate 10.0.10.51 ! Secondary SIEM\n\n! Log all denied connections\nlogging message 106023 level informational ! Deny IP\nlogging message 106100 level informational ! Access denied\nlogging message 313001 level alert          ! Denied ICMP\n\n! Log ACL hits for payment processor connections\nlogging class-of-service auth-inbound\n\n! Enable NetFlow for traffic analysis\nflow-export destination corporate 10.0.10.60 2055\nflow-export template timeout-rate 1\nflow-export active refresh-interval 1\n\n!==========================================================================\n! Additional Security Controls\n!==========================================================================\n\n! Disable unnecessary services on firewall\nno service pad\nno ip bootp server\nno ip source-route\nno ip finger\nno ip http server\nno ip http secure-server\n\n! Enable unicast reverse path forwarding (anti-spoofing)\nip verify unicast source reachable-via rx\n\n! Rate limiting to prevent DoS\npolice rate 10000000 burst 1000000\n\n! Connection limits per host (prevent port scanning)\nset connection conn-max 100 embryonic-conn-max 50\n\n! Enable TCP sequence number randomization\ntcp-map TCP-SECURITY-MAP\n tcp-options range 6 7 clear ! Remove timestamp options\n exceed-mss allow\n!\nclass-map TCP-CLASS\n match default-inspection-traffic\n!\npolicy-map TCP-POLICY\n class TCP-CLASS\n  set connection advanced-options TCP-SECURITY-MAP\n!\nservice-policy TCP-POLICY interface pos-cde\n\n!==========================================================================\n! Compliance Reporting\n!==========================================================================\n\n! Generate PCI DSS compliance reports\nevent manager applet PCI-COMPLIANCE-REPORT\n event timer cron cron-entry \"0 0 * * 0\"  ! Weekly on Sunday midnight\n action 1.0 cli command \"show access-list | include deny\"\n action 2.0 cli command \"show logging | include denied\"\n action 3.0 cli command \"show conn count\"\n action 4.0 syslog msg \"PCI DSS Compliance Report Generated\"\n!\n\n!==========================================================================\n! Backup Configuration (encrypted)\n!==========================================================================\narchive\n log config\n  logging enable\n  notify syslog contenttype plaintext\n path ftp://admin:password@10.0.40.20/configs/asa-config-$h-$t\n write-memory\n time-period 1440  ! Daily backup\n!\n\n! END OF CONFIGURATION\n\n!==========================================================================\n! Validation Commands\n!==========================================================================\n! show access-list POS-OUT\n! show conn all | include 10.0.20\n! show service-policy global\n! show logging | include POS\n! show threat-detection statistics\n! show flow-export"
+      },
+      "tools": [
+        {
+          "name": "Cisco ASA Firewall",
+          "type": "Next-Gen Firewall",
+          "cost": "$3,000-15,000 per appliance"
+        },
+        {
+          "name": "Palo Alto Networks PA-220",
+          "type": "NGFW with App-ID",
+          "cost": "$1,500-2,500 per appliance"
+        },
+        {
+          "name": "Fortinet FortiGate",
+          "type": "Unified Threat Management",
+          "cost": "$500-3,000 per appliance"
+        },
+        {
+          "name": "pfSense",
+          "type": "Open Source Firewall",
+          "cost": "Free (CE) / $199/year (Plus)"
+        }
+      ],
+      "iso27001_controls": [
+        "A.13.1.1 - Network controls",
+        "A.13.1.3 - Segregation in networks",
+        "A.13.2.1 - Information transfer policies and procedures"
+      ],
+      "nist_csf": [
+        "PR.AC-5 - Network integrity is protected (e.g., network segregation, network segmentation)",
+        "PR.DS-5 - Protections against data leaks are implemented",
+        "DE.CM-1 - The network is monitored to detect potential cybersecurity events"
+      ],
+      "validation_steps": [
+        "Create dedicated VLAN for POS systems (separate from corporate network)",
+        "Configure firewall to allow only payment processor IPs (whitelist)",
+        "Block all POS-to-corporate network traffic",
+        "Implement jump box for POS administrative access",
+        "Test that POS terminals cannot access internet or corporate resources",
+        "Verify firewall logs all denied connection attempts",
+        "Enable deep packet inspection for payment data patterns",
+        "Conduct quarterly PCI DSS network segmentation testing"
+      ]
+    },
+    {
+      "control_id": "MIT-004",
+      "title": "Enable Application Whitelisting and Disable Unnecessary Services",
+      "description": "Implement application whitelisting (Windows AppLocker, Carbon Black) on POS terminals to prevent execution of unauthorized binaries including memory scraper malware. Disable unnecessary Windows services (Remote Desktop, Windows Script Host, PowerShell) to reduce attack surface. This prevents malware installation and execution even if initial compromise occurs.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium",
+      "code_example": {
+        "language": "powershell",
+        "framework": "Windows AppLocker + Group Policy",
+        "code": "# PowerShell script to configure POS terminal security\n# Implements application whitelisting and service hardening\n# PCI DSS Requirement 2.2 compliant\n\n<#\n.SYNOPSIS\n    Hardens POS terminals against memory scraper malware\n.DESCRIPTION\n    Configures AppLocker, disables unnecessary services, and implements\n    security controls for POS systems per PCI DSS requirements\n#>\n\n[CmdletBinding()]\nparam(\n    [switch]$EnableAppLocker,\n    [switch]$DisableServices,\n    [switch]$AuditOnly\n)\n\n#========================================================================\n# Application Whitelisting with AppLocker\n#========================================================================\n\nfunction Enable-POSApplicationWhitelisting {\n    Write-Host \"[*] Configuring AppLocker for POS terminals...\" -ForegroundColor Cyan\n    \n    # Create AppLocker policy XML\n    $appLockerPolicy = @'\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<AppLockerPolicy Version=\"1\">\n  <!-- Executable Rules: Only allow signed executables from trusted publishers -->\n  <RuleCollection Type=\"Exe\" EnforcementMode=\"Enabled\">\n    <!-- Allow Windows System Files -->\n    <FilePathRule Id=\"a61c8b2c-a319-4cd0-9690-d2177cad7b51\" Name=\"Windows System\" Description=\"Allow Windows system executables\" UserOrGroupSid=\"S-1-1-0\" Action=\"Allow\">\n      <Conditions>\n        <FilePathCondition Path=\"%WINDIR%\\*\" />\n        <FilePathCondition Path=\"%PROGRAMFILES%\\Windows Defender\\*\" />\n      </Conditions>\n    </FilePathRule>\n    \n    <!-- Allow specific POS applications ONLY -->\n    <FilePublisherRule Id=\"fd686d83-a829-4351-8ff4-27c7de5755d2\" Name=\"NCR Aloha POS\" Description=\"Allow NCR Aloha POS application\" UserOrGroupSid=\"S-1-1-0\" Action=\"Allow\">\n      <Conditions>\n        <FilePublisherCondition PublisherName=\"O=NCR Corporation\" ProductName=\"Aloha\" BinaryName=\"*\">\n          <BinaryVersionRange LowSection=\"*\" HighSection=\"*\" />\n        </FilePublisherCondition>\n      </Conditions>\n    </FilePublisherRule>\n    \n    <FilePublisherRule Id=\"9c773b8a-d5ec-4c7c-ae2c-1f6e4f7d9c4f\" Name=\"Oracle Micros POS\" Description=\"Allow Oracle Micros POS\" UserOrGroupSid=\"S-1-1-0\" Action=\"Allow\">\n      <Conditions>\n        <FilePublisherCondition PublisherName=\"O=Oracle Corporation\" ProductName=\"Micros\" BinaryName=\"*\">\n          <BinaryVersionRange LowSection=\"*\" HighSection=\"*\" />\n        </FilePublisherCondition>\n      </Conditions>\n    </FilePublisherRule>\n    \n    <FilePathRule Id=\"c3c2b5d8-f7e9-4a3d-9c1f-8e7d6c5b4a3d\" Name=\"Payment Terminal Software\" Description=\"Allow payment terminal applications\" UserOrGroupSid=\"S-1-1-0\" Action=\"Allow\">\n      <Conditions>\n        <FilePathCondition Path=\"%PROGRAMFILES%\\Verifone\\*\" />\n        <FilePathCondition Path=\"%PROGRAMFILES%\\Ingenico\\*\" />\n        <FilePathCondition Path=\"%PROGRAMFILES%\\PAX\\*\" />\n      </Conditions>\n    </FilePathRule>\n    \n    <!-- DENY ALL OTHER EXECUTABLES (default deny) -->\n    <FilePathRule Id=\"b7af4782-9cea-4b10-a67b-4b2d9e8c6f9e\" Name=\"Block All Others\" Description=\"Deny execution of all other executables\" UserOrGroupSid=\"S-1-1-0\" Action=\"Deny\">\n      <Conditions>\n        <FilePathCondition Path=\"*\" />\n      </Conditions>\n    </FilePathRule>\n  </RuleCollection>\n  \n  <!-- Script Rules: Block PowerShell, VBS, JS, etc. -->\n  <RuleCollection Type=\"Script\" EnforcementMode=\"Enabled\">\n    <!-- Block ALL scripts (prevents fileless malware) -->\n    <FilePathRule Id=\"06dce67b-934c-454f-a263-2515c8796a5d\" Name=\"Block All Scripts\" Description=\"Block PowerShell, VBS, JS, BAT scripts\" UserOrGroupSid=\"S-1-1-0\" Action=\"Deny\">\n      <Conditions>\n        <FilePathCondition Path=\"*\" />\n      </Conditions>\n    </FilePathRule>\n  </RuleCollection>\n  \n  <!-- DLL Rules: Only allow signed DLLs -->\n  <RuleCollection Type=\"Dll\" EnforcementMode=\"Enabled\">\n    <FilePathRule Id=\"86f235ad-3f7b-4121-bc95-ea8bde3a5bc5\" Name=\"Windows DLLs\" Description=\"Allow Windows system DLLs\" UserOrGroupSid=\"S-1-1-0\" Action=\"Allow\">\n      <Conditions>\n        <FilePathCondition Path=\"%WINDIR%\\*\" />\n        <FilePathCondition Path=\"%PROGRAMFILES%\\*\" />\n      </Conditions>\n    </FilePathRule>\n  </RuleCollection>\n  \n  <!-- MSI Installer Rules: Block installations -->\n  <RuleCollection Type=\"Msi\" EnforcementMode=\"Enabled\">\n    <FilePublisherRule Id=\"5b290633-d17e-4fad-b7a3-7e4ed6e8c4c7\" Name=\"Block Unauthorized Installers\" Description=\"Block MSI installation except by IT\" UserOrGroupSid=\"S-1-5-32-545\" Action=\"Deny\">\n      <Conditions>\n        <FilePublisherCondition PublisherName=\"*\" ProductName=\"*\" BinaryName=\"*\">\n          <BinaryVersionRange LowSection=\"*\" HighSection=\"*\" />\n        </FilePublisherCondition>\n      </Conditions>\n    </FilePublisherRule>\n  </RuleCollection>\n  \n  <!-- Packaged App Rules: Block Windows Store apps -->\n  <RuleCollection Type=\"Appx\" EnforcementMode=\"Enabled\">\n    <FilePublisherRule Id=\"b7af4782-9cea-4b10-a67b-4b2d9e8c6f9f\" Name=\"Block Windows Store Apps\" Description=\"Block all Windows Store apps\" UserOrGroupSid=\"S-1-1-0\" Action=\"Deny\">\n      <Conditions>\n        <FilePublisherCondition PublisherName=\"*\" ProductName=\"*\" BinaryName=\"*\">\n          <BinaryVersionRange LowSection=\"*\" HighSection=\"*\" />\n        </FilePublisherCondition>\n      </Conditions>\n    </FilePublisherRule>\n  </RuleCollection>\n</AppLockerPolicy>\n'@\n    \n    # Save policy to temp file\n    $policyPath = \"$env:TEMP\\POSAppLockerPolicy.xml\"\n    $appLockerPolicy | Out-File -FilePath $policyPath -Encoding UTF8\n    \n    # Import AppLocker policy\n    try {\n        if ($AuditOnly) {\n            Write-Host \"[!] Running in AUDIT mode - no enforcement\" -ForegroundColor Yellow\n            Set-AppLockerPolicy -XmlPolicy $policyPath -Merge -ErrorAction Stop\n        } else {\n            Write-Host \"[!] Applying AppLocker policy (ENFORCEMENT mode)\" -ForegroundColor Yellow\n            Set-AppLockerPolicy -XmlPolicy $policyPath -ErrorAction Stop\n        }\n        Write-Host \"[+] AppLocker policy applied successfully\" -ForegroundColor Green\n    }\n    catch {\n        Write-Host \"[!] Failed to apply AppLocker policy: $_\" -ForegroundColor Red\n        return $false\n    }\n    \n    # Start AppLocker services\n    Set-Service -Name AppIDSvc -StartupType Automatic\n    Start-Service -Name AppIDSvc\n    \n    Write-Host \"[+] AppLocker enabled and enforcing\" -ForegroundColor Green\n    return $true\n}\n\n#========================================================================\n# Disable Unnecessary Services (Attack Surface Reduction)\n#========================================================================\n\nfunction Disable-UnnecessaryServices {\n    Write-Host \"[*] Disabling unnecessary services on POS terminal...\" -ForegroundColor Cyan\n    \n    $servicesToDisable = @(\n        # Remote access services (prevent lateral movement)\n        @{Name=\"RemoteRegistry\"; Reason=\"Prevents remote registry access\"},\n        @{Name=\"RemoteAccess\"; Reason=\"Prevents RAS/VPN access\"},\n        @{Name=\"SessionEnv\"; Reason=\"Disables Remote Desktop session management\"},\n        @{Name=\"TermService\"; Reason=\"Disables Remote Desktop Protocol\"},\n        @{Name=\"UmRdpService\"; Reason=\"Disables RDP remote connections\"},\n        \n        # Scripting and automation (prevents fileless malware)\n        @{Name=\"WinRM\"; Reason=\"Disables Windows Remote Management (PowerShell remoting)\"},\n        @{Name=\"WSearch\"; Reason=\"Disables Windows Search (resource intensive)\"},\n        \n        # Network services (reduces attack surface)\n        @{Name=\"SNMP\"; Reason=\"Disables SNMP (often exploited)\"},\n        @{Name=\"SNMPTRAP\"; Reason=\"Disables SNMP Trap service\"},\n        @{Name=\"Browser\"; Reason=\"Disables Computer Browser service\"},\n        @{Name=\"LanmanServer\"; Reason=\"Disables file/printer sharing\"},\n        \n        # Web services\n        @{Name=\"W3SVC\"; Reason=\"Disables IIS web server\"},\n        @{Name=\"WAS\"; Reason=\"Disables Windows Process Activation Service\"},\n        \n        # Bluetooth and wireless (not needed on POS)\n        @{Name=\"bthserv\"; Reason=\"Disables Bluetooth Support Service\"},\n        @{Name=\"WwanSvc\"; Reason=\"Disables WWAN AutoConfig\"},\n        \n        # Unnecessary Windows features\n        @{Name=\"XblAuthManager\"; Reason=\"Disables Xbox Live Auth Manager\"},\n        @{Name=\"XblGameSave\"; Reason=\"Disables Xbox Live Game Save\"},\n        @{Name=\"XboxNetApiSvc\"; Reason=\"Disables Xbox networking\"}\n    )\n    \n    foreach ($service in $servicesToDisable) {\n        try {\n            $svc = Get-Service -Name $service.Name -ErrorAction SilentlyContinue\n            if ($svc) {\n                Stop-Service -Name $service.Name -Force -ErrorAction SilentlyContinue\n                Set-Service -Name $service.Name -StartupType Disabled -ErrorAction Stop\n                Write-Host \"[+] Disabled: $($service.Name) - $($service.Reason)\" -ForegroundColor Green\n            }\n        }\n        catch {\n            Write-Host \"[!] Warning: Could not disable $($service.Name): $_\" -ForegroundColor Yellow\n        }\n    }\n    \n    Write-Host \"[+] Unnecessary services disabled\" -ForegroundColor Green\n}\n\n#========================================================================\n# Disable Scripting Engines (Prevent Fileless Malware)\n#========================================================================\n\nfunction Disable-ScriptingEngines {\n    Write-Host \"[*] Disabling scripting engines...\" -ForegroundColor Cyan\n    \n    # Disable Windows Script Host (prevents .vbs, .js execution)\n    Set-ItemProperty -Path \"HKLM:\\SOFTWARE\\Microsoft\\Windows Script Host\\Settings\" -Name \"Enabled\" -Value 0 -Type DWord -Force\n    Write-Host \"[+] Windows Script Host disabled\" -ForegroundColor Green\n    \n    # Disable PowerShell v2 (old, vulnerable)\n    Disable-WindowsOptionalFeature -Online -FeatureName \"MicrosoftWindowsPowerShellV2Root\" -NoRestart\n    Write-Host \"[+] PowerShell v2 disabled\" -ForegroundColor Green\n    \n    # Configure PowerShell Constrained Language Mode\n    [Environment]::SetEnvironmentVariable(\"__PSLockdownPolicy\", \"4\", \"Machine\")\n    Write-Host \"[+] PowerShell Constrained Language Mode enabled\" -ForegroundColor Green\n    \n    # Disable macros in Office (if Office installed)\n    $officePath = \"HKCU:\\Software\\Microsoft\\Office\\16.0\"\n    if (Test-Path $officePath) {\n        Set-ItemProperty -Path \"$officePath\\Word\\Security\" -Name \"VBAWarnings\" -Value 4 -Type DWord -Force\n        Set-ItemProperty -Path \"$officePath\\Excel\\Security\" -Name \"VBAWarnings\" -Value 4 -Type DWord -Force\n        Write-Host \"[+] Office macros disabled\" -ForegroundColor Green\n    }\n}\n\n#========================================================================\n# Enable Security Auditing (PCI DSS 10.2)\n#========================================================================\n\nfunction Enable-SecurityAuditing {\n    Write-Host \"[*] Enabling security auditing...\" -ForegroundColor Cyan\n    \n    # Enable process creation auditing (detect malware execution)\n    auditpol /set /subcategory:\"Process Creation\" /success:enable /failure:enable\n    \n    # Enable command line auditing (detect PowerShell/cmd abuse)\n    Set-ItemProperty -Path \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\Audit\" `\n        -Name \"ProcessCreationIncludeCmdLine_Enabled\" -Value 1 -Type DWord -Force\n    \n    # Enable AppLocker auditing\n    auditpol /set /subcategory:\"Application Generated\" /success:enable /failure:enable\n    \n    # Enable credential access auditing\n    auditpol /set /subcategory:\"Credential Validation\" /success:enable /failure:enable\n    \n    Write-Host \"[+] Security auditing enabled\" -ForegroundColor Green\n}\n\n#========================================================================\n# Main Execution\n#========================================================================\n\nWrite-Host \"\\n=============================================================\" -ForegroundColor Cyan\nWrite-Host \"  POS Terminal Security Hardening Script\" -ForegroundColor Cyan\nWrite-Host \"  PCI DSS Requirement 2.2 Compliant\" -ForegroundColor Cyan\nWrite-Host \"=============================================================\\n\" -ForegroundColor Cyan\n\nif ($EnableAppLocker) {\n    Enable-POSApplicationWhitelisting\n}\n\nif ($DisableServices) {\n    Disable-UnnecessaryServices\n    Disable-ScriptingEngines\n}\n\nEnable-SecurityAuditing\n\n# Verify configuration\nWrite-Host \"\\n[*] Verifying configuration...\" -ForegroundColor Cyan\n$appLockerStatus = Get-AppLockerPolicy -Effective -ErrorAction SilentlyContinue\nif ($appLockerStatus) {\n    Write-Host \"[+] AppLocker is active\" -ForegroundColor Green\n} else {\n    Write-Host \"[!] WARNING: AppLocker is NOT active!\" -ForegroundColor Red\n}\n\nWrite-Host \"\\n[+] POS terminal hardening complete!\" -ForegroundColor Green\nWrite-Host \"[!] REBOOT REQUIRED for all changes to take effect\" -ForegroundColor Yellow\n\n# Example execution:\n# .\\Harden-POSTerminal.ps1 -EnableAppLocker -DisableServices\n# .\\Harden-POSTerminal.ps1 -EnableAppLocker -AuditOnly  # Test mode"
+      },
+      "tools": [
+        {
+          "name": "Windows AppLocker",
+          "type": "Application Whitelisting",
+          "cost": "Included with Windows Enterprise"
+        },
+        {
+          "name": "Carbon Black App Control",
+          "type": "Advanced Application Whitelisting",
+          "cost": "$40-60/endpoint/year"
+        },
+        {
+          "name": "Ivanti Application Control",
+          "type": "Endpoint Application Control",
+          "cost": "$35-50/endpoint/year"
+        },
+        {
+          "name": "Airlock Digital",
+          "type": "Application Whitelisting",
+          "cost": "$30-45/endpoint/year"
+        }
+      ],
+      "iso27001_controls": [
+        "A.12.6.2 - Restrictions on software installation",
+        "A.14.2.1 - Secure development policy",
+        "A.14.2.5 - Secure system engineering principles"
+      ],
+      "nist_csf": [
+        "PR.IP-3 - Configuration change control processes are in place",
+        "PR.PT-3 - The principle of least functionality is incorporated",
+        "DE.CM-4 - Malicious code is detected"
+      ],
+      "validation_steps": [
+        "Deploy AppLocker policy to all POS terminals via Group Policy",
+        "Configure policy in audit mode first, review logs for legitimate apps",
+        "Whitelist only required POS applications (NCR Aloha, Oracle Micros, etc.)",
+        "Enable enforcement mode after validation period",
+        "Test malware samples - should be blocked from execution",
+        "Disable all unnecessary Windows services",
+        "Verify PowerShell and WSH are disabled/restricted",
+        "Monitor AppLocker event logs (Event IDs 8003, 8004)"
+      ]
+    }
+  ],
+  "detection": {
+    "indicators": [
+      "Process creating regex patterns for Track 1 (%B[0-9]{13,19}) or Track 2 (;[0-9]{13,19}=) data",
+      "Repeated ReadProcessMemory API calls targeting payment application processes",
+      "Process enumeration via CreateToolhelp32Snapshot followed by OpenProcess with PROCESS_VM_READ",
+      "Outbound network connections from POS terminals to non-whitelisted IPs",
+      "Creation of suspicious files in %TEMP% or %APPDATA% directories on POS systems",
+      "FTP or HTTP POST traffic from POS terminals",
+      "DNS queries to suspicious domains from POS systems",
+      "Registry modifications for persistence (Run keys, scheduled tasks)",
+      "Unsigned or unexpected executables running on POS terminals",
+      "Base64-encoded data in network traffic from POS systems",
+      "Memory consumption spikes from payment application processes",
+      "Cleartext payment card data (Track 1/Track 2/PAN) found in process memory dumps"
+    ],
+    "log_queries": [
+      {
+        "siem": "Splunk (SPL)",
+        "query": "index=windows sourcetype=WinEventLog:Security host=POS-*\n(EventCode=4688 OR EventCode=4689)\n| eval CommandLine=lower(CommandLine)\n| where match(CommandLine, \"%b[0-9]{13,19}\") OR match(CommandLine, \";[0-9]{13,19}=\")\n| stats count by host, User, NewProcessName, CommandLine, _time\n| where count > 1\n| table _time, host, User, NewProcessName, CommandLine\n| sort - _time"
+      },
+      {
+        "siem": "Splunk - Memory Scraper Network Activity",
+        "query": "index=firewall sourcetype=cisco:asa src_ip=10.0.20.*\n| where NOT (dest_ip IN (\"203.0.113.10\", \"203.0.113.11\", \"203.0.113.12\")) \n| stats count as ConnectionCount, values(dest_ip) as Destinations, sum(bytes_out) as TotalBytes\n  by src_ip, dest_port\n| where ConnectionCount > 5 OR TotalBytes > 10000\n| eval Severity=case(\n    TotalBytes > 100000, \"Critical\",\n    TotalBytes > 50000, \"High\",\n    1=1, \"Medium\"\n  )\n| table src_ip, dest_port, Destinations, ConnectionCount, TotalBytes, Severity\n| sort - TotalBytes"
+      },
+      {
+        "siem": "Azure Sentinel (KQL)",
+        "query": "// Detect POS memory scraper behaviors\nSecurityEvent\n| where Computer startswith \"POS-\"\n| where EventID == 4688  // Process creation\n| extend ProcessName = tostring(split(NewProcessName, \"\\\\\")[-1])\n| where ProcessName !in (\"aloha.exe\", \"micros.exe\", \"verifone.exe\", \"pos_app.exe\")\n| extend HasTrackPattern = CommandLine matches regex @\"(?i)(%B[0-9]{13,19}|;[0-9]{13,19}=)\"\n| where HasTrackPattern == true\n| project\n    TimeGenerated,\n    Computer,\n    Account,\n    NewProcessName,\n    CommandLine,\n    ParentProcessName\n| order by TimeGenerated desc"
+      },
+      {
+        "siem": "Elastic Stack (EQL)",
+        "query": "sequence by host.name with maxspan=5m\n  [process where process.name != \"pos_application.exe\" and\n   process.command_line regex~ \".*(CreateToolhelp32Snapshot|Process32First).*\"]\n  [process where process.name != \"pos_application.exe\" and\n   process.command_line regex~ \".*(ReadProcessMemory|OpenProcess).*\"]\n  [network where destination.ip != \"203.0.113.*\" and bytes_sent > 1000]"
+      },
+      {
+        "siem": "AWS CloudWatch Insights",
+        "query": "fields @timestamp, @message, host, process, network.destination\n| filter host like /POS-/\n| filter @message like /ReadProcessMemory/ or @message like /Track/\n| stats count() as SuspiciousActivity by host, process\n| filter SuspiciousActivity > 10\n| sort SuspiciousActivity desc"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Volatility Framework",
+        "type": "Memory Forensics",
+        "usage": "Analyze memory dumps for RAM scraper artifacts, Track 1/Track 2 patterns, and malware signatures"
+      },
+      {
+        "name": "Wireshark",
+        "type": "Network Analysis",
+        "usage": "Capture and analyze POS network traffic for cleartext payment data exfiltration"
+      },
+      {
+        "name": "ProcDump",
+        "type": "Process Memory Dump",
+        "usage": "Create memory dumps of POS processes for forensic analysis"
+      },
+      {
+        "name": "FireEye HX",
+        "type": "Endpoint Detection",
+        "usage": "Real-time detection of POS malware behaviors and memory scraping"
+      }
+    ]
+  },
+  "metadata_tags": {
+    "industry": [
+      "Retail",
+      "Hospitality",
+      "Food Service",
+      "Gas Stations",
+      "Entertainment Venues",
+      "Healthcare (patient payments)",
+      "E-commerce"
+    ],
+    "compliance": [
+      "PCI DSS 3.2.1 (Requirement 3.4 - Render PAN unreadable)",
+      "PCI DSS 4.0 (Requirement 3.5.1 - PAN not stored in volatile memory)",
+      "PA-DSS (Payment Application Data Security Standard)",
+      "PCI P2PE (Point-to-Point Encryption Standard)",
+      "GDPR (Article 32 - Security of Processing)",
+      "CCPA (California Consumer Privacy Act)",
+      "SOC 2 (CC6.6 - Logical and Physical Security)"
+    ],
+    "deployment": [
+      "On-Premise",
+      "Retail Stores",
+      "Restaurants",
+      "Hotels"
+    ],
+    "data_classification": [
+      "Highly Confidential",
+      "PCI Data",
+      "Payment Card Data",
+      "Track 1/Track 2 Data",
+      "Cardholder Data"
+    ]
+  }
+}
