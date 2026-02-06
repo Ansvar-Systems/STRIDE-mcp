@@ -1,8 +1,8 @@
 # STRIDE Patterns MCP - Implementation Summary
 
-**Date:** 2026-01-30
-**Status:** Phase 3 Complete ✅
-**Next Phase:** npm v0.1.0 Release & GitHub Actions Enablement
+**Version:** 0.2.0
+**Status:** Production ✅
+**Last Updated:** 2026-02-06
 
 ---
 
@@ -11,11 +11,12 @@
 ### Phase 0-1: Foundation & Infrastructure ✅ Complete
 
 **MCP Server Infrastructure**
-- TypeScript MCP server with stdio transport
-- 5 core MCP tools (search, get, list, stats, filters)
+- TypeScript MCP server with stdio and HTTP (Streamable HTTP) transports
+- 8 MCP tools (search, get, list, stats, filters, classify_technology, get_dfd_taxonomy, suggest_trust_boundaries)
 - SQLite database with FTS5 full-text search
 - Database build pipeline (JSON → SQLite ingestion)
 - Pattern schema with 11 core fields + confidence scoring
+- Docker support with multi-stage build
 
 **Key Technical Decisions:**
 
@@ -29,8 +30,8 @@
 ### Phase 2: Quality Pipeline ✅ Complete
 
 **Testing & Coverage**
-- 122 passing tests with Vitest
-- 97% code coverage
+- 145 passing tests with Vitest
+- Coverage thresholds: 80% for lines, functions, branches, statements
 - Multi-version Node.js testing (18, 20, 22)
 
 **6-Layer Security Scanning**
@@ -46,122 +47,68 @@
 - Dependabot for automated dependency updates
 - SECURITY.md and security documentation
 
-### Phase 3: First 100 Patterns ✅ Complete
+### Phase 3-4: 125 Patterns + DFD Knowledge Base ✅ Complete
 
 **Database Statistics:**
-- **100 production patterns** across 20+ domains
-- **77 distinct technologies** and frameworks
+- **125 threat patterns** across 40+ security domains
+- **121 DFD technology elements** with Mermaid shape mappings
+- **12 trust boundary architecture templates**
 - **All 6 STRIDE categories** covered
-- **Average confidence score:** 8.65/10
-- **Database size:** 5.95 MB (optimized)
+- **Database size:** ~9 MB
 
 **Pattern Distribution by Domain:**
 
 | Domain | Count | Key Technologies |
 |--------|-------|------------------|
-| APIs | 26 | Express, GraphQL, gRPC, WebSocket, REST |
-| Cloud | 8 | AWS Lambda, Azure Functions, GCP, Kubernetes |
-| Denial of Service | 7 | Slowloris, DNS Amplification, Resource Exhaustion |
-| Privilege Escalation | 6 | Container Escape, Service Mesh, Sudo, SUID |
-| Authentication/IAM | 6 | JWT, MFA, Certificate Validation, SAML |
-| Databases | 4 | SQL Injection, NoSQL, Redis, Memcached |
-| Logging/SIEM | 4 | Log Injection, Tampering, SIEM Evasion |
-| AI/ML | 3 | Training Data Extraction, Prompt Injection |
-| CI/CD/Supply Chain | 3 | Pipeline Injection, Artifact Poisoning |
-| Financial/Blockchain | 3 | Double Spending, Payment Replay |
-| Edge/IoT | 3 | IoT Firmware, NFC Relay |
-| Email/Messaging | 4 | SMTP, Queue Poisoning, VoIP |
-| DNS | 3 | Cache Poisoning, Tunneling, Amplification |
-| Other Domains | 20 | CDN, Cache, Container, Git, Mobile, Video, VPN, Windows |
+| APIs | 27 | Express, GraphQL, gRPC, WebSocket, XXE, Deserialization, SSRF, CORS |
+| Cloud | 8 | AWS Lambda, Azure Functions, GCP, S3, DynamoDB, CloudFront, IAM |
+| Denial of Service | 7 | Slowloris, ReDoS, XML Bomb, File Upload, gRPC, K8s Resource, WebSocket |
+| Privilege Escalation | 6 | K8s RBAC, Service Mesh, Lambda, Azure Functions, GCP Functions |
+| Authentication/IAM | 4 | Password, Biometric, Certificate, SAML |
+| CI/CD/Supply Chain | 7 | Pipeline Injection, Secret Exposure, NPM Dependency Confusion |
+| Databases | 4 | NoSQL, Elasticsearch, TimeSeries, Connection Pool |
+| DNS | 4 | DNSSEC, Subdomain Takeover, Amplification |
+| IoT/Edge | 5 | Firmware, BLE, MQTT, IoT, Edge Computing |
+| Logging/SIEM | 4 | Log Injection, Tampering, Audit, SIEM Evasion |
+| AI/ML | 3 | Prompt Injection, Model Extraction, Data Poisoning |
+| Other | 46 | Blockchain, Financial, Mobile, VPN, Crypto, CDN, NFC, and more |
 
 ---
 
-## 🔧 Core MCP Tools Implemented
+## 🔧 MCP Tools (8 total)
 
-### 1. `search_patterns`
+### Threat Pattern Tools
 
-Full-text search across all patterns using SQLite FTS5.
+1. **`search_patterns`** — Full-text search (FTS5) across titles, descriptions, attack scenarios, mitigations. Supports filters for STRIDE category, technology, framework, severity, and confidence score.
+2. **`get_pattern`** — Retrieve complete pattern details by ID (CVEs, breaches, code mitigations, SIEM queries, compliance mappings).
+3. **`list_patterns`** — Browse patterns with filtering, sorting, and pagination.
+4. **`get_database_stats`** — Database overview: total patterns, STRIDE coverage, severity breakdown, average confidence.
+5. **`get_available_filters`** — Discover valid filter values (categories, technologies, frameworks, severity levels).
 
-```json
-{
-  "query": "JWT authentication bypass",
-  "framework": "Express.js",
-  "severity": "Critical",
-  "min_confidence": 8.5,
-  "limit": 20
-}
-```
+### DFD & Trust Boundary Tools
 
-**Performance:** Sub-50ms search across 100 patterns
-
-### 2. `get_pattern`
-
-Retrieve complete pattern details by ID including all evidence, mitigations, and detection queries.
-
-```json
-{
-  "pattern_id": "STRIDE-API-EXPRESS-001"
-}
-```
-
-### 3. `list_patterns`
-
-List patterns with advanced filtering and pagination.
-
-```json
-{
-  "stride_category": "Spoofing",
-  "technology": "APIs",
-  "min_confidence": 8.5,
-  "limit": 50,
-  "sort_by": "confidence"
-}
-```
-
-### 4. `get_database_stats`
-
-Get comprehensive database statistics:
-- Total patterns
-- STRIDE category coverage
-- Technology distribution
-- Average confidence score
-
-### 5. `get_available_filters`
-
-Get all available filter values for dynamic UI generation:
-- STRIDE categories
-- Technologies
-- Frameworks
-- Severity levels
+6. **`classify_technology`** — Classify a technology into its DFD role (external_entity, process, data_store, data_flow) with Mermaid node syntax and related threat pattern IDs.
+7. **`get_dfd_taxonomy`** — Complete DFD element taxonomy with Mermaid syntax reference guide.
+8. **`suggest_trust_boundaries`** — Match a technology stack against architecture templates (microservices, serverless, monolith, etc.) and generate Mermaid diagram skeletons with trust zone assignments.
 
 ---
 
-## 📊 Pattern Quality Metrics
-
-### Confidence Score Breakdown
-
-**Overall Average:** 8.65/10
-
-**Distribution:**
-- Expert-Validated (8.5-10.0): 92 patterns
-- Validated (7.0-8.4): 8 patterns
-- All patterns meet production quality threshold
+## 📊 Quality Metrics
 
 ### Evidence Validation
 
-**Every pattern includes:**
+Every pattern includes:
 - ✅ CVE references or real-world breach evidence
 - ✅ Framework-specific code examples
 - ✅ SIEM detection queries (Azure Sentinel, Elastic, Splunk)
 - ✅ Compliance mappings (ISO 27001, NIST CSF, OWASP, MITRE ATT&CK)
 - ✅ Mitigation strategies with implementation complexity ratings
 
-### Pattern Structure Quality
+### Schema & Testing
 
-**Schema Compliance:** 100%
-- All patterns validated against JSON schema
-- Database constraints enforced (effectiveness, complexity, STRIDE category)
-- ID format standardized: `STRIDE-[CATEGORY]-[TECH]-[NUMBER]`
+- 100% schema compliance — database constraints enforce STRIDE category, severity, confidence range
+- ID format: `STRIDE-[CATEGORY]-[TECH]-[NUMBER]`
+- 145 passing tests (Vitest), coverage thresholds at 80%
 
 ---
 
@@ -169,185 +116,35 @@ Get all available filter values for dynamic UI generation:
 
 ### Database Design
 
-```sql
--- Main patterns table
-CREATE TABLE patterns (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  stride_category TEXT CHECK(stride_category IN ('Spoofing', 'Tampering', ...)),
-  severity TEXT NOT NULL,
-  cvss_score REAL,
-  confidence_score REAL NOT NULL,
-  ...
-);
-
--- Full-text search index
-CREATE VIRTUAL TABLE patterns_fts USING fts5(
-  id, title, description, attack_scenario, mitigation_summary
-);
-
--- Normalized tables for relationships
-CREATE TABLE cve_references (pattern_id, cve_id, ...);
-CREATE TABLE mitigations (pattern_id, control_id, ...);
-CREATE TABLE owasp_mappings (pattern_id, owasp_category);
-```
-
-### Build Pipeline
-
-**Database Build Process:**
-1. Scan `/data/seed/patterns` recursively for JSON files
-2. Validate each pattern against schema
-3. Check database constraints (effectiveness, complexity, categories)
-4. Insert into normalized SQLite tables
-5. Create FTS5 indexes for full-text search
-6. Optimize database with `VACUUM` and `ANALYZE`
-
-**Build Output:**
-```
-✅ Found 100 pattern files
-✅ All 100 patterns validated
-✅ Inserted 100 patterns
-📊 Database Statistics:
-   Total Patterns: 100
-   STRIDE Categories: 6
-   Technologies: 77
-   Frameworks: 77
-   Average Confidence: 8.65/10
-📁 Database size: 5.95 MB
-```
+- **patterns** table with indexed columns + `full_json TEXT` for complete pattern data
+- **dfd_elements** table with 121 technology classifications, aliases, and Mermaid shape mappings
+- **trust_boundary_templates** with 12 architecture templates (microservices, serverless, monolith, etc.)
+- **patterns_fts** (FTS5 virtual table) for full-text search across titles, descriptions, attack scenarios, mitigations
+- **dfd_elements_fts** (FTS5 virtual table) for fuzzy technology classification
+- Pre-built SQLite database committed to git (~9 MB) for instant startup
 
 ---
 
-## 🎯 Quality Improvements During Phase 3
+## 🏗️ Transports
 
-### Data Quality Fixes
+### stdio (default)
+Used by Claude Desktop and Claude Code. Launched via `node dist/index.js` or `npx @ansvar/stride-patterns-mcp`.
 
-**Schema Violations Resolved:**
-1. **Effectiveness Values** - Fixed 13 patterns with invalid values ("Very High", "Medium-High" → "High", "Medium", "Low")
-2. **Implementation Complexity** - Fixed 2 patterns with "Low-Medium" → "Medium"
-3. **STRIDE Categories** - Fixed 4 patterns with compound categories (e.g., "Tampering / Information Disclosure" → single category)
-4. **Validation Status** - Fixed 2 patterns with "production-ready" → "expert-validated"
-5. **JSON Syntax** - Fixed 3 patterns with malformed JSON
-6. **ID Format** - Renamed 14 pattern files to match regex: `^STRIDE-[A-Z]+-[A-Z0-9]+-\d+$`
-7. **Duplicate CVE References** - Removed duplicate "N/A" CVE entries
-
-### Build Script Enhancements
-
-**Robustness Improvements:**
-- Added automatic deletion of old database before rebuild
-- Added null-safe handling for optional `code_example` fields
-- Improved error messages with pattern ID context
-- Transaction-based inserts for data integrity
+### HTTP (Streamable HTTP)
+Used by Docker deployments and remote MCP clients. Endpoint: `/mcp` with session management via `mcp-session-id` header. Each session gets its own MCP Server instance to avoid shared-state issues. Health check at `/health`.
 
 ---
 
-## 📈 Comparison to Original Goals
+## 🏆 Summary
 
-| Metric | Phase 3 Goal | Actual Achievement | Status |
-|--------|-------------|-------------------|--------|
-| Pattern Count | 100 | 100 | ✅ |
-| Average Confidence | ≥ 8.5 | 8.65 | ✅ |
-| Technology Coverage | 50+ | 77 | ✅ Exceeded |
-| STRIDE Categories | All 6 | All 6 | ✅ |
-| Test Coverage | ≥ 90% | 97% | ✅ Exceeded |
-| Security Layers | 6 | 6 | ✅ |
-| Database Size | ~20 MB | 5.95 MB | ✅ Optimized |
+- **125 expert-curated threat patterns** across 40+ security domains
+- **121 DFD technology elements** with Mermaid diagram generation
+- **12 trust boundary architecture templates**
+- **8 MCP tools** (5 threat pattern + 3 DFD/trust boundary)
+- **145 passing tests**, 80%+ coverage thresholds
+- **Two transports:** stdio (local) and Streamable HTTP (remote/Docker)
+- **Version:** 0.2.0
 
 ---
 
-## 🚀 Next Steps: Phase 4
-
-### Immediate Actions (Week 1)
-
-**1. Enable GitHub Actions**
-- [ ] Activate all 6 security scanning workflows
-- [ ] Run initial security scans
-- [ ] Achieve OpenSSF Scorecard ≥ 9.0
-
-**2. Publish v0.1.0 to npm**
-- [ ] Test MCP server with Claude Desktop
-- [ ] Create comprehensive README for npm
-- [ ] Publish with provenance attestation
-- [ ] Verify package installation and functionality
-
-**3. Documentation Updates**
-- [x] Update README.md with Phase 3 statistics
-- [x] Update DESIGN_SUMMARY.md
-- [x] Update IMPLEMENTATION-SUMMARY.md
-- [ ] Create CHANGELOG.md for v0.1.0
-
-### Phase 4 Goals (Months 2-3)
-
-**Expansion to 500 Patterns**
-- 200 Web Application patterns (React, Vue, Angular, Django)
-- 100 Additional cloud patterns (AWS, Azure, GCP services)
-- 50 Mobile patterns (iOS, Android, React Native)
-- 50 Advanced AI/ML patterns
-- 100 Industry-specific patterns (FinTech, HealthTech)
-
-**Community Building**
-- Open contribution process
-- Expert review panel
-- Bug bounty integration for pattern validation
-- Documentation for pattern contributors
-
----
-
-## 🏆 Key Achievements
-
-### Technical Excellence
-
-✅ **Production-Ready MCP Server** - Fully functional TypeScript server with stdio transport
-✅ **Sub-50ms Search** - SQLite FTS5 provides instant pattern discovery
-✅ **97% Test Coverage** - Comprehensive test suite with 122 passing tests
-✅ **6-Layer Security** - Industry-leading security scanning pipeline
-✅ **Fail-Fast Architecture** - Database validation at build time prevents runtime failures
-
-### Content Quality
-
-✅ **100 Expert-Curated Patterns** - Every pattern backed by CVE or real-world evidence
-✅ **77 Technologies Covered** - From Express.js to Kubernetes to LLMs
-✅ **8.65/10 Confidence** - Exceeds production quality threshold
-✅ **Framework-Specific** - Actual code examples, not generic templates
-✅ **Compliance-Ready** - ISO 27001, NIST CSF, OWASP, MITRE ATT&CK mappings
-
-### Process Innovation
-
-✅ **Systematic Quality Fixes** - Resolved 39 schema violations across 100 patterns
-✅ **Automated Build Pipeline** - JSON → SQLite with comprehensive validation
-✅ **Provenance-Ready** - npm publishing with attestation configured
-✅ **Multi-Version Testing** - Node.js 18, 20, 22 compatibility
-
----
-
-## 📚 Documentation Inventory
-
-| Document | Status | Purpose |
-|----------|--------|---------|
-| `README.md` | ✅ Updated | Quick start, features, statistics |
-| `DESIGN_SUMMARY.md` | ✅ Updated | High-level design and vision |
-| `IMPLEMENTATION-SUMMARY.md` | ✅ Updated | Technical implementation details (this doc) |
-| `docs/pattern-schema.md` | ✅ Current | Canonical pattern schema definition |
-| `CONTRIBUTING.md` | 🔄 Placeholder | Contribution guidelines (needs expansion) |
-| `SECURITY.md` | ✅ Complete | Security policy and contact |
-| `CHANGELOG.md` | 📝 Needed | Version history for releases |
-
----
-
-## 🎉 Phase 3 Complete!
-
-**Current Status:** 100 production patterns deployed with full quality pipeline
-
-**Next Milestone:** v0.1.0 npm release + OpenSSF Scorecard 9.0+
-
-**Timeline:**
-- **Week 1:** GitHub Actions enablement + npm publish
-- **Week 2:** MCP server integration testing with Claude Desktop
-- **Month 2-3:** Expand to 500+ patterns (Phase 4)
-
----
-
-**Document Version:** 3.0.0
-**Author:** Claude Sonnet 4.5 (AI Assistant)
-**Last Updated:** 2026-01-30
-**Phase:** 3 (First 100 Patterns) - Complete ✅
+**Last Updated:** 2026-02-06

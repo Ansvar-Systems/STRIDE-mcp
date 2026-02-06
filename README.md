@@ -5,7 +5,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-1.0-green)](https://modelcontextprotocol.io/)
-[![Patterns](https://img.shields.io/badge/patterns-125%2F1000-orange)](data/seed/patterns/)
+[![Patterns](https://img.shields.io/badge/patterns-125-orange)](data/seed/patterns/)
 
 **Security & Quality**
 [![CodeQL](https://img.shields.io/badge/CodeQL-enabled-blue)](https://github.com/Ansvar-Systems/stride-patterns-mcp/security/code-scanning)
@@ -65,6 +65,12 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 docker build -t stride-patterns-mcp .
 docker run -p 3000:3000 stride-patterns-mcp
 ```
+
+The HTTP server exposes:
+- **MCP endpoint:** `http://localhost:3000/mcp` (Streamable HTTP transport)
+- **Health check:** `http://localhost:3000/health`
+
+Configure your MCP client to connect to the `/mcp` endpoint with session support (`mcp-session-id` header).
 
 ### From Source
 
@@ -149,9 +155,9 @@ Suggest trust boundary templates for a set of technologies. Classifies each tech
 }
 ```
 
-## Pattern Coverage (Target: 1000+)
+## Pattern Coverage
 
-| Domain | Current | Key Patterns |
+| Domain | Count | Key Patterns |
 |--------|---------|--------------|
 | **APIs** | **27** | Express, GraphQL, gRPC, WebSocket, XXE, Deserialization, SSRF, CORS |
 | **Cloud** | **8** | AWS Lambda, Azure Functions, GCP, S3, DynamoDB, CloudFront, IAM |
@@ -175,7 +181,7 @@ Suggest trust boundary templates for a set of technologies. Classifies each tech
 - **Pre-Built Database:** SQLite database committed to git for instant startup
 - **Fail-Fast:** Pattern validation at build time, not runtime
 - **Quality First:** 8.5+ confidence score required for production
-- **Sub-50ms Search:** SQLite FTS5 handles 1000+ patterns instantly
+- **Sub-50ms Search:** SQLite FTS5 for instant pattern discovery
 - **Two Transports:** stdio for Claude Desktop, HTTP for remote/Docker deployments
 
 **Data:**
@@ -186,8 +192,8 @@ Suggest trust boundary templates for a set of technologies. Classifies each tech
 ## Documentation
 
 - [Pattern Schema](docs/pattern-schema.md) - Complete JSON schema definition
-- [Implementation Summary](docs/IMPLEMENTATION-SUMMARY.md) - Phase 0 & 1 summary
-- [Design Document](docs/plans/2026-01-30-stride-patterns-mcp-design.md) - Vision & roadmap
+- [Implementation Summary](docs/IMPLEMENTATION-SUMMARY.md) - Architecture and implementation details
+- [Production Readiness](docs/PRODUCTION-READINESS.md) - Quality verification checklist
 
 ## Contributing
 
