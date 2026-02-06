@@ -17,7 +17,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { getDatabase, closeDatabase } from './database/db.js';
-import { TOOLS, handleToolCall } from './tools/definitions.js';
+import { TOOLS, handleToolCall, SERVER_INSTRUCTIONS } from './tools/definitions.js';
 
 // Server info
 const SERVER_NAME = 'stride-patterns-mcp';
@@ -33,6 +33,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
+    instructions: SERVER_INSTRUCTIONS,
   }
 );
 

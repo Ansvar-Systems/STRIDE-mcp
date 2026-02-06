@@ -86,7 +86,8 @@ export function listPatterns(options: ListOptions = {}): PatternSummary[] {
     created_date: 'created_date',
   }[sort_by] || 'confidence_score'; // Default to confidence_score if invalid
 
-  const orderClause = `ORDER BY ${sortColumn} ${sort_order.toUpperCase()}`;
+  const validOrder = sort_order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+  const orderClause = `ORDER BY ${sortColumn} ${validOrder}`;
 
   // Query
   const sql = `

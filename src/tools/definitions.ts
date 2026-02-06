@@ -13,6 +13,28 @@ import { getPattern } from './get-pattern.js';
 import { listPatterns, countPatterns } from './list-patterns.js';
 import { classifyTechnology, getDfdTaxonomy, suggestTrustBoundaries } from './dfd-tools.js';
 
+/**
+ * Server instructions — sent to agents during MCP initialization.
+ * This is the agent-facing "README" that explains what this server does
+ * and the recommended workflow for using its tools.
+ */
+export const SERVER_INSTRUCTIONS = `STRIDE Patterns MCP provides expert-curated threat patterns for security threat modeling using the STRIDE framework (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege).
+
+Database: 125 threat patterns across 40+ security domains, 121 DFD technology elements, 12 trust boundary architecture templates. Each pattern includes CVE references, real-world breach evidence, framework-specific code mitigations, SIEM detection queries, and compliance mappings (ISO 27001, NIST, OWASP, MITRE ATT&CK).
+
+Recommended workflow:
+1. get_available_filters — discover available STRIDE categories, technologies, frameworks, and severity levels
+2. search_patterns — full-text search to find relevant threats (use filters to narrow results)
+3. get_pattern — retrieve full details for a specific pattern including mitigations and code examples
+4. list_patterns — browse patterns with sorting and pagination when search is too narrow
+
+For Data Flow Diagram (DFD) generation:
+1. classify_technology — classify each technology into its DFD role (external_entity, process, data_store, data_flow) with Mermaid syntax
+2. suggest_trust_boundaries — provide a list of technologies to get architecture-matched trust boundary templates with Mermaid diagram skeletons
+3. get_dfd_taxonomy — reference for all DFD element types and Mermaid syntax conventions
+
+Use get_database_stats for an overview of pattern coverage and confidence scores.`;
+
 /** MCP Tool definitions — the agent-facing API surface */
 export const TOOLS: Tool[] = [
   {
@@ -82,21 +104,23 @@ export const TOOLS: Tool[] = [
     name: 'list_patterns',
     description:
       'List STRIDE patterns with filtering, sorting, and pagination. ' +
-      'Returns pattern summaries (less detail than get_pattern).',
+      'Returns pattern summaries (less detail than get_pattern). ' +
+      'Use get_available_filters to discover valid technology and framework values.',
     inputSchema: {
       type: 'object',
       properties: {
         stride_category: {
           type: 'string',
           description: 'Filter by STRIDE category',
+          enum: ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'],
         },
         technology: {
           type: 'string',
-          description: 'Filter by technology',
+          description: 'Filter by technology (use get_available_filters to see valid values)',
         },
         framework: {
           type: 'string',
-          description: 'Filter by framework',
+          description: 'Filter by framework (use get_available_filters to see valid values)',
         },
         severity: {
           type: 'string',

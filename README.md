@@ -24,19 +24,24 @@ STRIDE Patterns MCP provides AI assistants with instant access to **expert-valid
 
 ## Quick Start
 
-### Installation
+### Use with Claude Code (recommended)
 
 ```bash
-npm install
-npm run build:db  # Build SQLite database from patterns
-npm run build     # Compile TypeScript
+# Add globally — works in every project
+claude mcp add stride-patterns -- npx -y @ansvar/stride-patterns-mcp
 ```
 
-### Run MCP Server
+Or add to `.mcp.json` in your project root (project-scoped):
 
-```bash
-npm run dev        # stdio transport (local)
-npm run dev:http   # HTTP transport (remote/Docker)
+```json
+{
+  "mcpServers": {
+    "stride-patterns": {
+      "command": "npx",
+      "args": ["-y", "@ansvar/stride-patterns-mcp"]
+    }
+  }
+}
 ```
 
 ### Use with Claude Desktop
@@ -47,18 +52,29 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 {
   "mcpServers": {
     "stride-patterns": {
-      "command": "node",
-      "args": ["/path/to/STRIDE-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "@ansvar/stride-patterns-mcp"]
     }
   }
 }
 ```
 
-### Docker
+### Docker (HTTP transport)
 
 ```bash
 docker build -t stride-patterns-mcp .
 docker run -p 3000:3000 stride-patterns-mcp
+```
+
+### From Source
+
+```bash
+git clone https://github.com/Ansvar-Systems/stride-patterns-mcp.git
+cd stride-patterns-mcp
+npm install
+npm run build
+npm start          # stdio transport
+npm run start:http # HTTP transport (port 3000)
 ```
 
 ## MCP Tools

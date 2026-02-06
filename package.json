@@ -1,12 +1,13 @@
 {
   "name": "@ansvar/stride-patterns-mcp",
   "version": "0.2.0",
-  "description": "MCP server providing 1000+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
+  "description": "MCP server providing 125+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "stride-patterns-mcp": "./dist/index.js"
+    "stride-patterns-mcp": "./dist/index.js",
+    "stride-patterns-mcp-http": "./dist/http-server.js"
   },
   "files": [
     "dist",

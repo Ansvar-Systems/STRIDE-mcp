@@ -135,15 +135,27 @@ export function getTechnologies(): string[] {
 }
 
 /**
- * Get available frameworks
+ * Get available frameworks (individual names, deduplicated)
+ *
+ * The framework column stores comma-separated lists like "Express.js, Node.js".
+ * We split and deduplicate to return individual framework names that agents
+ * can pass directly to the framework filter.
  */
 export function getFrameworks(): string[] {
   const db = getDatabase();
   const rows = db
-    .prepare('SELECT DISTINCT framework FROM patterns ORDER BY framework')
+    .prepare('SELECT DISTINCT framework FROM patterns')
     .all() as Array<{ framework: string }>;
 
-  return rows.map((row) => row.framework);
+  const frameworks = new Set<string>();
+  for (const row of rows) {
+    for (const fw of row.framework.split(',')) {
+      const trimmed = fw.trim();
+      if (trimmed) frameworks.add(trimmed);
+    }
+  }
+
+  return Array.from(frameworks).sort();
 }
 
 /**

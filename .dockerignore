@@ -1,0 +1,40 @@
+# Dependencies (rebuilt in Docker)
+node_modules/
+
+# Build output (rebuilt in Docker)
+dist/
+*.tsbuildinfo
+
+# Git
+.git/
+.gitignore
+
+# Testing
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docs & config not needed in image
+docs/
+scripts/
+data/seed/
+*.md
+!README.md
+LICENSE
+.DS_Store
+CONTRIBUTING.md
+
+# Tests
+src/**/__tests__/
+vitest.config.*

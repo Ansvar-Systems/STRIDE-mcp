@@ -17,7 +17,7 @@ import {
 import { randomUUID } from 'crypto';
 
 import { getDatabase, closeDatabase } from './database/db.js';
-import { TOOLS, handleToolCall } from './tools/definitions.js';
+import { TOOLS, handleToolCall, SERVER_INSTRUCTIONS } from './tools/definitions.js';
 
 // Server info
 const SERVER_NAME = 'stride-patterns-mcp';
@@ -44,6 +44,7 @@ function createMcpServer(): Server {
       capabilities: {
         tools: {},
       },
+      instructions: SERVER_INSTRUCTIONS,
     }
   );
 
@@ -92,8 +93,9 @@ async function main() {
 
     // CORS headers for cross-origin requests
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
+    res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
 
     // Handle preflight
     if (req.method === 'OPTIONS') {
