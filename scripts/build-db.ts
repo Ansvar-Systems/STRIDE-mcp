@@ -131,7 +131,7 @@ function insertPattern(db: Database.Database, pattern: Pattern) {
       pattern.threat.cvss_v3.score,
       pattern.threat.cvss_v3.vector,
       pattern.technology.primary,
-      pattern.technology.primary, // Framework same as primary for now
+      [pattern.technology.primary, ...(pattern.technology.related_frameworks || [])].join(', '),
       pattern.technology.versions_affected.join(', '),
       pattern.technology.ecosystem,
       pattern.attack.scenario,

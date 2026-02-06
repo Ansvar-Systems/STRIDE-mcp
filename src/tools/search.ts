@@ -57,7 +57,7 @@ export function searchPatterns(options: SearchOptions): SearchResult[] {
   }
 
   if (framework) {
-    filters.push('p.framework = ?');
+    filters.push("(', ' || p.framework || ', ') LIKE ('%, ' || ? || ', %')");
     params.push(framework);
   }
 

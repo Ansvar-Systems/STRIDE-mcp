@@ -57,7 +57,7 @@ export function listPatterns(options: ListOptions = {}): PatternSummary[] {
   }
 
   if (framework) {
-    filters.push('framework = ?');
+    filters.push("(', ' || framework || ', ') LIKE ('%, ' || ? || ', %')");
     params.push(framework);
   }
 
@@ -146,7 +146,7 @@ export function countPatterns(options: Omit<ListOptions, 'limit' | 'offset' | 's
   }
 
   if (framework) {
-    filters.push('framework = ?');
+    filters.push("(', ' || framework || ', ') LIKE ('%, ' || ? || ', %')");
     params.push(framework);
   }
 

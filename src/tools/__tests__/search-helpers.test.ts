@@ -81,7 +81,7 @@ describe('Search Helper Functions', () => {
 
     it('should include Express.js as a framework', () => {
       const frameworks = getFrameworks();
-      expect(frameworks).toContain('Express.js');
+      expect(frameworks.some(f => f.includes('Express.js'))).toBe(true);
     });
 
     it('should return sorted frameworks', () => {

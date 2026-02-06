@@ -35,7 +35,7 @@ describe('searchPatterns', () => {
         framework: 'Express.js',
       });
       expect(results.length).toBeGreaterThan(0);
-      expect(results.every(r => r.framework === 'Express.js')).toBe(true);
+      expect(results.every(r => r.framework.includes('Express.js'))).toBe(true);
     });
 
     it('should filter by severity', () => {
@@ -74,7 +74,7 @@ describe('searchPatterns', () => {
       });
       if (results.length > 0) {
         expect(results.every(r =>
-          r.framework === 'Express.js' &&
+          r.framework.includes('Express.js') &&
           r.severity === 'Critical' &&
           r.confidence_score >= 8.5
         )).toBe(true);

@@ -1,6 +1,6 @@
 {
   "name": "@ansvar/stride-patterns-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server providing 1000+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
   "type": "module",
   "main": "dist/index.js",
@@ -56,8 +56,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
-    "better-sqlite3": "^11.7.0",
-    "zod": "^3.24.1"
+    "better-sqlite3": "^11.7.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

@@ -54,13 +54,13 @@ describe('listPatterns', () => {
     it('should filter by technology framework', () => {
       const results = listPatterns({ technology: 'Express.js' });
       expect(results.length).toBeGreaterThan(0);
-      expect(results.every(r => r.framework === 'Express.js')).toBe(true);
+      expect(results.every(r => r.framework.includes('Express.js'))).toBe(true);
     });
 
     it('should filter by Flask framework', () => {
       const results = listPatterns({ technology: 'Flask' });
       if (results.length > 0) {
-        expect(results.every(r => r.framework === 'Flask')).toBe(true);
+        expect(results.every(r => r.framework.includes('Flask'))).toBe(true);
       }
     });
   });
