@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CLOUDFLARE-001",
+  "technology": "Cloudflare",
+  "aliases": ["CF", "Cloudflare CDN"],
+  "category": "cache",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Cloudflare)",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Global cloud platform providing CDN, DDoS protection, DNS, and web application firewall services"
+}

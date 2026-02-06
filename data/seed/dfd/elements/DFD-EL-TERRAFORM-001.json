@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-TERRAFORM-001",
+  "technology": "Terraform",
+  "aliases": ["TF", "HashiCorp Terraform", "OpenTofu"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Terraform)",
+  "typical_protocols": ["HTTPS/443", "HCL"],
+  "related_pattern_ids": [],
+  "description": "Infrastructure as Code tool for provisioning and managing cloud resources through declarative configuration"
+}

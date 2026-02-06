@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AZURESB-001",
+  "technology": "Azure Service Bus",
+  "aliases": ["Service Bus", "ASB"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Azure Service Bus)",
+  "typical_protocols": ["AMQP/5671", "HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Fully managed enterprise message broker with queues and publish-subscribe topics for decoupling applications and services"
+}

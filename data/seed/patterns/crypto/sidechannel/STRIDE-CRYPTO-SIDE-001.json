@@ -305,7 +305,7 @@
       "control_id": "MIT-003",
       "title": "Use Timing-Attack Resistant Algorithms and Libraries",
       "description": "Prefer cryptographic algorithms and implementations designed to resist timing attacks. Use NaCl/libsodium for high-level crypto APIs with timing guarantees. Choose EdDSA (Ed25519) over ECDSA, and ChaCha20-Poly1305 over AES-GCM when software-only implementations are required.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "Low",
       "code_example": {
         "language": "python",

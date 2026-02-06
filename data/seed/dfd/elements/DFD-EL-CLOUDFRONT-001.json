@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CLOUDFRONT-001",
+  "technology": "Amazon CloudFront",
+  "aliases": ["CloudFront", "AWS CDN"],
+  "category": "cloud_service",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Amazon CloudFront)",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Content delivery network for low-latency distribution of web content, APIs, and media globally"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CLOUDRUN-001",
+  "technology": "Google Cloud Run",
+  "aliases": ["Cloud Run", "GCR"],
+  "category": "cloud_service",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Google Cloud Run)",
+  "typical_protocols": ["HTTPS/443", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Fully managed serverless container platform for deploying and scaling containerized applications"
+}

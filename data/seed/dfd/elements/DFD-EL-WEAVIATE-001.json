@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-WEAVIATE-001",
+  "technology": "Weaviate",
+  "aliases": ["Weaviate Vector DB"],
+  "category": "ai_ml",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Weaviate)]",
+  "typical_protocols": ["TCP/8080", "GraphQL", "REST"],
+  "related_pattern_ids": [],
+  "description": "Open-source vector database with built-in vectorization and semantic search capabilities"
+}

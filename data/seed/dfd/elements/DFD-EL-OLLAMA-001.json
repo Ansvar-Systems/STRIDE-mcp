@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-OLLAMA-001",
+  "technology": "Ollama",
+  "aliases": ["Ollama Server"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Ollama)",
+  "typical_protocols": ["HTTP/11434", "REST"],
+  "related_pattern_ids": [],
+  "description": "Local LLM runner for deploying and serving open-source language models with a simple API"
+}

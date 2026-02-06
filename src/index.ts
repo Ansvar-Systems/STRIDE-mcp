@@ -22,10 +22,11 @@ import { getDatabase, getDatabaseStats, getDatabaseMetadata, closeDatabase } fro
 import { searchPatterns, getStrideCategories, getTechnologies, getFrameworks, getSeverityLevels } from './tools/search.js';
 import { getPattern } from './tools/get-pattern.js';
 import { listPatterns, countPatterns } from './tools/list-patterns.js';
+import { classifyTechnology, getDfdTaxonomy, suggestTrustBoundaries } from './tools/dfd-tools.js';
 
 // Server info
 const SERVER_NAME = 'stride-patterns-mcp';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.2.0';
 
 // MCP Tool definitions
 const TOOLS: Tool[] = [
@@ -170,6 +171,54 @@ const TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {},
+    },
+  },
+  {
+    name: 'classify_technology',
+    description:
+      'Classify a technology into its DFD (Data Flow Diagram) role and Mermaid shape. ' +
+      'Returns the DFD role (external_entity, process, data_store, data_flow), ' +
+      'category, default trust zone, Mermaid node syntax, and related threat pattern IDs. ' +
+      'Use this to correctly place technologies in data flow diagrams.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        technology: {
+          type: 'string',
+          description: 'Technology name to classify (e.g., "PostgreSQL", "Kong", "Redis", "AWS Lambda")',
+        },
+      },
+      required: ['technology'],
+    },
+  },
+  {
+    name: 'get_dfd_taxonomy',
+    description:
+      'Get the complete DFD element taxonomy with Mermaid syntax reference. ' +
+      'Returns DFD element type definitions (external_entity, process, data_store, data_flow), ' +
+      'category statistics, and a comprehensive Mermaid syntax guide for rendering DFDs.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'suggest_trust_boundaries',
+    description:
+      'Suggest trust boundary templates for a set of technologies. ' +
+      'Classifies each technology, matches against architecture templates ' +
+      '(microservices, serverless, monolith, etc.), and returns the best-fit template ' +
+      'with per-technology zone assignments and a Mermaid diagram skeleton.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        technologies: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of technology names to analyze (e.g., ["Kong", "Express.js", "PostgreSQL", "Redis"])',
+        },
+      },
+      required: ['technologies'],
     },
   },
 ];
@@ -335,6 +384,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(filters, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'classify_technology': {
+        const result = classifyTechnology(args.technology as string);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_dfd_taxonomy': {
+        const taxonomy = getDfdTaxonomy();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(taxonomy, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'suggest_trust_boundaries': {
+        const suggestions = suggestTrustBoundaries(args.technologies as string[]);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(suggestions, null, 2),
             },
           ],
         };

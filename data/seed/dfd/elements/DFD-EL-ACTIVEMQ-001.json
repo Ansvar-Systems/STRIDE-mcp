@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ACTIVEMQ-001",
+  "technology": "Apache ActiveMQ",
+  "aliases": ["ActiveMQ", "AMQ"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(ActiveMQ)",
+  "typical_protocols": ["TCP/61616", "OpenWire/STOMP"],
+  "related_pattern_ids": [],
+  "description": "Open-source multi-protocol message broker supporting JMS, AMQP, STOMP, and MQTT for enterprise messaging patterns"
+}

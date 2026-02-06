@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-BROWSER-001",
+  "technology": "Web Browser",
+  "aliases": ["Browser", "Chrome", "Firefox", "Safari"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[Web Browser]",
+  "typical_protocols": ["HTTPS/443", "WebSocket", "HTTP/2"],
+  "related_pattern_ids": [],
+  "description": "Client-side web browser application rendering web content and executing JavaScript in the user environment"
+}

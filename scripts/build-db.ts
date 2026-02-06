@@ -16,12 +16,15 @@ import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 import { SCHEMA } from '../src/database/schema.js';
 import { Pattern } from '../src/types/pattern.js';
+import { DfdElement, TrustBoundaryTemplate } from '../src/types/dfd.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PROJECT_ROOT = join(__dirname, '..');
 const PATTERNS_DIR = join(PROJECT_ROOT, 'data/seed/patterns');
+const DFD_ELEMENTS_DIR = join(PROJECT_ROOT, 'data/seed/dfd/elements');
+const DFD_TEMPLATES_DIR = join(PROJECT_ROOT, 'data/seed/dfd/templates');
 const DB_PATH = join(PROJECT_ROOT, 'data/patterns.db');
 
 interface ValidationError {
@@ -67,8 +70,8 @@ function validatePattern(pattern: any, file: string): ValidationError | null {
     errors.push('Missing mitigations');
   }
 
-  // Validate ID format
-  if (pattern.id && !/^STRIDE-[A-Z]+-[A-Z0-9]+-\d+$/.test(pattern.id)) {
+  // Validate ID format: STRIDE-{SEGMENTS}-{NUMBER} (allows STRIDE-K8S-RBAC-001, STRIDE-API-GRAPHQL-DOS-001)
+  if (pattern.id && !/^STRIDE-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+$/.test(pattern.id)) {
     errors.push(`Invalid ID format: ${pattern.id}`);
   }
 
@@ -140,10 +143,10 @@ function insertPattern(db: Database.Database, pattern: Pattern) {
       JSON.stringify(pattern)
     );
 
-    // Insert CVE references
+    // Insert CVE references (OR IGNORE handles duplicate CVE IDs within a pattern)
     for (const cve of pattern.evidence.cve_references) {
       db.prepare(`
-        INSERT INTO cve_references (pattern_id, cve_id, cvss_score, published_date, description)
+        INSERT OR IGNORE INTO cve_references (pattern_id, cve_id, cvss_score, published_date, description)
         VALUES (?, ?, ?, ?, ?)
       `).run(
         pattern.id,
@@ -223,6 +226,158 @@ function insertPattern(db: Database.Database, pattern: Pattern) {
     }
   });
 
+  tx();
+}
+
+const VALID_DFD_ROLES = ['external_entity', 'process', 'data_store', 'data_flow'];
+const VALID_DFD_CATEGORIES = [
+  'database', 'cache', 'message_broker', 'api_gateway', 'identity_provider',
+  'ai_ml', 'cloud_service', 'web_application', 'monitoring', 'infrastructure',
+  'storage', 'networking', 'external_entity', 'data_flow',
+];
+
+/**
+ * Recursively find all JSON files in a directory (reusable)
+ */
+async function findJsonFiles(dir: string): Promise<string[]> {
+  const files: string[] = [];
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...(await findJsonFiles(fullPath)));
+      } else if (entry.isFile() && entry.name.endsWith('.json')) {
+        files.push(fullPath);
+      }
+    }
+  } catch {
+    // Directory doesn't exist yet — that's OK for optional seed dirs
+  }
+  return files;
+}
+
+/**
+ * Validate DFD element schema
+ */
+function validateDfdElement(element: any, file: string): ValidationError | null {
+  const errors: string[] = [];
+
+  if (!element.id) errors.push('Missing id');
+  if (!element.technology) errors.push('Missing technology');
+  if (!Array.isArray(element.aliases)) errors.push('aliases must be an array');
+  if (!element.category || !VALID_DFD_CATEGORIES.includes(element.category)) {
+    errors.push(`Invalid category: ${element.category}`);
+  }
+  if (!element.dfd_role || !VALID_DFD_ROLES.includes(element.dfd_role)) {
+    errors.push(`Invalid dfd_role: ${element.dfd_role}`);
+  }
+  if (!element.default_zone) errors.push('Missing default_zone');
+  if (!element.mermaid_shape) errors.push('Missing mermaid_shape');
+  if (!element.mermaid_node_syntax) errors.push('Missing mermaid_node_syntax');
+  if (!Array.isArray(element.typical_protocols)) errors.push('typical_protocols must be an array');
+  if (!Array.isArray(element.related_pattern_ids)) errors.push('related_pattern_ids must be an array');
+  if (!element.description) errors.push('Missing description');
+
+  // Validate ID format: DFD-EL-{TECH}-001
+  if (element.id && !/^DFD-EL-[A-Z0-9]+-\d+$/.test(element.id)) {
+    errors.push(`Invalid ID format: ${element.id}`);
+  }
+
+  if (errors.length > 0) {
+    return { file, error: errors.join('; ') };
+  }
+  return null;
+}
+
+/**
+ * Validate trust boundary template schema
+ */
+function validateTrustBoundaryTemplate(template: any, file: string): ValidationError | null {
+  const errors: string[] = [];
+
+  if (!template.id) errors.push('Missing id');
+  if (!template.name) errors.push('Missing name');
+  if (!template.architecture_type) errors.push('Missing architecture_type');
+  if (!template.description) errors.push('Missing description');
+  if (!Array.isArray(template.zones) || template.zones.length === 0) {
+    errors.push('zones must be a non-empty array');
+  }
+  if (!Array.isArray(template.boundaries) || template.boundaries.length === 0) {
+    errors.push('boundaries must be a non-empty array');
+  }
+  if (!template.mermaid_template) errors.push('Missing mermaid_template');
+
+  // Validate ID format: TB-TMPL-{ARCH}-001
+  if (template.id && !/^TB-TMPL-[A-Z0-9]+-\d+$/.test(template.id)) {
+    errors.push(`Invalid ID format: ${template.id}`);
+  }
+
+  // Validate zone structure
+  if (Array.isArray(template.zones)) {
+    for (const zone of template.zones) {
+      if (!zone.name || !zone.trust_level || !zone.description) {
+        errors.push(`Zone missing required fields: ${JSON.stringify(zone)}`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { file, error: errors.join('; ') };
+  }
+  return null;
+}
+
+/**
+ * Insert DFD element into database
+ */
+function insertDfdElement(db: Database.Database, element: DfdElement) {
+  const tx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO dfd_elements (
+        id, technology, aliases, category, dfd_role, default_zone,
+        mermaid_shape, mermaid_node_syntax, typical_protocols,
+        related_pattern_ids, description, full_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      element.id,
+      element.technology,
+      JSON.stringify(element.aliases),
+      element.category,
+      element.dfd_role,
+      element.default_zone,
+      element.mermaid_shape,
+      element.mermaid_node_syntax,
+      JSON.stringify(element.typical_protocols),
+      JSON.stringify(element.related_pattern_ids),
+      element.description,
+      JSON.stringify(element),
+    );
+  });
+  tx();
+}
+
+/**
+ * Insert trust boundary template into database
+ */
+function insertTrustBoundaryTemplate(db: Database.Database, template: TrustBoundaryTemplate) {
+  const tx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO trust_boundary_templates (
+        id, name, architecture_type, description,
+        zones, boundaries, mermaid_template, full_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      template.id,
+      template.name,
+      template.architecture_type,
+      template.description,
+      JSON.stringify(template.zones),
+      JSON.stringify(template.boundaries),
+      template.mermaid_template,
+      JSON.stringify(template),
+    );
+  });
   tx();
 }
 
@@ -306,13 +461,117 @@ async function buildDatabase() {
 
   console.log(`✅ Inserted ${inserted} patterns\n`);
 
+  // --- DFD Elements ---
+  console.log(`📂 Scanning for DFD elements in: ${DFD_ELEMENTS_DIR}`);
+  const dfdElementFiles = await findJsonFiles(DFD_ELEMENTS_DIR);
+  console.log(`✅ Found ${dfdElementFiles.length} DFD element files\n`);
+
+  if (dfdElementFiles.length > 0) {
+    console.log('🔍 Validating DFD elements...');
+    const dfdElements: DfdElement[] = [];
+    const dfdErrors: ValidationError[] = [];
+
+    for (const file of dfdElementFiles) {
+      try {
+        const content = await readFile(file, 'utf-8');
+        const element = JSON.parse(content) as DfdElement;
+        const error = validateDfdElement(element, file);
+        if (error) {
+          dfdErrors.push(error);
+        } else {
+          dfdElements.push(element);
+        }
+      } catch (error) {
+        dfdErrors.push({
+          file,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    if (dfdErrors.length > 0) {
+      console.error('\n❌ DFD element validation errors:\n');
+      for (const error of dfdErrors) {
+        console.error(`  ${error.file}: ${error.error}`);
+      }
+      process.exit(1);
+    }
+
+    console.log(`✅ All ${dfdElements.length} DFD elements validated\n`);
+
+    console.log('💾 Inserting DFD elements...');
+    let dfdInserted = 0;
+    for (const element of dfdElements) {
+      try {
+        insertDfdElement(db, element);
+        dfdInserted++;
+      } catch (error) {
+        console.error(`❌ Failed to insert DFD element ${element.id}:`, error);
+        process.exit(1);
+      }
+    }
+    console.log(`✅ Inserted ${dfdInserted} DFD elements\n`);
+  }
+
+  // --- Trust Boundary Templates ---
+  console.log(`📂 Scanning for trust boundary templates in: ${DFD_TEMPLATES_DIR}`);
+  const templateFiles = await findJsonFiles(DFD_TEMPLATES_DIR);
+  console.log(`✅ Found ${templateFiles.length} template files\n`);
+
+  if (templateFiles.length > 0) {
+    console.log('🔍 Validating trust boundary templates...');
+    const templates: TrustBoundaryTemplate[] = [];
+    const templateErrors: ValidationError[] = [];
+
+    for (const file of templateFiles) {
+      try {
+        const content = await readFile(file, 'utf-8');
+        const template = JSON.parse(content) as TrustBoundaryTemplate;
+        const error = validateTrustBoundaryTemplate(template, file);
+        if (error) {
+          templateErrors.push(error);
+        } else {
+          templates.push(template);
+        }
+      } catch (error) {
+        templateErrors.push({
+          file,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    if (templateErrors.length > 0) {
+      console.error('\n❌ Template validation errors:\n');
+      for (const error of templateErrors) {
+        console.error(`  ${error.file}: ${error.error}`);
+      }
+      process.exit(1);
+    }
+
+    console.log(`✅ All ${templates.length} templates validated\n`);
+
+    console.log('💾 Inserting trust boundary templates...');
+    let tbtInserted = 0;
+    for (const template of templates) {
+      try {
+        insertTrustBoundaryTemplate(db, template);
+        tbtInserted++;
+      } catch (error) {
+        console.error(`❌ Failed to insert template ${template.id}:`, error);
+        process.exit(1);
+      }
+    }
+    console.log(`✅ Inserted ${tbtInserted} trust boundary templates\n`);
+  }
+
   // Update metadata
   db.prepare(`
     UPDATE metadata SET value = datetime('now'), updated_at = datetime('now')
     WHERE key = 'last_build'
   `).run();
 
-  // Get stats
+  // Get pattern stats
   const stats = db.prepare(`
     SELECT
       COUNT(*) as total_patterns,
@@ -323,12 +582,27 @@ async function buildDatabase() {
     FROM patterns
   `).get() as any;
 
+  // Get DFD stats
+  const dfdStats = db.prepare(`
+    SELECT
+      COUNT(*) as total_elements,
+      COUNT(DISTINCT category) as categories,
+      COUNT(DISTINCT dfd_role) as roles
+    FROM dfd_elements
+  `).get() as any;
+
+  const tbtStats = db.prepare(`
+    SELECT COUNT(*) as total_templates FROM trust_boundary_templates
+  `).get() as any;
+
   console.log('📊 Database Statistics:');
-  console.log(`  Total Patterns: ${stats.total_patterns}`);
+  console.log(`  Threat Patterns: ${stats.total_patterns}`);
   console.log(`  STRIDE Categories: ${stats.stride_categories}`);
   console.log(`  Technologies: ${stats.technologies}`);
   console.log(`  Frameworks: ${stats.frameworks}`);
-  console.log(`  Average Confidence: ${stats.avg_confidence}/10\n`);
+  console.log(`  Average Confidence: ${stats.avg_confidence}/10`);
+  console.log(`  DFD Elements: ${dfdStats.total_elements} (${dfdStats.categories} categories, ${dfdStats.roles} roles)`);
+  console.log(`  Trust Boundary Templates: ${tbtStats.total_templates}\n`);
 
   // Optimize database
   console.log('⚡ Optimizing database...');

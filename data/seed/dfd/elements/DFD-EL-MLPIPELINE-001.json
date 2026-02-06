@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MLPIPELINE-001",
+  "technology": "ML Training Pipeline",
+  "aliases": ["Kubeflow", "SageMaker", "Vertex AI"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(ML Training Pipeline)",
+  "typical_protocols": ["HTTPS/443", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Orchestrated pipeline for ML model training, evaluation, and deployment automation"
+}

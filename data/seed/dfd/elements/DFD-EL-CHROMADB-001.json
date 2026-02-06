@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CHROMADB-001",
+  "technology": "ChromaDB",
+  "aliases": ["Chroma"],
+  "category": "ai_ml",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(ChromaDB)]",
+  "typical_protocols": ["TCP/8000", "REST"],
+  "related_pattern_ids": [],
+  "description": "Open-source embedding database for AI applications with simple API and local or server deployment"
+}

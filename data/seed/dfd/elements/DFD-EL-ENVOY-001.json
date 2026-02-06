@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ENVOY-001",
+  "technology": "Envoy Proxy",
+  "aliases": ["Envoy", "Istio Envoy"],
+  "category": "api_gateway",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Envoy Proxy)",
+  "typical_protocols": ["HTTP/2", "gRPC", "TCP"],
+  "related_pattern_ids": [],
+  "description": "High-performance L7 proxy and service mesh sidecar designed for cloud-native applications with advanced observability and traffic management"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AZURECDN-001",
+  "technology": "Azure CDN",
+  "aliases": ["Azure Front Door"],
+  "category": "cloud_service",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Azure CDN)",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Azure content delivery network and global load balancer for accelerating web application delivery"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ELK-001",
+  "technology": "ELK Stack",
+  "aliases": ["Elastic Stack", "Kibana", "Logstash"],
+  "category": "monitoring",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(ELK Stack)",
+  "typical_protocols": ["TCP/5601 Kibana", "TCP/5044 Logstash", "TCP/9200 ES"],
+  "related_pattern_ids": [],
+  "description": "Elasticsearch, Logstash, and Kibana stack for centralized log aggregation, search, and visualization"
+}

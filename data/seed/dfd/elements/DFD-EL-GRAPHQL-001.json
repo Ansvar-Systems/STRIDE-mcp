@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-GRAPHQL-001",
+  "technology": "GraphQL",
+  "aliases": ["GraphQL API", "GQL"],
+  "category": "data_flow",
+  "dfd_role": "data_flow",
+  "default_zone": "application-tier",
+  "mermaid_shape": "stadium",
+  "mermaid_node_syntax": "([GraphQL])",
+  "typical_protocols": ["HTTPS/443", "HTTP"],
+  "related_pattern_ids": [],
+  "description": "Query language and runtime for APIs enabling clients to request exactly the data they need through a single endpoint"
+}

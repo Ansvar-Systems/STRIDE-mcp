@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-LAMBDA-001",
+  "technology": "AWS Lambda",
+  "aliases": ["Lambda", "Serverless Function"],
+  "category": "cloud_service",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(AWS Lambda)",
+  "typical_protocols": ["HTTPS/443", "AWS SDK"],
+  "related_pattern_ids": [],
+  "description": "Serverless compute service that runs code in response to events without provisioning servers"
+}

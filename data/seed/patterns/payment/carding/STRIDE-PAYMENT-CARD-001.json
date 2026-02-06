@@ -9,7 +9,7 @@
       "Payment Systems Architect"
     ],
     "confidence_score": 9.8,
-    "validation_status": "production"
+    "validation_status": "validated"
   },
   "classification": {
     "stride_category": "Tampering",
@@ -274,7 +274,7 @@
       "control_id": "MIT-002",
       "title": "Deploy Real-Time Machine Learning Fraud Detection",
       "description": "Implement ML-based fraud detection models that analyze transaction patterns in real-time. Use behavioral biometrics, device fingerprinting, network analysis, and transaction anomaly detection. Models should detect carding attacks within 5 transactions by identifying test transaction patterns, velocity spikes, and bot behavior. Integrate with payment processors' native fraud detection (Stripe Radar, Adyen Fraud Prevention, PayPal Seller Protection). Use ensemble models combining rule-based detection and neural networks for 99%+ attack detection rates.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "High",
       "code_example": {
         "language": "python",

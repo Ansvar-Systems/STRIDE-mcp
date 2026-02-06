@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-LINKERD-001",
+  "technology": "Linkerd",
+  "aliases": ["Linkerd Service Mesh"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Linkerd)",
+  "typical_protocols": ["mTLS", "HTTP/2", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Lightweight service mesh providing runtime observability, reliability, and security without requiring code changes"
+}

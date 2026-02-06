@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ETCD-001",
+  "technology": "etcd",
+  "aliases": ["etcd cluster"],
+  "category": "infrastructure",
+  "dfd_role": "data_store",
+  "default_zone": "management",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(etcd)]",
+  "typical_protocols": ["TCP/2379", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Distributed key-value store used as the backing store for Kubernetes cluster state and configuration data"
+}

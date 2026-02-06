@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-ONPREM-001",
+  "name": "On-Premise Enterprise",
+  "architecture_type": "on-premise",
+  "description": "A traditional on-premise enterprise architecture with multiple network security zones separated by firewalls and network segmentation. Common in regulated industries (finance, healthcare, government) where data sovereignty, physical security, and compliance require infrastructure to remain within organizational premises. Relies on perimeter defense, VLAN segmentation, and defense-in-depth network controls.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["internet users", "remote workers", "partner VPNs", "cloud SaaS integrations", "email traffic"],
+      "description": "All external network traffic including internet-facing services, remote employee access via VPN, partner connections, and inbound email. Treated as hostile until authenticated and filtered through the DMZ."
+    },
+    {
+      "name": "dmz",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["external web servers", "reverse proxies", "email gateways", "VPN concentrators", "DNS servers", "bastion hosts"],
+      "description": "The network DMZ between the external firewall and internal firewall. Hosts publicly accessible services that mediate between external and internal networks. Designed to limit blast radius if a DMZ host is compromised."
+    },
+    {
+      "name": "corporate-network",
+      "trust_level": "trusted",
+      "typical_elements": ["workstations", "internal web applications", "file shares", "print servers", "VoIP systems", "internal DNS"],
+      "description": "The general corporate network hosting end-user workstations, internal applications, and shared services. Users are authenticated via Active Directory. Network Access Control (NAC) enforces device compliance before granting access."
+    },
+    {
+      "name": "datacenter",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["application servers", "database servers", "storage arrays", "backup systems", "HSMs", "domain controllers"],
+      "description": "The secure datacenter hosting production application servers, databases, and critical infrastructure. Physically restricted access with environmental controls. Network access limited to specific VLANs and port-level ACLs."
+    },
+    {
+      "name": "management-network",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["jump boxes", "SIEM", "PAM solution", "configuration management", "patch management", "IDS/IPS management consoles"],
+      "description": "The isolated management network used for system administration, monitoring, and security operations. Accessible only through jump boxes with privileged access management. All sessions are recorded and audited."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to DMZ",
+      "from_zone": "external",
+      "to_zone": "dmz",
+      "controls": ["Perimeter firewall (stateful inspection)", "Intrusion Detection/Prevention System (IDS/IPS)", "Email gateway with anti-malware", "DDoS mitigation appliance", "TLS termination at reverse proxy"]
+    },
+    {
+      "name": "DMZ to Corporate Network",
+      "from_zone": "dmz",
+      "to_zone": "corporate-network",
+      "controls": ["Internal firewall (application-layer filtering)", "VLAN segmentation", "Network Access Control (NAC)", "802.1X port authentication", "VPN client posture assessment"]
+    },
+    {
+      "name": "Corporate Network to Datacenter",
+      "from_zone": "corporate-network",
+      "to_zone": "datacenter",
+      "controls": ["Port-level ACLs", "Micro-segmentation (east-west filtering)", "Application-layer firewall", "Database Activity Monitoring (DAM)", "Privileged session recording"]
+    },
+    {
+      "name": "Corporate Network to Management Network",
+      "from_zone": "corporate-network",
+      "to_zone": "management-network",
+      "controls": ["Jump box / bastion host access only", "Privileged Access Management (PAM)", "Multi-factor authentication", "Session recording and audit", "Time-limited access grants"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        internet[Internet Users]\n        remote[Remote Workers]\n        partner_vpn[Partner VPN]\n    end\n    subgraph dmz[\"DMZ (Semi-Trusted)\"]\n        fw_ext[External Firewall]\n        web(Web Server / Reverse Proxy)\n        email(Email Gateway)\n        vpn(VPN Concentrator)\n    end\n    subgraph corp[\"Corporate Network (Trusted)\"]\n        fw_int[Internal Firewall]\n        ws[Workstations]\n        intranet(Internal Web Apps)\n        fileshare[(File Shares)]\n        ad(Active Directory)\n    end\n    subgraph dc[\"Datacenter (Highly Trusted)\"]\n        appserver(Application Servers)\n        dbserver[(Database Servers)]\n        storage[(Storage Arrays)]\n        hsm(HSM)\n        backup[(Backup Systems)]\n    end\n    subgraph mgmt[\"Management Network (Highly Trusted)\"]\n        jumpbox(Jump Box / Bastion)\n        siem(SIEM)\n        pam(PAM Solution)\n        patch(Patch Management)\n    end\n    internet -->|HTTPS| fw_ext\n    remote -->|VPN| fw_ext\n    partner_vpn -->|Site-to-Site VPN| fw_ext\n    fw_ext --> web\n    fw_ext --> email\n    fw_ext --> vpn\n    web -->|Filtered| fw_int\n    vpn -->|Authenticated| fw_int\n    fw_int --> ws\n    fw_int --> intranet\n    ws --> ad\n    ws --> fileshare\n    intranet -->|ACL| appserver\n    appserver -->|SQL/TLS| dbserver\n    appserver --> storage\n    dbserver --> backup\n    appserver --> hsm\n    ws -->|Jump Box Only| jumpbox\n    jumpbox -->|PAM| pam\n    jumpbox --> siem\n    jumpbox --> patch\n    siem -.->|Monitor| dc\n    siem -.->|Monitor| corp"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-DOTNET-001",
+  "technology": ".NET Web API",
+  "aliases": ["ASP.NET", ".NET Core", "C# API"],
+  "category": "web_application",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(.NET Web API)",
+  "typical_protocols": ["HTTP/5000", "HTTPS/5001"],
+  "related_pattern_ids": [],
+  "description": "Microsoft cross-platform framework for building RESTful web APIs and microservices in C#"
+}

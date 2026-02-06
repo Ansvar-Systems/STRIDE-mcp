@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-KAFKA-001",
+  "technology": "Apache Kafka",
+  "aliases": ["Kafka", "MSK", "Confluent"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Apache Kafka)",
+  "typical_protocols": ["TCP/9092", "Kafka Protocol"],
+  "related_pattern_ids": [],
+  "description": "Distributed event streaming platform for high-throughput, fault-tolerant publish-subscribe messaging and stream processing"
+}

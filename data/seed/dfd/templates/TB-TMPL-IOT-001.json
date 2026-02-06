@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-IOT-001",
+  "name": "IoT/Edge Architecture",
+  "architecture_type": "iot-edge",
+  "description": "An IoT and edge computing architecture connecting field devices through edge gateways to a cloud backend for data ingestion, processing, and analytics. Designed for high-volume telemetry data with constrained devices at the edge, intermediate processing at gateway nodes, and centralized analytics and storage in the cloud. Security focuses on device identity, secure communication protocols, and data integrity across unreliable networks.",
+  "zones": [
+    {
+      "name": "field-devices",
+      "trust_level": "untrusted",
+      "typical_elements": ["IoT sensors", "actuators", "PLCs", "embedded controllers", "wearables", "smart meters"],
+      "description": "Physical devices deployed in the field with limited compute resources and potentially hostile physical environments. These devices may be tampered with, cloned, or compromised, and must be treated as untrusted until authenticated."
+    },
+    {
+      "name": "edge-gateway",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["edge gateway", "protocol translator", "local MQTT broker", "edge compute node", "local cache"],
+      "description": "Edge gateways that aggregate device telemetry, perform protocol translation (e.g., Modbus to MQTT), local filtering, and buffering. They bridge the gap between constrained device protocols and cloud-ready communication."
+    },
+    {
+      "name": "cloud-ingestion",
+      "trust_level": "trusted",
+      "typical_elements": ["IoT Hub", "message broker", "event stream", "device registry", "device provisioning service"],
+      "description": "The cloud ingestion layer that receives telemetry from edge gateways, manages device identities, and streams data to downstream processing. Handles device provisioning, authentication, and connection management at scale."
+    },
+    {
+      "name": "analytics",
+      "trust_level": "trusted",
+      "typical_elements": ["stream processors", "ML inference engines", "alerting systems", "dashboards", "digital twins"],
+      "description": "The analytics and processing tier that transforms raw telemetry into actionable insights. Includes real-time stream processing, machine learning inference, anomaly detection, and visualization dashboards."
+    },
+    {
+      "name": "data-lake",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["time-series database", "data lake", "cold storage", "data warehouse", "backup"],
+      "description": "The long-term data persistence layer storing historical telemetry, processed analytics, and audit records. Subject to data retention policies and regulatory compliance requirements."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Devices to Edge Gateway",
+      "from_zone": "field-devices",
+      "to_zone": "edge-gateway",
+      "controls": ["Device authentication (X.509 certificates / pre-shared keys)", "TLS / DTLS for transport security", "Protocol-level access control", "Firmware integrity verification", "Device allowlisting"]
+    },
+    {
+      "name": "Edge Gateway to Cloud Ingestion",
+      "from_zone": "edge-gateway",
+      "to_zone": "cloud-ingestion",
+      "controls": ["Certificate pinning", "MQTT over TLS 1.2+", "SAS token / X.509 authentication", "Message payload validation", "Bandwidth throttling"]
+    },
+    {
+      "name": "Cloud Ingestion to Analytics",
+      "from_zone": "cloud-ingestion",
+      "to_zone": "analytics",
+      "controls": ["IAM role-based access", "Event schema validation", "Stream-level access policies", "Consumer group isolation"]
+    },
+    {
+      "name": "Analytics to Data Lake",
+      "from_zone": "analytics",
+      "to_zone": "data-lake",
+      "controls": ["Encryption at rest (AES-256)", "Write-only permissions for ingestion", "Data classification and tagging", "Retention policy enforcement", "Audit logging"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph field[\"Field Devices (Untrusted)\"]\n        sensor1[Temperature Sensor]\n        sensor2[Pressure Sensor]\n        actuator[Actuator / PLC]\n    end\n    subgraph edge[\"Edge Gateway (Semi-Trusted)\"]\n        gw1(Edge Gateway A)\n        gw2(Edge Gateway B)\n        local_broker([Local MQTT Broker])\n    end\n    subgraph ingestion[\"Cloud Ingestion (Trusted)\"]\n        hub(IoT Hub / Message Broker)\n        registry(Device Registry)\n        provision(Provisioning Service)\n    end\n    subgraph analytics_tier[\"Analytics (Trusted)\"]\n        stream(Stream Processor)\n        ml(ML Inference)\n        alert(Alerting Engine)\n        dashboard(Dashboard)\n    end\n    subgraph datalake[\"Data Lake (Highly Trusted)\"]\n        tsdb[(Time-Series DB)]\n        lake[(Data Lake / Cold Storage)]\n        warehouse[(Data Warehouse)]\n    end\n    sensor1 -->|MQTT/TLS| gw1\n    sensor2 -->|MQTT/TLS| gw1\n    actuator -->|Modbus/TLS| gw2\n    gw1 --> local_broker\n    gw2 --> local_broker\n    local_broker -->|MQTT over TLS| hub\n    hub --> registry\n    hub --> provision\n    hub -->|Event Stream| stream\n    stream --> ml\n    stream --> alert\n    ml --> dashboard\n    alert --> dashboard\n    stream -->|Write| tsdb\n    stream -->|Archive| lake\n    ml -->|Results| warehouse"
+}

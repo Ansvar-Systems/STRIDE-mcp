@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-OTEL-001",
+  "technology": "OpenTelemetry",
+  "aliases": ["OTel", "OpenTelemetry Collector"],
+  "category": "monitoring",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(OpenTelemetry)",
+  "typical_protocols": ["gRPC/4317", "HTTP/4318", "OTLP"],
+  "related_pattern_ids": [],
+  "description": "Vendor-neutral observability framework for collecting, processing, and exporting telemetry data"
+}

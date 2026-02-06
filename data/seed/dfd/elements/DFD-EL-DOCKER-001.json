@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-DOCKER-001",
+  "technology": "Docker",
+  "aliases": ["Docker Engine", "Container Runtime", "containerd"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Docker)",
+  "typical_protocols": ["Unix Socket", "TCP/2376"],
+  "related_pattern_ids": [],
+  "description": "Container runtime for building, shipping, and running applications in isolated environments"
+}

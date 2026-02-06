@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-SQS-001",
+  "technology": "Amazon SQS",
+  "aliases": ["SQS", "Simple Queue Service"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Amazon SQS)",
+  "typical_protocols": ["HTTPS/443", "AWS SDK"],
+  "related_pattern_ids": [],
+  "description": "Fully managed AWS message queuing service for decoupling and scaling microservices, distributed systems, and serverless applications"
+}

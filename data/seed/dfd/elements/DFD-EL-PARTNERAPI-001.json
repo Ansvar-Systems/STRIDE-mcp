@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-PARTNERAPI-001",
+  "technology": "Partner API",
+  "aliases": ["Partner Service", "B2B API", "External API"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[Partner API]",
+  "typical_protocols": ["HTTPS/443", "REST", "SOAP"],
+  "related_pattern_ids": [],
+  "description": "External partner system or API providing business-to-business integration and data exchange capabilities"
+}

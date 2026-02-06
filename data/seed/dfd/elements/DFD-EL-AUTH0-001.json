@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AUTH0-001",
+  "technology": "Auth0",
+  "aliases": ["Okta Auth0"],
+  "category": "identity_provider",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Auth0)",
+  "typical_protocols": ["HTTPS/443", "OAuth 2.0", "OIDC"],
+  "related_pattern_ids": [],
+  "description": "Cloud-based identity platform providing authentication and authorization as a service with universal login and extensible rules"
+}

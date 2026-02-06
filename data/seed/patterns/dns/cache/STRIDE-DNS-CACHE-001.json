@@ -6,7 +6,7 @@
     "last_updated": "2026-02-04",
     "reviewed_by": [],
     "confidence_score": 9.5,
-    "validation_status": "production"
+    "validation_status": "validated"
   },
   "classification": {
     "stride_category": "Spoofing",
@@ -214,7 +214,7 @@
       "control_id": "MIT-001",
       "title": "Implement DNSSEC (DNS Security Extensions) Validation",
       "description": "Deploy DNSSEC to cryptographically sign DNS records and validate signatures on recursive resolvers. DNSSEC adds digital signatures to DNS responses using public-key cryptography, allowing resolvers to verify that responses originated from legitimate authoritative nameservers and have not been modified in transit. This completely eliminates DNS cache poisoning attacks as forged responses without valid signatures are rejected. DNSSEC must be implemented at both authoritative nameservers (signing zones) and recursive resolvers (validating signatures).",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "High",
       "code_example": {
         "language": "bash",
@@ -322,7 +322,7 @@
       "control_id": "MIT-003",
       "title": "Deploy DNS Response Rate Limiting (RRL)",
       "description": "Configure Response Rate Limiting (RRL) on DNS resolvers to limit the number of identical responses to the same client within a time window. RRL prevents DNS amplification attacks and makes cache poisoning harder by rate-limiting responses from authoritative nameservers. When attacker floods resolver with DNS queries for non-existent subdomains to trigger resolution, RRL limits responses and prevents attacker from flooding the resolver with forged responses quickly enough to poison cache before legitimate response is cached.",
-      "effectiveness": "Medium-High",
+      "effectiveness": "High",
       "implementation_complexity": "Low",
       "code_example": {
         "language": "conf",

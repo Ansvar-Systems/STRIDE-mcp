@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CASSANDRA-001",
+  "technology": "Apache Cassandra",
+  "aliases": ["Cassandra", "C*"],
+  "category": "database",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Cassandra)]",
+  "typical_protocols": ["TCP/9042", "CQL"],
+  "related_pattern_ids": [],
+  "description": "Distributed wide-column NoSQL database designed for high availability and linear scalability across commodity hardware"
+}

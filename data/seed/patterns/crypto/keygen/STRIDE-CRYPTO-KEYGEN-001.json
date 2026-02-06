@@ -315,7 +315,7 @@
       "control_id": "MIT-004",
       "title": "Hardware Security Modules (HSM) for Production Key Management",
       "description": "For production environments handling sensitive data, use Hardware Security Modules (HSM) or managed key management services (AWS KMS, Azure Key Vault, GCP KMS) to generate and store cryptographic keys. HSMs provide FIPS 140-2 Level 2/3 validated random number generation and tamper-resistant key storage.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "High",
       "code_example": {
         "language": "python",

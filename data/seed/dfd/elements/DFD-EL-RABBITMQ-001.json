@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-RABBITMQ-001",
+  "technology": "RabbitMQ",
+  "aliases": ["RMQ", "Rabbit"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(RabbitMQ)",
+  "typical_protocols": ["TCP/5672", "AMQP"],
+  "related_pattern_ids": [],
+  "description": "Open-source message broker implementing AMQP with support for multiple messaging protocols, routing, and clustering"
+}

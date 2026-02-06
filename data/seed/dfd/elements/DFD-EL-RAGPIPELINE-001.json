@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-RAGPIPELINE-001",
+  "technology": "RAG Pipeline",
+  "aliases": ["Retrieval Augmented Generation", "RAG Service"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(RAG Pipeline)",
+  "typical_protocols": ["REST", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Retrieval-augmented generation pipeline combining vector search with LLM inference for grounded responses"
+}

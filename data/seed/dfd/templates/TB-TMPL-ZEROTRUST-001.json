@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-ZEROTRUST-001",
+  "name": "Zero Trust Architecture",
+  "architecture_type": "zero-trust",
+  "description": "A Zero Trust architecture that eliminates implicit trust based on network location. Every access request is continuously verified regardless of origin, enforcing the principle of 'never trust, always verify.' Identity becomes the primary security perimeter, with real-time policy evaluation, micro-segmentation, and continuous posture assessment replacing traditional perimeter-based security. Aligned with NIST SP 800-207 Zero Trust Architecture.",
+  "zones": [
+    {
+      "name": "untrusted-network",
+      "trust_level": "untrusted",
+      "typical_elements": ["corporate network", "remote users", "BYOD devices", "branch offices", "cloud networks", "partner connections"],
+      "description": "All network segments are treated as untrusted, including the internal corporate network. There is no trusted network zone in Zero Trust. All users, devices, and services must authenticate and be authorized for every request regardless of network location."
+    },
+    {
+      "name": "identity-plane",
+      "trust_level": "trusted",
+      "typical_elements": ["Identity Provider (IdP)", "MFA service", "device trust service", "certificate authority", "SSO broker", "SCIM provisioning"],
+      "description": "The identity verification plane providing continuous authentication. Combines user identity (MFA, passwordless), device identity (certificates, MDM compliance), and context signals (location, time, risk score) to establish confidence levels for access decisions."
+    },
+    {
+      "name": "policy-engine",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["Policy Decision Point (PDP)", "Policy Enforcement Point (PEP)", "policy repository", "risk scoring engine", "SIEM integration", "threat intelligence feed"],
+      "description": "The centralized policy engine that makes real-time authorization decisions for every access request. Evaluates policies combining identity confidence, device posture, resource sensitivity, and environmental context. The most critical component in the architecture."
+    },
+    {
+      "name": "workloads",
+      "trust_level": "trusted",
+      "typical_elements": ["application services", "APIs", "microservices", "SaaS applications", "databases", "file shares", "internal tools"],
+      "description": "Protected workloads and resources that enforce access decisions from the policy engine. Each workload verifies authorization tokens, enforces micro-segmentation, and communicates with other workloads only through authenticated and encrypted channels (mTLS)."
+    },
+    {
+      "name": "data",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["classified data stores", "encryption key management", "data loss prevention", "rights management", "data catalog"],
+      "description": "The protected data layer with attribute-based access controls tied to data classification. Every data access is authorized based on the requestor's identity, device posture, and the data's sensitivity level. Encryption is enforced at rest and in transit with centrally managed keys."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Network to Identity Plane",
+      "from_zone": "untrusted-network",
+      "to_zone": "identity-plane",
+      "controls": ["Continuous authentication (not one-time)", "Multi-factor authentication (phishing-resistant)", "Device posture assessment (MDM, EDR status)", "Contextual signals (geo, time, risk score)", "Step-up authentication for sensitive resources"]
+    },
+    {
+      "name": "Identity Plane to Policy Engine",
+      "from_zone": "identity-plane",
+      "to_zone": "policy-engine",
+      "controls": ["Real-time authorization decisions", "Attribute-Based Access Control (ABAC)", "Risk-adaptive policies", "Session anomaly detection", "Continuous session re-evaluation"]
+    },
+    {
+      "name": "Policy Engine to Workloads",
+      "from_zone": "policy-engine",
+      "to_zone": "workloads",
+      "controls": ["Micro-segmentation (workload-to-workload)", "Mutual TLS (mTLS) for all communication", "Short-lived access tokens", "Just-in-time access provisioning", "Per-request authorization enforcement"]
+    },
+    {
+      "name": "Workloads to Data",
+      "from_zone": "workloads",
+      "to_zone": "data",
+      "controls": ["Attribute-Based Access Control (ABAC) on data", "Encryption at rest with managed keys", "Data Loss Prevention (DLP) inspection", "Rights Management enforcement", "Complete data access audit trail"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph untrusted[\"Untrusted Network (All Networks)\"]\n        remote[Remote User]\n        office[Office User]\n        byod[BYOD Device]\n        branch[Branch Office]\n    end\n    subgraph identity[\"Identity Plane (Trusted)\"]\n        idp(Identity Provider)\n        mfa(MFA Service)\n        device_trust(Device Trust / MDM)\n        ca(Certificate Authority)\n    end\n    subgraph policy[\"Policy Engine (Highly Trusted)\"]\n        pdp(Policy Decision Point)\n        pep(Policy Enforcement Point)\n        risk(Risk Scoring Engine)\n        threat_intel(Threat Intelligence)\n        siem(SIEM Integration)\n    end\n    subgraph workloads_zone[\"Workloads (Trusted)\"]\n        app1(Application A)\n        app2(Application B)\n        api1(Internal API)\n        saas(SaaS App Proxy)\n    end\n    subgraph data_zone[\"Data (Highly Trusted)\"]\n        classified[(Classified Data)]\n        kms(Key Management)\n        dlp(DLP Engine)\n        rights(Rights Management)\n    end\n    remote -->|Auth Request| idp\n    office -->|Auth Request| idp\n    byod -->|Auth Request| idp\n    branch -->|Auth Request| idp\n    idp --> mfa\n    idp --> device_trust\n    idp --> ca\n    mfa -->|Identity + Context| pdp\n    device_trust -->|Posture| pdp\n    pdp --> risk\n    risk --> threat_intel\n    risk --> siem\n    pdp -->|Allow/Deny + Token| pep\n    pep -->|mTLS + Token| app1\n    pep -->|mTLS + Token| app2\n    pep -->|mTLS + Token| api1\n    pep -->|mTLS + Token| saas\n    app1 <-->|mTLS| app2\n    app1 <-->|mTLS| api1\n    app1 -->|ABAC| classified\n    app2 -->|ABAC| classified\n    classified --> kms\n    classified --> dlp\n    classified --> rights"
+}

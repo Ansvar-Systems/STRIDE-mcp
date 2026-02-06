@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-WEBSOCKET-001",
+  "technology": "WebSocket",
+  "aliases": ["WS", "WSS", "WebSocket Connection"],
+  "category": "data_flow",
+  "dfd_role": "data_flow",
+  "default_zone": "application-tier",
+  "mermaid_shape": "stadium",
+  "mermaid_node_syntax": "([WebSocket])",
+  "typical_protocols": ["WS/80", "WSS/443"],
+  "related_pattern_ids": [],
+  "description": "Full-duplex communication protocol providing persistent bidirectional channels over a single TCP connection"
+}

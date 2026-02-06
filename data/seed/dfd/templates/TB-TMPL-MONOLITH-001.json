@@ -1,0 +1,53 @@
+{
+  "id": "TB-TMPL-MONOLITH-001",
+  "name": "Monolithic Application",
+  "architecture_type": "monolith",
+  "description": "A traditional monolithic application architecture where all business logic resides in a single deployable unit. The application handles HTTP requests through a web server, processes them in an integrated application layer, and persists data to a shared database. Common in established enterprise systems and smaller-scale applications.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["end users", "web browsers", "API consumers", "external integrations"],
+      "description": "All external actors and systems accessing the application from outside the organizational perimeter, including end users via browsers and external API consumers."
+    },
+    {
+      "name": "dmz",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["web server", "reverse proxy", "load balancer", "WAF", "static content server"],
+      "description": "The web-facing layer that handles TLS termination, static content serving, and initial request filtering before forwarding to the application server."
+    },
+    {
+      "name": "application-tier",
+      "trust_level": "trusted",
+      "typical_elements": ["application server", "session store", "business logic modules", "background job processors", "file storage"],
+      "description": "The monolithic application server containing all business logic, authentication, authorization, and request processing. Runs as a single process or clustered instances behind the reverse proxy."
+    },
+    {
+      "name": "data-tier",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["relational database", "file system", "backup storage", "search index"],
+      "description": "The data persistence layer containing the primary database and any file storage. All access is mediated through the application tier using the ORM or data access layer."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to DMZ",
+      "from_zone": "external",
+      "to_zone": "dmz",
+      "controls": ["Web Application Firewall (WAF)", "TLS 1.2+ termination", "Rate limiting", "IP allowlisting (for admin paths)", "CORS policy enforcement"]
+    },
+    {
+      "name": "DMZ to Application Tier",
+      "from_zone": "dmz",
+      "to_zone": "application-tier",
+      "controls": ["Session-based authentication", "CSRF token validation", "Input sanitization", "Request size limits", "Content-Type validation"]
+    },
+    {
+      "name": "Application Tier to Data Tier",
+      "from_zone": "application-tier",
+      "to_zone": "data-tier",
+      "controls": ["ORM with parameterized queries", "Connection pooling with credential management", "Encryption at rest", "Database user least-privilege", "Query audit logging"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        user[End User / Browser]\n        api_consumer[API Consumer]\n    end\n    subgraph dmz[\"DMZ (Semi-Trusted)\"]\n        waf[WAF]\n        proxy(Reverse Proxy / Web Server)\n    end\n    subgraph app[\"Application Tier (Trusted)\"]\n        monolith(Monolithic Application Server)\n        sessions[(Session Store)]\n        jobs(Background Job Processor)\n    end\n    subgraph data[\"Data Tier (Highly Trusted)\"]\n        db[(Primary Database)]\n        fs[(File Storage)]\n        backup[(Backup Storage)]\n    end\n    user -->|HTTPS| waf\n    api_consumer -->|HTTPS| waf\n    waf --> proxy\n    proxy -->|Session Auth| monolith\n    monolith --> sessions\n    monolith --> jobs\n    monolith -->|ORM / SQL| db\n    monolith -->|File I/O| fs\n    db -->|Scheduled| backup"
+}

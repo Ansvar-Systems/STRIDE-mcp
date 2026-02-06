@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-GOOGLEID-001",
+  "technology": "Google Identity Platform",
+  "aliases": ["Google Auth", "Firebase Auth"],
+  "category": "identity_provider",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Google Identity)",
+  "typical_protocols": ["HTTPS/443", "OAuth 2.0", "OIDC"],
+  "related_pattern_ids": [],
+  "description": "Google Cloud customer identity and access management platform with Firebase Auth integration for web and mobile applications"
+}

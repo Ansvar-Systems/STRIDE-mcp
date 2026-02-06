@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-HAPROXY-001",
+  "technology": "HAProxy",
+  "aliases": ["HA Proxy"],
+  "category": "api_gateway",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(HAProxy)",
+  "typical_protocols": ["TCP", "HTTP", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Reliable high-performance TCP/HTTP load balancer and proxy server for high-availability and traffic distribution"
+}

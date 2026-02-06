@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-KUBERNETES-001",
+  "technology": "Kubernetes",
+  "aliases": ["K8s", "K8s Cluster", "AKS", "EKS", "GKE"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Kubernetes)",
+  "typical_protocols": ["HTTPS/6443 API Server", "TCP"],
+  "related_pattern_ids": [],
+  "description": "Container orchestration platform for automating deployment, scaling, and management of containerized applications"
+}

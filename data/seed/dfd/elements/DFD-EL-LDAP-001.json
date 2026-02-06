@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-LDAP-001",
+  "technology": "LDAP Directory",
+  "aliases": ["LDAP", "Active Directory", "OpenLDAP"],
+  "category": "identity_provider",
+  "dfd_role": "data_store",
+  "default_zone": "application-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(LDAP Directory)]",
+  "typical_protocols": ["TCP/389", "LDAPS/636"],
+  "related_pattern_ids": [],
+  "description": "Directory service protocol for accessing and maintaining distributed directory information for authentication and authorization"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MEMCACHED-001",
+  "technology": "Memcached",
+  "aliases": ["Memcache"],
+  "category": "cache",
+  "dfd_role": "data_store",
+  "default_zone": "application-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Memcached)]",
+  "typical_protocols": ["TCP/11211"],
+  "related_pattern_ids": [],
+  "description": "High-performance distributed memory object caching system for speeding up dynamic web applications by alleviating database load"
+}

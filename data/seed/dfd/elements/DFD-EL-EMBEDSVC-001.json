@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-EMBEDSVC-001",
+  "technology": "Embedding Service",
+  "aliases": ["Embedding API", "Vector Embedder"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Embedding Service)",
+  "typical_protocols": ["HTTPS/443", "REST"],
+  "related_pattern_ids": [],
+  "description": "Service that converts text, images, or other data into vector embeddings for similarity search"
+}

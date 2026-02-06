@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-VENDOR-001",
+  "technology": "Third-Party Vendor",
+  "aliases": ["Vendor", "Supplier", "Service Provider"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[Third-Party Vendor]",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "External vendor or supplier providing products, services, or integrations that interact with the system"
+}

@@ -374,7 +374,7 @@
       "control_id": "MIT-003",
       "title": "Implement Persisted Queries with Automatic Persisted Queries (APQ)",
       "description": "Restrict GraphQL API to only execute pre-approved, allowlisted queries using Apollo Automatic Persisted Queries or manual query allowlisting. Clients send query hash instead of full query string. Server executes only if hash matches allowlisted query. This completely prevents ad-hoc malicious queries while maintaining developer experience. Reduces attack surface by 100% for production APIs.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "Medium",
       "code_example": {
         "language": "javascript",

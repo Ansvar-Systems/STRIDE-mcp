@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AZUREFUNC-001",
+  "technology": "Azure Functions",
+  "aliases": ["Azure Function App"],
+  "category": "cloud_service",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Azure Functions)",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Azure serverless compute platform for event-driven functions with multiple language support"
+}

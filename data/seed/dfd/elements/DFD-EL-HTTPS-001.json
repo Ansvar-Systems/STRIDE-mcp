@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-HTTPS-001",
+  "technology": "HTTPS",
+  "aliases": ["TLS", "SSL", "HTTPS Connection"],
+  "category": "data_flow",
+  "dfd_role": "data_flow",
+  "default_zone": "dmz",
+  "mermaid_shape": "stadium",
+  "mermaid_node_syntax": "([HTTPS])",
+  "typical_protocols": ["TLS 1.2/1.3", "TCP/443"],
+  "related_pattern_ids": [],
+  "description": "Encrypted HTTP communication channel using TLS for secure data transmission between clients and servers"
+}

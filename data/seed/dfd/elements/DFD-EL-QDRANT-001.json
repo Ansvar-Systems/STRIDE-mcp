@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-QDRANT-001",
+  "technology": "Qdrant",
+  "aliases": ["Qdrant Vector DB"],
+  "category": "ai_ml",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Qdrant)]",
+  "typical_protocols": ["TCP/6333", "gRPC/6334", "REST"],
+  "related_pattern_ids": [],
+  "description": "High-performance vector similarity search engine with filtering and payload support"
+}

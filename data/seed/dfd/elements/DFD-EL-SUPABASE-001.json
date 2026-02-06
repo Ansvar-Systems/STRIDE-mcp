@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-SUPABASE-001",
+  "technology": "Supabase",
+  "aliases": ["Supabase DB"],
+  "category": "database",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Supabase)]",
+  "typical_protocols": ["HTTPS/443", "PostgreSQL Wire Protocol"],
+  "related_pattern_ids": [],
+  "description": "Open-source Firebase alternative providing hosted PostgreSQL with real-time subscriptions, auth, and auto-generated APIs"
+}

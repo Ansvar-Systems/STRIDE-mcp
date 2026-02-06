@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ADMIN-001",
+  "technology": "Administrator",
+  "aliases": ["Admin", "SysAdmin", "Operator", "DevOps"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[Administrator]",
+  "typical_protocols": ["HTTPS/443", "SSH/22"],
+  "related_pattern_ids": [],
+  "description": "Privileged user responsible for system administration, configuration management, and operational maintenance"
+}

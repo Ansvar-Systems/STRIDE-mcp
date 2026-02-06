@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-SPLUNK-001",
+  "technology": "Splunk",
+  "aliases": ["Splunk Enterprise", "Splunk Cloud"],
+  "category": "monitoring",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Splunk)",
+  "typical_protocols": ["TCP/8089 Management", "TCP/9997 Forwarder"],
+  "related_pattern_ids": [],
+  "description": "Enterprise platform for searching, monitoring, and analyzing machine-generated data and security events"
+}

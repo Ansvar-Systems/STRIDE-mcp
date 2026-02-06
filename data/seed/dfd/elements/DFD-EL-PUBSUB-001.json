@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-PUBSUB-001",
+  "technology": "Google Pub/Sub",
+  "aliases": ["GCP Pub/Sub", "Cloud Pub/Sub"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Google Pub/Sub)",
+  "typical_protocols": ["HTTPS/443", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Google Cloud asynchronous messaging service for event-driven systems with global message routing and exactly-once delivery"
+}

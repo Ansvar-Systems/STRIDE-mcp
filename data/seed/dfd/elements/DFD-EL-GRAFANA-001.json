@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-GRAFANA-001",
+  "technology": "Grafana",
+  "aliases": ["Grafana Dashboard"],
+  "category": "monitoring",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Grafana)",
+  "typical_protocols": ["HTTP/3000", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Open-source analytics and visualization platform for metrics, logs, and traces dashboards"
+}

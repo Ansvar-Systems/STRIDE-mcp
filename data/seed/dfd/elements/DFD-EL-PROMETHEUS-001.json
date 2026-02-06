@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-PROMETHEUS-001",
+  "technology": "Prometheus",
+  "aliases": ["Prom"],
+  "category": "monitoring",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Prometheus)",
+  "typical_protocols": ["HTTP/9090"],
+  "related_pattern_ids": [],
+  "description": "Open-source metrics-based monitoring and alerting system with time-series database and PromQL"
+}

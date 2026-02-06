@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-REDISCACHE-001",
+  "technology": "Redis Cache",
+  "aliases": ["Redis", "Elasticache Redis"],
+  "category": "cache",
+  "dfd_role": "data_store",
+  "default_zone": "application-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Redis Cache)]",
+  "typical_protocols": ["TCP/6379", "RESP"],
+  "related_pattern_ids": [],
+  "description": "In-memory key-value store deployed as a caching layer to reduce database load and improve application response times"
+}

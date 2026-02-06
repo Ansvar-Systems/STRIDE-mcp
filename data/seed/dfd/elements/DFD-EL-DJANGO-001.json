@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-DJANGO-001",
+  "technology": "Django",
+  "aliases": ["Django REST", "DRF"],
+  "category": "web_application",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Django)",
+  "typical_protocols": ["HTTP/8000", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "High-level Python web framework with ORM, authentication, and admin interface for rapid development"
+}

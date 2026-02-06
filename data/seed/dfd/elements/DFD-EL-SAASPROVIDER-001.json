@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-SAASPROVIDER-001",
+  "technology": "SaaS Provider",
+  "aliases": ["Third-Party SaaS", "Cloud SaaS", "External Service"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[SaaS Provider]",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Third-party cloud-hosted software service consumed via API or web interface as part of the system architecture"
+}

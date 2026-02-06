@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-MICROSERVICES-001",
+  "name": "Cloud-Native Microservices",
+  "architecture_type": "microservices",
+  "description": "A cloud-native microservices architecture with API gateway, service mesh, and independently deployable services. Uses containerization and orchestration platforms like Kubernetes, with clear separation between external traffic, application logic, and data persistence layers.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["end users", "third-party APIs", "mobile clients", "web browsers", "external webhooks"],
+      "description": "All traffic originating from outside the organizational boundary, including end-user devices, partner integrations, and public internet sources."
+    },
+    {
+      "name": "dmz",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["API gateway", "load balancer", "CDN", "WAF", "reverse proxy", "rate limiter"],
+      "description": "The demilitarized zone handling ingress traffic. Contains edge components that terminate external connections, enforce rate limits, and perform initial request validation before forwarding to internal services."
+    },
+    {
+      "name": "application-tier",
+      "trust_level": "trusted",
+      "typical_elements": ["microservices", "service mesh", "message queues", "cache layers", "internal APIs", "sidecar proxies"],
+      "description": "The core application tier containing business logic microservices. Services communicate via service mesh with mTLS, using asynchronous messaging for decoupled operations. Each service runs in isolated containers with defined resource boundaries."
+    },
+    {
+      "name": "data-tier",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["relational databases", "NoSQL stores", "object storage", "search indices", "data warehouses"],
+      "description": "The data persistence layer containing all stateful components. Access is restricted to application-tier services only, with encryption at rest enforced and connection pooling to limit exposure."
+    },
+    {
+      "name": "management",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["CI/CD pipelines", "monitoring", "logging", "secret management", "container registry", "orchestration control plane"],
+      "description": "The management and operations plane containing infrastructure tooling, observability stack, secret vaults, and deployment pipelines. Strictly access-controlled with privileged credentials."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to DMZ",
+      "from_zone": "external",
+      "to_zone": "dmz",
+      "controls": ["Web Application Firewall (WAF)", "Rate limiting and throttling", "TLS 1.3 termination", "DDoS protection", "IP reputation filtering", "Bot detection"]
+    },
+    {
+      "name": "DMZ to Application Tier",
+      "from_zone": "dmz",
+      "to_zone": "application-tier",
+      "controls": ["API authentication (OAuth 2.0 / API keys)", "JWT validation and claims verification", "Request schema validation", "Service mesh ingress policies", "OpenAPI contract enforcement"]
+    },
+    {
+      "name": "Application Tier to Data Tier",
+      "from_zone": "application-tier",
+      "to_zone": "data-tier",
+      "controls": ["Connection pooling with credential rotation", "Encryption at rest (AES-256)", "Network policies restricting DB access", "Parameterized queries / ORM enforcement", "Audit logging of data access"]
+    },
+    {
+      "name": "Application Tier to Management",
+      "from_zone": "application-tier",
+      "to_zone": "management",
+      "controls": ["Mutual TLS (mTLS)", "Role-Based Access Control (RBAC)", "Kubernetes RBAC and network policies", "Audit trail for all management operations", "Service account least-privilege"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        user[End User / Browser]\n        mobile[Mobile Client]\n        thirdparty[Third-Party API]\n    end\n    subgraph dmz[\"DMZ (Semi-Trusted)\"]\n        waf[WAF / DDoS Protection]\n        gw(API Gateway)\n        lb(Load Balancer)\n    end\n    subgraph app[\"Application Tier (Trusted)\"]\n        svc1(Service A)\n        svc2(Service B)\n        svc3(Service C)\n        mq([Message Queue])\n        cache[(Cache)]\n    end\n    subgraph data[\"Data Tier (Highly Trusted)\"]\n        db1[(Database A)]\n        db2[(Database B)]\n        store[(Object Storage)]\n    end\n    subgraph mgmt[\"Management (Highly Trusted)\"]\n        monitor(Monitoring)\n        vault(Secret Management)\n        cicd(CI/CD Pipeline)\n    end\n    user -->|HTTPS/TLS 1.3| waf\n    mobile -->|HTTPS/TLS 1.3| waf\n    thirdparty -->|HTTPS| waf\n    waf --> lb\n    lb --> gw\n    gw -->|JWT Auth| svc1\n    gw -->|JWT Auth| svc2\n    gw -->|JWT Auth| svc3\n    svc1 <-->|mTLS| svc2\n    svc2 <-->|mTLS| svc3\n    svc1 --> mq\n    mq --> svc3\n    svc1 --> cache\n    svc1 -->|SQL/TLS| db1\n    svc2 -->|SQL/TLS| db2\n    svc3 -->|S3 API| store\n    svc1 -.->|mTLS| monitor\n    svc1 -.->|mTLS| vault\n    cicd -.->|Deploy| app"
+}

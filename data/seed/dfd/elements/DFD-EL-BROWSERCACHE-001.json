@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-BROWSERCACHE-001",
+  "technology": "Browser Cache",
+  "aliases": ["Client Cache", "Local Storage"],
+  "category": "cache",
+  "dfd_role": "data_store",
+  "default_zone": "external",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Browser Cache)]",
+  "typical_protocols": ["HTTP Cache-Control"],
+  "related_pattern_ids": [],
+  "description": "Client-side storage mechanism in web browsers that caches HTTP responses, static assets, and application data locally"
+}

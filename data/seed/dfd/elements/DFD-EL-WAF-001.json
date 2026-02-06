@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-WAF-001",
+  "technology": "Web Application Firewall",
+  "aliases": ["WAF", "AWS WAF", "Azure WAF", "ModSecurity"],
+  "category": "networking",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Web Application Firewall)",
+  "typical_protocols": ["HTTP", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Security layer filtering and monitoring HTTP traffic to protect web applications from common exploits and attacks"
+}

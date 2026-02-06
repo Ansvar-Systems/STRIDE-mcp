@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-LANGCHAIN-001",
+  "technology": "LangChain",
+  "aliases": ["LangChain Framework", "LangGraph"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(LangChain)",
+  "typical_protocols": ["In-process", "REST"],
+  "related_pattern_ids": [],
+  "description": "Framework for building LLM-powered applications with chains, agents, and retrieval augmentation"
+}

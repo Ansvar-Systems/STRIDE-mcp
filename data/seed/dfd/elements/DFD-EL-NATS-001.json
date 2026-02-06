@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-NATS-001",
+  "technology": "NATS",
+  "aliases": ["NATS.io", "NATS JetStream"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(NATS)",
+  "typical_protocols": ["TCP/4222", "NATS Protocol"],
+  "related_pattern_ids": [],
+  "description": "Lightweight cloud-native messaging system with JetStream persistence for at-least-once delivery and stream processing"
+}

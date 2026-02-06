@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ANSIBLE-001",
+  "technology": "Ansible",
+  "aliases": ["Red Hat Ansible", "Ansible Tower", "AWX"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Ansible)",
+  "typical_protocols": ["SSH/22", "WinRM/5986"],
+  "related_pattern_ids": [],
+  "description": "Agentless automation platform for configuration management, application deployment, and IT orchestration"
+}

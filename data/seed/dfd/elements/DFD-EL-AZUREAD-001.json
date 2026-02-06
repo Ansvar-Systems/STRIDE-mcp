@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AZUREAD-001",
+  "technology": "Microsoft Entra ID",
+  "aliases": ["Azure AD", "Azure Active Directory", "AAD"],
+  "category": "identity_provider",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Microsoft Entra ID)",
+  "typical_protocols": ["HTTPS/443", "OAuth 2.0", "OIDC", "SAML"],
+  "related_pattern_ids": [],
+  "description": "Microsoft cloud-based identity and access management service providing SSO, MFA, and conditional access for enterprise environments"
+}

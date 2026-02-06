@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MQTT-001",
+  "technology": "MQTT Broker",
+  "aliases": ["Mosquitto", "EMQX", "HiveMQ"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(MQTT Broker)",
+  "typical_protocols": ["TCP/1883", "MQTT/TLS 8883"],
+  "related_pattern_ids": [],
+  "description": "Lightweight publish-subscribe messaging protocol broker designed for IoT devices and constrained networks"
+}

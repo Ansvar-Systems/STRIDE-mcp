@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-NGINX-001",
+  "technology": "NGINX",
+  "aliases": ["nginx", "Engine-X"],
+  "category": "api_gateway",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(NGINX)",
+  "typical_protocols": ["HTTP/80", "HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "High-performance web server, reverse proxy, and load balancer commonly used as an API gateway and ingress controller"
+}

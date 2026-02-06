@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ZEROMQ-001",
+  "technology": "ZeroMQ",
+  "aliases": ["0MQ", "\u00d8MQ"],
+  "category": "message_broker",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(ZeroMQ)",
+  "typical_protocols": ["TCP/inproc", "ZMTP"],
+  "related_pattern_ids": [],
+  "description": "High-performance asynchronous messaging library providing embeddable sockets for distributed and concurrent applications"
+}

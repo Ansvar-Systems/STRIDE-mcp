@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-SAMLIDP-001",
+  "technology": "SAML Identity Provider",
+  "aliases": ["SAML IdP", "ADFS"],
+  "category": "identity_provider",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(SAML IdP)",
+  "typical_protocols": ["HTTPS/443", "SAML 2.0"],
+  "related_pattern_ids": [],
+  "description": "Identity provider implementing SAML 2.0 protocol for federated single sign-on across enterprise applications and service providers"
+}

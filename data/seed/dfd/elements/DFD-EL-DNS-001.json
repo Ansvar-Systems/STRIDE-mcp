@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-DNS-001",
+  "technology": "DNS Server",
+  "aliases": ["DNS", "Route 53", "Azure DNS", "Cloud DNS"],
+  "category": "networking",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(DNS Server)",
+  "typical_protocols": ["UDP/53", "TCP/53", "DoH/443"],
+  "related_pattern_ids": [],
+  "description": "Domain Name System server providing name resolution, domain management, and DNS-based traffic routing"
+}

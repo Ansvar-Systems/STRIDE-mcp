@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ISTIO-001",
+  "technology": "Istio",
+  "aliases": ["Istio Service Mesh", "Istio Proxy"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Istio)",
+  "typical_protocols": ["mTLS", "gRPC", "HTTP/2"],
+  "related_pattern_ids": [],
+  "description": "Service mesh platform providing traffic management, security, and observability for microservices architectures"
+}

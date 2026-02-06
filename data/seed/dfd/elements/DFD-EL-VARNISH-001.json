@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-VARNISH-001",
+  "technology": "Varnish Cache",
+  "aliases": ["Varnish"],
+  "category": "cache",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Varnish Cache)",
+  "typical_protocols": ["HTTP/80", "HTTP/443"],
+  "related_pattern_ids": [],
+  "description": "HTTP accelerator and reverse proxy that caches content in memory to dramatically speed up web delivery"
+}

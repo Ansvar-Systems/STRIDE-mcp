@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-SPRINGBOOT-001",
+  "technology": "Spring Boot",
+  "aliases": ["Spring", "Spring MVC", "Spring Framework"],
+  "category": "web_application",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Spring Boot)",
+  "typical_protocols": ["HTTP/8080", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Java-based enterprise application framework for building production-ready microservices and web APIs"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MOBILEAPP-001",
+  "technology": "Mobile Application",
+  "aliases": ["Mobile App", "iOS App", "Android App", "Native App"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[Mobile Application]",
+  "typical_protocols": ["HTTPS/443", "WebSocket"],
+  "related_pattern_ids": [],
+  "description": "Native or hybrid mobile application running on user devices and communicating with backend services"
+}

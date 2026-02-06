@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MINIO-001",
+  "technology": "MinIO",
+  "aliases": ["MinIO Object Storage"],
+  "category": "storage",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(MinIO)]",
+  "typical_protocols": ["TCP/9000", "S3 API"],
+  "related_pattern_ids": [],
+  "description": "High-performance object storage server compatible with Amazon S3 API for private cloud and edge deployments"
+}

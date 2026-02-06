@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MQTTFLOW-001",
+  "technology": "MQTT",
+  "aliases": ["MQTT Protocol", "IoT Messaging"],
+  "category": "data_flow",
+  "dfd_role": "data_flow",
+  "default_zone": "external",
+  "mermaid_shape": "stadium",
+  "mermaid_node_syntax": "([MQTT])",
+  "typical_protocols": ["TCP/1883", "TLS/8883"],
+  "related_pattern_ids": [],
+  "description": "Lightweight publish-subscribe messaging protocol designed for constrained devices and low-bandwidth IoT networks"
+}

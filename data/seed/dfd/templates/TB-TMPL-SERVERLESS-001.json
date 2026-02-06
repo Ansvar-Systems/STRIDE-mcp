@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-SERVERLESS-001",
+  "name": "Serverless Architecture",
+  "architecture_type": "serverless",
+  "description": "A serverless (Function-as-a-Service) architecture leveraging cloud-managed compute, storage, and integration services. Functions are triggered by events from API gateways, message queues, or storage changes. The cloud provider manages infrastructure, scaling, and patching, shifting the security focus to IAM policies, function isolation, and data protection.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["end users", "web browsers", "mobile clients", "IoT devices", "external webhooks"],
+      "description": "All external actors and event sources including end users, partner systems, and automated webhook triggers originating from outside the cloud account boundary."
+    },
+    {
+      "name": "edge",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["CDN", "API Gateway", "CloudFront", "custom authorizer", "request validator"],
+      "description": "The cloud edge layer providing content delivery, API management, request routing, and initial authorization. Managed services handle TLS, throttling, and request transformation."
+    },
+    {
+      "name": "compute",
+      "trust_level": "trusted",
+      "typical_elements": ["Lambda functions", "Step Functions", "Cloud Functions", "event processors", "container tasks"],
+      "description": "The ephemeral compute layer where business logic executes in isolated function invocations. Each function has a defined IAM role with least-privilege access to other cloud resources."
+    },
+    {
+      "name": "data-tier",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["DynamoDB", "S3 buckets", "RDS", "Aurora", "Elasticache", "secrets manager"],
+      "description": "The managed data persistence layer including NoSQL tables, object storage, relational databases, and caching layers. All data is encrypted at rest using customer-managed or service-managed keys."
+    },
+    {
+      "name": "managed-services",
+      "trust_level": "trusted",
+      "typical_elements": ["SQS", "SNS", "EventBridge", "Cognito", "CloudWatch", "X-Ray"],
+      "description": "Cloud-managed integration and observability services used for asynchronous messaging, user authentication, monitoring, and tracing. Access governed by IAM policies."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to Edge",
+      "from_zone": "external",
+      "to_zone": "edge",
+      "controls": ["CDN with WAF rules", "API Gateway throttling", "Custom authorizer (Lambda)", "Request validation schemas", "TLS 1.2+ enforcement"]
+    },
+    {
+      "name": "Edge to Compute",
+      "from_zone": "edge",
+      "to_zone": "compute",
+      "controls": ["IAM execution roles", "Event payload validation", "VPC placement (optional)", "Function concurrency limits", "Environment variable encryption"]
+    },
+    {
+      "name": "Compute to Data Tier",
+      "from_zone": "compute",
+      "to_zone": "data-tier",
+      "controls": ["IAM resource policies", "Encryption at rest (KMS)", "VPC endpoints (private links)", "Fine-grained access control (DynamoDB/S3 policies)", "Audit via CloudTrail"]
+    },
+    {
+      "name": "Compute to Managed Services",
+      "from_zone": "compute",
+      "to_zone": "managed-services",
+      "controls": ["IAM policies per function", "Resource-based policies", "Encryption in transit", "Dead-letter queues for failed events"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        user[End User / Browser]\n        mobile[Mobile Client]\n        webhook[External Webhook]\n    end\n    subgraph edge[\"Edge (Semi-Trusted)\"]\n        cdn(CDN / WAF)\n        apigw(API Gateway)\n        authz(Custom Authorizer)\n    end\n    subgraph compute[\"Compute (Trusted)\"]\n        fn1(Function A)\n        fn2(Function B)\n        fn3(Function C)\n        step(Step Functions / Orchestrator)\n    end\n    subgraph data[\"Data Tier (Highly Trusted)\"]\n        dynamo[(DynamoDB)]\n        s3[(S3 Bucket)]\n        rds[(RDS / Aurora)]\n    end\n    subgraph managed[\"Managed Services (Trusted)\"]\n        sqs([SQS Queue])\n        sns([SNS Topic])\n        cognito(Cognito User Pool)\n        cw(CloudWatch / X-Ray)\n    end\n    user -->|HTTPS| cdn\n    mobile -->|HTTPS| cdn\n    cdn --> apigw\n    webhook -->|HTTPS| apigw\n    apigw --> authz\n    authz -->|IAM Role| fn1\n    apigw -->|IAM Role| fn2\n    sqs -->|Event Trigger| fn3\n    fn1 --> step\n    step --> fn2\n    step --> fn3\n    fn1 -->|IAM Policy| dynamo\n    fn2 -->|IAM Policy| s3\n    fn3 -->|IAM Policy| rds\n    fn1 --> sqs\n    fn2 --> sns\n    fn1 -.-> cw\n    apigw -.-> cognito"
+}

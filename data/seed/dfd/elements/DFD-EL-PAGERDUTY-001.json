@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-PAGERDUTY-001",
+  "technology": "PagerDuty",
+  "aliases": ["PD"],
+  "category": "monitoring",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[PagerDuty]",
+  "typical_protocols": ["HTTPS/443", "Webhooks"],
+  "related_pattern_ids": [],
+  "description": "Incident management platform for real-time alerting, on-call scheduling, and incident response"
+}

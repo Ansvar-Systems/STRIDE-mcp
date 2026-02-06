@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-FEATURESTORE-001",
+  "technology": "Feature Store",
+  "aliases": ["Feast", "Tecton", "Feature Platform"],
+  "category": "ai_ml",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Feature Store)]",
+  "typical_protocols": ["gRPC", "REST", "SQL"],
+  "related_pattern_ids": [],
+  "description": "Centralized store for managing, serving, and sharing ML features across training and inference"
+}

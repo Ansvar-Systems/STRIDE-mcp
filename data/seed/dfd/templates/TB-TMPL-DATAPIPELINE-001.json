@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-DATAPIPELINE-001",
+  "name": "Data Pipeline/ETL",
+  "architecture_type": "data-pipeline",
+  "description": "A data pipeline and ETL (Extract, Transform, Load) architecture for ingesting data from diverse sources, transforming it through processing stages, and loading it into a data warehouse for analytics. Security considerations focus on data classification throughout the pipeline, PII handling during transformation, job isolation to prevent cross-contamination, and strict read/write separation between warehouse consumers and producers.",
+  "zones": [
+    {
+      "name": "data-sources",
+      "trust_level": "untrusted",
+      "typical_elements": ["external APIs", "FTP/SFTP feeds", "SaaS exports", "IoT streams", "partner data feeds", "web scraping"],
+      "description": "External and internal data sources providing raw data to the pipeline. Data quality, format, and trustworthiness vary significantly across sources. May include PII, sensitive business data, or potentially malicious content."
+    },
+    {
+      "name": "ingestion",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["data connectors", "file receivers", "stream consumers", "schema validator", "quarantine storage", "data catalog entry point"],
+      "description": "The data ingestion layer that extracts data from sources, performs initial validation and schema checks, and stages raw data for processing. Handles diverse formats (CSV, JSON, Parquet, XML) and enforces data quality gates."
+    },
+    {
+      "name": "processing",
+      "trust_level": "trusted",
+      "typical_elements": ["ETL jobs", "Spark clusters", "dbt models", "data quality framework", "PII detection", "transformation pipelines"],
+      "description": "The data transformation and processing tier where raw data is cleaned, enriched, aggregated, and transformed according to business rules. Includes PII detection and masking, data quality checks, and lineage tracking."
+    },
+    {
+      "name": "warehouse",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["data warehouse", "data lakehouse", "curated datasets", "dimension tables", "fact tables", "materialized views"],
+      "description": "The curated data warehouse containing clean, modeled, and governed datasets ready for consumption. Implements column-level security, data masking for sensitive fields, and comprehensive access auditing."
+    },
+    {
+      "name": "analytics",
+      "trust_level": "trusted",
+      "typical_elements": ["BI tools", "dashboards", "reporting engine", "ad-hoc query tools", "data science notebooks", "embedded analytics"],
+      "description": "The analytics consumption tier where business users and data analysts access curated data through BI tools, dashboards, and ad-hoc query interfaces. Access is read-only with role-based data visibility."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Sources to Ingestion",
+      "from_zone": "data-sources",
+      "to_zone": "ingestion",
+      "controls": ["Schema validation against registered contracts", "Data quality checks (completeness, format)", "Malware scanning for file-based sources", "Source authentication (API keys, SFTP credentials)", "Data classification tagging at ingestion"]
+    },
+    {
+      "name": "Ingestion to Processing",
+      "from_zone": "ingestion",
+      "to_zone": "processing",
+      "controls": ["Job isolation (container/VM-level)", "Resource quotas per pipeline", "Lineage metadata propagation", "Failed record quarantine", "Encryption in transit between stages"]
+    },
+    {
+      "name": "Processing to Warehouse",
+      "from_zone": "processing",
+      "to_zone": "warehouse",
+      "controls": ["Write-only permissions for ETL service accounts", "Data quality gate (must pass all checks)", "Audit logging of all writes", "Schema evolution controls", "PII masking verification before load"]
+    },
+    {
+      "name": "Warehouse to Analytics",
+      "from_zone": "warehouse",
+      "to_zone": "analytics",
+      "controls": ["Read-only access for analytics users", "Column-level security (sensitive field masking)", "Row-level security (department/region scoping)", "Query audit logging", "Result set size limits"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph sources[\"Data Sources (Untrusted)\"]\n        api_src[External APIs]\n        file_src[SFTP / File Feeds]\n        saas_src[SaaS Exports]\n        stream_src[Event Streams]\n    end\n    subgraph ingest[\"Ingestion (Semi-Trusted)\"]\n        connector(Data Connectors)\n        validator(Schema Validator)\n        quarantine[(Quarantine Storage)]\n        staging[(Raw / Staging Layer)]\n    end\n    subgraph process[\"Processing (Trusted)\"]\n        etl(ETL / Transformation Jobs)\n        quality(Data Quality Framework)\n        pii(PII Detection / Masking)\n        lineage(Lineage Tracker)\n    end\n    subgraph wh[\"Warehouse (Highly Trusted)\"]\n        dwh[(Data Warehouse)]\n        curated[(Curated Datasets)]\n        dims[(Dimension Tables)]\n        facts[(Fact Tables)]\n    end\n    subgraph analytics_tier[\"Analytics (Trusted)\"]\n        bi(BI / Dashboard Tool)\n        reports(Reporting Engine)\n        notebook(Data Science Notebook)\n        adhoc(Ad-Hoc Query Tool)\n    end\n    api_src -->|API Pull| connector\n    file_src -->|SFTP| connector\n    saas_src -->|Export| connector\n    stream_src -->|Subscribe| connector\n    connector --> validator\n    validator -->|Valid| staging\n    validator -->|Invalid| quarantine\n    staging --> etl\n    etl --> quality\n    quality --> pii\n    pii --> lineage\n    etl -->|Load| dwh\n    dwh --> curated\n    dwh --> dims\n    dwh --> facts\n    curated -->|Read-Only| bi\n    curated -->|Read-Only| reports\n    curated -->|Read-Only| notebook\n    curated -->|Read-Only| adhoc"
+}

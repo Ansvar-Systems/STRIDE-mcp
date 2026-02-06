@@ -169,8 +169,95 @@ CREATE TABLE IF NOT EXISTS metadata (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- DFD Elements table (technology classification for data flow diagrams)
+CREATE TABLE IF NOT EXISTS dfd_elements (
+  id TEXT PRIMARY KEY,
+  technology TEXT NOT NULL,
+  aliases TEXT NOT NULL DEFAULT '[]',  -- JSON array of alternative names
+  category TEXT NOT NULL,
+  dfd_role TEXT NOT NULL,
+  default_zone TEXT NOT NULL,
+  mermaid_shape TEXT NOT NULL,
+  mermaid_node_syntax TEXT NOT NULL,
+  typical_protocols TEXT NOT NULL DEFAULT '[]',  -- JSON array
+  related_pattern_ids TEXT NOT NULL DEFAULT '[]',  -- JSON array of STRIDE pattern IDs
+  description TEXT NOT NULL,
+  full_json TEXT NOT NULL,
+  CHECK (dfd_role IN ('external_entity', 'process', 'data_store', 'data_flow')),
+  CHECK (category IN ('database', 'cache', 'message_broker', 'api_gateway', 'identity_provider', 'ai_ml', 'cloud_service', 'web_application', 'monitoring', 'infrastructure', 'storage', 'networking', 'external_entity', 'data_flow'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_dfd_category ON dfd_elements(category);
+CREATE INDEX IF NOT EXISTS idx_dfd_role ON dfd_elements(dfd_role);
+CREATE INDEX IF NOT EXISTS idx_dfd_technology ON dfd_elements(technology);
+
+-- FTS5 for DFD elements
+CREATE VIRTUAL TABLE IF NOT EXISTS dfd_elements_fts USING fts5(
+  id UNINDEXED,
+  technology,
+  aliases,
+  category,
+  description,
+  content='dfd_elements',
+  content_rowid='rowid'
+);
+
+CREATE TRIGGER IF NOT EXISTS dfd_elements_fts_insert AFTER INSERT ON dfd_elements BEGIN
+  INSERT INTO dfd_elements_fts(rowid, id, technology, aliases, category, description)
+  VALUES (new.rowid, new.id, new.technology, new.aliases, new.category, new.description);
+END;
+
+CREATE TRIGGER IF NOT EXISTS dfd_elements_fts_delete AFTER DELETE ON dfd_elements BEGIN
+  DELETE FROM dfd_elements_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER IF NOT EXISTS dfd_elements_fts_update AFTER UPDATE ON dfd_elements BEGIN
+  DELETE FROM dfd_elements_fts WHERE rowid = old.rowid;
+  INSERT INTO dfd_elements_fts(rowid, id, technology, aliases, category, description)
+  VALUES (new.rowid, new.id, new.technology, new.aliases, new.category, new.description);
+END;
+
+-- Trust Boundary Templates table
+CREATE TABLE IF NOT EXISTS trust_boundary_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  architecture_type TEXT NOT NULL,
+  description TEXT NOT NULL,
+  zones TEXT NOT NULL DEFAULT '[]',  -- JSON array of TrustZone objects
+  boundaries TEXT NOT NULL DEFAULT '[]',  -- JSON array of TrustBoundary objects
+  mermaid_template TEXT NOT NULL,
+  full_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tbt_architecture ON trust_boundary_templates(architecture_type);
+
+-- FTS5 for trust boundary templates
+CREATE VIRTUAL TABLE IF NOT EXISTS trust_boundary_templates_fts USING fts5(
+  id UNINDEXED,
+  name,
+  architecture_type,
+  description,
+  content='trust_boundary_templates',
+  content_rowid='rowid'
+);
+
+CREATE TRIGGER IF NOT EXISTS tbt_fts_insert AFTER INSERT ON trust_boundary_templates BEGIN
+  INSERT INTO trust_boundary_templates_fts(rowid, id, name, architecture_type, description)
+  VALUES (new.rowid, new.id, new.name, new.architecture_type, new.description);
+END;
+
+CREATE TRIGGER IF NOT EXISTS tbt_fts_delete AFTER DELETE ON trust_boundary_templates BEGIN
+  DELETE FROM trust_boundary_templates_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER IF NOT EXISTS tbt_fts_update AFTER UPDATE ON trust_boundary_templates BEGIN
+  DELETE FROM trust_boundary_templates_fts WHERE rowid = old.rowid;
+  INSERT INTO trust_boundary_templates_fts(rowid, id, name, architecture_type, description)
+  VALUES (new.rowid, new.id, new.name, new.architecture_type, new.description);
+END;
+
 -- Insert initial metadata
-INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '1.0.0');
+INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '1.1.0');
 INSERT OR IGNORE INTO metadata (key, value) VALUES ('last_build', datetime('now'));
 `;
 

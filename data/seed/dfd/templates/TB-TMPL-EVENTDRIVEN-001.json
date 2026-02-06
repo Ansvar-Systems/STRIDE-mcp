@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-EVENTDRIVEN-001",
+  "name": "Event-Driven Architecture",
+  "architecture_type": "event-driven",
+  "description": "An event-driven architecture using asynchronous messaging as the primary integration pattern. Producers publish events to a central message broker (e.g., Kafka, RabbitMQ, NATS), and consumers process them independently. This decoupled pattern enables scalability and resilience but introduces security considerations around message integrity, consumer authorization, and event replay attacks.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["end users", "external APIs", "webhook sources", "partner systems", "IoT devices"],
+      "description": "External event producers and API consumers that generate events or trigger workflows from outside the organizational boundary. All input is untrusted and must be validated before entering the event pipeline."
+    },
+    {
+      "name": "ingestion",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["API gateway", "webhook receiver", "schema registry", "event validator", "dead-letter queue"],
+      "description": "The ingestion layer that receives external events, validates schemas, authenticates producers, and publishes validated events to the internal event bus. Acts as a buffer between untrusted sources and the trusted event backbone."
+    },
+    {
+      "name": "event-bus",
+      "trust_level": "trusted",
+      "typical_elements": ["message broker", "event stream", "topic partitions", "schema registry", "event store"],
+      "description": "The central event backbone providing durable, ordered event delivery. Contains topics/subjects organized by domain, with schema enforcement and retention policies. The source of truth for all system events."
+    },
+    {
+      "name": "processors",
+      "trust_level": "trusted",
+      "typical_elements": ["event consumers", "stream processors", "saga orchestrators", "CQRS handlers", "projectors"],
+      "description": "Event processing services that consume events, execute business logic, and produce derived events or state changes. Includes both simple consumers and complex event processing (CEP) engines, saga coordinators, and CQRS read-model projectors."
+    },
+    {
+      "name": "data-tier",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["event store", "databases", "read models", "materialized views", "audit log", "search indices"],
+      "description": "The data persistence layer containing event stores, aggregate state databases, read-model projections, and audit logs. All writes come from authorized processors and are fully auditable via the event stream."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to Ingestion",
+      "from_zone": "external",
+      "to_zone": "ingestion",
+      "controls": ["Schema validation against registry", "Producer authentication (API keys / OAuth)", "Payload size limits", "Rate limiting per producer", "TLS encryption"]
+    },
+    {
+      "name": "Ingestion to Event Bus",
+      "from_zone": "ingestion",
+      "to_zone": "event-bus",
+      "controls": ["Message signing (HMAC / digital signatures)", "Schema compatibility checks", "Topic-level ACLs", "Idempotency enforcement", "Correlation ID injection"]
+    },
+    {
+      "name": "Event Bus to Processors",
+      "from_zone": "event-bus",
+      "to_zone": "processors",
+      "controls": ["Consumer group authentication", "Topic subscription authorization", "Message decryption (field-level)", "Consumer offset management", "Poison message handling"]
+    },
+    {
+      "name": "Processors to Data Tier",
+      "from_zone": "processors",
+      "to_zone": "data-tier",
+      "controls": ["Transactional outbox pattern", "Encryption at rest", "Write authorization per aggregate", "Optimistic concurrency control", "Comprehensive audit logging"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        user[End User]\n        webhook[Webhook Source]\n        partner[Partner System]\n    end\n    subgraph ingestion_layer[\"Ingestion (Semi-Trusted)\"]\n        apigw(API Gateway)\n        receiver(Webhook Receiver)\n        validator(Schema Validator)\n        dlq([Dead-Letter Queue])\n    end\n    subgraph bus[\"Event Bus (Trusted)\"]\n        broker([Message Broker])\n        topic1([Topic: Orders])\n        topic2([Topic: Payments])\n        topic3([Topic: Notifications])\n        schema(Schema Registry)\n    end\n    subgraph processors_tier[\"Processors (Trusted)\"]\n        consumer1(Order Processor)\n        consumer2(Payment Processor)\n        consumer3(Notification Service)\n        saga(Saga Orchestrator)\n    end\n    subgraph data[\"Data Tier (Highly Trusted)\"]\n        eventstore[(Event Store)]\n        db[(Aggregate DB)]\n        readmodel[(Read Model)]\n        audit[(Audit Log)]\n    end\n    user -->|HTTPS| apigw\n    webhook -->|HTTPS| receiver\n    partner -->|HTTPS| apigw\n    apigw --> validator\n    receiver --> validator\n    validator -->|Valid| broker\n    validator -->|Invalid| dlq\n    broker --> topic1\n    broker --> topic2\n    broker --> topic3\n    schema -.-> broker\n    topic1 -->|Subscribe| consumer1\n    topic2 -->|Subscribe| consumer2\n    topic3 -->|Subscribe| consumer3\n    consumer1 --> saga\n    saga --> topic2\n    consumer1 -->|Write| db\n    consumer1 -->|Append| eventstore\n    consumer2 -->|Write| db\n    consumer3 -->|Project| readmodel\n    consumer1 -.->|Log| audit"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-GCS-001",
+  "technology": "Google Cloud Storage",
+  "aliases": ["GCS", "Cloud Storage"],
+  "category": "cloud_service",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Google Cloud Storage)]",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Google Cloud unified object storage for serving website content, archival, and disaster recovery"
+}

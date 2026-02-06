@@ -6,7 +6,7 @@
     "last_updated": "2026-02-04",
     "reviewed_by": [],
     "confidence_score": 10.0,
-    "validation_status": "production"
+    "validation_status": "validated"
   },
   "classification": {
     "stride_category": "Elevation of Privilege",
@@ -214,7 +214,7 @@
       "control_id": "MIT-001",
       "title": "Immediate Patching and Vulnerability Management Program",
       "description": "Establish critical vulnerability management process with maximum 24-48 hour patching SLA for VPN security updates. Maintain detailed asset inventory of all VPN appliances, versions, and configurations. Subscribe to vendor security bulletins and implement automated patch deployment. Test patches in staging environment before production deployment.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "Medium",
       "code_example": {
         "language": "bash",
@@ -252,7 +252,7 @@
       "control_id": "MIT-002",
       "title": "Implement Multi-Factor Authentication (MFA) and Hardware Tokens",
       "description": "Enforce multi-factor authentication on all VPN access using hardware security keys (YubiKey, Titan), TOTP (Time-based One-Time Password), or push-based authentication. Disable weaker MFA methods like SMS. Implement risk-based authentication that challenges users with unusual access patterns (new devices, different locations, odd hours). Use centralized authentication servers (Okta, Azure AD, Duo) with real-time threat intelligence integration.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "Medium",
       "code_example": {
         "language": "python",
@@ -290,7 +290,7 @@
       "control_id": "MIT-003",
       "title": "Network Segmentation and Zero-Trust Access Control",
       "description": "Implement zero-trust network architecture with micro-segmentation. VPN users should not have unrestricted access to all internal resources. Implement application-level access controls, least privilege principle, and separate network zones for different user roles. Monitor VPN traffic for anomalous access patterns.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "High",
       "code_example": {
         "language": "hcl",
@@ -325,7 +325,7 @@
       "control_id": "MIT-004",
       "title": "Continuous Monitoring and Anomaly Detection",
       "description": "Implement continuous VPN access monitoring with real-time anomaly detection. Monitor for suspicious patterns: unusual login times, impossible travel, access to sensitive systems, failed MFA attempts. Integrate threat intelligence to block access from known malicious IPs. Implement session timeout policies and disable idle sessions. Audit all VPN access with tamper-proof logging.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "Medium",
       "code_example": {
         "language": "python",

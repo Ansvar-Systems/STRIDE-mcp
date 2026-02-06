@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MILVUS-001",
+  "technology": "Milvus",
+  "aliases": ["Milvus Vector DB", "Zilliz"],
+  "category": "ai_ml",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Milvus)]",
+  "typical_protocols": ["TCP/19530", "gRPC"],
+  "related_pattern_ids": [],
+  "description": "Cloud-native vector database for scalable similarity search and AI workloads"
+}

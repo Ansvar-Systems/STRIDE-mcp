@@ -1,0 +1,71 @@
+{
+  "id": "TB-TMPL-HYBRID-001",
+  "name": "Hybrid Cloud",
+  "architecture_type": "hybrid-cloud",
+  "description": "A hybrid cloud architecture spanning both public cloud and on-premises infrastructure. Workloads are distributed based on data sensitivity, latency requirements, and regulatory constraints. Connectivity between environments is established via VPN tunnels or dedicated circuits (e.g., AWS Direct Connect, Azure ExpressRoute), with unified identity and policy management across both domains.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["end users", "web browsers", "mobile clients", "partner APIs", "SaaS integrations"],
+      "description": "External actors accessing the hybrid system from the public internet, including end users, partner systems, and SaaS applications that integrate with either the cloud or on-premises components."
+    },
+    {
+      "name": "cloud-dmz",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["cloud load balancer", "API gateway", "WAF", "CDN", "cloud firewall"],
+      "description": "The cloud-hosted perimeter layer handling public-facing traffic. Provides DDoS protection, TLS termination, and initial request filtering before traffic reaches cloud application services."
+    },
+    {
+      "name": "cloud-app",
+      "trust_level": "trusted",
+      "typical_elements": ["cloud VMs", "containers", "PaaS services", "serverless functions", "cloud message queues"],
+      "description": "The cloud application tier hosting workloads suited for elastic scaling, burst capacity, or cloud-native services. Connected to on-premises via secure tunnels for data that must remain on-premises."
+    },
+    {
+      "name": "on-premises",
+      "trust_level": "trusted",
+      "typical_elements": ["on-prem application servers", "legacy systems", "ERP", "Active Directory", "internal APIs", "HSMs"],
+      "description": "The on-premises infrastructure hosting sensitive workloads, legacy systems, and data subject to data residency or sovereignty requirements. Connected to cloud via encrypted tunnel."
+    },
+    {
+      "name": "shared-data",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["primary databases", "data warehouse", "backup systems", "encrypted storage", "HSM-protected key stores"],
+      "description": "The shared data layer accessible from both cloud and on-premises environments. Contains the most sensitive data with strict access controls, encryption, and comprehensive audit logging."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to Cloud DMZ",
+      "from_zone": "external",
+      "to_zone": "cloud-dmz",
+      "controls": ["Web Application Firewall (WAF)", "DDoS protection (cloud-native)", "TLS 1.3 termination", "Geo-blocking and IP filtering", "Rate limiting"]
+    },
+    {
+      "name": "Cloud DMZ to Cloud Application",
+      "from_zone": "cloud-dmz",
+      "to_zone": "cloud-app",
+      "controls": ["API authentication (OAuth 2.0)", "Request schema validation", "Cloud security groups / NSGs", "Web application firewall rules"]
+    },
+    {
+      "name": "Cloud to On-Premises",
+      "from_zone": "cloud-app",
+      "to_zone": "on-premises",
+      "controls": ["VPN / ExpressRoute / Direct Connect", "Mutual TLS (mTLS)", "Cross-domain identity federation", "Network ACLs at both ends", "Traffic encryption (IPSec)"]
+    },
+    {
+      "name": "Cloud Application to Shared Data",
+      "from_zone": "cloud-app",
+      "to_zone": "shared-data",
+      "controls": ["Encryption at rest and in transit", "IAM policies and database ACLs", "Private endpoints / VPC peering", "Audit logging of all data access"]
+    },
+    {
+      "name": "On-Premises to Shared Data",
+      "from_zone": "on-premises",
+      "to_zone": "shared-data",
+      "controls": ["Encryption at rest and in transit", "LDAP / AD-based access control", "Network segmentation", "Database firewall rules", "Comprehensive audit logging"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        user[End User / Browser]\n        partner[Partner API]\n    end\n    subgraph cloud_dmz[\"Cloud DMZ (Semi-Trusted)\"]\n        waf[WAF / DDoS]\n        clb(Cloud Load Balancer)\n        apigw(API Gateway)\n    end\n    subgraph cloud_app[\"Cloud Application (Trusted)\"]\n        csvc1(Cloud Service A)\n        csvc2(Cloud Service B)\n        cmq([Cloud Message Queue])\n    end\n    subgraph onprem[\"On-Premises (Trusted)\"]\n        opsvc1(Legacy ERP)\n        opsvc2(Internal API Server)\n        ad(Active Directory)\n    end\n    subgraph shared[\"Shared Data (Highly Trusted)\"]\n        db[(Primary Database)]\n        dw[(Data Warehouse)]\n        backup[(Encrypted Backup)]\n    end\n    user -->|HTTPS| waf\n    partner -->|HTTPS| waf\n    waf --> clb\n    clb --> apigw\n    apigw -->|OAuth 2.0| csvc1\n    apigw -->|OAuth 2.0| csvc2\n    csvc1 --> cmq\n    cmq --> csvc2\n    csvc1 <-->|VPN / mTLS| opsvc1\n    csvc2 <-->|VPN / mTLS| opsvc2\n    opsvc2 --> ad\n    csvc1 -->|Private Endpoint| db\n    csvc2 -->|Private Endpoint| dw\n    opsvc1 -->|Encrypted| db\n    opsvc2 -->|Encrypted| dw\n    db -->|Scheduled| backup"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-DYNAMODB-001",
+  "technology": "Amazon DynamoDB",
+  "aliases": ["DynamoDB", "DDB"],
+  "category": "database",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(DynamoDB)]",
+  "typical_protocols": ["HTTPS/443", "AWS SDK"],
+  "related_pattern_ids": [],
+  "description": "Fully managed AWS NoSQL key-value and document database delivering single-digit millisecond performance at scale"
+}

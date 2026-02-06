@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-NFS-001",
+  "technology": "NFS",
+  "aliases": ["Network File System", "NAS"],
+  "category": "storage",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(NFS)]",
+  "typical_protocols": ["TCP/2049", "NFS"],
+  "related_pattern_ids": [],
+  "description": "Distributed file system protocol for sharing files and directories across networked systems"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-ENDUSER-001",
+  "technology": "End User",
+  "aliases": ["User", "Customer", "Client", "Web User"],
+  "category": "external_entity",
+  "dfd_role": "external_entity",
+  "default_zone": "external",
+  "mermaid_shape": "rectangle",
+  "mermaid_node_syntax": "[End User]",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Human end user interacting with the system through web interfaces or client applications"
+}

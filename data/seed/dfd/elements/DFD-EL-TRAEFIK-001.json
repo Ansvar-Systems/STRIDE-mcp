@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-TRAEFIK-001",
+  "technology": "Traefik",
+  "aliases": ["Traefik Proxy"],
+  "category": "api_gateway",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Traefik)",
+  "typical_protocols": ["HTTP/80", "HTTPS/443", "TCP"],
+  "related_pattern_ids": [],
+  "description": "Cloud-native edge router and reverse proxy with automatic service discovery and Let's Encrypt TLS certificate management"
+}

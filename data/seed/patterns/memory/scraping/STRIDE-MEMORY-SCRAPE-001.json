@@ -6,7 +6,7 @@
     "last_updated": "2026-02-03",
     "reviewed_by": [],
     "confidence_score": 9.2,
-    "validation_status": "production"
+    "validation_status": "validated"
   },
   "classification": {
     "stride_category": "Information Disclosure",
@@ -232,7 +232,7 @@
       "control_id": "MIT-001",
       "title": "Implement Point-to-Point Encryption (P2PE) for Payment Terminals",
       "description": "Deploy PCI-validated Point-to-Point Encryption (P2PE) solutions that encrypt payment card data from the moment of card interaction (swipe/dip/tap) through the entire payment processing chain. P2PE-validated devices encrypt Track 1/Track 2 data in hardware before it ever enters system memory, completely eliminating the attack surface for RAM scrapers. This is the most effective defense against memory scraping attacks as there is no cleartext window for malware to exploit.",
-      "effectiveness": "Very High",
+      "effectiveness": "High",
       "implementation_complexity": "Medium",
       "code_example": {
         "language": "java",

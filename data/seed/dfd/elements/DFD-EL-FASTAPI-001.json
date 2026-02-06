@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-FASTAPI-001",
+  "technology": "FastAPI",
+  "aliases": ["FastAPI Python", "Starlette"],
+  "category": "web_application",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(FastAPI)",
+  "typical_protocols": ["HTTP/8000", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Modern high-performance Python web framework for building APIs with automatic OpenAPI documentation"
+}

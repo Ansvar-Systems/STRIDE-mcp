@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CDN-001",
+  "technology": "CDN Cache",
+  "aliases": ["Content Delivery Network"],
+  "category": "cache",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(CDN Cache)",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Geographically distributed network of proxy servers that cache and serve content closer to end users for improved latency"
+}

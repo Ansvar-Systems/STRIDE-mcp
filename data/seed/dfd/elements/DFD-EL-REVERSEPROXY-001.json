@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-REVERSEPROXY-001",
+  "technology": "Reverse Proxy",
+  "aliases": ["Reverse Proxy", "Caddy", "Squid"],
+  "category": "networking",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Reverse Proxy)",
+  "typical_protocols": ["HTTP/80", "HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Intermediary server forwarding client requests to backend servers while providing caching, SSL termination, and load distribution"
+}

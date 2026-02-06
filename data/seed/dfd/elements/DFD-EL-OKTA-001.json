@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-OKTA-001",
+  "technology": "Okta",
+  "aliases": ["Okta Identity"],
+  "category": "identity_provider",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Okta)",
+  "typical_protocols": ["HTTPS/443", "OAuth 2.0", "OIDC", "SCIM"],
+  "related_pattern_ids": [],
+  "description": "Enterprise identity platform providing workforce and customer identity management with adaptive MFA and lifecycle management"
+}

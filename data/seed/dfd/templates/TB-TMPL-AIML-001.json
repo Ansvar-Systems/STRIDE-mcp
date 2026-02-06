@@ -1,0 +1,83 @@
+{
+  "id": "TB-TMPL-AIML-001",
+  "name": "AI/ML Pipeline",
+  "architecture_type": "ai-ml-pipeline",
+  "description": "An AI/ML architecture encompassing both inference serving and model training pipelines. External users interact through an API tier that routes to inference endpoints, while data scientists and MLOps teams manage training pipelines, model versioning, and deployment. Special attention to prompt injection defense, model supply chain integrity, training data poisoning, and PII/sensitive data handling throughout the pipeline.",
+  "zones": [
+    {
+      "name": "external",
+      "trust_level": "untrusted",
+      "typical_elements": ["end users", "API consumers", "web applications", "mobile clients", "chatbot interfaces"],
+      "description": "External consumers submitting inference requests, prompts, or queries. Input is untrusted and may contain adversarial content such as prompt injection attacks, jailbreak attempts, or malformed payloads."
+    },
+    {
+      "name": "api-tier",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["API gateway", "load balancer", "rate limiter", "input sanitizer", "usage metering"],
+      "description": "The API serving layer that handles authentication, rate limiting, input preprocessing, and routing to appropriate inference endpoints. Performs initial content filtering and prompt safety checks."
+    },
+    {
+      "name": "inference",
+      "trust_level": "trusted",
+      "typical_elements": ["LLM inference servers", "embedding services", "RAG pipelines", "vector search", "output filters", "guardrails"],
+      "description": "The inference tier running model serving infrastructure. Includes LLM endpoints, embedding generation, retrieval-augmented generation pipelines, and output safety guardrails. Models are loaded from the model store and executed in isolated environments."
+    },
+    {
+      "name": "training",
+      "trust_level": "trusted",
+      "typical_elements": ["training pipelines", "GPU clusters", "experiment tracking", "hyperparameter tuning", "data preprocessing"],
+      "description": "The model training environment where data scientists develop, train, and evaluate models. Isolated from production inference to prevent training workloads from affecting serving latency."
+    },
+    {
+      "name": "model-store",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["model registry", "model artifacts", "model versioning", "deployment manifests", "model signatures"],
+      "description": "The model artifact storage and registry containing trained model weights, configurations, and deployment metadata. Models are cryptographically signed and versioned to ensure supply chain integrity."
+    },
+    {
+      "name": "data-tier",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["training datasets", "vector databases", "feature stores", "evaluation datasets", "PII-filtered data stores"],
+      "description": "The data persistence layer containing training datasets, vector indices for RAG, feature stores, and evaluation benchmarks. Subject to data classification, PII filtering, and access controls based on data sensitivity."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Internet to API Tier",
+      "from_zone": "external",
+      "to_zone": "api-tier",
+      "controls": ["Rate limiting per user/API key", "Authentication (OAuth 2.0 / API keys)", "Input size limits", "Content-Type validation", "TLS 1.3 enforcement"]
+    },
+    {
+      "name": "API Tier to Inference",
+      "from_zone": "api-tier",
+      "to_zone": "inference",
+      "controls": ["Input validation and sanitization", "Prompt injection detection", "Token budget enforcement", "Request tracing and logging", "Model endpoint authorization"]
+    },
+    {
+      "name": "Inference to Model Store",
+      "from_zone": "inference",
+      "to_zone": "model-store",
+      "controls": ["Model version pinning", "Cryptographic signature verification", "Read-only access for inference", "Model provenance tracking", "Artifact integrity checks"]
+    },
+    {
+      "name": "Training to Data Tier",
+      "from_zone": "training",
+      "to_zone": "data-tier",
+      "controls": ["Data classification enforcement", "PII detection and filtering", "Dataset versioning", "Access audit logging", "Data lineage tracking"]
+    },
+    {
+      "name": "Training to Model Store",
+      "from_zone": "training",
+      "to_zone": "model-store",
+      "controls": ["Model signing (write access)", "Automated evaluation gates", "Approval workflows for production promotion", "Model card generation", "Bias and safety benchmarks"]
+    },
+    {
+      "name": "Inference to Data Tier",
+      "from_zone": "inference",
+      "to_zone": "data-tier",
+      "controls": ["Read-only vector search access", "Query result filtering", "PII redaction in retrieved context", "Connection encryption"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph external[\"External (Untrusted)\"]\n        user[End User]\n        app_client[Application Client]\n        chatbot[Chatbot Interface]\n    end\n    subgraph api[\"API Tier (Semi-Trusted)\"]\n        gw(API Gateway)\n        limiter(Rate Limiter)\n        sanitizer(Input Sanitizer)\n    end\n    subgraph inference_tier[\"Inference (Trusted)\"]\n        llm(LLM Inference Server)\n        embed(Embedding Service)\n        rag(RAG Pipeline)\n        guardrail(Output Guardrails)\n    end\n    subgraph training_tier[\"Training (Trusted)\"]\n        pipeline(Training Pipeline)\n        experiment(Experiment Tracker)\n        gpu(GPU Cluster)\n    end\n    subgraph models[\"Model Store (Highly Trusted)\"]\n        registry(Model Registry)\n        artifacts[(Model Artifacts)]\n    end\n    subgraph data[\"Data Tier (Highly Trusted)\"]\n        vectordb[(Vector Database)]\n        traindata[(Training Datasets)]\n        features[(Feature Store)]\n    end\n    user -->|HTTPS| gw\n    app_client -->|HTTPS| gw\n    chatbot -->|HTTPS| gw\n    gw --> limiter\n    limiter --> sanitizer\n    sanitizer -->|Validated Input| llm\n    sanitizer -->|Validated Input| rag\n    rag --> embed\n    embed -->|Vector Search| vectordb\n    rag -->|Context| llm\n    llm --> guardrail\n    guardrail -->|Safe Output| gw\n    llm -->|Load Model| artifacts\n    registry --> artifacts\n    pipeline --> experiment\n    pipeline --> gpu\n    gpu -->|Read| traindata\n    gpu -->|Read| features\n    pipeline -->|Publish Model| registry"
+}

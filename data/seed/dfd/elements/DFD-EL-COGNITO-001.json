@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-COGNITO-001",
+  "technology": "AWS Cognito",
+  "aliases": ["Cognito", "Amazon Cognito"],
+  "category": "identity_provider",
+  "dfd_role": "process",
+  "default_zone": "external",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(AWS Cognito)",
+  "typical_protocols": ["HTTPS/443", "OAuth 2.0", "OIDC"],
+  "related_pattern_ids": [],
+  "description": "AWS managed identity service providing user sign-up, sign-in, and access control with user pools and identity pools"
+}

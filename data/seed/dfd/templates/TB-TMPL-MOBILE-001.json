@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-MOBILE-001",
+  "name": "Mobile Backend",
+  "architecture_type": "mobile-backend",
+  "description": "A mobile backend architecture serving native and hybrid mobile applications. The architecture handles unique mobile security challenges including insecure device environments, certificate pinning, offline-first patterns, and push notification delivery. The API gateway serves as the single entry point for all mobile client communication, with backend services processing requests and managing push notification channels.",
+  "zones": [
+    {
+      "name": "mobile-clients",
+      "trust_level": "untrusted",
+      "typical_elements": ["iOS applications", "Android applications", "hybrid apps", "mobile browsers", "rooted/jailbroken devices"],
+      "description": "Mobile applications running on user-controlled devices. These devices may be rooted/jailbroken, on compromised networks, or running modified app binaries. Client-side code and local storage can be reverse-engineered and inspected."
+    },
+    {
+      "name": "api-gateway",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["API gateway", "rate limiter", "OAuth 2.0 server", "app attestation validator", "API versioning router"],
+      "description": "The API gateway layer handling mobile client authentication, app integrity verification, rate limiting, and API version routing. Enforces OAuth 2.0 with PKCE flow designed for public mobile clients."
+    },
+    {
+      "name": "backend-services",
+      "trust_level": "trusted",
+      "typical_elements": ["user service", "business logic services", "sync service", "media processing", "notification orchestrator"],
+      "description": "The backend service tier processing authenticated requests from mobile clients. Handles business logic, data synchronization for offline-first patterns, media processing, and coordinates push notification delivery."
+    },
+    {
+      "name": "data-tier",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["user database", "content database", "media storage", "session store", "sync state store"],
+      "description": "The data persistence layer containing user data, application content, media files, and synchronization state. All data is encrypted at rest and access is restricted to backend services only."
+    },
+    {
+      "name": "push-services",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["APNs (Apple)", "FCM (Firebase)", "push notification service", "webhook delivery", "SMS gateway"],
+      "description": "External push notification delivery services (Apple APNs, Google FCM) and other notification channels. These are third-party services requiring API credentials and delivering messages through platform-specific channels."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Mobile Clients to API Gateway",
+      "from_zone": "mobile-clients",
+      "to_zone": "api-gateway",
+      "controls": ["Certificate pinning", "OAuth 2.0 with PKCE", "App attestation (Play Integrity / App Attest)", "TLS 1.2+ enforcement", "Request signing", "Device fingerprinting"]
+    },
+    {
+      "name": "API Gateway to Backend Services",
+      "from_zone": "api-gateway",
+      "to_zone": "backend-services",
+      "controls": ["JWT validation with audience verification", "Scope-based authorization", "Request tracing", "Input sanitization", "API version routing"]
+    },
+    {
+      "name": "Backend Services to Data Tier",
+      "from_zone": "backend-services",
+      "to_zone": "data-tier",
+      "controls": ["Encryption at rest (AES-256)", "Connection pooling with credential rotation", "Row-level access control", "Query parameterization", "Audit logging of data access"]
+    },
+    {
+      "name": "Backend Services to Push Services",
+      "from_zone": "backend-services",
+      "to_zone": "push-services",
+      "controls": ["API key management (rotated)", "Webhook signature verification", "Payload encryption for sensitive notifications", "Rate limiting outbound notifications", "Device token validation"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph mobile[\"Mobile Clients (Untrusted)\"]\n        ios[iOS App]\n        android[Android App]\n        hybrid[Hybrid App]\n    end\n    subgraph gateway[\"API Gateway (Semi-Trusted)\"]\n        gw(API Gateway)\n        oauth(OAuth 2.0 + PKCE Server)\n        attest(App Attestation)\n        version(Version Router)\n    end\n    subgraph backend[\"Backend Services (Trusted)\"]\n        user_svc(User Service)\n        biz_svc(Business Logic Service)\n        sync_svc(Sync Service)\n        media_svc(Media Processor)\n        notif(Notification Orchestrator)\n    end\n    subgraph data[\"Data Tier (Highly Trusted)\"]\n        userdb[(User Database)]\n        contentdb[(Content Database)]\n        media[(Media Storage)]\n        syncstate[(Sync State Store)]\n    end\n    subgraph push[\"Push Services (Semi-Trusted)\"]\n        apns(Apple APNs)\n        fcm(Google FCM)\n        sms(SMS Gateway)\n    end\n    ios -->|HTTPS + Cert Pin| gw\n    android -->|HTTPS + Cert Pin| gw\n    hybrid -->|HTTPS + Cert Pin| gw\n    gw --> oauth\n    gw --> attest\n    oauth --> version\n    version -->|JWT| user_svc\n    version -->|JWT| biz_svc\n    version -->|JWT| sync_svc\n    version -->|JWT| media_svc\n    user_svc -->|SQL/TLS| userdb\n    biz_svc -->|SQL/TLS| contentdb\n    media_svc -->|S3 API| media\n    sync_svc -->|Read/Write| syncstate\n    biz_svc --> notif\n    notif -->|API Key| apns\n    notif -->|API Key| fcm\n    notif -->|API Key| sms"
+}

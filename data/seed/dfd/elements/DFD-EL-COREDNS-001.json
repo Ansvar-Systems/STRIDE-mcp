@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-COREDNS-001",
+  "technology": "CoreDNS",
+  "aliases": ["Cluster DNS", "K8s DNS"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(CoreDNS)",
+  "typical_protocols": ["UDP/53", "TCP/53", "DNS"],
+  "related_pattern_ids": [],
+  "description": "Flexible and extensible DNS server used as the cluster DNS provider in Kubernetes environments"
+}

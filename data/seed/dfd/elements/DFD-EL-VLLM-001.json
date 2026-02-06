@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-VLLM-001",
+  "technology": "vLLM",
+  "aliases": ["vLLM Server"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(vLLM)",
+  "typical_protocols": ["HTTP/8000", "OpenAI-compatible API"],
+  "related_pattern_ids": [],
+  "description": "High-throughput LLM inference engine with PagedAttention for efficient serving of large language models"
+}

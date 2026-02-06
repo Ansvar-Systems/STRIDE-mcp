@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-FLASK-001",
+  "technology": "Flask",
+  "aliases": ["Flask API", "Python Flask"],
+  "category": "web_application",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Flask)",
+  "typical_protocols": ["HTTP/5000", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Lightweight Python web framework for building REST APIs and microservices"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AWSAPIGW-001",
+  "technology": "AWS API Gateway",
+  "aliases": ["API Gateway", "APIGW"],
+  "category": "api_gateway",
+  "dfd_role": "process",
+  "default_zone": "dmz",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(AWS API Gateway)",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Fully managed AWS service for creating, publishing, and securing REST, HTTP, and WebSocket APIs at any scale"
+}

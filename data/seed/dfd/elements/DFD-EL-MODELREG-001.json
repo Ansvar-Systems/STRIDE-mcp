@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-MODELREG-001",
+  "technology": "Model Registry",
+  "aliases": ["MLflow", "Model Store", "Weights & Biases"],
+  "category": "ai_ml",
+  "dfd_role": "data_store",
+  "default_zone": "application-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Model Registry)]",
+  "typical_protocols": ["HTTPS/443", "REST"],
+  "related_pattern_ids": [],
+  "description": "Central repository for managing ML model versions, artifacts, metadata, and deployment lifecycle"
+}

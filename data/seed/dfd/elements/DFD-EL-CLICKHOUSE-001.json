@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-CLICKHOUSE-001",
+  "technology": "ClickHouse",
+  "aliases": [],
+  "category": "database",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(ClickHouse)]",
+  "typical_protocols": ["TCP/8123", "HTTP/SQL"],
+  "related_pattern_ids": [],
+  "description": "Column-oriented OLAP database management system for real-time analytical queries on large datasets"
+}

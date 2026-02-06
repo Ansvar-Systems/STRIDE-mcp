@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-AZUREBLOB-001",
+  "technology": "Azure Blob Storage",
+  "aliases": ["Blob Storage", "Azure Storage"],
+  "category": "cloud_service",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Azure Blob Storage)]",
+  "typical_protocols": ["HTTPS/443"],
+  "related_pattern_ids": [],
+  "description": "Azure object storage for unstructured data including documents, media, backups, and logs"
+}

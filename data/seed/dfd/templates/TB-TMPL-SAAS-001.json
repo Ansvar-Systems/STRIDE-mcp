@@ -1,0 +1,65 @@
+{
+  "id": "TB-TMPL-SAAS-001",
+  "name": "SaaS Multi-Tenant",
+  "architecture_type": "saas-multi-tenant",
+  "description": "A Software-as-a-Service multi-tenant architecture where multiple customer organizations share infrastructure while maintaining strict data isolation. Tenant identity is established at the edge and propagated through all layers. The architecture must prevent cross-tenant data leakage, enforce per-tenant resource quotas, and support tenant-specific configurations while maintaining operational efficiency.",
+  "zones": [
+    {
+      "name": "tenants",
+      "trust_level": "untrusted",
+      "typical_elements": ["tenant users", "tenant admins", "tenant API integrations", "SSO providers", "tenant-owned devices"],
+      "description": "Individual tenant organizations and their users accessing the SaaS platform. Each tenant is mutually untrusted with respect to other tenants. Tenant identity must be verified before any data access is granted."
+    },
+    {
+      "name": "edge",
+      "trust_level": "semi-trusted",
+      "typical_elements": ["CDN", "global load balancer", "WAF", "tenant resolver", "rate limiter", "custom domain handler"],
+      "description": "The edge layer that resolves tenant identity from subdomain, header, or token, applies per-tenant rate limiting, and routes requests to the appropriate application instances. Handles TLS with tenant custom domains."
+    },
+    {
+      "name": "application",
+      "trust_level": "trusted",
+      "typical_elements": ["application servers", "tenant context middleware", "business logic services", "background workers", "cache with tenant prefixing"],
+      "description": "The shared application tier processing requests within tenant-scoped contexts. Every operation is executed with a tenant context that enforces isolation at the application layer. Shared services ensure tenant context propagation across all internal calls."
+    },
+    {
+      "name": "tenant-data",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["tenant databases", "tenant file storage", "tenant encryption keys", "tenant-scoped search indices"],
+      "description": "The tenant data layer where each tenant's data is logically or physically isolated. Implements row-level security, per-tenant encryption keys, and strict access controls to prevent cross-tenant data access."
+    },
+    {
+      "name": "platform-management",
+      "trust_level": "highly-trusted",
+      "typical_elements": ["admin console", "billing system", "tenant provisioning", "platform monitoring", "feature flags", "usage analytics"],
+      "description": "The platform operations layer used by the SaaS provider to manage tenants, billing, provisioning, and platform health. Has cross-tenant visibility for operational purposes with strict RBAC controls."
+    }
+  ],
+  "boundaries": [
+    {
+      "name": "Tenants to Edge",
+      "from_zone": "tenants",
+      "to_zone": "edge",
+      "controls": ["Tenant identification (subdomain / header / token)", "Per-tenant rate limiting and throttling", "WAF with tenant-aware rules", "TLS with tenant custom domains (SNI)", "Brute-force protection per tenant"]
+    },
+    {
+      "name": "Edge to Application",
+      "from_zone": "edge",
+      "to_zone": "application",
+      "controls": ["Tenant context injection and validation", "JWT with tenant claims", "Cross-tenant request detection", "Session binding to tenant", "Feature flag evaluation per tenant"]
+    },
+    {
+      "name": "Application to Tenant Data",
+      "from_zone": "application",
+      "to_zone": "tenant-data",
+      "controls": ["Row-level security (RLS) policies", "Per-tenant encryption keys (envelope encryption)", "Tenant-scoped connection strings or schemas", "Query-level tenant filtering", "Cross-tenant query prevention"]
+    },
+    {
+      "name": "Application to Platform Management",
+      "from_zone": "application",
+      "to_zone": "platform-management",
+      "controls": ["Platform admin RBAC (super-admin roles)", "Admin action audit logging", "Separate authentication for platform ops", "IP allowlisting for admin access", "Break-glass procedures"]
+    }
+  ],
+  "mermaid_template": "flowchart TB\n    subgraph tenants[\"Tenants (Untrusted)\"]\n        t1_user[Tenant A User]\n        t2_user[Tenant B User]\n        t1_admin[Tenant A Admin]\n        t2_api[Tenant B API Client]\n    end\n    subgraph edge_layer[\"Edge (Semi-Trusted)\"]\n        cdn(CDN / WAF)\n        resolver(Tenant Resolver)\n        limiter(Per-Tenant Rate Limiter)\n    end\n    subgraph app[\"Application (Trusted)\"]\n        ctx(Tenant Context Middleware)\n        svc1(Service A)\n        svc2(Service B)\n        worker(Background Worker)\n        cache[(Tenant-Prefixed Cache)]\n    end\n    subgraph tenant_data[\"Tenant Data (Highly Trusted)\"]\n        t1_db[(Tenant A Data)]\n        t2_db[(Tenant B Data)]\n        t1_files[(Tenant A Files)]\n        t2_files[(Tenant B Files)]\n    end\n    subgraph platform[\"Platform Management (Highly Trusted)\"]\n        admin(Admin Console)\n        billing(Billing System)\n        provision(Tenant Provisioning)\n        monitor(Platform Monitoring)\n    end\n    t1_user -->|HTTPS| cdn\n    t2_user -->|HTTPS| cdn\n    t1_admin -->|HTTPS| cdn\n    t2_api -->|HTTPS| cdn\n    cdn --> resolver\n    resolver --> limiter\n    limiter -->|Tenant JWT| ctx\n    ctx --> svc1\n    ctx --> svc2\n    svc1 --> worker\n    svc1 --> cache\n    svc1 -->|RLS: Tenant A| t1_db\n    svc1 -->|RLS: Tenant B| t2_db\n    svc2 -->|Scoped| t1_files\n    svc2 -->|Scoped| t2_files\n    svc1 -.->|Admin RBAC| admin\n    admin --> billing\n    admin --> provision\n    admin --> monitor"
+}

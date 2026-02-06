@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-NEO4J-001",
+  "technology": "Neo4j",
+  "aliases": ["Neo4j Graph DB"],
+  "category": "database",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(Neo4j)]",
+  "typical_protocols": ["TCP/7687", "Bolt"],
+  "related_pattern_ids": [],
+  "description": "Native graph database optimized for storing and querying highly connected data using Cypher query language"
+}

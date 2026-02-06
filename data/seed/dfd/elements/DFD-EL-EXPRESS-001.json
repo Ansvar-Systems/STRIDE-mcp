@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-EXPRESS-001",
+  "technology": "Express.js",
+  "aliases": ["Express", "Node.js API"],
+  "category": "web_application",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(Express.js)",
+  "typical_protocols": ["HTTP/3000", "HTTPS"],
+  "related_pattern_ids": [],
+  "description": "Minimal and flexible Node.js web application framework for building APIs and web services"
+}

@@ -6,7 +6,7 @@
     "last_updated": "2026-02-03",
     "reviewed_by": [],
     "confidence_score": 9.5,
-    "validation_status": "production"
+    "validation_status": "validated"
   },
   "classification": {
     "stride_category": "Elevation of Privilege",

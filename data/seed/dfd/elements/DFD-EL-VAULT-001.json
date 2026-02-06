@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-VAULT-001",
+  "technology": "HashiCorp Vault",
+  "aliases": ["Vault", "Secret Manager"],
+  "category": "infrastructure",
+  "dfd_role": "process",
+  "default_zone": "management",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(HashiCorp Vault)",
+  "typical_protocols": ["HTTPS/8200"],
+  "related_pattern_ids": [],
+  "description": "Secrets management and data protection platform for controlling access to tokens, passwords, certificates, and encryption keys"
+}

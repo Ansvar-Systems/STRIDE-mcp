@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-TIMESCALEDB-001",
+  "technology": "TimescaleDB",
+  "aliases": ["Timescale"],
+  "category": "database",
+  "dfd_role": "data_store",
+  "default_zone": "data-tier",
+  "mermaid_shape": "cylinder",
+  "mermaid_node_syntax": "[(TimescaleDB)]",
+  "typical_protocols": ["TCP/5432", "SQL"],
+  "related_pattern_ids": [],
+  "description": "PostgreSQL extension for time-series data providing automatic partitioning, compression, and continuous aggregates"
+}

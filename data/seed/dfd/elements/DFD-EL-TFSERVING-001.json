@@ -1,0 +1,13 @@
+{
+  "id": "DFD-EL-TFSERVING-001",
+  "technology": "TensorFlow Serving",
+  "aliases": ["TF Serving", "TFX"],
+  "category": "ai_ml",
+  "dfd_role": "process",
+  "default_zone": "application-tier",
+  "mermaid_shape": "rounded_rect",
+  "mermaid_node_syntax": "(TensorFlow Serving)",
+  "typical_protocols": ["gRPC/8500", "REST/8501"],
+  "related_pattern_ids": [],
+  "description": "Production model serving system for deploying trained TensorFlow models via gRPC and REST APIs"
+}
