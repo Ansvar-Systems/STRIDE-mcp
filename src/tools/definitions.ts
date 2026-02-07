@@ -12,6 +12,9 @@ import { searchPatterns, getStrideCategories, getTechnologies, getFrameworks, ge
 import { getPattern } from './get-pattern.js';
 import { listPatterns, countPatterns } from './list-patterns.js';
 import { classifyTechnology, getDfdTaxonomy, suggestTrustBoundaries } from './dfd-tools.js';
+import { findPatternsByReference } from './reference-lookup.js';
+import { filterByTags } from './tag-filter.js';
+import { searchMitigations } from './mitigation-search.js';
 
 /**
  * Server instructions — sent to agents during MCP initialization.
@@ -32,6 +35,15 @@ For Data Flow Diagram (DFD) generation:
 1. classify_technology — classify each technology into its DFD role (external_entity, process, data_store, data_flow) with Mermaid syntax
 2. suggest_trust_boundaries — provide a list of technologies to get architecture-matched trust boundary templates with Mermaid diagram skeletons
 3. get_dfd_taxonomy — reference for all DFD element types and Mermaid syntax conventions
+
+For cross-server threat intelligence lookup:
+1. find_patterns_by_reference — find STRIDE patterns linked to a CVE, ATT&CK technique, CWE, or OWASP category (auto-detects reference type)
+
+For filtering by organizational context:
+1. filter_by_tags — filter patterns by industry, compliance framework, or deployment environment. Omit tag_value to list available values.
+
+For searching mitigations directly:
+1. search_mitigations — search framework-specific code mitigations by keyword, framework, effectiveness, or complexity
 
 Use get_database_stats for an overview of pattern coverage and confidence scores.`;
 
@@ -230,6 +242,96 @@ export const TOOLS: Tool[] = [
       required: ['technologies'],
     },
   },
+  {
+    name: 'find_patterns_by_reference',
+    description:
+      'Find STRIDE patterns linked to a CVE, ATT&CK technique, CWE, or OWASP category. ' +
+      'Auto-detects reference type from the ID prefix (e.g., CVE-2021-44228 → cve, T1003 → mitre). ' +
+      'Use this to bridge threat intelligence data with STRIDE patterns.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        reference_id: {
+          type: 'string',
+          description: 'Reference identifier (e.g., "CVE-2021-44228", "T1003", "CWE-79", "A01:2021", "LLM02:2025")',
+        },
+        reference_type: {
+          type: 'string',
+          description: 'Reference type (auto-detected if omitted)',
+          enum: ['cve', 'mitre', 'cwe', 'owasp'],
+        },
+      },
+      required: ['reference_id'],
+    },
+  },
+  {
+    name: 'filter_by_tags',
+    description:
+      'Filter patterns by industry, compliance framework, or deployment environment. ' +
+      'Omit tag_value to list available values with pattern counts. ' +
+      'Provide tag_value to get matching pattern summaries with pagination.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tag_type: {
+          type: 'string',
+          description: 'Type of tag to filter by',
+          enum: ['industry', 'compliance', 'deployment'],
+        },
+        tag_value: {
+          type: 'string',
+          description: 'Specific tag value to filter by (omit to list available values)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 50)',
+          minimum: 1,
+          maximum: 200,
+        },
+        offset: {
+          type: 'number',
+          description: 'Pagination offset (default: 0)',
+          minimum: 0,
+        },
+      },
+      required: ['tag_type'],
+    },
+  },
+  {
+    name: 'search_mitigations',
+    description:
+      'Search framework-specific code mitigations directly by keyword, framework, effectiveness, or complexity. ' +
+      'Returns mitigation details including code examples. All filters are optional.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Text search across mitigation titles and descriptions (e.g., "rate limiting", "input validation")',
+        },
+        framework: {
+          type: 'string',
+          description: 'Filter by code framework (partial match, e.g., "Express", "Flask")',
+        },
+        effectiveness: {
+          type: 'string',
+          description: 'Filter by mitigation effectiveness',
+          enum: ['High', 'Medium', 'Low'],
+        },
+        implementation_complexity: {
+          type: 'string',
+          description: 'Filter by implementation complexity',
+          enum: ['High', 'Medium', 'Low'],
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 20)',
+          minimum: 1,
+          maximum: 100,
+        },
+      },
+    },
+  },
 ];
 
 /** Tool dispatch result — index signature required by MCP SDK's ServerResult type */
@@ -412,6 +514,80 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
           {
             type: 'text',
             text: JSON.stringify(suggestions, null, 2),
+          },
+        ],
+      };
+    }
+
+    case 'find_patterns_by_reference': {
+      try {
+        const result = findPatternsByReference(
+          args.reference_id as string,
+          args.reference_type as 'cve' | 'mitre' | 'cwe' | 'owasp' | undefined
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: (error as Error).message }),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'filter_by_tags': {
+      try {
+        const result = filterByTags(
+          args.tag_type as string,
+          args.tag_value as string | undefined,
+          args.limit as number | undefined,
+          args.offset as number | undefined
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: (error as Error).message }),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'search_mitigations': {
+      const result = searchMitigations({
+        query: args.query as string | undefined,
+        framework: args.framework as string | undefined,
+        effectiveness: args.effectiveness as string | undefined,
+        implementation_complexity: args.implementation_complexity as string | undefined,
+        limit: args.limit as number | undefined,
+      });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
           },
         ],
       };

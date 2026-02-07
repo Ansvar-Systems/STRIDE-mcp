@@ -180,3 +180,71 @@ export interface SearchResult extends PatternSummary {
   relevance_score: number;
   snippet: string;
 }
+
+// --- Cross-reference tool types ---
+
+export type ReferenceType = 'cve' | 'mitre' | 'cwe' | 'owasp';
+
+export interface ReferenceMatch {
+  pattern_id: string;
+  title: string;
+  stride_category: string;
+  severity: string;
+  confidence_score: number;
+  reference_detail: string;
+}
+
+export interface ReferenceSearchResult {
+  reference_id: string;
+  reference_type: ReferenceType;
+  matches: ReferenceMatch[];
+  total: number;
+}
+
+// --- Tag filter types ---
+
+export type TagType = 'industry' | 'compliance' | 'deployment';
+
+export interface TaggedPatternSummary {
+  pattern_id: string;
+  title: string;
+  stride_category: string;
+  severity: string;
+  confidence_score: number;
+  tag_value: string;
+}
+
+export interface TagFilterResult {
+  tag_type: TagType;
+  tag_value: string;
+  patterns: TaggedPatternSummary[];
+  total: number;
+  returned: number;
+  offset: number;
+}
+
+export interface TagValuesResult {
+  tag_type: TagType;
+  values: Array<{ value: string; count: number }>;
+  total_values: number;
+}
+
+// --- Mitigation search types ---
+
+export interface MitigationRecord {
+  id: string;
+  pattern_id: string;
+  title: string;
+  description: string | null;
+  effectiveness: string | null;
+  implementation_complexity: string | null;
+  code_language: string | null;
+  code_framework: string | null;
+  code_example: string | null;
+}
+
+export interface MitigationSearchResult {
+  mitigations: MitigationRecord[];
+  total: number;
+  returned: number;
+}
