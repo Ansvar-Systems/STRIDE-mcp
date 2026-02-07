@@ -11,6 +11,11 @@
 import { getDatabase } from '../database/db.js';
 import type { MitigationRecord, MitigationSearchResult } from '../types/pattern.js';
 
+/** Escape SQL LIKE special characters */
+function escapeLike(input: string): string {
+  return input.replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 export interface MitigationSearchOptions {
   query?: string;
   framework?: string;
@@ -32,15 +37,15 @@ export function searchMitigations(options: MitigationSearchOptions): MitigationS
 
   // Text search on title + description
   if (options.query && options.query.trim()) {
-    conditions.push('(m.title LIKE ? OR m.description LIKE ?)');
-    const term = `%${options.query.trim()}%`;
+    conditions.push("(m.title LIKE ? ESCAPE '\\' OR m.description LIKE ? ESCAPE '\\')");
+    const term = `%${escapeLike(options.query.trim())}%`;
     params.push(term, term);
   }
 
   // Framework filter (partial match for flexibility)
   if (options.framework && options.framework.trim()) {
-    conditions.push('m.code_framework LIKE ?');
-    params.push(`%${options.framework.trim()}%`);
+    conditions.push("m.code_framework LIKE ? ESCAPE '\\'");
+    params.push(`%${escapeLike(options.framework.trim())}%`);
   }
 
   // Effectiveness filter (exact match)

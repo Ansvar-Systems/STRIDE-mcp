@@ -348,6 +348,13 @@ interface ToolResult {
 export async function handleToolCall(name: string, args: Record<string, unknown>): Promise<ToolResult> {
   switch (name) {
     case 'search_patterns': {
+      const query = args.query;
+      if (typeof query !== 'string' || !query.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'query is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
       const results = searchPatterns({
         query: args.query as string,
         stride_category: args.stride_category as string | undefined,
@@ -377,7 +384,14 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     }
 
     case 'get_pattern': {
-      const pattern = getPattern(args.pattern_id as string);
+      const patternId = args.pattern_id;
+      if (typeof patternId !== 'string' || !patternId.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'pattern_id is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
+      const pattern = getPattern(patternId);
 
       if (!pattern) {
         return {
@@ -484,7 +498,14 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     }
 
     case 'classify_technology': {
-      const result = classifyTechnology(args.technology as string);
+      const technology = args.technology;
+      if (typeof technology !== 'string' || !technology.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'technology is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
+      const result = classifyTechnology(technology);
       return {
         content: [
           {
@@ -508,7 +529,14 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     }
 
     case 'suggest_trust_boundaries': {
-      const suggestions = suggestTrustBoundaries(args.technologies as string[]);
+      const technologies = args.technologies;
+      if (!Array.isArray(technologies)) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'technologies is required and must be an array' }) }],
+          isError: true,
+        };
+      }
+      const suggestions = suggestTrustBoundaries(technologies);
       return {
         content: [
           {
@@ -520,9 +548,16 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     }
 
     case 'find_patterns_by_reference': {
+      const referenceId = args.reference_id;
+      if (typeof referenceId !== 'string' || !referenceId.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'reference_id is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
       try {
         const result = findPatternsByReference(
-          args.reference_id as string,
+          referenceId,
           args.reference_type as 'cve' | 'mitre' | 'cwe' | 'owasp' | undefined
         );
         return {
@@ -547,9 +582,16 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     }
 
     case 'filter_by_tags': {
+      const tagType = args.tag_type;
+      if (typeof tagType !== 'string' || !tagType.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'tag_type is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
       try {
         const result = filterByTags(
-          args.tag_type as string,
+          tagType,
           args.tag_value as string | undefined,
           args.limit as number | undefined,
           args.offset as number | undefined

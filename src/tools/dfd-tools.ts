@@ -17,6 +17,11 @@ import type {
   TechnologyZoneAssignment,
 } from '../types/dfd.js';
 
+/** Escape SQL LIKE special characters */
+function escapeLike(input: string): string {
+  return input.replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 /**
  * Classify a technology into its DFD role, category, and Mermaid shape.
  *
@@ -52,9 +57,9 @@ export function classifyTechnology(technology: string): ClassifyTechnologyResult
   // 2. Alias match (search within JSON array text, case-insensitive)
   const aliasMatch = db.prepare(`
     SELECT full_json FROM dfd_elements
-    WHERE LOWER(aliases) LIKE ?
+    WHERE LOWER(aliases) LIKE ? ESCAPE '\\'
     LIMIT 1
-  `).get(`%${query.toLowerCase()}%`) as { full_json: string } | undefined;
+  `).get(`%${escapeLike(query.toLowerCase())}%`) as { full_json: string } | undefined;
 
   if (aliasMatch) {
     return {
@@ -88,11 +93,12 @@ export function classifyTechnology(technology: string): ClassifyTechnologyResult
   }
 
   // 4. Broad LIKE fallback on technology and description
+  const escapedQuery = `%${escapeLike(query.toLowerCase())}%`;
   const likeResults = db.prepare(`
     SELECT full_json FROM dfd_elements
-    WHERE LOWER(technology) LIKE ? OR LOWER(description) LIKE ?
+    WHERE LOWER(technology) LIKE ? ESCAPE '\\' OR LOWER(description) LIKE ? ESCAPE '\\'
     LIMIT 3
-  `).all(`%${query.toLowerCase()}%`, `%${query.toLowerCase()}%`) as Array<{ full_json: string }>;
+  `).all(escapedQuery, escapedQuery) as Array<{ full_json: string }>;
 
   const suggestions = likeResults.map(r => JSON.parse(r.full_json) as DfdElement);
 

@@ -44,7 +44,7 @@ export function listPatterns(options: ListOptions = {}): PatternSummary[] {
 
   // Build WHERE clause
   const filters: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
 
   if (stride_category) {
     filters.push('stride_category = ?');
@@ -134,7 +134,7 @@ export function countPatterns(options: Omit<ListOptions, 'limit' | 'offset' | 's
   } = options;
 
   const filters: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
 
   if (stride_category) {
     filters.push('stride_category = ?');

@@ -44,7 +44,7 @@ export function searchPatterns(options: SearchOptions): SearchResult[] {
 
   // Build WHERE clause for filters
   const filters: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
 
   if (stride_category) {
     filters.push('p.stride_category = ?');
