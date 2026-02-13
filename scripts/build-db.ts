@@ -13,7 +13,7 @@
 import { readdir, readFile, stat, unlink } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
+import Database from '@ansvar/mcp-sqlite';
 import { SCHEMA } from '../src/database/schema.js';
 import { Pattern } from '../src/types/pattern.js';
 import { DfdElement, TrustBoundaryTemplate } from '../src/types/dfd.js';
@@ -112,7 +112,7 @@ function validatePattern(pattern: any, file: string): ValidationError | null {
 /**
  * Insert pattern into database
  */
-function insertPattern(db: Database.Database, pattern: Pattern) {
+function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
   const tx = db.transaction(() => {
     // Insert main pattern
     db.prepare(`
@@ -331,7 +331,7 @@ function validateTrustBoundaryTemplate(template: any, file: string): ValidationE
 /**
  * Insert DFD element into database
  */
-function insertDfdElement(db: Database.Database, element: DfdElement) {
+function insertDfdElement(db: InstanceType<typeof Database>, element: DfdElement) {
   const tx = db.transaction(() => {
     db.prepare(`
       INSERT INTO dfd_elements (
@@ -360,7 +360,7 @@ function insertDfdElement(db: Database.Database, element: DfdElement) {
 /**
  * Insert trust boundary template into database
  */
-function insertTrustBoundaryTemplate(db: Database.Database, template: TrustBoundaryTemplate) {
+function insertTrustBoundaryTemplate(db: InstanceType<typeof Database>, template: TrustBoundaryTemplate) {
   const tx = db.transaction(() => {
     db.prepare(`
       INSERT INTO trust_boundary_templates (

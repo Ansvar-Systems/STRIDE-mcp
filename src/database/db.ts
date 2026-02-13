@@ -7,7 +7,7 @@
  * - Pattern validation happens before deployment
  */
 
-import Database from 'better-sqlite3';
+import Database from '@ansvar/mcp-sqlite';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -17,12 +17,12 @@ const __dirname = dirname(__filename);
 // Path to pre-built database (in project root)
 const DB_PATH = join(__dirname, '../../data/patterns.db');
 
-let db: Database.Database | null = null;
+let db: InstanceType<typeof Database> | null = null;
 
 /**
  * Get database instance (singleton pattern)
  */
-export function getDatabase(): Database.Database {
+export function getDatabase(): InstanceType<typeof Database> {
   if (!db) {
     try {
       db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
