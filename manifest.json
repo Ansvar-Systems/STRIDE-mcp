@@ -1,0 +1,58 @@
+{
+  "manifest_version": "0.3",
+  "name": "stride-patterns-mcp",
+  "display_name": "STRIDE Threat Patterns MCP Server",
+  "version": "0.2.0",
+  "description": "MCP server providing 125+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
+  "author": {
+    "name": "Ansvar Systems",
+    "email": "hello@ansvar.eu",
+    "url": "https://ansvar.eu"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ansvar-Systems/stride-patterns-mcp"
+  },
+  "homepage": "https://ansvar.eu",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "stride",
+    "threat-modeling",
+    "cybersecurity",
+    "security-patterns",
+    "cve",
+    "owasp",
+    "mitre-attack",
+    "threat-intelligence"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {}
+    }
+  },
+  "tools": [
+    { "name": "search_patterns" },
+    { "name": "get_pattern" },
+    { "name": "list_patterns" },
+    { "name": "get_database_stats" },
+    { "name": "get_available_filters" },
+    { "name": "classify_technology" },
+    { "name": "get_dfd_taxonomy" },
+    { "name": "suggest_trust_boundaries" },
+    { "name": "find_patterns_by_reference" },
+    { "name": "filter_by_tags" },
+    { "name": "search_mitigations" }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
