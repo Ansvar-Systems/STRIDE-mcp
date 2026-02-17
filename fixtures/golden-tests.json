@@ -160,6 +160,17 @@
         "result_not_empty": true,
         "min_results": 1
       }
+    },
+    {
+      "id": "stride-013",
+      "category": "metadata",
+      "description": "List data sources returns provenance metadata",
+      "tool": "list_sources",
+      "input": {},
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["sources", "schema_version", "LINDDUN"]
+      }
     }
   ]
 }

@@ -19,6 +19,7 @@ import { searchThreats, getLinddunCategories } from './linddun-search-threats.js
 import { getThreatTree } from './linddun-threat-tree.js';
 import { getMitigations } from './linddun-mitigations.js';
 import { searchPrivacyPatterns } from './linddun-pattern-search.js';
+import { listSources } from './list-sources.js';
 
 /**
  * Server instructions — sent to agents during MCP initialization.
@@ -424,6 +425,17 @@ export const TOOLS: Tool[] = [
           maximum: 100,
         },
       },
+    },
+  },
+  {
+    name: 'list_sources',
+    description:
+      'List all data sources used by this MCP server with provenance metadata. ' +
+      'Returns source names, authorities, update frequencies, licenses, coverage scope, ' +
+      'known limitations, schema version, and last build timestamp.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
     },
   },
 ];
@@ -863,6 +875,13 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
           isError: true,
         };
       }
+    }
+
+    case 'list_sources': {
+      const result = listSources();
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
     }
 
     default:
