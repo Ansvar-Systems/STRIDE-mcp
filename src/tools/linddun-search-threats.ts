@@ -5,6 +5,7 @@
  */
 
 import { getDatabase } from '../database/db.js';
+import { sanitizeFtsQuery } from './fts-sanitize.js';
 import type {
   LinddunCitation,
   LinddunCategory,
@@ -110,7 +111,9 @@ export function searchThreats(options: LinddunThreatSearchOptions = {}): Linddun
       LIMIT ?
     `;
 
-    params.unshift(query);
+    const sanitized = sanitizeFtsQuery(query);
+    if (!sanitized) return [];
+    params.unshift(sanitized);
     params.push(limit);
 
     try {

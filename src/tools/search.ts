@@ -7,6 +7,7 @@
 
 import { getDatabase } from '../database/db.js';
 import { SearchResult } from '../types/pattern.js';
+import { sanitizeFtsQuery } from './fts-sanitize.js';
 
 export interface SearchOptions {
   query: string;
@@ -95,7 +96,9 @@ export function searchPatterns(options: SearchOptions): SearchResult[] {
     LIMIT ?
   `;
 
-  params.unshift(query); // Add query as first parameter
+  const sanitized = sanitizeFtsQuery(query);
+  if (!sanitized) return [];
+  params.unshift(sanitized); // Add sanitized query as first parameter
   params.push(limit); // Add limit as last parameter
 
   try {

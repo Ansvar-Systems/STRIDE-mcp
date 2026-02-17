@@ -6,6 +6,7 @@
  */
 
 import { getDatabase } from '../database/db.js';
+import { sanitizeFtsQuery } from './fts-sanitize.js';
 import type {
   DfdElement,
   TrustBoundaryTemplate,
@@ -70,7 +71,8 @@ export function classifyTechnology(technology: string): ClassifyTechnologyResult
   }
 
   // 3. FTS5 full-text search for fuzzy matching
-  try {
+  const sanitized = sanitizeFtsQuery(query);
+  if (sanitized) try {
     const ftsResults = db.prepare(`
       SELECT d.full_json, fts.rank
       FROM dfd_elements_fts fts
@@ -78,7 +80,7 @@ export function classifyTechnology(technology: string): ClassifyTechnologyResult
       WHERE dfd_elements_fts MATCH ?
       ORDER BY fts.rank
       LIMIT 3
-    `).all(query) as Array<{ full_json: string; rank: number }>;
+    `).all(sanitized) as Array<{ full_json: string; rank: number }>;
 
     if (ftsResults.length > 0) {
       const elements = ftsResults.map(r => JSON.parse(r.full_json) as DfdElement);

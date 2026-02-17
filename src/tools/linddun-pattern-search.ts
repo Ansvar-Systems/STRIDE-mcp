@@ -5,6 +5,7 @@
  */
 
 import { getDatabase } from '../database/db.js';
+import { sanitizeFtsQuery } from './fts-sanitize.js';
 import type {
   DfdAnnotations,
   LinddunCitation,
@@ -121,7 +122,9 @@ export function searchPrivacyPatterns(
       LIMIT ?
     `;
 
-    params.unshift(query);
+    const sanitized = sanitizeFtsQuery(query);
+    if (!sanitized) return [];
+    params.unshift(sanitized);
     params.push(limit);
 
     try {
