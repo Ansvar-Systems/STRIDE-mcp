@@ -94,6 +94,8 @@ export function getDatabaseStats(): DatabaseStats {
 export interface DatabaseMetadata {
   schema_version: string;
   last_build: string;
+  tier: string;
+  jurisdiction: string;
 }
 
 export function getDatabaseMetadata(): DatabaseMetadata {

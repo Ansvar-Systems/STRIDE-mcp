@@ -1180,6 +1180,9 @@ async function buildDatabase() {
     FROM linddun_citation_reviews
   `).get() as any;
 
+  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES ('tier', 'free')").run();
+  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES ('jurisdiction', 'International')").run();
+
   db.prepare(`
     INSERT INTO metadata (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
