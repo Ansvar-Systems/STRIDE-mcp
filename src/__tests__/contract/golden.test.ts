@@ -8,9 +8,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { handleToolCall } from '../../tools/definitions.js';
+import { getDatabase } from '../../database/db.js';
 
 interface GoldenTest {
   id: string;
@@ -30,6 +32,10 @@ interface GoldenFixture {
 
 const fixtures: GoldenFixture = JSON.parse(
   readFileSync(join(__dirname, '../../../fixtures/golden-tests.json'), 'utf-8')
+);
+
+const goldenHashes = JSON.parse(
+  readFileSync(join(__dirname, '../../../fixtures/golden-hashes.json'), 'utf-8')
 );
 
 describe('Contract Tests (Golden)', () => {
@@ -93,4 +99,31 @@ describe('Contract Tests (Golden)', () => {
       }
     });
   }
+});
+
+describe('Drift Detection (Golden Hashes)', () => {
+  it('should have the expected number of patterns', () => {
+    const db = getDatabase();
+    const { n } = db.prepare('SELECT COUNT(*) as n FROM patterns').get() as { n: number };
+    expect(n).toBe(goldenHashes.hashes.patterns_count);
+  });
+
+  it('should have stable pattern identities', () => {
+    const db = getDatabase();
+    const rows = db.prepare('SELECT id, title, stride_category, severity, cvss_score FROM patterns ORDER BY id').all();
+    const hash = createHash('sha256').update(JSON.stringify(rows)).digest('hex');
+    expect(hash).toBe(goldenHashes.hashes.patterns_hash);
+  });
+
+  it('should have the expected number of DFD elements', () => {
+    const db = getDatabase();
+    const { n } = db.prepare('SELECT COUNT(*) as n FROM dfd_elements').get() as { n: number };
+    expect(n).toBe(goldenHashes.hashes.dfd_elements_count);
+  });
+
+  it('should have the expected number of LINDDUN threats', () => {
+    const db = getDatabase();
+    const { n } = db.prepare('SELECT COUNT(*) as n FROM linddun_threats').get() as { n: number };
+    expect(n).toBe(goldenHashes.hashes.linddun_threats_count);
+  });
 });
