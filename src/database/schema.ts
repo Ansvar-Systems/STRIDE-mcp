@@ -256,9 +256,173 @@ CREATE TRIGGER IF NOT EXISTS tbt_fts_update AFTER UPDATE ON trust_boundary_templ
   VALUES (new.rowid, new.id, new.name, new.architecture_type, new.description);
 END;
 
+-- LINDDUN threats (privacy threat catalog)
+CREATE TABLE IF NOT EXISTS linddun_threats (
+  threat_id TEXT PRIMARY KEY,
+  category TEXT NOT NULL,
+  tree_path TEXT NOT NULL,
+  description TEXT NOT NULL,
+  examples TEXT NOT NULL DEFAULT '[]',          -- JSON array
+  mitigations TEXT NOT NULL DEFAULT '[]',       -- JSON array (embedded mitigation summaries)
+  gdpr_articles TEXT NOT NULL DEFAULT '[]',     -- JSON array
+  sources TEXT NOT NULL DEFAULT '[]',           -- JSON array
+  full_json TEXT NOT NULL,
+  CHECK (category IN (
+    'Linking',
+    'Identifying',
+    'Non-repudiation',
+    'Detecting',
+    'Data disclosure',
+    'Unawareness',
+    'Non-compliance'
+  ))
+);
+
+CREATE INDEX IF NOT EXISTS idx_linddun_threats_category ON linddun_threats(category);
+CREATE INDEX IF NOT EXISTS idx_linddun_threats_tree_path ON linddun_threats(tree_path);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS linddun_threats_fts USING fts5(
+  threat_id UNINDEXED,
+  category,
+  tree_path,
+  description,
+  examples,
+  mitigations,
+  gdpr_articles,
+  content='linddun_threats',
+  content_rowid='rowid'
+);
+
+CREATE TRIGGER IF NOT EXISTS linddun_threats_fts_insert AFTER INSERT ON linddun_threats BEGIN
+  INSERT INTO linddun_threats_fts(
+    rowid, threat_id, category, tree_path, description, examples, mitigations, gdpr_articles
+  )
+  VALUES (
+    new.rowid, new.threat_id, new.category, new.tree_path, new.description, new.examples, new.mitigations, new.gdpr_articles
+  );
+END;
+
+CREATE TRIGGER IF NOT EXISTS linddun_threats_fts_delete AFTER DELETE ON linddun_threats BEGIN
+  DELETE FROM linddun_threats_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER IF NOT EXISTS linddun_threats_fts_update AFTER UPDATE ON linddun_threats BEGIN
+  DELETE FROM linddun_threats_fts WHERE rowid = old.rowid;
+  INSERT INTO linddun_threats_fts(
+    rowid, threat_id, category, tree_path, description, examples, mitigations, gdpr_articles
+  )
+  VALUES (
+    new.rowid, new.threat_id, new.category, new.tree_path, new.description, new.examples, new.mitigations, new.gdpr_articles
+  );
+END;
+
+-- LINDDUN mitigations (normalized for direct lookup per threat)
+CREATE TABLE IF NOT EXISTS linddun_mitigations (
+  mitigation_id TEXT PRIMARY KEY,
+  threat_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  pet_type TEXT,
+  implementation_hints TEXT NOT NULL DEFAULT '[]',  -- JSON array
+  effectiveness TEXT,
+  reference_links TEXT NOT NULL DEFAULT '[]',       -- JSON array
+  FOREIGN KEY (threat_id) REFERENCES linddun_threats(threat_id) ON DELETE CASCADE,
+  CHECK (effectiveness IS NULL OR effectiveness IN ('High', 'Medium', 'Low'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_linddun_mitigations_threat_id ON linddun_mitigations(threat_id);
+CREATE INDEX IF NOT EXISTS idx_linddun_mitigations_effectiveness ON linddun_mitigations(effectiveness);
+
+-- LINDDUN privacy patterns with DFD annotations
+CREATE TABLE IF NOT EXISTS linddun_patterns (
+  pattern_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  categories TEXT NOT NULL DEFAULT '[]',          -- JSON array of LINDDUN categories
+  dfd_annotations TEXT NOT NULL DEFAULT '{}',     -- JSON object
+  implementation_guidance TEXT NOT NULL DEFAULT '[]', -- JSON array
+  related_threat_ids TEXT NOT NULL DEFAULT '[]',  -- JSON array
+  pet_family TEXT,
+  sources TEXT NOT NULL DEFAULT '[]',             -- JSON array
+  full_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_linddun_patterns_pet_family ON linddun_patterns(pet_family);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS linddun_patterns_fts USING fts5(
+  pattern_id UNINDEXED,
+  name,
+  summary,
+  categories,
+  dfd_annotations,
+  implementation_guidance,
+  pet_family,
+  content='linddun_patterns',
+  content_rowid='rowid'
+);
+
+CREATE TRIGGER IF NOT EXISTS linddun_patterns_fts_insert AFTER INSERT ON linddun_patterns BEGIN
+  INSERT INTO linddun_patterns_fts(
+    rowid, pattern_id, name, summary, categories, dfd_annotations, implementation_guidance, pet_family
+  )
+  VALUES (
+    new.rowid, new.pattern_id, new.name, new.summary, new.categories, new.dfd_annotations, new.implementation_guidance, new.pet_family
+  );
+END;
+
+CREATE TRIGGER IF NOT EXISTS linddun_patterns_fts_delete AFTER DELETE ON linddun_patterns BEGIN
+  DELETE FROM linddun_patterns_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER IF NOT EXISTS linddun_patterns_fts_update AFTER UPDATE ON linddun_patterns BEGIN
+  DELETE FROM linddun_patterns_fts WHERE rowid = old.rowid;
+  INSERT INTO linddun_patterns_fts(
+    rowid, pattern_id, name, summary, categories, dfd_annotations, implementation_guidance, pet_family
+  )
+  VALUES (
+    new.rowid, new.pattern_id, new.name, new.summary, new.categories, new.dfd_annotations, new.implementation_guidance, new.pet_family
+  );
+END;
+
+-- LINDDUN citations (claim-level provenance for threats, mitigations, and patterns)
+CREATE TABLE IF NOT EXISTS linddun_citations (
+  citation_id TEXT PRIMARY KEY,
+  entity_type TEXT NOT NULL,         -- 'threat' | 'mitigation' | 'pattern'
+  entity_id TEXT NOT NULL,
+  claim_key TEXT NOT NULL,           -- e.g., description, example_1, mitigation_2
+  claim_text TEXT NOT NULL,
+  source_title TEXT NOT NULL,
+  source_url TEXT,
+  source_type TEXT,
+  license TEXT,
+  confidence REAL NOT NULL DEFAULT 0.8,
+  CHECK (entity_type IN ('threat', 'mitigation', 'pattern')),
+  CHECK (confidence >= 0 AND confidence <= 1)
+);
+
+CREATE INDEX IF NOT EXISTS idx_linddun_citations_entity ON linddun_citations(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_linddun_citations_source_title ON linddun_citations(source_title);
+
+-- Optional expert/editorial reviews for citation-level signoff
+CREATE TABLE IF NOT EXISTS linddun_citation_reviews (
+  review_id TEXT PRIMARY KEY,
+  citation_id TEXT NOT NULL,
+  reviewer_name TEXT NOT NULL,
+  reviewer_role TEXT,
+  decision TEXT NOT NULL,
+  comments TEXT,
+  reviewed_at TEXT NOT NULL,
+  FOREIGN KEY (citation_id) REFERENCES linddun_citations(citation_id) ON DELETE CASCADE,
+  CHECK (decision IN ('approved', 'needs_revision', 'rejected'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_linddun_citation_reviews_citation ON linddun_citation_reviews(citation_id);
+CREATE INDEX IF NOT EXISTS idx_linddun_citation_reviews_decision ON linddun_citation_reviews(decision);
+
 -- Insert initial metadata
-INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '1.1.0');
+INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '1.4.0');
 INSERT OR IGNORE INTO metadata (key, value) VALUES ('last_build', datetime('now'));
+INSERT OR IGNORE INTO metadata (key, value) VALUES ('linddun_categories', '7');
 `;
 
 export const INITIAL_STATS_QUERY = `

@@ -15,6 +15,10 @@ import { classifyTechnology, getDfdTaxonomy, suggestTrustBoundaries } from './df
 import { findPatternsByReference } from './reference-lookup.js';
 import { filterByTags } from './tag-filter.js';
 import { searchMitigations } from './mitigation-search.js';
+import { searchThreats, getLinddunCategories } from './linddun-search-threats.js';
+import { getThreatTree } from './linddun-threat-tree.js';
+import { getMitigations } from './linddun-mitigations.js';
+import { searchPrivacyPatterns } from './linddun-pattern-search.js';
 
 /**
  * Server instructions — sent to agents during MCP initialization.
@@ -44,6 +48,14 @@ For filtering by organizational context:
 
 For searching mitigations directly:
 1. search_mitigations — search framework-specific code mitigations by keyword, framework, effectiveness, or complexity
+
+For privacy threat modeling with LINDDUN:
+1. search_threats — search across the seven LINDDUN privacy threat categories
+2. get_threat_tree — retrieve full category threat tree and leaf nodes
+3. get_mitigations — retrieve privacy-preserving mitigations for a threat
+4. search_privacy_patterns — search privacy design patterns with DFD annotations
+
+All LINDDUN responses include source-backed traceability via sources and claim-level citations.
 
 Use get_database_stats for an overview of pattern coverage and confidence scores.`;
 
@@ -332,6 +344,88 @@ export const TOOLS: Tool[] = [
       },
     },
   },
+  {
+    name: 'search_threats',
+    description:
+      'Search LINDDUN privacy threats across Linking, Identifying, Non-repudiation, Detecting, Data disclosure, Unawareness, and Non-compliance. ' +
+      'Uses FTS search over tree paths, descriptions, examples, and mitigations.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Optional full-text query (e.g., "cross-context identifier", "covert tracking")',
+        },
+        category: {
+          type: 'string',
+          description: 'Optional LINDDUN category filter',
+          enum: ['Linking', 'Identifying', 'Non-repudiation', 'Detecting', 'Data disclosure', 'Unawareness', 'Non-compliance'],
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 20)',
+          minimum: 1,
+          maximum: 100,
+        },
+      },
+    },
+  },
+  {
+    name: 'get_threat_tree',
+    description:
+      'Get the full LINDDUN threat tree for a category, including all leaf threats and their metadata.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: {
+          type: 'string',
+          description: 'LINDDUN category',
+          enum: ['Linking', 'Identifying', 'Non-repudiation', 'Detecting', 'Data disclosure', 'Unawareness', 'Non-compliance'],
+        },
+      },
+      required: ['category'],
+    },
+  },
+  {
+    name: 'get_mitigations',
+    description:
+      'Get privacy-enhancing mitigations for a specific LINDDUN threat ID.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        threat_id: {
+          type: 'string',
+          description: 'LINDDUN threat ID (e.g., "LINDDUN-LINKING-001")',
+        },
+      },
+      required: ['threat_id'],
+    },
+  },
+  {
+    name: 'search_privacy_patterns',
+    description:
+      'Search LINDDUN privacy design patterns and DFD annotations by keyword and category.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Optional full-text query (e.g., "pseudonymization", "consent flow")',
+        },
+        category: {
+          type: 'string',
+          description: 'Optional LINDDUN category filter',
+          enum: ['Linking', 'Identifying', 'Non-repudiation', 'Detecting', 'Data disclosure', 'Unawareness', 'Non-compliance'],
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 20)',
+          minimum: 1,
+          maximum: 100,
+        },
+      },
+    },
+  },
 ];
 
 /** Tool dispatch result — index signature required by MCP SDK's ServerResult type */
@@ -481,6 +575,7 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     case 'get_available_filters': {
       const filters = {
         stride_categories: getStrideCategories(),
+        linddun_categories: getLinddunCategories(),
         technologies: getTechnologies(),
         frameworks: getFrameworks(),
         severity_levels: getSeverityLevels(),
@@ -633,6 +728,141 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
           },
         ],
       };
+    }
+
+    case 'search_threats': {
+      try {
+        const results = searchThreats({
+          query: args.query as string | undefined,
+          category: args.category as import('../types/linddun.js').LinddunCategory | undefined,
+          limit: args.limit as number | undefined,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  results,
+                  total: results.length,
+                  query: args.query ?? null,
+                  category: args.category ?? null,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: (error as Error).message }),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'get_threat_tree': {
+      const category = args.category;
+      if (typeof category !== 'string' || !category.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'category is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
+      try {
+        const tree = getThreatTree(category);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(tree, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: (error as Error).message }),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'get_mitigations': {
+      const threatId = args.threat_id;
+      if (typeof threatId !== 'string' || !threatId.trim()) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'threat_id is required and must be a non-empty string' }) }],
+          isError: true,
+        };
+      }
+      const result = getMitigations(threatId);
+      if (!result) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: `Threat not found: ${threatId}` }),
+            },
+          ],
+          isError: true,
+        };
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
+    case 'search_privacy_patterns': {
+      try {
+        const results = searchPrivacyPatterns({
+          query: args.query as string | undefined,
+          category: args.category as import('../types/linddun.js').LinddunCategory | undefined,
+          limit: args.limit as number | undefined,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  results,
+                  total: results.length,
+                  query: args.query ?? null,
+                  category: args.category ?? null,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: (error as Error).message }),
+            },
+          ],
+          isError: true,
+        };
+      }
     }
 
     default:

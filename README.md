@@ -1,6 +1,6 @@
-# STRIDE Patterns MCP
+# STRIDE + LINDDUN Patterns MCP
 
-> **Expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations**
+> **Expert-curated STRIDE and LINDDUN threat knowledge with actionable mitigations**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
@@ -13,7 +13,7 @@
 
 ## Overview
 
-STRIDE Patterns MCP provides AI assistants with instant access to **expert-validated threat patterns** for security threat modeling. Each pattern includes:
+STRIDE + LINDDUN Patterns MCP provides AI assistants with instant access to **expert-validated threat and privacy patterns**. It includes:
 
 - **CVE References** - Real vulnerabilities with CVSS scores
 - **Real-World Evidence** - Actual breaches (Uber 2016, etc.)
@@ -21,6 +21,8 @@ STRIDE Patterns MCP provides AI assistants with instant access to **expert-valid
 - **Detection Queries** - SIEM queries for Azure Sentinel, Elastic, Splunk
 - **Compliance Mappings** - ISO 27001, NIST CSF, OWASP Top 10, MITRE ATT&CK
 - **DFD Classification** - 121 technology elements with Mermaid diagram generation
+- **LINDDUN Privacy Catalog** - 7 privacy threat categories with threat trees, mitigations, GDPR article mappings, and privacy design patterns
+- **Citation-Level Provenance** - claim-level citations returned in LINDDUN tool responses (`sources` + `citations`)
 
 ## Quick Start
 
@@ -155,6 +157,57 @@ Suggest trust boundary templates for a set of technologies. Classifies each tech
 }
 ```
 
+### `search_threats`
+
+Search LINDDUN privacy threats across all 7 categories:
+- Linking
+- Identifying
+- Non-repudiation
+- Detecting
+- Data disclosure
+- Unawareness
+- Non-compliance
+
+```json
+{
+  "query": "identifier correlation",
+  "category": "Linking",
+  "limit": 20
+}
+```
+
+### `get_threat_tree`
+
+Get full threat tree and leaf nodes for one LINDDUN category.
+
+```json
+{
+  "category": "Data disclosure"
+}
+```
+
+### `get_mitigations`
+
+Get privacy-enhancing mitigations for a specific LINDDUN threat.
+
+```json
+{
+  "threat_id": "LINDDUN-LINKING-001"
+}
+```
+
+### `search_privacy_patterns`
+
+Search privacy design patterns and DFD annotations.
+
+```json
+{
+  "query": "consent",
+  "category": "Unawareness",
+  "limit": 20
+}
+```
+
 ## Pattern Coverage
 
 | Domain | Count | Key Patterns |
@@ -173,6 +226,18 @@ Suggest trust boundary templates for a set of technologies. Classifies each tech
 | **Other** | **46** | Blockchain, Financial, Mobile, VPN, Crypto, CDN, NFC, and more |
 | **TOTAL** | **125** | **40+ domains** |
 
+## Data Sources
+
+All data is traceable to authoritative sources. See [`sources.yml`](sources.yml) for full provenance metadata.
+
+| Source | Type | What It Provides |
+|--------|------|------------------|
+| Ansvar Expert Patterns | Curated | 125 STRIDE threat patterns with CVE refs, code mitigations, detection queries |
+| [LINDDUN (KU Leuven)](https://linddun.org) | Academic | 35 privacy threats, 30 privacy design patterns, threat trees |
+| [NIST NVD](https://nvd.nist.gov) | Government | CVE identifiers and CVSS scores referenced in patterns |
+| [MITRE ATT&CK](https://attack.mitre.org) | Non-profit | Technique IDs (T-codes) mapped to threat patterns |
+| [OWASP Top 10](https://owasp.org/www-project-top-ten/) | Non-profit | Risk categories mapped to patterns |
+
 ## Architecture
 
 **Stack:** TypeScript + SQLite + FTS5 (based on [EU Compliance MCP](https://github.com/Ansvar-Systems/EU_compliance_MCP))
@@ -186,14 +251,20 @@ Suggest trust boundary templates for a set of technologies. Classifies each tech
 
 **Data:**
 - 125 threat patterns across 40+ security domains
+- 35 LINDDUN privacy threats across 7 categories
+- 30 privacy design patterns with DFD annotations
 - 121 DFD technology elements with Mermaid shape mappings
 - 12 trust boundary architecture templates
 
 ## Documentation
 
 - [Pattern Schema](docs/pattern-schema.md) - Complete JSON schema definition
+- [LINDDUN Schema](docs/linddun-schema.md) - Privacy threat and pattern catalog schema
 - [Implementation Summary](docs/IMPLEMENTATION-SUMMARY.md) - Architecture and implementation details
 - [Production Readiness](docs/PRODUCTION-READINESS.md) - Quality verification checklist
+- [Changelog](CHANGELOG.md) - Release history
+- [Data Provenance](sources.yml) - Source metadata for all datasets
+- [Contract Tests](fixtures/golden-tests.json) - Golden fixture suite for CI reliability
 
 ## Contributing
 

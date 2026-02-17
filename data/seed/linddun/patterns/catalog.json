@@ -1,0 +1,1444 @@
+[
+  {
+    "pattern_id": "LINDDUN-PATTERN-001",
+    "name": "Ephemeral Session Identifiers",
+    "summary": "Use short-lived, rotating session identifiers scoped to one context to minimize cross-service correlation.",
+    "categories": [
+      "Linking",
+      "Identifying"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "external_entity:user",
+        "process:auth-service",
+        "data_store:session-store"
+      ],
+      "trust_boundary_notes": [
+        "Rotate subject identifiers when crossing API gateway boundaries."
+      ],
+      "data_flow_constraints": [
+        "Disallow persistent IDs in telemetry events."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-LINKING-001",
+      "LINDDUN-LINKING-005"
+    ],
+    "pet_family": "Unlinkability",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-002",
+    "name": "Purpose-Bound Join Keys",
+    "summary": "Derive independent salted join keys per purpose so datasets cannot be trivially linked.",
+    "categories": [
+      "Linking",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:data-contract-service",
+        "data_store:analytics-warehouse"
+      ],
+      "trust_boundary_notes": [
+        "Separate enrichment zone from production identity zone."
+      ],
+      "data_flow_constraints": [
+        "Block cross-purpose joins unless approved via policy gate."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-LINKING-003",
+      "LINDDUN-DATA-DISCLOSURE-004"
+    ],
+    "pet_family": "Data minimization",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-003",
+    "name": "Fingerprint Entropy Reduction",
+    "summary": "Actively reduce browser/device entropy before telemetry collection to curb probabilistic linking.",
+    "categories": [
+      "Linking",
+      "Detecting"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "external_entity:web-client",
+        "process:telemetry-edge"
+      ],
+      "trust_boundary_notes": [
+        "Normalize client hints at ingress boundary."
+      ],
+      "data_flow_constraints": [
+        "Strip high-cardinality attributes from edge events."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-LINKING-002",
+      "LINDDUN-DETECTING-005"
+    ],
+    "pet_family": "Unobservability",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-004",
+    "name": "Tokenized Identifier Vault",
+    "summary": "Replace direct identifiers with opaque tokens and isolate token maps in a hardened vault.",
+    "categories": [
+      "Identifying",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:tokenization-service",
+        "data_store:token-vault"
+      ],
+      "trust_boundary_notes": [
+        "Only tokenization service may cross identity boundary."
+      ],
+      "data_flow_constraints": [
+        "Reject writes containing raw identifiers outside vault zone."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-IDENTIFYING-002",
+      "LINDDUN-DATA-DISCLOSURE-001"
+    ],
+    "pet_family": "Pseudonymization",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-005",
+    "name": "K-Anonymity Release Gate",
+    "summary": "Gate exports through k-anonymity and suppression checks before data leaves analytics boundaries.",
+    "categories": [
+      "Identifying",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:export-gateway",
+        "data_store:analytics-mart"
+      ],
+      "trust_boundary_notes": [
+        "Require privacy approval for low-cohort exports."
+      ],
+      "data_flow_constraints": [
+        "Drop result rows below minimum cohort thresholds."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-IDENTIFYING-001",
+      "LINDDUN-NON-COMPLIANCE-002"
+    ],
+    "pet_family": "Anonymization",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-006",
+    "name": "Free-Text Redaction Pipeline",
+    "summary": "Scan and redact PII from free-text fields on ingress and before search indexing.",
+    "categories": [
+      "Identifying",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:pii-detector",
+        "process:search-indexer"
+      ],
+      "trust_boundary_notes": [
+        "Quarantine risky content in a restricted processing zone."
+      ],
+      "data_flow_constraints": [
+        "No raw free-text leaves ingestion boundary without redaction."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-IDENTIFYING-005",
+      "LINDDUN-DATA-DISCLOSURE-003"
+    ],
+    "pet_family": "Data minimization",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-007",
+    "name": "Selective Disclosure Credentials",
+    "summary": "Use verifiable credentials with selective disclosure to prove claims without full identity reveal.",
+    "categories": [
+      "Non-repudiation",
+      "Identifying"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "external_entity:user-wallet",
+        "process:verification-service"
+      ],
+      "trust_boundary_notes": [
+        "Verification service receives only proof attributes, not full identity payload."
+      ],
+      "data_flow_constraints": [
+        "Store proof transcripts with bounded retention."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-REPUDIATION-002",
+      "LINDDUN-IDENTIFYING-003"
+    ],
+    "pet_family": "Cryptographic PET",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-008",
+    "name": "Pseudonymous Audit Trail",
+    "summary": "Build audit trails around rotating actor aliases with controlled re-identification break-glass workflow.",
+    "categories": [
+      "Non-repudiation",
+      "Unawareness"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:audit-service",
+        "data_store:audit-log-store"
+      ],
+      "trust_boundary_notes": [
+        "Keep re-identification key service in separate privileged boundary."
+      ],
+      "data_flow_constraints": [
+        "Mask actor identity in operational dashboards."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-REPUDIATION-001",
+      "LINDDUN-UNAWARENESS-004"
+    ],
+    "pet_family": "Unlinkability",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-009",
+    "name": "Consent Withdrawal Kill-Switch",
+    "summary": "Propagate consent withdrawal as an event that halts non-essential processing paths immediately.",
+    "categories": [
+      "Non-repudiation",
+      "Unawareness",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:consent-service",
+        "process:event-bus"
+      ],
+      "trust_boundary_notes": [
+        "Withdrawal events must traverse all downstream trust zones."
+      ],
+      "data_flow_constraints": [
+        "Tag downstream jobs with enforceable consent state."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-REPUDIATION-004",
+      "LINDDUN-UNAWARENESS-003",
+      "LINDDUN-NON-COMPLIANCE-001"
+    ],
+    "pet_family": "User control",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-010",
+    "name": "Presence Signal Coarsening",
+    "summary": "Expose coarse-grained availability states instead of precise online presence timestamps.",
+    "categories": [
+      "Detecting"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:presence-service",
+        "external_entity:chat-client"
+      ],
+      "trust_boundary_notes": [
+        "Translate exact presence events before client boundary."
+      ],
+      "data_flow_constraints": [
+        "Avoid exact timestamps in client-visible payloads."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DETECTING-001"
+    ],
+    "pet_family": "Unobservability",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-011",
+    "name": "Telemetry Jitter and Batching",
+    "summary": "Batch and jitter telemetry dispatch to reduce timing-based detection and location inference.",
+    "categories": [
+      "Detecting",
+      "Linking"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:telemetry-agent",
+        "process:metrics-ingestor"
+      ],
+      "trust_boundary_notes": [
+        "Apply jitter before crossing network boundary."
+      ],
+      "data_flow_constraints": [
+        "Enforce minimum batch size for outbound events."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DETECTING-002",
+      "LINDDUN-DETECTING-005",
+      "LINDDUN-LINKING-004"
+    ],
+    "pet_family": "Unobservability",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-012",
+    "name": "Differentially Private Metrics Layer",
+    "summary": "Release aggregate metrics through a DP layer with privacy budgets and sensitivity bounds.",
+    "categories": [
+      "Detecting",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:dp-aggregator",
+        "data_store:metrics-warehouse"
+      ],
+      "trust_boundary_notes": [
+        "Only DP outputs may exit analytics trust zone."
+      ],
+      "data_flow_constraints": [
+        "Deny queries after budget exhaustion."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DETECTING-004",
+      "LINDDUN-DATA-DISCLOSURE-005"
+    ],
+    "pet_family": "Differential privacy",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-013",
+    "name": "Response Shape Equalization",
+    "summary": "Normalize error codes, response size, and timing to reduce sensitive-state detectability.",
+    "categories": [
+      "Detecting",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:api-gateway",
+        "process:policy-engine"
+      ],
+      "trust_boundary_notes": [
+        "Policy engine enforces uniform response templates at boundary."
+      ],
+      "data_flow_constraints": [
+        "Avoid condition-dependent payload fields for sensitive endpoints."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DETECTING-003",
+      "LINDDUN-DATA-DISCLOSURE-001"
+    ],
+    "pet_family": "Side-channel hardening",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-014",
+    "name": "Field-Level Access Contracts",
+    "summary": "Apply purpose and role aware field-level authorization for every API response.",
+    "categories": [
+      "Data disclosure",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:api-service",
+        "process:abac-engine"
+      ],
+      "trust_boundary_notes": [
+        "ABAC decisions must occur before serialization boundary."
+      ],
+      "data_flow_constraints": [
+        "Schema contracts fail closed on missing policy."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DATA-DISCLOSURE-001",
+      "LINDDUN-NON-COMPLIANCE-004"
+    ],
+    "pet_family": "Access control",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-015",
+    "name": "Tenant-Isolated Data Plane",
+    "summary": "Separate tenant keys, partitions, and caches to prevent cross-tenant personal-data leakage.",
+    "categories": [
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:tenant-router",
+        "data_store:multi-tenant-db"
+      ],
+      "trust_boundary_notes": [
+        "Tenant routing must be validated at each service boundary."
+      ],
+      "data_flow_constraints": [
+        "Partition key must be mandatory in every data access path."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DATA-DISCLOSURE-004"
+    ],
+    "pet_family": "Isolation",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-016",
+    "name": "Secure Object Export Broker",
+    "summary": "Route exports through a broker enforcing encryption, signed URLs, and expiration controls.",
+    "categories": [
+      "Data disclosure",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:export-broker",
+        "data_store:object-storage"
+      ],
+      "trust_boundary_notes": [
+        "Only broker may publish object URLs across external boundary."
+      ],
+      "data_flow_constraints": [
+        "Require short-lived URLs and region checks."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DATA-DISCLOSURE-002",
+      "LINDDUN-NON-COMPLIANCE-005"
+    ],
+    "pet_family": "Secure transfer",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-017",
+    "name": "Layered Notice Composer",
+    "summary": "Generate contextual layered notices tied to each collection point and processing purpose.",
+    "categories": [
+      "Unawareness"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:notice-service",
+        "external_entity:user-ui"
+      ],
+      "trust_boundary_notes": [
+        "Notice service must be invoked before submit action crosses backend boundary."
+      ],
+      "data_flow_constraints": [
+        "Reject data capture when required notice is unavailable."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-UNAWARENESS-001",
+      "LINDDUN-UNAWARENESS-002"
+    ],
+    "pet_family": "Transparency",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-018",
+    "name": "Granular Consent Preference Center",
+    "summary": "Expose granular purpose controls and synchronize enforcement to all downstream processors.",
+    "categories": [
+      "Unawareness",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:preference-center",
+        "process:policy-sync-service"
+      ],
+      "trust_boundary_notes": [
+        "Policy sync events must cross processor boundaries with integrity checks."
+      ],
+      "data_flow_constraints": [
+        "No processing for disabled purpose flags."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-UNAWARENESS-003",
+      "LINDDUN-NON-COMPLIANCE-001"
+    ],
+    "pet_family": "User control",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-019",
+    "name": "Retention Clock Automation",
+    "summary": "Attach retention clocks to data classes and automatically purge on expiry with verification logs.",
+    "categories": [
+      "Unawareness",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:retention-orchestrator",
+        "data_store:archive-store"
+      ],
+      "trust_boundary_notes": [
+        "Purge workflows must include downstream processor boundaries."
+      ],
+      "data_flow_constraints": [
+        "Block backups older than retention policy unless legal hold."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-UNAWARENESS-004",
+      "LINDDUN-NON-COMPLIANCE-002"
+    ],
+    "pet_family": "Retention control",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-020",
+    "name": "Third-Party Sharing Ledger",
+    "summary": "Maintain a user-visible ledger of recipients, purpose, and legal safeguards for sharing.",
+    "categories": [
+      "Unawareness",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:sharing-ledger-service",
+        "external_entity:user-portal"
+      ],
+      "trust_boundary_notes": [
+        "Ledger updates are required before outbound transfer boundary crossing."
+      ],
+      "data_flow_constraints": [
+        "Annotate each transfer with safeguard metadata."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-UNAWARENESS-005",
+      "LINDDUN-NON-COMPLIANCE-005"
+    ],
+    "pet_family": "Accountability UX",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-021",
+    "name": "Lawful Basis Policy Engine",
+    "summary": "Enforce lawful basis checks in runtime policy decisions before data processing executes.",
+    "categories": [
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:lawful-basis-engine",
+        "process:workflow-orchestrator"
+      ],
+      "trust_boundary_notes": [
+        "All purpose execution paths must call lawful basis policy boundary."
+      ],
+      "data_flow_constraints": [
+        "Deny processing on absent legal basis mapping."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-COMPLIANCE-001"
+    ],
+    "pet_family": "Governance automation",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-022",
+    "name": "DSAR Workflow Orchestrator",
+    "summary": "Automate discovery, export, deletion, and correction workflows with SLA tracking.",
+    "categories": [
+      "Non-compliance",
+      "Unawareness"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:dsar-orchestrator",
+        "data_store:data-catalog"
+      ],
+      "trust_boundary_notes": [
+        "DSAR orchestration crosses all data processor boundaries via typed connectors."
+      ],
+      "data_flow_constraints": [
+        "Record completion evidence per data source and subprocessors."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-COMPLIANCE-002",
+      "LINDDUN-UNAWARENESS-004"
+    ],
+    "pet_family": "Accountability automation",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-023",
+    "name": "DPIA Gate in Delivery Pipeline",
+    "summary": "Require DPIA approval artifacts for high-risk features before production deployment.",
+    "categories": [
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:ci-cd-pipeline",
+        "process:risk-registry"
+      ],
+      "trust_boundary_notes": [
+        "Deployment boundary blocks if DPIA control is unresolved."
+      ],
+      "data_flow_constraints": [
+        "Attach risk acceptance IDs to release metadata."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-COMPLIANCE-003"
+    ],
+    "pet_family": "Risk management",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-024",
+    "name": "Transfer Safeguard Router",
+    "summary": "Route cross-border processing through policy checks for SCC, TIA, and localization constraints.",
+    "categories": [
+      "Non-compliance",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:transfer-policy-router",
+        "external_entity:subprocessor"
+      ],
+      "trust_boundary_notes": [
+        "Outbound processor boundary validates transfer safeguards."
+      ],
+      "data_flow_constraints": [
+        "Fail transfer on missing adequacy or SCC references."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-COMPLIANCE-005",
+      "LINDDUN-DATA-DISCLOSURE-002"
+    ],
+    "pet_family": "Transfer governance",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-025",
+    "name": "Privacy Budget Monitor",
+    "summary": "Track and enforce cumulative privacy risk budget for analytics and model queries.",
+    "categories": [
+      "Detecting",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:privacy-budget-service",
+        "process:analytics-query-api"
+      ],
+      "trust_boundary_notes": [
+        "Analytics boundary includes budget check middleware."
+      ],
+      "data_flow_constraints": [
+        "Stop release when budget threshold is exceeded."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DETECTING-004",
+      "LINDDUN-NON-COMPLIANCE-003"
+    ],
+    "pet_family": "Differential privacy",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-026",
+    "name": "Edge PII Redaction Gateway",
+    "summary": "Redact and tokenize personal attributes at the network edge before internal fan-out.",
+    "categories": [
+      "Identifying",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:edge-gateway",
+        "process:event-fanout-service"
+      ],
+      "trust_boundary_notes": [
+        "Internal boundary receives only classified/redacted payload forms."
+      ],
+      "data_flow_constraints": [
+        "Quarantine events with uncertain PII classification."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-IDENTIFYING-002",
+      "LINDDUN-IDENTIFYING-005",
+      "LINDDUN-DATA-DISCLOSURE-003"
+    ],
+    "pet_family": "Pseudonymization",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-027",
+    "name": "Join-Key Quarantine Zone",
+    "summary": "Perform controlled joins in a quarantined environment with one-way outputs.",
+    "categories": [
+      "Linking",
+      "Data disclosure"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:join-quarantine",
+        "data_store:restricted-linkage-store"
+      ],
+      "trust_boundary_notes": [
+        "No raw join keys may leave quarantine trust boundary."
+      ],
+      "data_flow_constraints": [
+        "Emit only aggregate outputs with policy tags."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-LINKING-003",
+      "LINDDUN-LINKING-004",
+      "LINDDUN-DATA-DISCLOSURE-004"
+    ],
+    "pet_family": "Controlled linkage",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-028",
+    "name": "Transparent Processing Timeline",
+    "summary": "Provide user-facing timeline of key processing events and significant model decisions.",
+    "categories": [
+      "Unawareness",
+      "Non-repudiation"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:timeline-service",
+        "external_entity:user-portal"
+      ],
+      "trust_boundary_notes": [
+        "Timeline service reads privacy-safe event projections only."
+      ],
+      "data_flow_constraints": [
+        "Exclude direct identifiers from timeline payloads."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-UNAWARENESS-001",
+      "LINDDUN-NON-REPUDIATION-001"
+    ],
+    "pet_family": "Transparency",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-029",
+    "name": "Revocable Consent Receipt Tokens",
+    "summary": "Issue revocable consent receipts referencing policy state without exposing direct identity.",
+    "categories": [
+      "Non-repudiation",
+      "Unawareness",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:consent-token-service",
+        "data_store:consent-ledger"
+      ],
+      "trust_boundary_notes": [
+        "Receipt verification boundary must resolve current consent state."
+      ],
+      "data_flow_constraints": [
+        "Invalidate stale receipt tokens on policy change."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-NON-REPUDIATION-004",
+      "LINDDUN-UNAWARENESS-003",
+      "LINDDUN-NON-COMPLIANCE-001"
+    ],
+    "pet_family": "User control",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "pattern_id": "LINDDUN-PATTERN-030",
+    "name": "Privacy-Preserving Model Retrieval",
+    "summary": "Constrain retrieval and generation systems to prevent personal data leakage in responses.",
+    "categories": [
+      "Data disclosure",
+      "Detecting",
+      "Non-compliance"
+    ],
+    "dfd_annotations": {
+      "elements": [
+        "process:retrieval-guard",
+        "process:llm-service",
+        "data_store:vector-store"
+      ],
+      "trust_boundary_notes": [
+        "Guardrail boundary filters prompts and outputs before external return."
+      ],
+      "data_flow_constraints": [
+        "Block outputs containing high-confidence personal data entities."
+      ],
+      "logging_guidance": [
+        "Log only pseudonymous identifiers for this flow.",
+        "Apply role-based access and short retention to privacy-sensitive traces."
+      ]
+    },
+    "implementation_guidance": [
+      "Define a threat-specific privacy acceptance criterion in CI/CD.",
+      "Attach automated tests for policy enforcement at each trust boundary crossing.",
+      "Document operational runbooks for incident response and user-right requests."
+    ],
+    "related_threat_ids": [
+      "LINDDUN-DATA-DISCLOSURE-005",
+      "LINDDUN-DETECTING-004",
+      "LINDDUN-NON-COMPLIANCE-004"
+    ],
+    "pet_family": "Confidential AI controls",
+    "sources": [
+      {
+        "title": "LINDDUN Privacy Design Guidance",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Privacy Enhancing Technologies design papers",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  }
+]

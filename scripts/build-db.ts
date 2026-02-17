@@ -17,6 +17,12 @@ import Database from '@ansvar/mcp-sqlite';
 import { SCHEMA } from '../src/database/schema.js';
 import { Pattern } from '../src/types/pattern.js';
 import { DfdElement, TrustBoundaryTemplate } from '../src/types/dfd.js';
+import {
+  LinddunCategory,
+  LinddunPattern,
+  LinddunReviewDecision,
+  LinddunThreat,
+} from '../src/types/linddun.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,11 +31,49 @@ const PROJECT_ROOT = join(__dirname, '..');
 const PATTERNS_DIR = join(PROJECT_ROOT, 'data/seed/patterns');
 const DFD_ELEMENTS_DIR = join(PROJECT_ROOT, 'data/seed/dfd/elements');
 const DFD_TEMPLATES_DIR = join(PROJECT_ROOT, 'data/seed/dfd/templates');
+const LINDDUN_THREATS_DIR = join(PROJECT_ROOT, 'data/seed/linddun/threats');
+const LINDDUN_PATTERNS_DIR = join(PROJECT_ROOT, 'data/seed/linddun/patterns');
+const LINDDUN_REVIEWS_DIR = join(PROJECT_ROOT, 'data/seed/linddun/reviews');
 const DB_PATH = join(PROJECT_ROOT, 'data/patterns.db');
+
+const VALID_LINDDUN_CATEGORIES: LinddunCategory[] = [
+  'Linking',
+  'Identifying',
+  'Non-repudiation',
+  'Detecting',
+  'Data disclosure',
+  'Unawareness',
+  'Non-compliance',
+];
 
 interface ValidationError {
   file: string;
   error: string;
+}
+
+type CitationEntityType = 'threat' | 'mitigation' | 'pattern';
+
+interface CitationSeed {
+  citation_id: string;
+  entity_type: CitationEntityType;
+  entity_id: string;
+  claim_key: string;
+  claim_text: string;
+  source_title: string;
+  source_url?: string;
+  source_type?: string;
+  license?: string;
+  confidence: number;
+}
+
+interface CitationReviewSeed {
+  review_id: string;
+  citation_id: string;
+  reviewer_name: string;
+  reviewer_role?: string;
+  decision: LinddunReviewDecision;
+  comments?: string;
+  reviewed_at: string;
 }
 
 /**
@@ -49,6 +93,114 @@ async function findPatternFiles(dir: string): Promise<string[]> {
   }
 
   return files;
+}
+
+/**
+ * Load a JSON file that may contain either a single object or an array of objects.
+ */
+async function loadJsonRecords<T>(file: string): Promise<T[]> {
+  const content = await readFile(file, 'utf-8');
+  const parsed = JSON.parse(content);
+  return Array.isArray(parsed) ? parsed as T[] : [parsed as T];
+}
+
+function sanitizeClaimText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function buildThreatCitations(threat: LinddunThreat): CitationSeed[] {
+  const citations: CitationSeed[] = [];
+  const sourceList = (threat.sources && threat.sources.length > 0)
+    ? threat.sources
+    : [{ title: 'LINDDUN catalog (source unspecified)' }];
+
+  const addForSources = (
+    entityType: CitationEntityType,
+    entityId: string,
+    claimKey: string,
+    claimText: string,
+    confidence: number,
+    customSources?: Array<{ title: string; url?: string; type?: string; license?: string }>,
+  ) => {
+    const sources = (customSources && customSources.length > 0) ? customSources : sourceList;
+    for (const source of sources) {
+      const sourceTitle = sanitizeClaimText(source.title);
+      const normalizedText = sanitizeClaimText(claimText);
+      if (!sourceTitle || !normalizedText) continue;
+      citations.push({
+        citation_id: `${entityId}-${claimKey}-${sourceTitle}`
+          .replace(/[^A-Za-z0-9-]+/g, '-')
+          .slice(0, 220),
+        entity_type: entityType,
+        entity_id: entityId,
+        claim_key: claimKey,
+        claim_text: normalizedText,
+        source_title: sourceTitle,
+        source_url: source.url,
+        source_type: source.type,
+        license: source.license,
+        confidence,
+      });
+    }
+  };
+
+  addForSources('threat', threat.threat_id, 'description', threat.description, 0.92);
+  for (let i = 0; i < (threat.examples || []).length; i++) {
+    addForSources('threat', threat.threat_id, `example_${i + 1}`, threat.examples[i], 0.88);
+  }
+
+  for (let i = 0; i < (threat.mitigations || []).length; i++) {
+    const mitigation = threat.mitigations[i];
+    const mitigationEntityId = `${threat.threat_id}-${mitigation.id}`;
+    addForSources(
+      'mitigation',
+      mitigationEntityId,
+      `mitigation_${i + 1}`,
+      mitigation.description,
+      0.86,
+      (mitigation.references || []).map((title) => ({ title })),
+    );
+  }
+
+  return citations;
+}
+
+function buildPatternCitations(pattern: LinddunPattern): CitationSeed[] {
+  const citations: CitationSeed[] = [];
+  const sources = (pattern.sources && pattern.sources.length > 0)
+    ? pattern.sources
+    : [{ title: 'LINDDUN patterns catalog (source unspecified)' }];
+
+  const add = (claimKey: string, claimText: string, confidence: number) => {
+    const normalizedText = sanitizeClaimText(claimText);
+    if (!normalizedText) return;
+    for (const source of sources) {
+      const title = sanitizeClaimText(source.title);
+      if (!title) continue;
+      citations.push({
+        citation_id: `${pattern.pattern_id}-${claimKey}-${title}`
+          .replace(/[^A-Za-z0-9-]+/g, '-')
+          .slice(0, 220),
+        entity_type: 'pattern',
+        entity_id: pattern.pattern_id,
+        claim_key: claimKey,
+        claim_text: normalizedText,
+        source_title: title,
+        source_url: source.url,
+        source_type: source.type,
+        license: source.license,
+        confidence,
+      });
+    }
+  };
+
+  add('summary', pattern.summary, 0.9);
+  for (let i = 0; i < (pattern.implementation_guidance || []).length; i++) {
+    add(`implementation_${i + 1}`, pattern.implementation_guidance[i], 0.85);
+  }
+
+  return citations;
 }
 
 /**
@@ -128,14 +280,14 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
       pattern.threat.description,
       pattern.classification.stride_category,
       pattern.threat.severity,
-      pattern.threat.cvss_v3.score,
-      pattern.threat.cvss_v3.vector,
+      pattern.threat.cvss_v3?.score ?? null,
+      pattern.threat.cvss_v3?.vector ?? null,
       pattern.technology.primary,
       [pattern.technology.primary, ...(pattern.technology.related_frameworks || [])].join(', '),
-      pattern.technology.versions_affected.join(', '),
-      pattern.technology.ecosystem,
-      pattern.attack.scenario,
-      pattern.attack.attack_complexity,
+      (pattern.technology.versions_affected || []).join(', '),
+      pattern.technology.ecosystem ?? null,
+      pattern.attack.scenario ?? null,
+      pattern.attack.attack_complexity ?? null,
       pattern.metadata.confidence_score,
       pattern.metadata.created_date,
       pattern.metadata.last_updated,
@@ -144,21 +296,22 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
     );
 
     // Insert CVE references (OR IGNORE handles duplicate CVE IDs within a pattern)
-    for (const cve of pattern.evidence.cve_references) {
+    for (const cve of pattern.evidence.cve_references || []) {
+      if (!cve?.cve_id) continue;
       db.prepare(`
         INSERT OR IGNORE INTO cve_references (pattern_id, cve_id, cvss_score, published_date, description)
         VALUES (?, ?, ?, ?, ?)
       `).run(
         pattern.id,
         cve.cve_id,
-        cve.cvss_score,
-        cve.published_date,
-        cve.description
+        cve.cvss_score ?? null,
+        cve.published_date ?? null,
+        cve.description ?? null
       );
     }
 
     // Insert mitigations
-    for (const mitigation of pattern.mitigations) {
+    for (const mitigation of pattern.mitigations || []) {
       db.prepare(`
         INSERT INTO mitigations (
           id, pattern_id, title, description, effectiveness, implementation_complexity,
@@ -168,9 +321,9 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
         `${pattern.id}-${mitigation.control_id}`,
         pattern.id,
         mitigation.title,
-        mitigation.description,
-        mitigation.effectiveness,
-        mitigation.implementation_complexity,
+        mitigation.description ?? null,
+        mitigation.effectiveness ?? null,
+        mitigation.implementation_complexity ?? null,
         mitigation.code_example?.language || null,
         mitigation.code_example?.framework || null,
         mitigation.code_example?.code || null
@@ -178,7 +331,7 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
     }
 
     // Insert OWASP mappings
-    for (const owasp of pattern.classification.owasp_top10) {
+    for (const owasp of pattern.classification.owasp_top10 || []) {
       db.prepare(`
         INSERT INTO owasp_mappings (pattern_id, owasp_category)
         VALUES (?, ?)
@@ -186,7 +339,7 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
     }
 
     // Insert MITRE ATT&CK mappings
-    for (const mitre of pattern.classification.mitre_attack) {
+    for (const mitre of pattern.classification.mitre_attack || []) {
       db.prepare(`
         INSERT INTO mitre_mappings (pattern_id, mitre_technique)
         VALUES (?, ?)
@@ -194,7 +347,7 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
     }
 
     // Insert CWE mappings
-    for (const cwe of pattern.classification.cwe) {
+    for (const cwe of pattern.classification.cwe || []) {
       db.prepare(`
         INSERT INTO cwe_mappings (pattern_id, cwe_id)
         VALUES (?, ?)
@@ -227,6 +380,258 @@ function insertPattern(db: InstanceType<typeof Database>, pattern: Pattern) {
   });
 
   tx();
+}
+
+/**
+ * Validate LINDDUN threat schema
+ */
+function validateLinddunThreat(threat: any, file: string): ValidationError | null {
+  const errors: string[] = [];
+
+  if (!threat.threat_id) errors.push('Missing threat_id');
+  if (!threat.category) errors.push('Missing category');
+  if (!threat.tree_path) errors.push('Missing tree_path');
+  if (!threat.description) errors.push('Missing description');
+  if (!Array.isArray(threat.examples)) errors.push('examples must be an array');
+  if (!Array.isArray(threat.mitigations) || threat.mitigations.length === 0) {
+    errors.push('mitigations must be a non-empty array');
+  }
+  if (!Array.isArray(threat.gdpr_articles)) errors.push('gdpr_articles must be an array');
+
+  if (
+    threat.category &&
+    !VALID_LINDDUN_CATEGORIES.includes(threat.category as LinddunCategory)
+  ) {
+    errors.push(`Invalid category: ${threat.category}`);
+  }
+
+  if (threat.threat_id && !/^LINDDUN-[A-Z0-9-]+-\d{3}$/.test(threat.threat_id)) {
+    errors.push(`Invalid threat_id format: ${threat.threat_id}`);
+  }
+
+  if (
+    threat.tree_path &&
+    threat.category &&
+    typeof threat.tree_path === 'string' &&
+    !threat.tree_path.startsWith(threat.category)
+  ) {
+    errors.push('tree_path must start with category');
+  }
+
+  if (Array.isArray(threat.mitigations)) {
+    for (const mitigation of threat.mitigations) {
+      if (!mitigation?.id) errors.push('Each mitigation must include id');
+      if (!mitigation?.title) errors.push('Each mitigation must include title');
+      if (!mitigation?.description) errors.push('Each mitigation must include description');
+      if (!Array.isArray(mitigation?.implementation_hints)) {
+        errors.push(`mitigation ${mitigation?.id || 'unknown'} implementation_hints must be an array`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { file, error: errors.join('; ') };
+  }
+  return null;
+}
+
+/**
+ * Insert LINDDUN threat and normalized mitigations into database.
+ */
+function insertLinddunThreat(db: InstanceType<typeof Database>, threat: LinddunThreat) {
+  const tx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO linddun_threats (
+        threat_id, category, tree_path, description, examples, mitigations, gdpr_articles, sources, full_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      threat.threat_id,
+      threat.category,
+      threat.tree_path,
+      threat.description,
+      JSON.stringify(threat.examples || []),
+      JSON.stringify(threat.mitigations || []),
+      JSON.stringify(threat.gdpr_articles || []),
+      JSON.stringify(threat.sources || []),
+      JSON.stringify(threat),
+    );
+
+    for (const mitigation of threat.mitigations || []) {
+      db.prepare(`
+        INSERT INTO linddun_mitigations (
+          mitigation_id, threat_id, title, description, pet_type, implementation_hints, effectiveness, reference_links
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        `${threat.threat_id}-${mitigation.id}`,
+        threat.threat_id,
+        mitigation.title,
+        mitigation.description,
+        mitigation.pet_type || null,
+        JSON.stringify(mitigation.implementation_hints || []),
+        mitigation.effectiveness || null,
+        JSON.stringify(mitigation.references || []),
+      );
+    }
+
+    const citations = buildThreatCitations(threat);
+    for (const citation of citations) {
+      db.prepare(`
+        INSERT OR REPLACE INTO linddun_citations (
+          citation_id, entity_type, entity_id, claim_key, claim_text,
+          source_title, source_url, source_type, license, confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        citation.citation_id,
+        citation.entity_type,
+        citation.entity_id,
+        citation.claim_key,
+        citation.claim_text,
+        citation.source_title,
+        citation.source_url || null,
+        citation.source_type || null,
+        citation.license || null,
+        citation.confidence,
+      );
+    }
+  });
+
+  tx();
+}
+
+/**
+ * Validate LINDDUN privacy pattern schema
+ */
+function validateLinddunPattern(pattern: any, file: string): ValidationError | null {
+  const errors: string[] = [];
+
+  if (!pattern.pattern_id) errors.push('Missing pattern_id');
+  if (!pattern.name) errors.push('Missing name');
+  if (!pattern.summary) errors.push('Missing summary');
+  if (!Array.isArray(pattern.categories) || pattern.categories.length === 0) {
+    errors.push('categories must be a non-empty array');
+  }
+  if (!pattern.dfd_annotations || typeof pattern.dfd_annotations !== 'object' || Array.isArray(pattern.dfd_annotations)) {
+    errors.push('dfd_annotations must be an object');
+  }
+  if (!Array.isArray(pattern.implementation_guidance)) {
+    errors.push('implementation_guidance must be an array');
+  }
+  if (!Array.isArray(pattern.related_threat_ids)) {
+    errors.push('related_threat_ids must be an array');
+  }
+
+  if (pattern.pattern_id && !/^LINDDUN-PATTERN-\d{3}$/.test(pattern.pattern_id)) {
+    errors.push(`Invalid pattern_id format: ${pattern.pattern_id}`);
+  }
+
+  if (Array.isArray(pattern.categories)) {
+    for (const category of pattern.categories) {
+      if (!VALID_LINDDUN_CATEGORIES.includes(category as LinddunCategory)) {
+        errors.push(`Invalid LINDDUN category in pattern: ${category}`);
+      }
+    }
+  }
+
+  if (Array.isArray(pattern.related_threat_ids)) {
+    for (const threatId of pattern.related_threat_ids) {
+      if (typeof threatId !== 'string' || !/^LINDDUN-[A-Z0-9-]+-\d{3}$/.test(threatId)) {
+        errors.push(`Invalid related_threat_id: ${String(threatId)}`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { file, error: errors.join('; ') };
+  }
+  return null;
+}
+
+/**
+ * Insert LINDDUN privacy pattern into database
+ */
+function insertLinddunPattern(db: InstanceType<typeof Database>, pattern: LinddunPattern) {
+  const tx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO linddun_patterns (
+        pattern_id, name, summary, categories, dfd_annotations, implementation_guidance,
+        related_threat_ids, pet_family, sources, full_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      pattern.pattern_id,
+      pattern.name,
+      pattern.summary,
+      JSON.stringify(pattern.categories || []),
+      JSON.stringify(pattern.dfd_annotations || {}),
+      JSON.stringify(pattern.implementation_guidance || []),
+      JSON.stringify(pattern.related_threat_ids || []),
+      pattern.pet_family || null,
+      JSON.stringify(pattern.sources || []),
+      JSON.stringify(pattern),
+    );
+
+    const citations = buildPatternCitations(pattern);
+    for (const citation of citations) {
+      db.prepare(`
+        INSERT OR REPLACE INTO linddun_citations (
+          citation_id, entity_type, entity_id, claim_key, claim_text,
+          source_title, source_url, source_type, license, confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        citation.citation_id,
+        citation.entity_type,
+        citation.entity_id,
+        citation.claim_key,
+        citation.claim_text,
+        citation.source_title,
+        citation.source_url || null,
+        citation.source_type || null,
+        citation.license || null,
+        citation.confidence,
+      );
+    }
+  });
+
+  tx();
+}
+
+function validateCitationReview(review: any, file: string): ValidationError | null {
+  const errors: string[] = [];
+  const decisions: LinddunReviewDecision[] = ['approved', 'needs_revision', 'rejected'];
+
+  if (!review.review_id) errors.push('Missing review_id');
+  if (!review.citation_id) errors.push('Missing citation_id');
+  if (!review.reviewer_name) errors.push('Missing reviewer_name');
+  if (!review.decision) errors.push('Missing decision');
+  if (!review.reviewed_at) errors.push('Missing reviewed_at');
+
+  if (review.decision && !decisions.includes(review.decision as LinddunReviewDecision)) {
+    errors.push(`Invalid decision: ${review.decision}`);
+  }
+
+  if (review.reviewed_at && Number.isNaN(new Date(review.reviewed_at).getTime())) {
+    errors.push(`Invalid reviewed_at timestamp: ${review.reviewed_at}`);
+  }
+
+  if (errors.length > 0) {
+    return { file, error: errors.join('; ') };
+  }
+  return null;
+}
+
+function insertCitationReview(db: InstanceType<typeof Database>, review: CitationReviewSeed) {
+  db.prepare(`
+    INSERT OR REPLACE INTO linddun_citation_reviews (
+      review_id, citation_id, reviewer_name, reviewer_role, decision, comments, reviewed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    review.review_id,
+    review.citation_id,
+    review.reviewer_name,
+    review.reviewer_role || null,
+    review.decision,
+    review.comments || null,
+    review.reviewed_at,
+  );
 }
 
 const VALID_DFD_ROLES = ['external_entity', 'process', 'data_store', 'data_flow'];
@@ -385,7 +790,7 @@ function insertTrustBoundaryTemplate(db: InstanceType<typeof Database>, template
  * Main build function
  */
 async function buildDatabase() {
-  console.log('🔨 Building STRIDE Patterns database...\n');
+  console.log('🔨 Building STRIDE + LINDDUN database...\n');
 
   // Find all pattern files
   console.log(`📂 Scanning for patterns in: ${PATTERNS_DIR}`);
@@ -430,7 +835,7 @@ async function buildDatabase() {
   try {
     await unlink(DB_PATH);
     console.log('🗑️  Deleted old database\n');
-  } catch (error) {
+  } catch {
     // Ignore error if file doesn't exist
   }
 
@@ -460,6 +865,157 @@ async function buildDatabase() {
   }
 
   console.log(`✅ Inserted ${inserted} patterns\n`);
+
+  // --- LINDDUN Threat Catalog ---
+  console.log(`📂 Scanning for LINDDUN threats in: ${LINDDUN_THREATS_DIR}`);
+  const linddunThreatFiles = await findJsonFiles(LINDDUN_THREATS_DIR);
+  console.log(`✅ Found ${linddunThreatFiles.length} LINDDUN threat seed files\n`);
+
+  const linddunThreats: LinddunThreat[] = [];
+  const linddunThreatErrors: ValidationError[] = [];
+
+  for (const file of linddunThreatFiles) {
+    try {
+      const records = await loadJsonRecords<LinddunThreat>(file);
+      for (const threat of records) {
+        const error = validateLinddunThreat(threat, file);
+        if (error) {
+          linddunThreatErrors.push(error);
+        } else {
+          linddunThreats.push(threat);
+        }
+      }
+    } catch (error) {
+      linddunThreatErrors.push({
+        file,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  if (linddunThreatErrors.length > 0) {
+    console.error('\n❌ LINDDUN threat validation errors:\n');
+    for (const error of linddunThreatErrors) {
+      console.error(`  ${error.file}: ${error.error}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`✅ All ${linddunThreats.length} LINDDUN threats validated\n`);
+
+  console.log('💾 Inserting LINDDUN threats...');
+  let linddunThreatInserted = 0;
+  for (const threat of linddunThreats) {
+    try {
+      insertLinddunThreat(db, threat);
+      linddunThreatInserted++;
+    } catch (error) {
+      console.error(`❌ Failed to insert LINDDUN threat ${threat.threat_id}:`, error);
+      process.exit(1);
+    }
+  }
+  console.log(`✅ Inserted ${linddunThreatInserted} LINDDUN threats\n`);
+
+  // --- LINDDUN Privacy Patterns ---
+  console.log(`📂 Scanning for LINDDUN privacy patterns in: ${LINDDUN_PATTERNS_DIR}`);
+  const linddunPatternFiles = await findJsonFiles(LINDDUN_PATTERNS_DIR);
+  console.log(`✅ Found ${linddunPatternFiles.length} LINDDUN pattern seed files\n`);
+
+  const linddunPatterns: LinddunPattern[] = [];
+  const linddunPatternErrors: ValidationError[] = [];
+
+  for (const file of linddunPatternFiles) {
+    try {
+      const records = await loadJsonRecords<LinddunPattern>(file);
+      for (const pattern of records) {
+        const error = validateLinddunPattern(pattern, file);
+        if (error) {
+          linddunPatternErrors.push(error);
+        } else {
+          linddunPatterns.push(pattern);
+        }
+      }
+    } catch (error) {
+      linddunPatternErrors.push({
+        file,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  if (linddunPatternErrors.length > 0) {
+    console.error('\n❌ LINDDUN pattern validation errors:\n');
+    for (const error of linddunPatternErrors) {
+      console.error(`  ${error.file}: ${error.error}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`✅ All ${linddunPatterns.length} LINDDUN patterns validated\n`);
+
+  console.log('💾 Inserting LINDDUN patterns...');
+  let linddunPatternInserted = 0;
+  for (const pattern of linddunPatterns) {
+    try {
+      insertLinddunPattern(db, pattern);
+      linddunPatternInserted++;
+    } catch (error) {
+      console.error(`❌ Failed to insert LINDDUN pattern ${pattern.pattern_id}:`, error);
+      process.exit(1);
+    }
+  }
+  console.log(`✅ Inserted ${linddunPatternInserted} LINDDUN patterns\n`);
+
+  // --- LINDDUN citation reviews (optional expert/editorial signoff) ---
+  console.log(`📂 Scanning for LINDDUN citation reviews in: ${LINDDUN_REVIEWS_DIR}`);
+  const linddunReviewFiles = await findJsonFiles(LINDDUN_REVIEWS_DIR);
+  console.log(`✅ Found ${linddunReviewFiles.length} LINDDUN review seed files\n`);
+
+  if (linddunReviewFiles.length > 0) {
+    const linddunReviews: CitationReviewSeed[] = [];
+    const linddunReviewErrors: ValidationError[] = [];
+
+    for (const file of linddunReviewFiles) {
+      try {
+        const records = await loadJsonRecords<CitationReviewSeed>(file);
+        for (const review of records) {
+          const error = validateCitationReview(review, file);
+          if (error) {
+            linddunReviewErrors.push(error);
+          } else {
+            linddunReviews.push(review);
+          }
+        }
+      } catch (error) {
+        linddunReviewErrors.push({
+          file,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    if (linddunReviewErrors.length > 0) {
+      console.error('\n❌ LINDDUN review validation errors:\n');
+      for (const error of linddunReviewErrors) {
+        console.error(`  ${error.file}: ${error.error}`);
+      }
+      process.exit(1);
+    }
+
+    console.log(`✅ All ${linddunReviews.length} LINDDUN reviews validated\n`);
+    console.log('💾 Inserting LINDDUN citation reviews...');
+    let linddunReviewInserted = 0;
+    for (const review of linddunReviews) {
+      try {
+        insertCitationReview(db, review);
+        linddunReviewInserted++;
+      } catch (error) {
+        console.error(`❌ Failed to insert citation review ${review.review_id}:`, error);
+        process.exit(1);
+      }
+    }
+    console.log(`✅ Inserted ${linddunReviewInserted} LINDDUN citation reviews\n`);
+  }
 
   // --- DFD Elements ---
   console.log(`📂 Scanning for DFD elements in: ${DFD_ELEMENTS_DIR}`);
@@ -595,12 +1151,73 @@ async function buildDatabase() {
     SELECT COUNT(*) as total_templates FROM trust_boundary_templates
   `).get() as any;
 
+  const linddunThreatStats = db.prepare(`
+    SELECT
+      COUNT(*) as total_threats,
+      COUNT(DISTINCT category) as categories
+    FROM linddun_threats
+  `).get() as any;
+
+  const linddunMitigationStats = db.prepare(`
+    SELECT COUNT(*) as total_mitigations
+    FROM linddun_mitigations
+  `).get() as any;
+
+  const linddunPatternStats = db.prepare(`
+    SELECT COUNT(*) as total_patterns
+    FROM linddun_patterns
+  `).get() as any;
+
+  const linddunCitationStats = db.prepare(`
+    SELECT COUNT(*) as total_citations
+    FROM linddun_citations
+  `).get() as any;
+
+  const linddunReviewStats = db.prepare(`
+    SELECT
+      COUNT(*) as total_reviews,
+      COUNT(DISTINCT citation_id) as reviewed_citations
+    FROM linddun_citation_reviews
+  `).get() as any;
+
+  db.prepare(`
+    INSERT INTO metadata (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+  `).run('linddun_categories', String(linddunThreatStats.categories));
+  db.prepare(`
+    INSERT INTO metadata (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+  `).run('linddun_total_threats', String(linddunThreatStats.total_threats));
+  db.prepare(`
+    INSERT INTO metadata (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+  `).run('linddun_total_patterns', String(linddunPatternStats.total_patterns));
+  db.prepare(`
+    INSERT INTO metadata (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+  `).run('linddun_total_citations', String(linddunCitationStats.total_citations));
+  db.prepare(`
+    INSERT INTO metadata (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+  `).run('linddun_total_reviews', String(linddunReviewStats.total_reviews));
+
   console.log('📊 Database Statistics:');
   console.log(`  Threat Patterns: ${stats.total_patterns}`);
   console.log(`  STRIDE Categories: ${stats.stride_categories}`);
   console.log(`  Technologies: ${stats.technologies}`);
   console.log(`  Frameworks: ${stats.frameworks}`);
   console.log(`  Average Confidence: ${stats.avg_confidence}/10`);
+  console.log(`  LINDDUN Threats: ${linddunThreatStats.total_threats}`);
+  console.log(`  LINDDUN Categories: ${linddunThreatStats.categories}`);
+  console.log(`  LINDDUN Mitigations: ${linddunMitigationStats.total_mitigations}`);
+  console.log(`  LINDDUN Privacy Patterns: ${linddunPatternStats.total_patterns}`);
+  console.log(`  LINDDUN Citations: ${linddunCitationStats.total_citations}`);
+  console.log(`  LINDDUN Citation Reviews: ${linddunReviewStats.total_reviews} (${linddunReviewStats.reviewed_citations} citations reviewed)`);
   console.log(`  DFD Elements: ${dfdStats.total_elements} (${dfdStats.categories} categories, ${dfdStats.roles} roles)`);
   console.log(`  Trust Boundary Templates: ${tbtStats.total_templates}\n`);
 

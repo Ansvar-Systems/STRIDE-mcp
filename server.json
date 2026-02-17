@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "eu.ansvar/stride-patterns-mcp",
+  "description": "Expert-curated STRIDE and LINDDUN threat patterns with CVE references, MITRE ATT&CK mappings, and actionable mitigations for security and privacy threat modeling",
+  "repository": {
+    "url": "https://github.com/Ansvar-Systems/stride-patterns-mcp",
+    "source": "github"
+  },
+  "homepage": "https://ansvar.eu",
+  "version": "0.2.0",
+  "license": "Apache-2.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@ansvar/stride-patterns-mcp",
+      "version": "0.2.0",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

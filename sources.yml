@@ -1,0 +1,99 @@
+schema_version: "1.0"
+mcp_name: "STRIDE + LINDDUN Patterns MCP"
+jurisdiction: "International"
+
+sources:
+  - name: "Ansvar Expert-Curated STRIDE Patterns"
+    authority: "Ansvar Systems Security Research"
+    official_portal: "https://github.com/Ansvar-Systems/stride-patterns-mcp"
+    canonical_identifier: "N/A"
+    retrieval_method: "MANUAL"
+    api_documentation: "N/A"
+    update_frequency: "on_change"
+    last_ingested: "2026-02-17"
+    license_or_terms:
+      type: "Apache-2.0"
+      url: "https://github.com/Ansvar-Systems/stride-patterns-mcp/blob/main/LICENSE"
+      summary: "Open source, free to use and modify with attribution"
+    coverage:
+      scope: "125 expert-validated threat patterns across 40+ security domains including APIs, Cloud, IoT, AI/ML, CI/CD, databases, DNS, and more"
+      limitations: "Patterns are curated selections, not exhaustive. Coverage weighted toward web/cloud/API domains."
+    languages:
+      - "en"
+
+  - name: "LINDDUN Privacy Threat Framework"
+    authority: "KU Leuven DistriNet Research Group"
+    official_portal: "https://linddun.org"
+    canonical_identifier: "N/A"
+    retrieval_method: "MANUAL"
+    api_documentation: "N/A"
+    update_frequency: "on_change"
+    last_ingested: "2026-02-17"
+    license_or_terms:
+      type: "Creative Commons (Academic Research)"
+      url: "https://linddun.org"
+      summary: "LINDDUN framework by KU Leuven, adapted with attribution for threat modeling tooling"
+    coverage:
+      scope: "35 privacy threats across 7 LINDDUN categories (Linking, Identifying, Non-repudiation, Detecting, Data disclosure, Unawareness, Non-compliance), 30 privacy design patterns with DFD annotations"
+      limitations: "Based on published LINDDUN research; may not cover emerging privacy threats"
+    languages:
+      - "en"
+
+  - name: "NIST National Vulnerability Database (CVE References)"
+    authority: "National Institute of Standards and Technology (NIST)"
+    official_portal: "https://nvd.nist.gov"
+    canonical_identifier: "CVE identifiers (e.g., CVE-2021-44228)"
+    retrieval_method: "MANUAL"
+    api_documentation: "https://nvd.nist.gov/developers/vulnerabilities"
+    update_frequency: "on_change"
+    last_ingested: "2026-02-17"
+    license_or_terms:
+      type: "Government Open Data"
+      url: "https://nvd.nist.gov/general/faq#1f3610be-f37f-4826-a70d-3c57c5f78971"
+      summary: "US government public data, free to use without restrictions"
+    coverage:
+      scope: "CVE references embedded in threat patterns for real-world vulnerability evidence"
+      limitations: "Only CVEs referenced by curated patterns; not a full NVD mirror"
+    languages:
+      - "en"
+
+  - name: "MITRE ATT&CK Framework"
+    authority: "The MITRE Corporation"
+    official_portal: "https://attack.mitre.org"
+    canonical_identifier: "ATT&CK technique IDs (e.g., T1003)"
+    retrieval_method: "MANUAL"
+    api_documentation: "https://attack.mitre.org/resources/working-with-attack/"
+    update_frequency: "on_change"
+    last_ingested: "2026-02-17"
+    license_or_terms:
+      type: "Apache-2.0"
+      url: "https://attack.mitre.org/resources/terms-of-use/"
+      summary: "Free to use with attribution to MITRE"
+    coverage:
+      scope: "ATT&CK technique mappings embedded in threat patterns for adversary behavior context"
+      limitations: "Only techniques referenced by curated patterns; not a full ATT&CK mirror"
+    languages:
+      - "en"
+
+  - name: "OWASP Top 10 and LLM Top 10"
+    authority: "Open Worldwide Application Security Project (OWASP)"
+    official_portal: "https://owasp.org"
+    canonical_identifier: "OWASP category IDs (e.g., A01:2021, LLM02:2025)"
+    retrieval_method: "MANUAL"
+    api_documentation: "N/A"
+    update_frequency: "on_change"
+    last_ingested: "2026-02-17"
+    license_or_terms:
+      type: "Creative Commons Attribution-ShareAlike 4.0"
+      url: "https://owasp.org/about/"
+      summary: "Free to use and share with attribution under CC BY-SA 4.0"
+    coverage:
+      scope: "OWASP Top 10 (2021) and OWASP LLM Top 10 (2025) category mappings in threat patterns"
+      limitations: "Category mappings only; not full OWASP guidance text"
+    languages:
+      - "en"
+
+data_freshness:
+  automated_checks: false
+  check_frequency: "manual"
+  last_verified: "2026-02-17"

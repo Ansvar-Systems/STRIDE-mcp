@@ -1,0 +1,165 @@
+{
+  "version": "1.0",
+  "mcp_name": "STRIDE Patterns MCP",
+  "description": "Golden contract tests for the STRIDE Patterns MCP — validates pattern retrieval, search, cross-references, DFD tools, and graceful error handling",
+  "tests": [
+    {
+      "id": "stride-001",
+      "category": "pattern_retrieval",
+      "description": "Retrieve a known STRIDE pattern by ID",
+      "tool": "get_pattern",
+      "input": {
+        "pattern_id": "STRIDE-API-EXPRESS-001"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["Express", "JWT"],
+        "fields_present": ["id", "threat", "classification"]
+      }
+    },
+    {
+      "id": "stride-002",
+      "category": "pattern_retrieval",
+      "description": "Retrieve SQL injection pattern with CVE references",
+      "tool": "get_pattern",
+      "input": {
+        "pattern_id": "STRIDE-API-SSRF-001"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["SSRF"],
+        "fields_present": ["id", "threat", "classification"]
+      }
+    },
+    {
+      "id": "stride-003",
+      "category": "pattern_retrieval",
+      "description": "Retrieve cloud IAM pattern",
+      "tool": "get_pattern",
+      "input": {
+        "pattern_id": "STRIDE-CLOUD-IAM-001"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["IAM"],
+        "fields_present": ["id", "threat"]
+      }
+    },
+    {
+      "id": "stride-004",
+      "category": "search",
+      "description": "FTS search for 'injection' returns relevant attack patterns",
+      "tool": "search_patterns",
+      "input": {
+        "query": "injection"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "min_results": 1,
+        "any_result_contains": ["injection", "Injection"]
+      }
+    },
+    {
+      "id": "stride-005",
+      "category": "search",
+      "description": "Search with STRIDE category filter returns correct category",
+      "tool": "search_patterns",
+      "input": {
+        "query": "authentication",
+        "stride_category": "Spoofing"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "min_results": 1,
+        "any_result_contains": ["Spoofing"]
+      }
+    },
+    {
+      "id": "stride-006",
+      "category": "cross_reference",
+      "description": "Look up patterns by MITRE ATT&CK technique ID",
+      "tool": "find_patterns_by_reference",
+      "input": {
+        "reference_id": "T1550"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "any_result_contains": ["T1550"]
+      }
+    },
+    {
+      "id": "stride-007",
+      "category": "cross_reference",
+      "description": "Look up patterns by CWE identifier",
+      "tool": "find_patterns_by_reference",
+      "input": {
+        "reference_id": "CWE-79"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "any_result_contains": ["CWE-79"]
+      }
+    },
+    {
+      "id": "stride-008",
+      "category": "dfd_tools",
+      "description": "Classify a known technology into DFD role",
+      "tool": "classify_technology",
+      "input": {
+        "technology": "PostgreSQL"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "any_result_contains": ["data_store", "PostgreSQL"]
+      }
+    },
+    {
+      "id": "stride-009",
+      "category": "metadata",
+      "description": "Database stats returns pattern counts",
+      "tool": "get_database_stats",
+      "input": {},
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["total_patterns"]
+      }
+    },
+    {
+      "id": "stride-010",
+      "category": "negative_test",
+      "description": "Non-existent pattern ID returns graceful error",
+      "tool": "get_pattern",
+      "input": {
+        "pattern_id": "STRIDE-NONEXISTENT-999"
+      },
+      "assertions": {
+        "handles_gracefully": true
+      }
+    },
+    {
+      "id": "stride-011",
+      "category": "negative_test",
+      "description": "Empty search query returns validation error",
+      "tool": "search_patterns",
+      "input": {
+        "query": ""
+      },
+      "assertions": {
+        "handles_gracefully": true
+      }
+    },
+    {
+      "id": "stride-012",
+      "category": "search",
+      "description": "Search mitigations by framework returns results",
+      "tool": "search_mitigations",
+      "input": {
+        "framework": "express"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "min_results": 1
+      }
+    }
+  ]
+}

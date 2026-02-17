@@ -1,0 +1,2628 @@
+[
+  {
+    "threat_id": "LINDDUN-LINKING-001",
+    "category": "Linking",
+    "tree_path": "Linking > Cross-context correlation > Persistent identifier reuse across services",
+    "description": "A stable identifier is reused in multiple services, allowing analysts or attackers to correlate records and reconstruct user journeys across unrelated contexts.",
+    "examples": [
+      "Customer ID appears unchanged in CRM, telemetry, and support exports.",
+      "Same mobile advertising identifier is present in ad-tech and product analytics datasets."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Rotating pseudonymous identifiers",
+        "description": "Rotating pseudonymous identifiers reduces risk for persistent identifier reuse across services by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Issue scoped subject identifiers per trust boundary and rotate on a fixed TTL.",
+          "Prevent reuse of long-lived IDs in logs, analytics exports, and partner feeds."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "ISO/IEC 27559",
+          "ENISA PET guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Context-isolated join keys",
+        "description": "Context-isolated join keys reduces risk for persistent identifier reuse across services by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Derive independent salted keys per processing purpose.",
+          "Block cross-purpose joins unless a documented legal basis is present."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(b)",
+          "NIST Privacy Framework CT.DM"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Aggregation and query guards",
+        "description": "Aggregation and query guards reduces risk for persistent identifier reuse across services by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply minimum cohort thresholds before returning analytics results.",
+          "Use sensitivity caps and query-rate controls for analyst workbenches."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "OECD Privacy Guidelines",
+          "Google DP whitepaper"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(b)",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-LINKING-002",
+    "category": "Linking",
+    "tree_path": "Linking > Behavioral correlation > Fingerprint-based session linking",
+    "description": "Client fingerprint attributes are combined to link sessions over time, enabling tracking even when explicit identifiers are removed.",
+    "examples": [
+      "Device model + timezone + font set creates a near-unique profile.",
+      "Browser fingerprinting links anonymous and logged-in sessions."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Rotating pseudonymous identifiers",
+        "description": "Rotating pseudonymous identifiers reduces risk for fingerprint-based session linking by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Issue scoped subject identifiers per trust boundary and rotate on a fixed TTL.",
+          "Prevent reuse of long-lived IDs in logs, analytics exports, and partner feeds."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "ISO/IEC 27559",
+          "ENISA PET guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Context-isolated join keys",
+        "description": "Context-isolated join keys reduces risk for fingerprint-based session linking by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Derive independent salted keys per processing purpose.",
+          "Block cross-purpose joins unless a documented legal basis is present."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(b)",
+          "NIST Privacy Framework CT.DM"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Aggregation and query guards",
+        "description": "Aggregation and query guards reduces risk for fingerprint-based session linking by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply minimum cohort thresholds before returning analytics results.",
+          "Use sensitivity caps and query-rate controls for analyst workbenches."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "OECD Privacy Guidelines",
+          "Google DP whitepaper"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.6",
+      "Art.7",
+      "Art.21"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-LINKING-003",
+    "category": "Linking",
+    "tree_path": "Linking > Third-party enrichment > Partner data join-key correlation",
+    "description": "Shared join keys with external partners permit record linkage that exceeds the original processing purpose and reveals additional personal attributes.",
+    "examples": [
+      "Hashed email used as a common key across marketing and risk vendors.",
+      "Data broker enrichment maps internal pseudonyms to household profiles."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Rotating pseudonymous identifiers",
+        "description": "Rotating pseudonymous identifiers reduces risk for partner data join-key correlation by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Issue scoped subject identifiers per trust boundary and rotate on a fixed TTL.",
+          "Prevent reuse of long-lived IDs in logs, analytics exports, and partner feeds."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "ISO/IEC 27559",
+          "ENISA PET guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Context-isolated join keys",
+        "description": "Context-isolated join keys reduces risk for partner data join-key correlation by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Derive independent salted keys per processing purpose.",
+          "Block cross-purpose joins unless a documented legal basis is present."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(b)",
+          "NIST Privacy Framework CT.DM"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Aggregation and query guards",
+        "description": "Aggregation and query guards reduces risk for partner data join-key correlation by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply minimum cohort thresholds before returning analytics results.",
+          "Use sensitivity caps and query-rate controls for analyst workbenches."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "OECD Privacy Guidelines",
+          "Google DP whitepaper"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(c)",
+      "Art.28",
+      "Art.44"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-LINKING-004",
+    "category": "Linking",
+    "tree_path": "Linking > Operational telemetry > Cross-domain event stream linking",
+    "description": "Event streams from separate product domains can be linked into one timeline that reveals sensitive behavioral patterns.",
+    "examples": [
+      "Payments and health-feature events are joined by account-level telemetry IDs.",
+      "Security logs and product usage logs are merged for employee analytics."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Rotating pseudonymous identifiers",
+        "description": "Rotating pseudonymous identifiers reduces risk for cross-domain event stream linking by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Issue scoped subject identifiers per trust boundary and rotate on a fixed TTL.",
+          "Prevent reuse of long-lived IDs in logs, analytics exports, and partner feeds."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "ISO/IEC 27559",
+          "ENISA PET guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Context-isolated join keys",
+        "description": "Context-isolated join keys reduces risk for cross-domain event stream linking by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Derive independent salted keys per processing purpose.",
+          "Block cross-purpose joins unless a documented legal basis is present."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(b)",
+          "NIST Privacy Framework CT.DM"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Aggregation and query guards",
+        "description": "Aggregation and query guards reduces risk for cross-domain event stream linking by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply minimum cohort thresholds before returning analytics results.",
+          "Use sensitivity caps and query-rate controls for analyst workbenches."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "OECD Privacy Guidelines",
+          "Google DP whitepaper"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(a)",
+      "Art.30",
+      "Art.35"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-LINKING-005",
+    "category": "Linking",
+    "tree_path": "Linking > Identity federation > Federated identity correlation leakage",
+    "description": "Federated identity attributes are over-shared, enabling relying parties to correlate user activity between independent services.",
+    "examples": [
+      "OIDC subject and email claims are shared to multiple relying parties without pairwise identifiers.",
+      "SAML persistent NameID enables long-term cross-service linkage."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Rotating pseudonymous identifiers",
+        "description": "Rotating pseudonymous identifiers reduces risk for federated identity correlation leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Issue scoped subject identifiers per trust boundary and rotate on a fixed TTL.",
+          "Prevent reuse of long-lived IDs in logs, analytics exports, and partner feeds."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "ISO/IEC 27559",
+          "ENISA PET guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Context-isolated join keys",
+        "description": "Context-isolated join keys reduces risk for federated identity correlation leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Derive independent salted keys per processing purpose.",
+          "Block cross-purpose joins unless a documented legal basis is present."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(b)",
+          "NIST Privacy Framework CT.DM"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Aggregation and query guards",
+        "description": "Aggregation and query guards reduces risk for federated identity correlation leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply minimum cohort thresholds before returning analytics results.",
+          "Use sensitivity caps and query-rate controls for analyst workbenches."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "OECD Privacy Guidelines",
+          "Google DP whitepaper"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.25",
+      "Art.32",
+      "Art.35"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-IDENTIFYING-001",
+    "category": "Identifying",
+    "tree_path": "Identifying > Re-identification attacks > Quasi-identifier re-identification",
+    "description": "Records thought to be anonymous are re-identified by joining quasi-identifiers such as ZIP code, date of birth, and occupation.",
+    "examples": [
+      "Analytics export linked with voter registry by ZIP and birth date.",
+      "Public leaderboard combined with social profiles to identify participants."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Quasi-identifier generalization and suppression",
+        "description": "Quasi-identifier generalization and suppression reduces risk for quasi-identifier re-identification by constraining correlation and over-disclosure paths.",
+        "pet_type": "Anonymization",
+        "implementation_hints": [
+          "Generalize location, age, and timestamp precision before export.",
+          "Suppress rare attribute combinations below k-anonymity threshold."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "k-Anonymity literature",
+          "GDPR Recital 26"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Structured PII tokenization",
+        "description": "Structured PII tokenization reduces risk for quasi-identifier re-identification by constraining correlation and over-disclosure paths.",
+        "pet_type": "Pseudonymization",
+        "implementation_hints": [
+          "Replace direct identifiers with format-preserving opaque tokens.",
+          "Store token maps in a separate vault with strict ABAC controls."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-188",
+          "PCI DSS tokenization guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Ingress redaction and detection",
+        "description": "Ingress redaction and detection reduces risk for quasi-identifier re-identification by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Run regex + ML detectors to redact personal data before persistence.",
+          "Block free-text fields from carrying unnecessary personal attributes."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 20889",
+          "EDPB data minimization guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.4(1)",
+      "Art.5(1)(c)",
+      "Recital 26"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-IDENTIFYING-002",
+    "category": "Identifying",
+    "tree_path": "Identifying > Operational leakage > Direct identifier leakage in logs",
+    "description": "Application and infrastructure logs expose direct identifiers that make users trivially identifiable to operators and downstream systems.",
+    "examples": [
+      "Email addresses written to error traces.",
+      "National ID fields included in audit event payloads."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Quasi-identifier generalization and suppression",
+        "description": "Quasi-identifier generalization and suppression reduces risk for direct identifier leakage in logs by constraining correlation and over-disclosure paths.",
+        "pet_type": "Anonymization",
+        "implementation_hints": [
+          "Generalize location, age, and timestamp precision before export.",
+          "Suppress rare attribute combinations below k-anonymity threshold."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "k-Anonymity literature",
+          "GDPR Recital 26"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Structured PII tokenization",
+        "description": "Structured PII tokenization reduces risk for direct identifier leakage in logs by constraining correlation and over-disclosure paths.",
+        "pet_type": "Pseudonymization",
+        "implementation_hints": [
+          "Replace direct identifiers with format-preserving opaque tokens.",
+          "Store token maps in a separate vault with strict ABAC controls."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-188",
+          "PCI DSS tokenization guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Ingress redaction and detection",
+        "description": "Ingress redaction and detection reduces risk for direct identifier leakage in logs by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Run regex + ML detectors to redact personal data before persistence.",
+          "Block free-text fields from carrying unnecessary personal attributes."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 20889",
+          "EDPB data minimization guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.25",
+      "Art.32",
+      "Art.5(1)(f)"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-IDENTIFYING-003",
+    "category": "Identifying",
+    "tree_path": "Identifying > Biometric linkage > Biometric template re-identification",
+    "description": "Biometric templates or embeddings are reused in ways that allow linking to known identities or infer sensitive traits.",
+    "examples": [
+      "Face embeddings are stored without template protection.",
+      "Voiceprint vectors are used for both authentication and profiling."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Quasi-identifier generalization and suppression",
+        "description": "Quasi-identifier generalization and suppression reduces risk for biometric template re-identification by constraining correlation and over-disclosure paths.",
+        "pet_type": "Anonymization",
+        "implementation_hints": [
+          "Generalize location, age, and timestamp precision before export.",
+          "Suppress rare attribute combinations below k-anonymity threshold."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "k-Anonymity literature",
+          "GDPR Recital 26"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Structured PII tokenization",
+        "description": "Structured PII tokenization reduces risk for biometric template re-identification by constraining correlation and over-disclosure paths.",
+        "pet_type": "Pseudonymization",
+        "implementation_hints": [
+          "Replace direct identifiers with format-preserving opaque tokens.",
+          "Store token maps in a separate vault with strict ABAC controls."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-188",
+          "PCI DSS tokenization guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Ingress redaction and detection",
+        "description": "Ingress redaction and detection reduces risk for biometric template re-identification by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Run regex + ML detectors to redact personal data before persistence.",
+          "Block free-text fields from carrying unnecessary personal attributes."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 20889",
+          "EDPB data minimization guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.9",
+      "Art.32",
+      "Art.35"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-IDENTIFYING-004",
+    "category": "Identifying",
+    "tree_path": "Identifying > Network metadata > IP and device metadata de-anonymization",
+    "description": "IP address history and device metadata are sufficient to identify individuals in supposedly anonymous datasets.",
+    "examples": [
+      "Static residential IP linked to account recovery records.",
+      "Unique device model and locale values identify a single employee."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Quasi-identifier generalization and suppression",
+        "description": "Quasi-identifier generalization and suppression reduces risk for ip and device metadata de-anonymization by constraining correlation and over-disclosure paths.",
+        "pet_type": "Anonymization",
+        "implementation_hints": [
+          "Generalize location, age, and timestamp precision before export.",
+          "Suppress rare attribute combinations below k-anonymity threshold."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "k-Anonymity literature",
+          "GDPR Recital 26"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Structured PII tokenization",
+        "description": "Structured PII tokenization reduces risk for ip and device metadata de-anonymization by constraining correlation and over-disclosure paths.",
+        "pet_type": "Pseudonymization",
+        "implementation_hints": [
+          "Replace direct identifiers with format-preserving opaque tokens.",
+          "Store token maps in a separate vault with strict ABAC controls."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-188",
+          "PCI DSS tokenization guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Ingress redaction and detection",
+        "description": "Ingress redaction and detection reduces risk for ip and device metadata de-anonymization by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Run regex + ML detectors to redact personal data before persistence.",
+          "Block free-text fields from carrying unnecessary personal attributes."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 20889",
+          "EDPB data minimization guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.6",
+      "Art.25",
+      "Art.30"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-IDENTIFYING-005",
+    "category": "Identifying",
+    "tree_path": "Identifying > User-generated content > Free-text PII disclosure",
+    "description": "Users or operators enter direct identifiers in free-text fields that bypass structured data controls and become searchable.",
+    "examples": [
+      "Support comments include phone numbers and addresses.",
+      "Case notes contain unredacted health details."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Quasi-identifier generalization and suppression",
+        "description": "Quasi-identifier generalization and suppression reduces risk for free-text pii disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Anonymization",
+        "implementation_hints": [
+          "Generalize location, age, and timestamp precision before export.",
+          "Suppress rare attribute combinations below k-anonymity threshold."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "k-Anonymity literature",
+          "GDPR Recital 26"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Structured PII tokenization",
+        "description": "Structured PII tokenization reduces risk for free-text pii disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Pseudonymization",
+        "implementation_hints": [
+          "Replace direct identifiers with format-preserving opaque tokens.",
+          "Store token maps in a separate vault with strict ABAC controls."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-188",
+          "PCI DSS tokenization guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Ingress redaction and detection",
+        "description": "Ingress redaction and detection reduces risk for free-text pii disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Run regex + ML detectors to redact personal data before persistence.",
+          "Block free-text fields from carrying unnecessary personal attributes."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 20889",
+          "EDPB data minimization guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(c)",
+      "Art.32",
+      "Art.33"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-REPUDIATION-001",
+    "category": "Non-repudiation",
+    "tree_path": "Non-repudiation > Immutable attribution > Irreversible activity attribution logs",
+    "description": "Logs permanently bind actions to individuals without proportionality controls, making future repudiation impossible even for low-risk operations.",
+    "examples": [
+      "System writes user email as primary actor in immutable storage.",
+      "Security operations export immutable activity timelines with direct identifiers."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Pseudonymous accountability logs",
+        "description": "Pseudonymous accountability logs reduces risk for irreversible activity attribution logs by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Use rotating actor aliases in event logs and keep reversal keys in a segregated vault.",
+          "Separate operational diagnostics from legal-evidence data stores."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 27018",
+          "NIST Privacy Framework CT.PO"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Selective disclosure proofs",
+        "description": "Selective disclosure proofs reduces risk for irreversible activity attribution logs by constraining correlation and over-disclosure paths.",
+        "pet_type": "Cryptographic PET",
+        "implementation_hints": [
+          "Use verifiable credentials with selective attribute disclosure.",
+          "Bind proof scope to purpose and expiration to reduce long-term attribution."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "W3C VC Data Model",
+          "Zero-knowledge proof engineering guides"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention-limited evidence controls",
+        "description": "Retention-limited evidence controls reduces risk for irreversible activity attribution logs by constraining correlation and over-disclosure paths.",
+        "pet_type": "Retention control",
+        "implementation_hints": [
+          "Apply legal hold exceptions explicitly and default all evidence data to finite TTLs.",
+          "Automate deletion workflows and audit completion."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(e)",
+          "ISO/IEC 27701"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(e)",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-REPUDIATION-002",
+    "category": "Non-repudiation",
+    "tree_path": "Non-repudiation > Digital signatures > Over-scoped signed transaction receipts",
+    "description": "Signed receipts include unnecessary personal details and become durable attribution artifacts shared beyond the original transaction context.",
+    "examples": [
+      "Payment receipts include full name and account references in signed blobs.",
+      "Workflow signatures include sensitive role metadata."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Pseudonymous accountability logs",
+        "description": "Pseudonymous accountability logs reduces risk for over-scoped signed transaction receipts by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Use rotating actor aliases in event logs and keep reversal keys in a segregated vault.",
+          "Separate operational diagnostics from legal-evidence data stores."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 27018",
+          "NIST Privacy Framework CT.PO"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Selective disclosure proofs",
+        "description": "Selective disclosure proofs reduces risk for over-scoped signed transaction receipts by constraining correlation and over-disclosure paths.",
+        "pet_type": "Cryptographic PET",
+        "implementation_hints": [
+          "Use verifiable credentials with selective attribute disclosure.",
+          "Bind proof scope to purpose and expiration to reduce long-term attribution."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "W3C VC Data Model",
+          "Zero-knowledge proof engineering guides"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention-limited evidence controls",
+        "description": "Retention-limited evidence controls reduces risk for over-scoped signed transaction receipts by constraining correlation and over-disclosure paths.",
+        "pet_type": "Retention control",
+        "implementation_hints": [
+          "Apply legal hold exceptions explicitly and default all evidence data to finite TTLs.",
+          "Automate deletion workflows and audit completion."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(e)",
+          "ISO/IEC 27701"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(c)",
+      "Art.6",
+      "Art.24"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-REPUDIATION-003",
+    "category": "Non-repudiation",
+    "tree_path": "Non-repudiation > Distributed ledgers > Public ledger identity attribution",
+    "description": "On-chain events can be tied back to natural persons through wallet clustering and off-chain metadata.",
+    "examples": [
+      "Wallet addresses linked to KYC records through payment rails.",
+      "Public NFT activity tied to known social accounts."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Pseudonymous accountability logs",
+        "description": "Pseudonymous accountability logs reduces risk for public ledger identity attribution by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Use rotating actor aliases in event logs and keep reversal keys in a segregated vault.",
+          "Separate operational diagnostics from legal-evidence data stores."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 27018",
+          "NIST Privacy Framework CT.PO"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Selective disclosure proofs",
+        "description": "Selective disclosure proofs reduces risk for public ledger identity attribution by constraining correlation and over-disclosure paths.",
+        "pet_type": "Cryptographic PET",
+        "implementation_hints": [
+          "Use verifiable credentials with selective attribute disclosure.",
+          "Bind proof scope to purpose and expiration to reduce long-term attribution."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "W3C VC Data Model",
+          "Zero-knowledge proof engineering guides"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention-limited evidence controls",
+        "description": "Retention-limited evidence controls reduces risk for public ledger identity attribution by constraining correlation and over-disclosure paths.",
+        "pet_type": "Retention control",
+        "implementation_hints": [
+          "Apply legal hold exceptions explicitly and default all evidence data to finite TTLs.",
+          "Automate deletion workflows and audit completion."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(e)",
+          "ISO/IEC 27701"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.17",
+      "Art.25",
+      "Art.44"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-REPUDIATION-004",
+    "category": "Non-repudiation",
+    "tree_path": "Non-repudiation > Consent evidence > Non-revocable consent proof artifacts",
+    "description": "Consent evidence is stored in non-revocable form that prevents users from effectively withdrawing or challenging attribution.",
+    "examples": [
+      "Consent snapshots retained indefinitely with direct identifiers.",
+      "Historical consent states replicated to analytics stores."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Pseudonymous accountability logs",
+        "description": "Pseudonymous accountability logs reduces risk for non-revocable consent proof artifacts by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Use rotating actor aliases in event logs and keep reversal keys in a segregated vault.",
+          "Separate operational diagnostics from legal-evidence data stores."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 27018",
+          "NIST Privacy Framework CT.PO"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Selective disclosure proofs",
+        "description": "Selective disclosure proofs reduces risk for non-revocable consent proof artifacts by constraining correlation and over-disclosure paths.",
+        "pet_type": "Cryptographic PET",
+        "implementation_hints": [
+          "Use verifiable credentials with selective attribute disclosure.",
+          "Bind proof scope to purpose and expiration to reduce long-term attribution."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "W3C VC Data Model",
+          "Zero-knowledge proof engineering guides"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention-limited evidence controls",
+        "description": "Retention-limited evidence controls reduces risk for non-revocable consent proof artifacts by constraining correlation and over-disclosure paths.",
+        "pet_type": "Retention control",
+        "implementation_hints": [
+          "Apply legal hold exceptions explicitly and default all evidence data to finite TTLs.",
+          "Automate deletion workflows and audit completion."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(e)",
+          "ISO/IEC 27701"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.7(3)",
+      "Art.12",
+      "Art.17"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-REPUDIATION-005",
+    "category": "Non-repudiation",
+    "tree_path": "Non-repudiation > Communication trails > Email confirmation attribution trails",
+    "description": "Email confirmation workflows leak identity-linked action trails into multiple systems and third-party providers.",
+    "examples": [
+      "Transactional emails expose action semantics in subject lines.",
+      "Email vendor logs keep long-term click attribution by recipient."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Pseudonymous accountability logs",
+        "description": "Pseudonymous accountability logs reduces risk for email confirmation attribution trails by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Use rotating actor aliases in event logs and keep reversal keys in a segregated vault.",
+          "Separate operational diagnostics from legal-evidence data stores."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "ISO/IEC 27018",
+          "NIST Privacy Framework CT.PO"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Selective disclosure proofs",
+        "description": "Selective disclosure proofs reduces risk for email confirmation attribution trails by constraining correlation and over-disclosure paths.",
+        "pet_type": "Cryptographic PET",
+        "implementation_hints": [
+          "Use verifiable credentials with selective attribute disclosure.",
+          "Bind proof scope to purpose and expiration to reduce long-term attribution."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "W3C VC Data Model",
+          "Zero-knowledge proof engineering guides"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention-limited evidence controls",
+        "description": "Retention-limited evidence controls reduces risk for email confirmation attribution trails by constraining correlation and over-disclosure paths.",
+        "pet_type": "Retention control",
+        "implementation_hints": [
+          "Apply legal hold exceptions explicitly and default all evidence data to finite TTLs.",
+          "Automate deletion workflows and audit completion."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.5(1)(e)",
+          "ISO/IEC 27701"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.28",
+      "Art.32",
+      "Art.5(1)(f)"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DETECTING-001",
+    "category": "Detecting",
+    "tree_path": "Detecting > Presence inference > Online status detection",
+    "description": "Attackers infer whether a specific user is online by observing API responses, websocket behavior, or presence indicators.",
+    "examples": [
+      "Presence endpoint returns exact last-seen timestamps.",
+      "Read-receipt delivery timing indicates active user sessions."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Traffic shaping and batching",
+        "description": "Traffic shaping and batching reduces risk for online status detection by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unobservability",
+        "implementation_hints": [
+          "Batch outbound events and add bounded timing jitter.",
+          "Pad low-volume channels to reduce distinguishable activity signatures."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "Privacy by Design patterns",
+          "Anonymous communication systems research"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Differentially private observability metrics",
+        "description": "Differentially private observability metrics reduces risk for online status detection by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply calibrated noise to counts and trends before dashboard publication.",
+          "Enforce privacy budgets per reporting audience and period."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Dwork DP papers",
+          "NIST Privacy Engineering objectives"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Status and presence obfuscation",
+        "description": "Status and presence obfuscation reduces risk for online status detection by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Return coarse-grained availability states instead of precise presence events.",
+          "Use delayed fan-out for presence updates across trust boundaries."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Messaging privacy threat analyses",
+          "GDPR Art.25"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(f)",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DETECTING-002",
+    "category": "Detecting",
+    "tree_path": "Detecting > Location inference > Location detection through telemetry cadence",
+    "description": "Location and movement patterns are inferred by correlating telemetry timestamps, network hints, and feature usage rhythms.",
+    "examples": [
+      "Timezone and request latency infer commuting behavior.",
+      "Wi-Fi SSID metadata leaks office/home transitions."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Traffic shaping and batching",
+        "description": "Traffic shaping and batching reduces risk for location detection through telemetry cadence by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unobservability",
+        "implementation_hints": [
+          "Batch outbound events and add bounded timing jitter.",
+          "Pad low-volume channels to reduce distinguishable activity signatures."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "Privacy by Design patterns",
+          "Anonymous communication systems research"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Differentially private observability metrics",
+        "description": "Differentially private observability metrics reduces risk for location detection through telemetry cadence by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply calibrated noise to counts and trends before dashboard publication.",
+          "Enforce privacy budgets per reporting audience and period."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Dwork DP papers",
+          "NIST Privacy Engineering objectives"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Status and presence obfuscation",
+        "description": "Status and presence obfuscation reduces risk for location detection through telemetry cadence by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Return coarse-grained availability states instead of precise presence events.",
+          "Use delayed fan-out for presence updates across trust boundaries."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Messaging privacy threat analyses",
+          "GDPR Art.25"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.6",
+      "Art.9",
+      "Art.35"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DETECTING-003",
+    "category": "Detecting",
+    "tree_path": "Detecting > State inference > Sensitive state detection from response variance",
+    "description": "Differences in API response size, status code, or timing reveal sensitive states such as account flags or health conditions.",
+    "examples": [
+      "Fraud-review users receive distinct endpoint timing profiles.",
+      "Error wording differs for users in protected categories."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Traffic shaping and batching",
+        "description": "Traffic shaping and batching reduces risk for sensitive state detection from response variance by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unobservability",
+        "implementation_hints": [
+          "Batch outbound events and add bounded timing jitter.",
+          "Pad low-volume channels to reduce distinguishable activity signatures."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "Privacy by Design patterns",
+          "Anonymous communication systems research"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Differentially private observability metrics",
+        "description": "Differentially private observability metrics reduces risk for sensitive state detection from response variance by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply calibrated noise to counts and trends before dashboard publication.",
+          "Enforce privacy budgets per reporting audience and period."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Dwork DP papers",
+          "NIST Privacy Engineering objectives"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Status and presence obfuscation",
+        "description": "Status and presence obfuscation reduces risk for sensitive state detection from response variance by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Return coarse-grained availability states instead of precise presence events.",
+          "Use delayed fan-out for presence updates across trust boundaries."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Messaging privacy threat analyses",
+          "GDPR Art.25"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.22",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DETECTING-004",
+    "category": "Detecting",
+    "tree_path": "Detecting > Machine learning inference > Membership inference in trained models",
+    "description": "Adversaries infer whether specific individuals were in training data by querying model confidence behavior.",
+    "examples": [
+      "Model outputs higher confidence on seen records.",
+      "Shadow-model attack exposes patient participation in dataset."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Traffic shaping and batching",
+        "description": "Traffic shaping and batching reduces risk for membership inference in trained models by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unobservability",
+        "implementation_hints": [
+          "Batch outbound events and add bounded timing jitter.",
+          "Pad low-volume channels to reduce distinguishable activity signatures."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "Privacy by Design patterns",
+          "Anonymous communication systems research"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Differentially private observability metrics",
+        "description": "Differentially private observability metrics reduces risk for membership inference in trained models by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply calibrated noise to counts and trends before dashboard publication.",
+          "Enforce privacy budgets per reporting audience and period."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Dwork DP papers",
+          "NIST Privacy Engineering objectives"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Status and presence obfuscation",
+        "description": "Status and presence obfuscation reduces risk for membership inference in trained models by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Return coarse-grained availability states instead of precise presence events.",
+          "Use delayed fan-out for presence updates across trust boundaries."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Messaging privacy threat analyses",
+          "GDPR Art.25"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(c)",
+      "Art.25",
+      "Art.35"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DETECTING-005",
+    "category": "Detecting",
+    "tree_path": "Detecting > Network reconnaissance > Device presence detection from network metadata",
+    "description": "Network probes and metadata reveal whether a particular device or household is active at a specific time.",
+    "examples": [
+      "Push token heartbeat reveals device online windows.",
+      "IoT telemetry retries expose occupancy patterns."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Traffic shaping and batching",
+        "description": "Traffic shaping and batching reduces risk for device presence detection from network metadata by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unobservability",
+        "implementation_hints": [
+          "Batch outbound events and add bounded timing jitter.",
+          "Pad low-volume channels to reduce distinguishable activity signatures."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "Privacy by Design patterns",
+          "Anonymous communication systems research"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Differentially private observability metrics",
+        "description": "Differentially private observability metrics reduces risk for device presence detection from network metadata by constraining correlation and over-disclosure paths.",
+        "pet_type": "Differential privacy",
+        "implementation_hints": [
+          "Apply calibrated noise to counts and trends before dashboard publication.",
+          "Enforce privacy budgets per reporting audience and period."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Dwork DP papers",
+          "NIST Privacy Engineering objectives"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Status and presence obfuscation",
+        "description": "Status and presence obfuscation reduces risk for device presence detection from network metadata by constraining correlation and over-disclosure paths.",
+        "pet_type": "Unlinkability",
+        "implementation_hints": [
+          "Return coarse-grained availability states instead of precise presence events.",
+          "Use delayed fan-out for presence updates across trust boundaries."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "Messaging privacy threat analyses",
+          "GDPR Art.25"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.32",
+      "Art.5(1)(f)",
+      "Art.24"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DATA-DISCLOSURE-001",
+    "category": "Data disclosure",
+    "tree_path": "Data disclosure > API exposure > Over-broad API response disclosure",
+    "description": "APIs return personal fields beyond what callers need, exposing unnecessary data to clients and intermediaries.",
+    "examples": [
+      "Profile endpoint returns full address and DOB for low-privilege clients.",
+      "GraphQL resolvers expose nested personal attributes by default."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Data minimization response contracts",
+        "description": "Data minimization response contracts reduces risk for over-broad api response disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Define endpoint-level allowlists for personal fields by role and purpose.",
+          "Enforce schema linting to block accidental addition of sensitive fields."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "OWASP API Security",
+          "GDPR Art.5(1)(c)"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Field-level encryption and key isolation",
+        "description": "Field-level encryption and key isolation reduces risk for over-broad api response disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Encryption",
+        "implementation_hints": [
+          "Encrypt sensitive columns with per-tenant or per-purpose keys.",
+          "Store key material in HSM-backed services with least-privilege access."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-57",
+          "ISO/IEC 27001 Annex A"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DLP and egress policy enforcement",
+        "description": "DLP and egress policy enforcement reduces risk for over-broad api response disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Leak prevention",
+        "implementation_hints": [
+          "Scan outbound payloads and files for sensitive attributes.",
+          "Block unapproved destinations and require approved transfer channels."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "CIS Controls",
+          "ENISA data leakage guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(c)",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DATA-DISCLOSURE-002",
+    "category": "Data disclosure",
+    "tree_path": "Data disclosure > Storage misconfiguration > Public object storage disclosure",
+    "description": "Cloud storage buckets or blobs are misconfigured, exposing personal data externally.",
+    "examples": [
+      "Backup exports left in publicly readable bucket.",
+      "Temporary files with PII shared through unsigned object URLs."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Data minimization response contracts",
+        "description": "Data minimization response contracts reduces risk for public object storage disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Define endpoint-level allowlists for personal fields by role and purpose.",
+          "Enforce schema linting to block accidental addition of sensitive fields."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "OWASP API Security",
+          "GDPR Art.5(1)(c)"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Field-level encryption and key isolation",
+        "description": "Field-level encryption and key isolation reduces risk for public object storage disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Encryption",
+        "implementation_hints": [
+          "Encrypt sensitive columns with per-tenant or per-purpose keys.",
+          "Store key material in HSM-backed services with least-privilege access."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-57",
+          "ISO/IEC 27001 Annex A"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DLP and egress policy enforcement",
+        "description": "DLP and egress policy enforcement reduces risk for public object storage disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Leak prevention",
+        "implementation_hints": [
+          "Scan outbound payloads and files for sensitive attributes.",
+          "Block unapproved destinations and require approved transfer channels."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "CIS Controls",
+          "ENISA data leakage guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.32",
+      "Art.33",
+      "Art.34"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DATA-DISCLOSURE-003",
+    "category": "Data disclosure",
+    "tree_path": "Data disclosure > Operational logs > Debug telemetry personal data leakage",
+    "description": "Verbose debug logs capture personal data and secrets that are then replicated to SIEMs and observability tooling.",
+    "examples": [
+      "JWT payload and email included in trace spans.",
+      "Payment payloads logged in plaintext during incident debugging."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Data minimization response contracts",
+        "description": "Data minimization response contracts reduces risk for debug telemetry personal data leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Define endpoint-level allowlists for personal fields by role and purpose.",
+          "Enforce schema linting to block accidental addition of sensitive fields."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "OWASP API Security",
+          "GDPR Art.5(1)(c)"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Field-level encryption and key isolation",
+        "description": "Field-level encryption and key isolation reduces risk for debug telemetry personal data leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Encryption",
+        "implementation_hints": [
+          "Encrypt sensitive columns with per-tenant or per-purpose keys.",
+          "Store key material in HSM-backed services with least-privilege access."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-57",
+          "ISO/IEC 27001 Annex A"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DLP and egress policy enforcement",
+        "description": "DLP and egress policy enforcement reduces risk for debug telemetry personal data leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Leak prevention",
+        "implementation_hints": [
+          "Scan outbound payloads and files for sensitive attributes.",
+          "Block unapproved destinations and require approved transfer channels."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "CIS Controls",
+          "ENISA data leakage guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(f)",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DATA-DISCLOSURE-004",
+    "category": "Data disclosure",
+    "tree_path": "Data disclosure > Multitenancy > Cross-tenant data leakage",
+    "description": "Authorization and partitioning flaws expose one tenant's personal data to another tenant.",
+    "examples": [
+      "Tenant ID filter missing in search endpoint.",
+      "Background job reads wrong tenant partition due to stale cache key."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Data minimization response contracts",
+        "description": "Data minimization response contracts reduces risk for cross-tenant data leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Define endpoint-level allowlists for personal fields by role and purpose.",
+          "Enforce schema linting to block accidental addition of sensitive fields."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "OWASP API Security",
+          "GDPR Art.5(1)(c)"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Field-level encryption and key isolation",
+        "description": "Field-level encryption and key isolation reduces risk for cross-tenant data leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Encryption",
+        "implementation_hints": [
+          "Encrypt sensitive columns with per-tenant or per-purpose keys.",
+          "Store key material in HSM-backed services with least-privilege access."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-57",
+          "ISO/IEC 27001 Annex A"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DLP and egress policy enforcement",
+        "description": "DLP and egress policy enforcement reduces risk for cross-tenant data leakage by constraining correlation and over-disclosure paths.",
+        "pet_type": "Leak prevention",
+        "implementation_hints": [
+          "Scan outbound payloads and files for sensitive attributes.",
+          "Block unapproved destinations and require approved transfer channels."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "CIS Controls",
+          "ENISA data leakage guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.28",
+      "Art.32",
+      "Art.5(1)(f)"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-DATA-DISCLOSURE-005",
+    "category": "Data disclosure",
+    "tree_path": "Data disclosure > AI output controls > Model output personal data disclosure",
+    "description": "Generative or retrieval systems return sensitive personal data from prompts or training artifacts.",
+    "examples": [
+      "Chat assistant returns raw support ticket details.",
+      "Embedding search retrieves identifiable records without access checks."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Data minimization response contracts",
+        "description": "Data minimization response contracts reduces risk for model output personal data disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Data minimization",
+        "implementation_hints": [
+          "Define endpoint-level allowlists for personal fields by role and purpose.",
+          "Enforce schema linting to block accidental addition of sensitive fields."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "OWASP API Security",
+          "GDPR Art.5(1)(c)"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Field-level encryption and key isolation",
+        "description": "Field-level encryption and key isolation reduces risk for model output personal data disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Encryption",
+        "implementation_hints": [
+          "Encrypt sensitive columns with per-tenant or per-purpose keys.",
+          "Store key material in HSM-backed services with least-privilege access."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "NIST SP 800-57",
+          "ISO/IEC 27001 Annex A"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DLP and egress policy enforcement",
+        "description": "DLP and egress policy enforcement reduces risk for model output personal data disclosure by constraining correlation and over-disclosure paths.",
+        "pet_type": "Leak prevention",
+        "implementation_hints": [
+          "Scan outbound payloads and files for sensitive attributes.",
+          "Block unapproved destinations and require approved transfer channels."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "CIS Controls",
+          "ENISA data leakage guidance"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.22",
+      "Art.25",
+      "Art.32"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-UNAWARENESS-001",
+    "category": "Unawareness",
+    "tree_path": "Unawareness > Purpose opacity > Opaque data collection purposes",
+    "description": "Users are unaware of why data is collected and how it will be used across internal and external processing contexts.",
+    "examples": [
+      "Signup form omits downstream profiling purpose.",
+      "In-app analytics collection not explained in context."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Layered and contextual privacy notices",
+        "description": "Layered and contextual privacy notices reduces risk for opaque data collection purposes by constraining correlation and over-disclosure paths.",
+        "pet_type": "Transparency",
+        "implementation_hints": [
+          "Show concise purpose and data-use notices at collection points.",
+          "Provide drill-down detail without burying critical information."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.12-14",
+          "ICO transparency guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Consent and preference control center",
+        "description": "Consent and preference control center reduces risk for opaque data collection purposes by constraining correlation and over-disclosure paths.",
+        "pet_type": "User control",
+        "implementation_hints": [
+          "Offer granular toggles by purpose, channel, and partner sharing.",
+          "Record and enforce preference changes within bounded SLAs."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.7",
+          "CNIL consent guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention and sharing transparency dashboards",
+        "description": "Retention and sharing transparency dashboards reduces risk for opaque data collection purposes by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability UX",
+        "implementation_hints": [
+          "Expose what data is retained and when deletion is scheduled.",
+          "List third-party recipients and transfer safeguards clearly."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.13(2)",
+          "ISO/IEC 29184"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.12",
+      "Art.13(1)(c)",
+      "Art.14"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-UNAWARENESS-002",
+    "category": "Unawareness",
+    "tree_path": "Unawareness > Notice design > Missing layered notice at point of capture",
+    "description": "Privacy notices are generic, hard to find, or detached from the user action where personal data is captured.",
+    "examples": [
+      "Cookie dialog links only to a long legal document.",
+      "Form submissions proceed without contextual privacy summary."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Layered and contextual privacy notices",
+        "description": "Layered and contextual privacy notices reduces risk for missing layered notice at point of capture by constraining correlation and over-disclosure paths.",
+        "pet_type": "Transparency",
+        "implementation_hints": [
+          "Show concise purpose and data-use notices at collection points.",
+          "Provide drill-down detail without burying critical information."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.12-14",
+          "ICO transparency guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Consent and preference control center",
+        "description": "Consent and preference control center reduces risk for missing layered notice at point of capture by constraining correlation and over-disclosure paths.",
+        "pet_type": "User control",
+        "implementation_hints": [
+          "Offer granular toggles by purpose, channel, and partner sharing.",
+          "Record and enforce preference changes within bounded SLAs."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.7",
+          "CNIL consent guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention and sharing transparency dashboards",
+        "description": "Retention and sharing transparency dashboards reduces risk for missing layered notice at point of capture by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability UX",
+        "implementation_hints": [
+          "Expose what data is retained and when deletion is scheduled.",
+          "List third-party recipients and transfer safeguards clearly."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.13(2)",
+          "ISO/IEC 29184"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.12",
+      "Art.13",
+      "Recital 58"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-UNAWARENESS-003",
+    "category": "Unawareness",
+    "tree_path": "Unawareness > Consent UX > Dark pattern consent flows",
+    "description": "Interface choices nudge users into broad consent and make refusal or withdrawal difficult.",
+    "examples": [
+      "Accept button highlighted while reject is hidden in secondary screens.",
+      "Withdrawing consent requires multiple hidden navigation steps."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Layered and contextual privacy notices",
+        "description": "Layered and contextual privacy notices reduces risk for dark pattern consent flows by constraining correlation and over-disclosure paths.",
+        "pet_type": "Transparency",
+        "implementation_hints": [
+          "Show concise purpose and data-use notices at collection points.",
+          "Provide drill-down detail without burying critical information."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.12-14",
+          "ICO transparency guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Consent and preference control center",
+        "description": "Consent and preference control center reduces risk for dark pattern consent flows by constraining correlation and over-disclosure paths.",
+        "pet_type": "User control",
+        "implementation_hints": [
+          "Offer granular toggles by purpose, channel, and partner sharing.",
+          "Record and enforce preference changes within bounded SLAs."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.7",
+          "CNIL consent guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention and sharing transparency dashboards",
+        "description": "Retention and sharing transparency dashboards reduces risk for dark pattern consent flows by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability UX",
+        "implementation_hints": [
+          "Expose what data is retained and when deletion is scheduled.",
+          "List third-party recipients and transfer safeguards clearly."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.13(2)",
+          "ISO/IEC 29184"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.7",
+      "Art.5(1)(a)",
+      "Art.25"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-UNAWARENESS-004",
+    "category": "Unawareness",
+    "tree_path": "Unawareness > Retention awareness > Unclear retention and deletion windows",
+    "description": "Users cannot determine how long data is retained or whether deletion requests are honored promptly.",
+    "examples": [
+      "Privacy policy says retention is \"as needed\" without concrete limits.",
+      "Deletion confirmation does not specify backup purge timing."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Layered and contextual privacy notices",
+        "description": "Layered and contextual privacy notices reduces risk for unclear retention and deletion windows by constraining correlation and over-disclosure paths.",
+        "pet_type": "Transparency",
+        "implementation_hints": [
+          "Show concise purpose and data-use notices at collection points.",
+          "Provide drill-down detail without burying critical information."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.12-14",
+          "ICO transparency guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Consent and preference control center",
+        "description": "Consent and preference control center reduces risk for unclear retention and deletion windows by constraining correlation and over-disclosure paths.",
+        "pet_type": "User control",
+        "implementation_hints": [
+          "Offer granular toggles by purpose, channel, and partner sharing.",
+          "Record and enforce preference changes within bounded SLAs."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.7",
+          "CNIL consent guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention and sharing transparency dashboards",
+        "description": "Retention and sharing transparency dashboards reduces risk for unclear retention and deletion windows by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability UX",
+        "implementation_hints": [
+          "Expose what data is retained and when deletion is scheduled.",
+          "List third-party recipients and transfer safeguards clearly."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.13(2)",
+          "ISO/IEC 29184"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.5(1)(e)",
+      "Art.13(2)(a)",
+      "Art.17"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-UNAWARENESS-005",
+    "category": "Unawareness",
+    "tree_path": "Unawareness > Third-party visibility > Hidden third-party sharing",
+    "description": "Users are unaware that data is shared with partners, processors, or analytics vendors and under what safeguards.",
+    "examples": [
+      "SDK sends identifiers to ad network without explicit disclosure.",
+      "Support exports include personal data sent to external AI tools."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Layered and contextual privacy notices",
+        "description": "Layered and contextual privacy notices reduces risk for hidden third-party sharing by constraining correlation and over-disclosure paths.",
+        "pet_type": "Transparency",
+        "implementation_hints": [
+          "Show concise purpose and data-use notices at collection points.",
+          "Provide drill-down detail without burying critical information."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.12-14",
+          "ICO transparency guidance"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Consent and preference control center",
+        "description": "Consent and preference control center reduces risk for hidden third-party sharing by constraining correlation and over-disclosure paths.",
+        "pet_type": "User control",
+        "implementation_hints": [
+          "Offer granular toggles by purpose, channel, and partner sharing.",
+          "Record and enforce preference changes within bounded SLAs."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.7",
+          "CNIL consent guidance"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "Retention and sharing transparency dashboards",
+        "description": "Retention and sharing transparency dashboards reduces risk for hidden third-party sharing by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability UX",
+        "implementation_hints": [
+          "Expose what data is retained and when deletion is scheduled.",
+          "List third-party recipients and transfer safeguards clearly."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.13(2)",
+          "ISO/IEC 29184"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.13(1)(e)",
+      "Art.28",
+      "Art.44"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-COMPLIANCE-001",
+    "category": "Non-compliance",
+    "tree_path": "Non-compliance > Lawful basis > Processing without valid lawful basis",
+    "description": "Personal data processing begins without a documented and valid lawful basis for each purpose and data category.",
+    "examples": [
+      "Behavioral profiling launched under implied consent assumptions.",
+      "Data reuse for marketing without reassessing legal basis."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Lawful basis registry and enforcement",
+        "description": "Lawful basis registry and enforcement reduces risk for processing without valid lawful basis by constraining correlation and over-disclosure paths.",
+        "pet_type": "Governance",
+        "implementation_hints": [
+          "Bind every processing purpose to a lawful basis record in code and policy.",
+          "Block new data flows until lawful basis and ROPA entries are approved."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.6",
+          "GDPR Art.30"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Automated data subject rights workflows",
+        "description": "Automated data subject rights workflows reduces risk for processing without valid lawful basis by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability automation",
+        "implementation_hints": [
+          "Implement DSAR orchestration for access, deletion, rectification, and portability.",
+          "Track SLA timers and escalation to privacy operations."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.15-22",
+          "ISO/IEC 27701"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DPIA and transfer safeguard gates",
+        "description": "DPIA and transfer safeguard gates reduces risk for processing without valid lawful basis by constraining correlation and over-disclosure paths.",
+        "pet_type": "Risk management",
+        "implementation_hints": [
+          "Require DPIA completion for high-risk processing and ML profiling.",
+          "Enforce SCC/TIA checks before cross-border transfers."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.35",
+          "GDPR Art.44-49"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.6",
+      "Art.5(1)(a)",
+      "Art.24"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-COMPLIANCE-002",
+    "category": "Non-compliance",
+    "tree_path": "Non-compliance > Rights handling > Failure to fulfill DSAR obligations",
+    "description": "The system cannot locate, export, correct, or delete all user data in statutory timelines.",
+    "examples": [
+      "Deletion request removes app data but not backup replicas.",
+      "Access export omits data held by subprocessors."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Lawful basis registry and enforcement",
+        "description": "Lawful basis registry and enforcement reduces risk for failure to fulfill dsar obligations by constraining correlation and over-disclosure paths.",
+        "pet_type": "Governance",
+        "implementation_hints": [
+          "Bind every processing purpose to a lawful basis record in code and policy.",
+          "Block new data flows until lawful basis and ROPA entries are approved."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.6",
+          "GDPR Art.30"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Automated data subject rights workflows",
+        "description": "Automated data subject rights workflows reduces risk for failure to fulfill dsar obligations by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability automation",
+        "implementation_hints": [
+          "Implement DSAR orchestration for access, deletion, rectification, and portability.",
+          "Track SLA timers and escalation to privacy operations."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.15-22",
+          "ISO/IEC 27701"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DPIA and transfer safeguard gates",
+        "description": "DPIA and transfer safeguard gates reduces risk for failure to fulfill dsar obligations by constraining correlation and over-disclosure paths.",
+        "pet_type": "Risk management",
+        "implementation_hints": [
+          "Require DPIA completion for high-risk processing and ML profiling.",
+          "Enforce SCC/TIA checks before cross-border transfers."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.35",
+          "GDPR Art.44-49"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.12",
+      "Art.15",
+      "Art.17",
+      "Art.20"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-COMPLIANCE-003",
+    "category": "Non-compliance",
+    "tree_path": "Non-compliance > Risk assessment > Missing DPIA for high-risk processing",
+    "description": "High-risk processing is deployed without completing and maintaining a DPIA and mitigation plan.",
+    "examples": [
+      "Biometric onboarding launched without prior impact assessment.",
+      "Automated decisioning introduced without documented residual risk review."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Lawful basis registry and enforcement",
+        "description": "Lawful basis registry and enforcement reduces risk for missing dpia for high-risk processing by constraining correlation and over-disclosure paths.",
+        "pet_type": "Governance",
+        "implementation_hints": [
+          "Bind every processing purpose to a lawful basis record in code and policy.",
+          "Block new data flows until lawful basis and ROPA entries are approved."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.6",
+          "GDPR Art.30"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Automated data subject rights workflows",
+        "description": "Automated data subject rights workflows reduces risk for missing dpia for high-risk processing by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability automation",
+        "implementation_hints": [
+          "Implement DSAR orchestration for access, deletion, rectification, and portability.",
+          "Track SLA timers and escalation to privacy operations."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.15-22",
+          "ISO/IEC 27701"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DPIA and transfer safeguard gates",
+        "description": "DPIA and transfer safeguard gates reduces risk for missing dpia for high-risk processing by constraining correlation and over-disclosure paths.",
+        "pet_type": "Risk management",
+        "implementation_hints": [
+          "Require DPIA completion for high-risk processing and ML profiling.",
+          "Enforce SCC/TIA checks before cross-border transfers."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.35",
+          "GDPR Art.44-49"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.35",
+      "Art.36",
+      "Art.25"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-COMPLIANCE-004",
+    "category": "Non-compliance",
+    "tree_path": "Non-compliance > Security controls > Insufficient privacy security safeguards",
+    "description": "Technical and organizational measures are not proportionate to confidentiality risks and processing sensitivity.",
+    "examples": [
+      "Sensitive data at rest is unencrypted in shared environments.",
+      "Excessive operator permissions allow unrestricted personal-data access."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Lawful basis registry and enforcement",
+        "description": "Lawful basis registry and enforcement reduces risk for insufficient privacy security safeguards by constraining correlation and over-disclosure paths.",
+        "pet_type": "Governance",
+        "implementation_hints": [
+          "Bind every processing purpose to a lawful basis record in code and policy.",
+          "Block new data flows until lawful basis and ROPA entries are approved."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.6",
+          "GDPR Art.30"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Automated data subject rights workflows",
+        "description": "Automated data subject rights workflows reduces risk for insufficient privacy security safeguards by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability automation",
+        "implementation_hints": [
+          "Implement DSAR orchestration for access, deletion, rectification, and portability.",
+          "Track SLA timers and escalation to privacy operations."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.15-22",
+          "ISO/IEC 27701"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DPIA and transfer safeguard gates",
+        "description": "DPIA and transfer safeguard gates reduces risk for insufficient privacy security safeguards by constraining correlation and over-disclosure paths.",
+        "pet_type": "Risk management",
+        "implementation_hints": [
+          "Require DPIA completion for high-risk processing and ML profiling.",
+          "Enforce SCC/TIA checks before cross-border transfers."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.35",
+          "GDPR Art.44-49"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.32",
+      "Art.5(1)(f)",
+      "Art.24"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  },
+  {
+    "threat_id": "LINDDUN-NON-COMPLIANCE-005",
+    "category": "Non-compliance",
+    "tree_path": "Non-compliance > International transfers > Cross-border transfer without safeguards",
+    "description": "Personal data is transferred outside approved jurisdictions without adequate safeguards and transfer impact assessments.",
+    "examples": [
+      "Support tooling stores EU data in non-adequate regions without SCCs.",
+      "Vendor data pipeline routes logs across jurisdictions silently."
+    ],
+    "mitigations": [
+      {
+        "id": "MIT-01",
+        "title": "Lawful basis registry and enforcement",
+        "description": "Lawful basis registry and enforcement reduces risk for cross-border transfer without safeguards by constraining correlation and over-disclosure paths.",
+        "pet_type": "Governance",
+        "implementation_hints": [
+          "Bind every processing purpose to a lawful basis record in code and policy.",
+          "Block new data flows until lawful basis and ROPA entries are approved."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.6",
+          "GDPR Art.30"
+        ]
+      },
+      {
+        "id": "MIT-02",
+        "title": "Automated data subject rights workflows",
+        "description": "Automated data subject rights workflows reduces risk for cross-border transfer without safeguards by constraining correlation and over-disclosure paths.",
+        "pet_type": "Accountability automation",
+        "implementation_hints": [
+          "Implement DSAR orchestration for access, deletion, rectification, and portability.",
+          "Track SLA timers and escalation to privacy operations."
+        ],
+        "effectiveness": "High",
+        "references": [
+          "GDPR Art.15-22",
+          "ISO/IEC 27701"
+        ]
+      },
+      {
+        "id": "MIT-03",
+        "title": "DPIA and transfer safeguard gates",
+        "description": "DPIA and transfer safeguard gates reduces risk for cross-border transfer without safeguards by constraining correlation and over-disclosure paths.",
+        "pet_type": "Risk management",
+        "implementation_hints": [
+          "Require DPIA completion for high-risk processing and ML profiling.",
+          "Enforce SCC/TIA checks before cross-border transfers."
+        ],
+        "effectiveness": "Medium",
+        "references": [
+          "GDPR Art.35",
+          "GDPR Art.44-49"
+        ]
+      }
+    ],
+    "gdpr_articles": [
+      "Art.44",
+      "Art.46",
+      "Art.49"
+    ],
+    "sources": [
+      {
+        "title": "LINDDUN Threat Trees and Privacy Threat Catalog",
+        "url": "https://linddun.org",
+        "type": "catalog",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "title": "Peer-reviewed privacy engineering literature set",
+        "type": "academic",
+        "license": "CC-BY-4.0"
+      }
+    ]
+  }
+]

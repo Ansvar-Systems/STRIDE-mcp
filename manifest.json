@@ -1,9 +1,9 @@
 {
   "manifest_version": "0.3",
   "name": "stride-patterns-mcp",
-  "display_name": "STRIDE Threat Patterns MCP Server",
+  "display_name": "STRIDE + LINDDUN Patterns MCP Server",
   "version": "0.2.0",
-  "description": "MCP server providing 125+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
+  "description": "MCP server providing STRIDE security patterns and LINDDUN privacy threat catalogs with actionable mitigations",
   "author": {
     "name": "Ansvar Systems",
     "email": "hello@ansvar.eu",
@@ -47,7 +47,11 @@
     { "name": "suggest_trust_boundaries" },
     { "name": "find_patterns_by_reference" },
     { "name": "filter_by_tags" },
-    { "name": "search_mitigations" }
+    { "name": "search_mitigations" },
+    { "name": "search_threats" },
+    { "name": "get_threat_tree" },
+    { "name": "get_mitigations" },
+    { "name": "search_privacy_patterns" }
   ],
   "compatibility": {
     "platforms": ["darwin", "win32", "linux"],

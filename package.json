@@ -1,7 +1,8 @@
 {
   "name": "@ansvar/stride-patterns-mcp",
+  "mcpName": "eu.ansvar/stride-patterns-mcp",
   "version": "0.2.0",
-  "description": "MCP server providing 125+ expert-curated STRIDE threat patterns with CVE validation, real-world evidence, and actionable mitigations",
+  "description": "MCP server providing STRIDE security patterns and LINDDUN privacy threats with actionable mitigations and DFD-aware guidance",
   "publishConfig": {
     "access": "public"
   },
@@ -16,7 +17,10 @@
     "dist",
     "data/patterns.db",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "server.json",
+    "sources.yml",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc && chmod +x dist/index.js dist/http-server.js",
@@ -28,16 +32,19 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src/ scripts/",
+    "test:contract": "vitest run src/__tests__/contract/",
     "format": "prettier --write \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm run build:db && npm test"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run build && npm run build:db && npm test"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
     "stride",
+    "linddun",
     "threat-modeling",
+    "privacy-engineering",
     "cybersecurity",
     "security-patterns",
     "cve",
