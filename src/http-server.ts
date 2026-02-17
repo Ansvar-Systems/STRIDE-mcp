@@ -8,6 +8,7 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
+import { createRequire } from 'node:module';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
@@ -16,12 +17,14 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { randomUUID } from 'crypto';
 
-import { getDatabase, closeDatabase } from './database/db.js';
+import { getDatabase, closeDatabase, getDatabaseStats, getDatabaseMetadata } from './database/db.js';
 import { TOOLS, handleToolCall, SERVER_INSTRUCTIONS } from './tools/definitions.js';
 
 // Server info
 const SERVER_NAME = 'stride-patterns-mcp';
-const SERVER_VERSION = '0.2.0';
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
+const SERVER_VERSION = pkg.version;
 
 // HTTP server port
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -106,8 +109,28 @@ async function main() {
 
     // Health check endpoint
     if (url.pathname === '/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', server: SERVER_NAME, version: SERVER_VERSION }));
+      try {
+        const stats = getDatabaseStats();
+        const metadata = getDatabaseMetadata();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          status: 'ok',
+          server: SERVER_NAME,
+          version: SERVER_VERSION,
+          db_status: 'connected',
+          total_patterns: stats.total_patterns,
+          schema_version: metadata.schema_version,
+          last_build: metadata.last_build,
+        }));
+      } catch {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          status: 'degraded',
+          server: SERVER_NAME,
+          version: SERVER_VERSION,
+          db_status: 'error',
+        }));
+      }
       return;
     }
 

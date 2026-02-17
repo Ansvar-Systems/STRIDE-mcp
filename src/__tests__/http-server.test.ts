@@ -112,7 +112,13 @@ describe('HTTP Server', () => {
       const data = await response.json();
       expect(data).toHaveProperty('status', 'ok');
       expect(data).toHaveProperty('server', 'stride-patterns-mcp');
-      expect(data).toHaveProperty('version', '0.2.0');
+      expect(data).toHaveProperty('version');
+      expect(typeof data.version).toBe('string');
+      expect(data).toHaveProperty('db_status', 'connected');
+      expect(data).toHaveProperty('total_patterns');
+      expect(typeof data.total_patterns).toBe('number');
+      expect(data).toHaveProperty('schema_version');
+      expect(data).toHaveProperty('last_build');
     });
   });
 
