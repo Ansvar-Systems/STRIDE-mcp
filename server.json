@@ -15,6 +15,10 @@
       "identifier": "@ansvar/stride-patterns-mcp",
       "version": "0.2.0",
       "transport": { "type": "stdio" }
+    },
+    {
+      "registryType": "custom",
+      "transport": { "type": "streamable-http", "url": "https://stride-patterns-mcp.vercel.app/mcp" }
     }
   ]
 }

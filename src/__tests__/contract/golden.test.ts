@@ -121,9 +121,35 @@ describe('Drift Detection (Golden Hashes)', () => {
     expect(n).toBe(goldenHashes.hashes.dfd_elements_count);
   });
 
+  it('should have stable DFD element identities', () => {
+    const db = getDatabase();
+    const rows = db.prepare('SELECT technology, dfd_role, category FROM dfd_elements ORDER BY technology').all();
+    const hash = createHash('sha256').update(JSON.stringify(rows)).digest('hex');
+    expect(hash).toBe(goldenHashes.hashes.dfd_elements_hash);
+  });
+
   it('should have the expected number of LINDDUN threats', () => {
     const db = getDatabase();
     const { n } = db.prepare('SELECT COUNT(*) as n FROM linddun_threats').get() as { n: number };
     expect(n).toBe(goldenHashes.hashes.linddun_threats_count);
+  });
+
+  it('should have stable LINDDUN threat identities', () => {
+    const db = getDatabase();
+    const rows = db.prepare('SELECT threat_id, category, tree_path FROM linddun_threats ORDER BY threat_id').all();
+    const hash = createHash('sha256').update(JSON.stringify(rows)).digest('hex');
+    expect(hash).toBe(goldenHashes.hashes.linddun_threats_hash);
+  });
+
+  it('should have the expected number of mitigations', () => {
+    const db = getDatabase();
+    const { n } = db.prepare('SELECT COUNT(*) as n FROM mitigations').get() as { n: number };
+    expect(n).toBe(goldenHashes.hashes.mitigations_count);
+  });
+
+  it('should have the expected number of trust boundaries', () => {
+    const db = getDatabase();
+    const { n } = db.prepare('SELECT COUNT(*) as n FROM trust_boundary_templates').get() as { n: number };
+    expect(n).toBe(goldenHashes.hashes.trust_boundaries_count);
   });
 });

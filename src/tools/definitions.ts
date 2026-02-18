@@ -58,6 +58,9 @@ For privacy threat modeling with LINDDUN:
 
 All LINDDUN responses include source-backed traceability via sources and claim-level citations.
 
+For data provenance:
+1. list_sources — list all data sources with authority, update frequency, license, and known limitations
+
 Use get_database_stats for an overview of pattern coverage and confidence scores.`;
 
 /** MCP Tool definitions — the agent-facing API surface */
@@ -67,7 +70,9 @@ export const TOOLS: Tool[] = [
     description:
       'Search STRIDE threat patterns using full-text search (FTS5). ' +
       'Searches across pattern titles, descriptions, attack scenarios, and mitigations. ' +
-      'Returns relevant patterns with snippet highlights.',
+      'Returns a JSON object with a results array and total count. ' +
+      'Use plain keywords only — FTS5 operators (AND/OR/NOT) are not supported. ' +
+      'Prefer list_patterns when browsing by category without a specific keyword.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -113,7 +118,8 @@ export const TOOLS: Tool[] = [
     name: 'get_pattern',
     description:
       'Get complete details for a specific STRIDE pattern by ID. ' +
-      'Returns full pattern including mitigations, evidence (CVEs, breaches), detection queries, and code examples.',
+      'Returns full pattern including id, threat, classification, mitigations, evidence (CVEs, breaches), detection queries, and code examples. ' +
+      'Use search_patterns first to discover valid pattern IDs if you do not already have one.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -129,7 +135,8 @@ export const TOOLS: Tool[] = [
     name: 'list_patterns',
     description:
       'List STRIDE patterns with filtering, sorting, and pagination. ' +
-      'Returns pattern summaries (less detail than get_pattern). ' +
+      'Returns pattern summaries (less detail than get_pattern) with a total count and pagination offset. ' +
+      'Default sort is by confidence descending. ' +
       'Use get_available_filters to discover valid technology and framework values.',
     inputSchema: {
       type: 'object',
@@ -213,6 +220,7 @@ export const TOOLS: Tool[] = [
       'Classify a technology into its DFD (Data Flow Diagram) role and Mermaid shape. ' +
       'Returns the DFD role (external_entity, process, data_store, data_flow), ' +
       'category, default trust zone, Mermaid node syntax, and related threat pattern IDs. ' +
+      'Supports case-insensitive exact match, alias lookup, and FTS5 fallback. Unrecognized technologies return match: null with up to 2 suggestions. ' +
       'Use this to correctly place technologies in data flow diagrams.',
     inputSchema: {
       type: 'object',
@@ -349,7 +357,9 @@ export const TOOLS: Tool[] = [
     name: 'search_threats',
     description:
       'Search LINDDUN privacy threats across Linking, Identifying, Non-repudiation, Detecting, Data disclosure, Unawareness, and Non-compliance. ' +
-      'Uses FTS search over tree paths, descriptions, examples, and mitigations.',
+      'LINDDUN stands for Linking, Identifying, Non-repudiation, Detecting, Data disclosure, Unawareness, Non-compliance. ' +
+      'Uses FTS search over tree paths, descriptions, examples, and mitigations. ' +
+      'Returns a results array with total count.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -374,7 +384,8 @@ export const TOOLS: Tool[] = [
   {
     name: 'get_threat_tree',
     description:
-      'Get the full LINDDUN threat tree for a category, including all leaf threats and their metadata.',
+      'Get the full LINDDUN threat tree for a category, including all leaf threats and their metadata. ' +
+      'Returns a category object with a threats array containing tree_path, description, examples, and mitigations for each leaf.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -390,7 +401,9 @@ export const TOOLS: Tool[] = [
   {
     name: 'get_mitigations',
     description:
-      'Get privacy-enhancing mitigations for a specific LINDDUN threat ID.',
+      'Get privacy-enhancing mitigations for a specific LINDDUN threat ID. ' +
+      'Threat IDs use the format LINDDUN-{CATEGORY}-{NUMBER} (e.g., "LINDDUN-LINKING-001"). ' +
+      'Returns the threat details and its associated mitigations with source citations.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -405,7 +418,8 @@ export const TOOLS: Tool[] = [
   {
     name: 'search_privacy_patterns',
     description:
-      'Search LINDDUN privacy design patterns and DFD annotations by keyword and category.',
+      'Search LINDDUN privacy design patterns and DFD annotations by keyword and category. ' +
+      'Results include DFD element annotations showing where each pattern applies in a data flow diagram.',
     inputSchema: {
       type: 'object',
       properties: {

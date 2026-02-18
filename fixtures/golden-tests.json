@@ -20,7 +20,7 @@
     {
       "id": "stride-002",
       "category": "pattern_retrieval",
-      "description": "Retrieve SQL injection pattern with CVE references",
+      "description": "Retrieve SSRF pattern with CVE references",
       "tool": "get_pattern",
       "input": {
         "pattern_id": "STRIDE-API-SSRF-001"
@@ -170,6 +170,60 @@
       "assertions": {
         "result_not_empty": true,
         "text_contains": ["sources", "schema_version", "LINDDUN"]
+      }
+    },
+    {
+      "id": "stride-014",
+      "category": "linddun_search",
+      "description": "Search LINDDUN threats for tracking-related privacy threats",
+      "tool": "search_threats",
+      "input": {
+        "query": "tracking"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "min_results": 1,
+        "any_result_contains": ["tracking", "Tracking"]
+      }
+    },
+    {
+      "id": "stride-015",
+      "category": "linddun_tree",
+      "description": "Get threat tree for Linking category returns leaf threats",
+      "tool": "get_threat_tree",
+      "input": {
+        "category": "Linking"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["Linking"],
+        "fields_present": ["category", "tree", "total_threats"]
+      }
+    },
+    {
+      "id": "stride-016",
+      "category": "linddun_mitigations",
+      "description": "Get mitigations for a known LINDDUN threat ID",
+      "tool": "get_mitigations",
+      "input": {
+        "threat_id": "LINDDUN-LINKING-001"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "text_contains": ["LINDDUN-LINKING-001", "mitigations"]
+      }
+    },
+    {
+      "id": "stride-017",
+      "category": "tag_filter",
+      "description": "List available compliance tag values without filtering",
+      "tool": "filter_by_tags",
+      "input": {
+        "tag_type": "compliance"
+      },
+      "assertions": {
+        "result_not_empty": true,
+        "text_not_empty": true
       }
     }
   ]
