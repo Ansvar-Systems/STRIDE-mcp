@@ -1,0 +1,94 @@
+{
+  "id": "STRIDE-MEDDEV-DIAG-002",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-20",
+    "last_updated": "2026-02-20",
+    "confidence_score": 9.0,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": ["A08:2021"],
+    "mitre_attack": ["T1565.001"],
+    "cwe": ["CWE-345", "CWE-494"]
+  },
+  "threat": {
+    "title": "Diagnostic Data Integrity Compromise via Software Update Manipulation",
+    "description": "An attacker compromises the software update mechanism of a diagnostic medical device (imaging system, patient monitor, or IVD analyzer) to inject malicious firmware that subtly alters diagnostic readings. Unlike denial-of-service attacks, this threat is insidious because the device continues to function normally while producing incorrect results — potentially causing misdiagnosis, delayed treatment, or unnecessary procedures. This is particularly dangerous for AI-enabled diagnostic devices where the ML model itself could be poisoned.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "NIST AI 100-2"],
+    "versions_affected": ["Diagnostic devices with remote update capability"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker compromises the manufacturer's update distribution infrastructure or performs a man-in-the-middle on the update channel. 2. Attacker creates a modified firmware image that passes basic integrity checks but contains altered diagnostic algorithms. 3. The malicious update is distributed to target devices. 4. Devices install the update, which subtly modifies measurement calibration, AI model weights, or threshold values. 5. Clinical staff receive incorrect diagnostic results without any indication of compromise.",
+    "attack_complexity": "high"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-25179",
+        "cvss_score": 9.8,
+        "description": "GE Healthcare CARESCAPE Telemetry Server - improper access control allowing unauthorized firmware upload"
+      },
+      {
+        "cve_id": "CVE-2023-0297",
+        "cvss_score": 9.8,
+        "description": "Baxter Sigma Spectrum infusion pump firmware update vulnerability"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "NIST AI 100-2e2025: Adversarial Machine Learning Attacks on Medical Imaging",
+        "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-2e2025.pdf"
+      },
+      {
+        "title": "MITRE/MDIC Playbook - Fictional AMPS Device Threat Model",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Secure Boot Chain with Hardware Root of Trust",
+      "description": "Implement a hardware-rooted secure boot chain that verifies firmware integrity at every stage. Use immutable bootloader with hardware-fused signing keys (TPM 2.0 or ARM TrustZone). Any firmware modification should be detectable at boot time.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Code-Signed Updates with Certificate Pinning",
+      "description": "All firmware updates must be digitally signed using the manufacturer's private key. The device should validate signatures using pinned certificates, preventing man-in-the-middle attacks on the update channel. Use dual-signature verification (two independent signing keys).",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Independent Diagnostic Validation",
+      "description": "Implement independent self-test and calibration verification routines that run periodically and cannot be modified by firmware updates. Use hardware-backed reference values for diagnostic calibration that are compared against software-computed values.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M4",
+      "title": "AI Model Integrity Monitoring",
+      "description": "For AI-enabled diagnostic devices, implement model integrity verification using cryptographic hashes of model weights. Monitor prediction distributions for statistical anomalies that could indicate model poisoning. Log all model inference metadata for audit.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "High"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "AI/ML"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "NIST AI 100-2"],
+    "deployment": ["Hospital Network", "Clinical Environment", "Cloud-Connected"]
+  }
+}

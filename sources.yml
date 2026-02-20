@@ -93,6 +93,24 @@ sources:
     languages:
       - "en"
 
+  - name: "MITRE/MDIC Playbook for Threat Modeling Medical Devices"
+    authority: "The MITRE Corporation / Medical Device Innovation Consortium (MDIC)"
+    official_portal: "https://www.mitre.org/publications/technical-papers/playbook-threat-modeling-medical-devices"
+    canonical_identifier: "N/A"
+    retrieval_method: "MANUAL"
+    api_documentation: "N/A"
+    update_frequency: "on_change"
+    last_ingested: "2026-02-20"
+    license_or_terms:
+      type: "Public Release"
+      url: "https://www.mitre.org/publications/technical-papers/playbook-threat-modeling-medical-devices"
+      summary: "Publicly available guidance for medical device threat modeling"
+    coverage:
+      scope: "5 expert-curated medical device threat patterns (infusion pump tampering, diagnostic data integrity, PHI exfiltration, DoS, device spoofing) informed by MITRE/MDIC methodology"
+      limitations: "Curated selection of high-impact medical device threats; not exhaustive coverage of all medical device attack vectors"
+    languages:
+      - "en"
+
 data_freshness:
   automated_checks: false
   check_frequency: "manual"

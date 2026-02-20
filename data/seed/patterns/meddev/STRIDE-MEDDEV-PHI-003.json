@@ -1,0 +1,96 @@
+{
+  "id": "STRIDE-MEDDEV-PHI-003",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-20",
+    "last_updated": "2026-02-20",
+    "confidence_score": 9.4,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": ["A02:2021"],
+    "mitre_attack": ["T1040", "T1557"],
+    "cwe": ["CWE-311", "CWE-319"]
+  },
+  "threat": {
+    "title": "Protected Health Information Exfiltration from Networked Medical Devices",
+    "description": "An attacker intercepts or extracts Protected Health Information (PHI) and Personal Health Data (PHD) from medical devices that transmit patient data over hospital networks without adequate encryption. Medical devices commonly transmit patient vitals, diagnostic results, medication data, and device telemetry. Many legacy protocols (HL7v2, DICOM without TLS) transmit data in cleartext. This threat spans HIPAA (US), GDPR (EU), and medical device regulations, making it a multi-jurisdictional compliance issue.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "HIPAA Security Rule", "GDPR", "EU MDR"],
+    "versions_affected": ["All networked medical devices transmitting PHI/PHD"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to the hospital network segment where medical devices communicate. 2. Attacker performs passive network sniffing on HL7v2, DICOM, or proprietary protocols. 3. Attacker extracts patient data including names, dates of birth, medical record numbers, diagnostic results, and medication information. 4. Data is exfiltrated for sale on dark markets or used for identity theft, insurance fraud, or targeted attacks on individuals.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-14789",
+        "cvss_score": 7.1,
+        "description": "Philips e-Alert patient monitoring - cleartext transmission of patient data and credentials"
+      },
+      {
+        "cve_id": "CVE-2022-36385",
+        "cvss_score": 8.1,
+        "description": "Contec CMS8000 patient monitor - data exfiltration over unencrypted channels to hardcoded IP"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "MedStar Health Breach (2016)",
+        "description": "Ransomware attack on hospital network affected medical device operations and exposed patient data. Highlighted interconnection risks between IT and medical device networks."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "IMDRF N60: Principles and Practices for Medical Device Cybersecurity - Data Protection Requirements",
+        "url": "https://www.imdrf.org/sites/default/files/docs/imdrf/final/technical/imdrf-tech-200318-pp-mdc-n60.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Encrypt All PHI/PHD in Transit",
+      "description": "Implement TLS 1.2+ for all data transmissions containing patient data. For legacy protocols (HL7v2, DICOM), use TLS wrappers or VPN tunnels. Mandate DICOM TLS (DICOM Supplement 178) and HL7 FHIR over HTTPS.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Encrypt PHI/PHD at Rest",
+      "description": "Implement AES-256 encryption for all patient data stored on the medical device, including local caches, logs, and configuration files. Use hardware-backed key management for encryption keys.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Network Segmentation for Medical Devices",
+      "description": "Deploy medical devices on isolated VLANs with firewall rules restricting communication to only authorized endpoints (clinical systems, update servers). Implement micro-segmentation to prevent lateral movement.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Data Minimization and Anonymization",
+      "description": "Configure medical devices to transmit only the minimum necessary patient data. Where possible, use de-identified or pseudonymized data for device telemetry and analytics. Implement automatic data purging after clinical need expires.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "HIPAA", "GDPR", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "IoMT"]
+  }
+}
