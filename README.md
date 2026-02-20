@@ -5,7 +5,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-1.0-green)](https://modelcontextprotocol.io/)
-[![Patterns](https://img.shields.io/badge/patterns-125-orange)](data/seed/patterns/)
+[![Patterns](https://img.shields.io/badge/patterns-130-orange)](data/seed/patterns/)
 
 **Security & Quality**
 [![CodeQL](https://img.shields.io/badge/CodeQL-enabled-blue)](https://github.com/Ansvar-Systems/stride-patterns-mcp/security/code-scanning)
@@ -223,8 +223,9 @@ Search privacy design patterns and DFD annotations.
 | **IoT/Edge** | **5** | Firmware, BLE, MQTT, IoT, Edge Computing |
 | **Logging/SIEM** | **4** | Log Injection, Tampering, Audit, SIEM Evasion |
 | **AI/ML** | **3** | Prompt Injection, Model Extraction, Data Poisoning |
+| **Medical Devices** | **5** | Infusion pump tampering, diagnostic data integrity, PHI exfiltration, device DoS, default credential spoofing |
 | **Other** | **46** | Blockchain, Financial, Mobile, VPN, Crypto, CDN, NFC, and more |
-| **TOTAL** | **125** | **40+ domains** |
+| **TOTAL** | **130** | **40+ domains** |
 
 ## Data Sources
 
@@ -232,8 +233,9 @@ All data is traceable to authoritative sources. See [`sources.yml`](sources.yml)
 
 | Source | Type | What It Provides |
 |--------|------|------------------|
-| Ansvar Expert Patterns | Curated | 125 STRIDE threat patterns with CVE refs, code mitigations, detection queries |
+| Ansvar Expert Patterns | Curated | 130 STRIDE threat patterns with CVE refs, code mitigations, detection queries |
 | [LINDDUN (KU Leuven)](https://linddun.org) | Academic | 35 privacy threats, 30 privacy design patterns, threat trees |
+| [MITRE/MDIC Medical Device Playbook](https://www.mitre.org/publications/technical-papers/playbook-threat-modeling-medical-devices) | Non-profit | 5 medical device threat patterns (infusion pumps, diagnostics, PHI, DoS, spoofing) |
 | [NIST NVD](https://nvd.nist.gov) | Government | CVE identifiers and CVSS scores referenced in patterns |
 | [MITRE ATT&CK](https://attack.mitre.org) | Non-profit | Technique IDs (T-codes) mapped to threat patterns |
 | [OWASP Top 10](https://owasp.org/www-project-top-ten/) | Non-profit | Risk categories mapped to patterns |
@@ -250,7 +252,7 @@ All data is traceable to authoritative sources. See [`sources.yml`](sources.yml)
 - **Two Transports:** stdio for Claude Desktop, HTTP for remote/Docker deployments
 
 **Data:**
-- 125 threat patterns across 40+ security domains
+- 130 threat patterns across 40+ security domains
 - 35 LINDDUN privacy threats across 7 categories
 - 30 privacy design patterns with DFD annotations
 - 121 DFD technology elements with Mermaid shape mappings
