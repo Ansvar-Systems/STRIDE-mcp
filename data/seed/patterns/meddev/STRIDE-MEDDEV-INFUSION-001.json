@@ -1,0 +1,101 @@
+{
+  "id": "STRIDE-MEDDEV-INFUSION-001",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-20",
+    "last_updated": "2026-02-20",
+    "confidence_score": 9.2,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": ["A01:2021"],
+    "mitre_attack": ["T1565.002"],
+    "cwe": ["CWE-345", "CWE-306"]
+  },
+  "threat": {
+    "title": "Infusion Pump Dosage Tampering via Network Command Injection",
+    "description": "An attacker with network access to an infusion pump can modify drug dosage parameters by intercepting or injecting commands on the pump's network interface. Infusion pumps often use proprietary protocols over TCP/IP or HL7/FHIR interfaces that lack mutual authentication or message integrity checks. Successful exploitation could result in underdosing (therapeutic failure) or overdosing (patient harm or death). This threat is critical because infusion pumps are Class III devices delivering life-sustaining therapy.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "IEC 62443", "FDA Premarket Cybersecurity"],
+    "versions_affected": ["All networked infusion pumps"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to hospital network (via compromised credentials, rogue device, or supply chain attack). 2. Attacker discovers infusion pump on the network via scanning. 3. Attacker intercepts or reverse-engineers the pump's communication protocol. 4. Attacker sends modified dosage commands or alters infusion parameters in transit. 5. Pump delivers altered dosage without alerting clinical staff.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-10959",
+        "cvss_score": 10.0,
+        "description": "BD Alaris Plus medical syringe infusion pump - unauthorized firmware upload vulnerability allowing dosage manipulation"
+      },
+      {
+        "cve_id": "CVE-2015-3459",
+        "cvss_score": 7.5,
+        "description": "Hospira LifeCare PCA infusion pump - cleartext communication allowing dosage parameter modification"
+      },
+      {
+        "cve_id": "CVE-2021-33886",
+        "cvss_score": 8.2,
+        "description": "B. Braun SpaceStation and Infusomat Space - unauthorized access to modify pump configuration"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "ICS-CERT Advisory ICSMA-19-080-01 (BD Alaris)",
+        "description": "Critical vulnerability in BD Alaris infusion pumps allowing firmware modification and dosage tampering. FDA issued safety communication."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices - AMPS Infusion Pump Example",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Mutual Authentication for All Device Communications",
+      "description": "Implement mutual TLS (mTLS) or device certificate-based authentication for all network communications between the infusion pump and control systems. Use hardware-backed key storage (TPM/secure element) for device certificates.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Message Integrity and Encryption",
+      "description": "Encrypt all command and data traffic using TLS 1.2+ or AES-256. Implement message authentication codes (HMAC-SHA256) on all dosage-related commands to detect tampering.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Dosage Safety Bounds Checking",
+      "description": "Implement independent hardware-enforced dosage safety bounds that cannot be overridden by software. The pump should reject any dosage command outside clinically defined limits regardless of the command source.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M4",
+      "title": "Clinical Alarm on Parameter Change",
+      "description": "Generate an audible and visual alarm at the bedside whenever dosage parameters are changed remotely. Require clinician confirmation at the device for any remote parameter modification.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "IoMT"]
+  }
+}

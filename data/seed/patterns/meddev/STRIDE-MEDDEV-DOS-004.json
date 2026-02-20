@@ -1,0 +1,96 @@
+{
+  "id": "STRIDE-MEDDEV-DOS-004",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-20",
+    "last_updated": "2026-02-20",
+    "confidence_score": 9.1,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": [],
+    "mitre_attack": ["T1498", "T1499"],
+    "cwe": ["CWE-400", "CWE-770"]
+  },
+  "threat": {
+    "title": "Medical Device Denial of Service via Network Flooding or Resource Exhaustion",
+    "description": "An attacker renders a medical device unavailable by flooding its network interface or exhausting its computational resources. Unlike IT systems where DoS causes business disruption, DoS against medical devices can directly endanger patient safety — a ventilator, patient monitor, or infusion pump becoming unresponsive during critical care can be fatal. Many medical devices have limited processing power and memory, making them highly susceptible to resource exhaustion attacks that would be trivial to defend against in general-purpose IT systems.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 8.6,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "IEC 62443", "FDA Premarket Cybersecurity"],
+    "versions_affected": ["All networked medical devices"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to the hospital network (or launches attack from compromised internal system). 2. Attacker identifies target medical devices via network scanning. 3. Attacker floods the device with malformed packets, excessive connection attempts, or resource-intensive requests. 4. Device becomes unresponsive — clinical alarms stop, patient data stops transmitting, or device stops functioning. 5. Clinical staff may not immediately recognize the device failure as a cyberattack, delaying incident response.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-16228",
+        "cvss_score": 6.5,
+        "description": "GE Healthcare patient monitoring systems DoS via crafted network packets"
+      },
+      {
+        "cve_id": "CVE-2021-27410",
+        "cvss_score": 7.5,
+        "description": "Welch Allyn patient monitoring denial of service vulnerability"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "WannaCry Impact on NHS Medical Devices (2017)",
+        "description": "WannaCry ransomware disrupted medical devices across NHS hospitals including MRI scanners, blood storage refrigerators, and theatre equipment, causing cancellation of 19,000 appointments."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "IEC 62443-4-2: Technical security requirements for IACS components - Availability requirements",
+        "url": "https://www.iec.ch/iec62443"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Safe-State Fallback on Communication Loss",
+      "description": "Design the device to enter a clinically safe state when network communication is lost or degraded. Life-sustaining functions must continue to operate independently of network connectivity. Generate local alarms when connectivity is lost.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Network Rate Limiting and Connection Throttling",
+      "description": "Implement per-source rate limiting on the device's network stack. Limit maximum concurrent connections. Drop malformed packets early in the network stack before they consume application resources.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Dedicated Medical Device Network Segment",
+      "description": "Deploy medical devices on dedicated, isolated network segments with strict access control lists (ACLs). Only allow traffic from authorized clinical systems. Block all unnecessary ports and protocols.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Resource Monitoring and Watchdog Timers",
+      "description": "Implement hardware watchdog timers that automatically restart the device if it becomes unresponsive. Monitor CPU, memory, and network utilization with alerts when thresholds are exceeded. Log all anomalous network activity.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "IEC 62443", "EU MDR"],
+    "deployment": ["Hospital Network", "Clinical Environment", "Critical Infrastructure"]
+  }
+}

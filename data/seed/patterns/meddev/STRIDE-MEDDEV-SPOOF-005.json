@@ -1,0 +1,95 @@
+{
+  "id": "STRIDE-MEDDEV-SPOOF-005",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-02-20",
+    "last_updated": "2026-02-20",
+    "confidence_score": 8.8,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": ["A07:2021"],
+    "mitre_attack": ["T1556", "T1078"],
+    "cwe": ["CWE-287", "CWE-798"]
+  },
+  "threat": {
+    "title": "Medical Device Identity Spoofing via Default Credentials and Weak Authentication",
+    "description": "An attacker impersonates a legitimate medical device or authorized user by exploiting hardcoded default credentials, weak authentication mechanisms, or lack of device identity verification. Many medical devices ship with default passwords that are rarely changed, use shared credentials across device fleets, or accept commands from any source on the local network without authentication. This enables unauthorized access to device configuration, patient data, and clinical functions.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IMDRF N60"],
+    "versions_affected": ["Medical devices with default or weak credentials"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker discovers medical device on hospital network. 2. Attacker attempts default credentials (often published in service manuals or widely known). 3. Attacker gains administrative access to the device. 4. Attacker modifies device configuration, accesses patient data, or uses the device as a pivot point to attack other systems. 5. Alternatively, attacker impersonates a legitimate device to inject false data into clinical systems (e.g., false patient vitals).",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-12016",
+        "cvss_score": 9.8,
+        "description": "Baxter ExactaMix compounder - hardcoded administrative credentials"
+      },
+      {
+        "cve_id": "CVE-2022-36385",
+        "cvss_score": 8.1,
+        "description": "Contec CMS8000 patient monitor - hardcoded credentials with backdoor"
+      },
+      {
+        "cve_id": "CVE-2023-31222",
+        "cvss_score": 9.8,
+        "description": "Medtronic Paceart Optima - deserialization vulnerability with default credentials"
+      }
+    ],
+    "security_research": [
+      {
+        "title": "CISA ICS-CERT Advisory on Medical Device Default Credentials",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Unique Per-Device Credentials with Forced Change on First Use",
+      "description": "Each device must ship with a unique, randomly generated initial credential. Force the user to change the credential during initial setup. Never use hardcoded or shared credentials across the device fleet.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M2",
+      "title": "Certificate-Based Device Identity",
+      "description": "Implement PKI-based device identity using manufacturer-provisioned device certificates with unique per-device key pairs. Use mutual TLS for device-to-device and device-to-server communication. Store private keys in hardware security modules.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M3",
+      "title": "Multi-Factor Authentication for Clinical Functions",
+      "description": "Require multi-factor authentication (badge + PIN, or biometric) for administrative and safety-critical clinical functions. Support integration with hospital identity providers (Active Directory, LDAP) for centralized user management.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Role-Based Access Control with Audit Logging",
+      "description": "Implement granular role-based access control (RBAC) distinguishing between clinical users, biomedical engineers, and administrators. Log all authentication events and access to security-relevant functions. Alert on failed authentication attempts.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "IoMT"]
+  }
+}
