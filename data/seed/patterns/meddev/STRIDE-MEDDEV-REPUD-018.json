@@ -1,0 +1,93 @@
+{
+  "id": "STRIDE-MEDDEV-REPUD-018",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.2,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": ["A09:2021"],
+    "mitre_attack": ["T1070"],
+    "cwe": ["CWE-778", "CWE-693"]
+  },
+  "threat": {
+    "title": "Ventilator Alarm Acknowledgment Without Clinician Attribution",
+    "description": "A mechanical ventilator's alarm system allows alarm acknowledgment (silencing or dismissal) without recording the identity of the person who acknowledged the alarm. ICU ventilators generate critical alarms for conditions such as patient disconnect, high airway pressure, apnea, low tidal volume, and power failure. When these alarms are acknowledged at the bedside or via central monitoring, the system must record who acknowledged the alarm and when. If the ventilator does not bind alarm acknowledgments to authenticated user identities, it becomes impossible to determine accountability in adverse events. In post-incident investigations (e.g., alarm fatigue-related patient death), the lack of attribution prevents identifying whether alarms were properly managed and by whom, creating a repudiation risk for clinical staff and the institution.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.1,
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 60601-1-8", "AAMI/IEC 80001-1"],
+    "versions_affected": ["ICU ventilators with alarm acknowledgment that does not require user authentication"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. An ICU ventilator generates a critical alarm (e.g., high peak airway pressure, indicating potential patient disconnect or airway obstruction). 2. The alarm is acknowledged (silenced) at the bedside by pressing a button, with no authentication required. 3. The ventilator records the alarm event and acknowledgment timestamp but does not record the identity of the person who acknowledged the alarm. 4. The patient's condition worsens because the acknowledged alarm was not properly investigated. 5. During post-incident review, the alarm log shows the alarm was acknowledged but provides no information about who acknowledged it. 6. Clinical staff deny responsibility for the acknowledgment, and the institution cannot establish accountability. The lack of attribution prevents corrective action and regulatory compliance with alarm management standards.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [],
+    "real_world_breaches": [
+      {
+        "name": "The Joint Commission Sentinel Event Alert 50: Alarm Fatigue (2013)",
+        "description": "The Joint Commission issued a sentinel event alert on alarm safety, citing 98 alarm-related deaths reported between 2009 and 2012. The report identified inadequate alarm management systems and lack of accountability tracking as contributing factors."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "ECRI Institute: Top 10 Health Technology Hazards - Alarm Fatigue",
+        "url": "https://www.ecri.org/landing-alarm-fatigue"
+      },
+      {
+        "title": "AAMI Foundation: Clinical Alarm Management Compendium",
+        "url": "https://www.aami.org/clinical-alarm-management"
+      },
+      {
+        "title": "IEC 60601-1-8: Medical Electrical Equipment - Alarm Systems Requirements and Guidance",
+        "url": "https://webstore.iec.ch/publication/2606"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Authenticated Alarm Acknowledgment",
+      "description": "Require user authentication (badge tap, PIN, or biometric) before allowing alarm acknowledgment on the ventilator or central monitoring station. Bind the authenticated identity to the alarm acknowledgment record in the device log. Per IEC 81001-5-1 clause 5.7.2, safety-relevant actions must be attributable to identified users.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Immutable Alarm Event Log with Attribution",
+      "description": "Record all alarm events, acknowledgments, escalations, and responses in an immutable, timestamped log that includes: alarm type, severity, patient identifier, bed number, acknowledging user identity, and time between alarm onset and acknowledgment. Store logs in append-only storage per IEC 60601-1-8 requirements.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Alarm Escalation Chain with Timeout",
+      "description": "Implement automatic alarm escalation if an alarm is not acknowledged within a defined time window. Escalation should route to the charge nurse, then to the attending physician, then to a hospital-wide alert. Each escalation step must be logged with the identity of the notified person.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Central Alarm Management System Integration",
+      "description": "Forward all ventilator alarms and acknowledgment events to a central alarm management system that correlates alarm data across all devices, tracks response times per clinician, and generates alarm management reports for quality improvement. This provides an independent audit trail outside the ventilator.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 60601-1-8", "The Joint Commission", "IMDRF N60"],
+    "deployment": ["Hospital Network", "ICU", "Clinical Environment"]
+  }
+}

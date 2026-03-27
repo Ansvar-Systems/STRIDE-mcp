@@ -1,0 +1,95 @@
+{
+  "id": "STRIDE-MEDDEV-SPOOF-011",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.9,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": ["A07:2021"],
+    "mitre_attack": ["T1557", "T1036.005"],
+    "cwe": ["CWE-290", "CWE-345"]
+  },
+  "threat": {
+    "title": "DICOM Image Injection in Radiology Systems via Spoofed Modality Identity",
+    "description": "An attacker spoofs the identity of a legitimate imaging modality (CT scanner, MRI, X-ray) to inject fabricated or modified DICOM images into a Picture Archiving and Communication System (PACS). DICOM (Digital Imaging and Communications in Medicine) is the standard protocol for medical image exchange. Most PACS implementations authenticate DICOM associations using only the AE Title (Application Entity Title) — a plaintext string that is trivially spoofable. An attacker who knows or guesses the AE Title of a legitimate modality can send crafted DICOM objects containing false patient images. Injected images could cause misdiagnosis (e.g., adding or removing tumors from CT scans), leading to incorrect treatment decisions including unnecessary surgery or missed cancer diagnoses.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "DICOM PS3.15 Security Profiles"],
+    "versions_affected": ["PACS and imaging modalities using DICOM without TLS or digital signatures"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to the hospital radiology network (via compromised workstation, VPN, or insider access). 2. Attacker discovers PACS server and enumerates AE Titles of registered imaging modalities using DICOM C-ECHO or network scanning. 3. Attacker configures a DICOM client with the AE Title of a legitimate modality (e.g., a CT scanner). 4. Attacker crafts DICOM objects with a target patient's demographics (obtained from the network or HIS/RIS) containing modified images (e.g., CT scan with synthetically added or removed lesions). 5. Attacker sends the crafted images via DICOM C-STORE to the PACS, which accepts them as originating from the legitimate modality. 6. Radiologist reads the injected images as authentic, potentially resulting in misdiagnosis.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-11687",
+        "cvss_score": 9.8,
+        "description": "OFFIS DCMTK - multiple vulnerabilities in DICOM networking stack enabling injection and denial of service"
+      },
+      {
+        "cve_id": "CVE-2022-2119",
+        "cvss_score": 9.8,
+        "description": "Horos/OsiriX DICOM viewer - unauthenticated DICOM store allowing arbitrary image injection"
+      }
+    ],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "Mirsky et al. - CT-GAN: Malicious Tampering of 3D Medical Imagery using Deep Learning (USENIX Security 2019)",
+        "url": "https://www.usenix.org/conference/usenixsecurity19/presentation/mirsky"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "DICOM TLS with Mutual Certificate Authentication",
+      "description": "Implement DICOM TLS (DICOM PS3.15 Supplement 178) with mutual certificate authentication for all DICOM associations. Each modality must present a unique device certificate issued by the hospital PKI. The PACS must reject connections from devices without valid certificates, eliminating AE Title spoofing. Per IEC 81001-5-1 clause 5.3.1, authentication must be commensurate with risk.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "DICOM Digital Signatures on Image Objects",
+      "description": "Apply DICOM digital signatures (PS3.15 Supplement 142) to all image objects at the point of acquisition. The modality signs each image with its device private key. The PACS and diagnostic workstations verify signatures before displaying images. Unsigned or invalid-signature images are flagged for manual review.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M3",
+      "title": "Network Segmentation of Radiology Infrastructure",
+      "description": "Place all DICOM-capable devices (modalities, PACS, diagnostic workstations) on a dedicated radiology VLAN with strict firewall rules. Allow DICOM traffic only between registered device IP addresses. Block all inbound DICOM C-STORE from unauthorized source addresses.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Image Provenance and Integrity Verification Workflow",
+      "description": "Implement an automated workflow that cross-references received DICOM objects against the Radiology Information System (RIS) order database. Images arriving without a matching scheduled exam order, or from an unexpected modality, are quarantined and flagged for manual verification before being made available for diagnostic reading.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "Radiology"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "DICOM PS3.15", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Radiology Department", "Clinical Environment"]
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "id": "STRIDE-MEDDEV-ELEV-007",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 9.0,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": ["A04:2021"],
+    "mitre_attack": ["T1542.001", "T1068"],
+    "cwe": ["CWE-269", "CWE-494"]
+  },
+  "threat": {
+    "title": "Unauthorized Firmware Modification on Patient Monitor via Privilege Escalation",
+    "description": "An attacker escalates privileges on a patient monitor to gain firmware-level write access, enabling installation of malicious firmware that alters vital sign displays, suppresses alarms, or exfiltrates patient data. Patient monitors run embedded operating systems (often Linux or VxWorks) with service interfaces intended for biomedical engineering updates. If privilege boundaries between clinical user mode and engineering/service mode are weak or bypassable, an attacker can reach firmware update functionality. Malicious firmware on a patient monitor can display false vital signs, leading clinicians to make incorrect treatment decisions.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.3,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 62443-4-2"],
+    "versions_affected": ["Patient monitors with network-accessible service/engineering interfaces"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to the hospital network and identifies patient monitors via network scanning. 2. Attacker connects to the monitor's service port (telnet, SSH, or proprietary debug interface) using default service credentials or a known authentication bypass. 3. Attacker escalates from clinical user context to engineering/service mode, gaining filesystem write access. 4. Attacker uploads modified firmware image to the device, bypassing signature verification if not enforced. 5. Modified firmware alters vital sign display thresholds, suppresses critical alarms, or installs a persistent backdoor for ongoing access.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2022-36385",
+        "cvss_score": 8.1,
+        "description": "Contec CMS8000 patient monitor - backdoor with hardcoded IP exfiltrating patient data, writable firmware"
+      },
+      {
+        "cve_id": "CVE-2020-6007",
+        "cvss_score": 7.9,
+        "description": "Philips patient monitoring devices - unsigned firmware enabling arbitrary code execution"
+      },
+      {
+        "cve_id": "CVE-2019-13557",
+        "cvss_score": 7.4,
+        "description": "GE CARESCAPE patient monitors - uncontrolled firmware upload via exposed SSH interface"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "CISA Advisory on Contec CMS8000 Backdoor (2025)",
+        "description": "CISA issued an advisory for the Contec CMS8000 patient monitor containing a backdoor that transmitted patient data to a hardcoded IP address and allowed firmware manipulation."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      },
+      {
+        "title": "CyberMDX Research: GE CARESCAPE Patient Monitor Vulnerabilities",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-20-023-01"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Cryptographic Firmware Signature Verification",
+      "description": "Implement code signing for all firmware images using asymmetric cryptography (RSA-2048+ or ECDSA P-256). The device bootloader must verify the firmware signature against a manufacturer-provisioned public key before accepting any update. Per IEC 81001-5-1 clause 5.5.3, software updates must be authenticated.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Secure Boot Chain",
+      "description": "Implement a hardware-rooted secure boot chain that verifies the integrity of each boot stage (bootloader, kernel, application firmware) against trusted reference values. Use a hardware root of trust (TPM, secure element) to anchor the verification chain.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M3",
+      "title": "Privilege Separation Between Clinical and Service Modes",
+      "description": "Enforce strict privilege separation between clinical user mode and engineering/service mode using OS-level access controls. Service mode must require physical presence (hardware jumper, USB token) or multi-factor authentication that cannot be replicated remotely.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Disable Unnecessary Service Interfaces in Production",
+      "description": "Disable telnet, SSH, debug ports, and other service interfaces by default in production deployments. If service access is needed for maintenance, require time-limited, authenticated enablement with automatic re-disablement after a defined period.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 62443-4-2", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "ICU", "IoMT"]
+  }
+}

@@ -1,14 +1,14 @@
 {
   "version": "1.0",
-  "generated": "2026-02-20T06:31:37.771Z",
+  "generated": "2026-03-27T03:41:40.559Z",
   "hashes": {
-    "patterns_count": 130,
-    "patterns_hash": "92d27a018b7f89320a992dc4319e404ffcd80f541bd52ebd4a3a2f2cabaed7b0",
+    "patterns_count": 145,
+    "patterns_hash": "8c604e01102f1719637dd728feb23a74579c009e1eeabb5d31d86a064c540723",
     "dfd_elements_count": 121,
     "dfd_elements_hash": "8629aa66bf43bbc3cf53981bd706dc4d8cb9d5b106d5110c34cdd0cbac825a89",
     "linddun_threats_count": 35,
     "linddun_threats_hash": "536534d79c1eb87076f7ab6456d9b2101511a6c67342644de7c6c68290af3665",
-    "mitigations_count": 483,
+    "mitigations_count": 543,
     "trust_boundaries_count": 12
   }
 }

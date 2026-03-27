@@ -1,0 +1,95 @@
+{
+  "id": "STRIDE-MEDDEV-REPUD-006",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.7,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": ["A09:2021"],
+    "mitre_attack": ["T1070.001", "T1565.001"],
+    "cwe": ["CWE-778", "CWE-117"]
+  },
+  "threat": {
+    "title": "Audit Log Tampering on Implantable Device Programmer",
+    "description": "An attacker or malicious insider modifies or deletes audit logs on an implantable cardiac device programmer (e.g., pacemaker or ICD programmer) to conceal unauthorized parameter changes. Implantable device programmers maintain logs of all programming sessions including parameter modifications, interrogation results, and clinician identity. If these logs lack integrity protections such as cryptographic signing or write-once storage, an attacker can alter records to hide evidence of unauthorized device reprogramming. This directly undermines post-incident forensic investigation and regulatory traceability requirements under FDA 21 CFR Part 820 and EU MDR Annex I.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.7,
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:C/C:N/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "FDA 21 CFR Part 820", "IMDRF N60"],
+    "versions_affected": ["Implantable cardiac device programmers with software-based audit logs"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains physical or remote access to an implantable device programmer with elevated privileges. 2. Attacker modifies implantable device parameters (pacing thresholds, shock therapy settings) outside of a legitimate clinical session. 3. Attacker accesses the local audit log stored on the programmer's filesystem or embedded database. 4. Attacker deletes or modifies the log entries corresponding to the unauthorized programming session. 5. The unauthorized parameter changes remain active on the implantable device with no forensic trail linking them to the attacker.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2018-10596",
+        "cvss_score": 7.7,
+        "description": "Medtronic CareLink 2090 programmer - insufficient access controls allowing unauthorized configuration changes"
+      },
+      {
+        "cve_id": "CVE-2018-18984",
+        "cvss_score": 6.3,
+        "description": "Medtronic CareLink 2090 programmer - writable filesystem enabling log and configuration tampering"
+      }
+    ],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices - Cardiac Device Programmer Threats",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      },
+      {
+        "title": "ICS-CERT Advisory ICSMA-18-058-01: Medtronic CareLink 2090 Programmer Vulnerabilities",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-18-058-01"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Cryptographically Signed Audit Logs",
+      "description": "Implement cryptographic signing (HMAC-SHA256 or digital signatures) on all audit log entries at time of creation. Use a hash chain (each entry includes the hash of the previous entry) to detect deletions or reordering. Per IEC 81001-5-1 clause 5.7.2, log integrity must be verifiable.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Write-Once Log Storage",
+      "description": "Store audit logs in write-once, append-only storage that cannot be modified by any user or process after creation. Use dedicated tamper-evident storage hardware or a remote syslog server with TLS transport that the programmer cannot delete from.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Real-Time Log Forwarding to Central SIEM",
+      "description": "Forward all programming session logs in real time to a centralized security information and event management (SIEM) system outside the programmer's control. This creates an independent copy that survives local log tampering.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Clinician Identity Binding per Programming Session",
+      "description": "Bind each programming session to an authenticated clinician identity using smart card, badge, or biometric authentication. The session identity must be included in the signed audit log and cannot be retroactively changed.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "FDA 21 CFR Part 820", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "Cardiac Catheterization Lab"]
+  }
+}
