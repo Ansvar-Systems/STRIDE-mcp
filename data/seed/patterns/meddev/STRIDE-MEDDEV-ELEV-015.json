@@ -1,0 +1,100 @@
+{
+  "id": "STRIDE-MEDDEV-ELEV-015",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.5,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": ["A01:2021", "A04:2021"],
+    "mitre_attack": ["T1068", "T1078"],
+    "cwe": ["CWE-269", "CWE-250"]
+  },
+  "threat": {
+    "title": "Medical IoT Gateway Privilege Escalation via Compromised Device Agent",
+    "description": "An attacker compromises a low-privilege medical IoT device connected to a clinical gateway and escalates privileges through the gateway to gain access to all connected medical devices and the hospital network. Medical IoT gateways aggregate data from multiple bedside devices (patient monitors, infusion pumps, ventilators, pulse oximeters) and forward it to EHR systems and central monitoring. These gateways run middleware that translates device-specific protocols (HL7, IEEE 11073, proprietary serial) to standard APIs. If the gateway does not enforce privilege isolation between connected device agents, compromising a single low-security device (e.g., a temperature probe) can grant access to the gateway's operating system, from which the attacker can manipulate data from high-acuity devices or pivot into the broader hospital network.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 62443-3-3", "IEC 80001-1"],
+    "versions_affected": ["Medical IoT gateways aggregating multiple bedside device data streams"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies a low-security medical device (e.g., environmental sensor, weight scale) connected to a clinical IoT gateway. 2. Attacker compromises the low-security device via known vulnerability, default credentials, or physical access. 3. Through the compromised device's communication channel to the gateway, the attacker injects malicious input that exploits a vulnerability in the gateway's device agent (buffer overflow, command injection in protocol parser). 4. Attacker gains code execution on the gateway with the device agent's privileges. 5. Attacker escalates from the device agent context to root/admin on the gateway OS by exploiting insufficient privilege separation (all device agents running as the same user, shared credentials for hospital network). 6. From the gateway, the attacker accesses data from all connected high-acuity devices and can pivot into the hospital EHR network.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-25165",
+        "cvss_score": 7.5,
+        "description": "GE Healthcare CARESCAPE Telemetry Server - vulnerabilities in medical device gateway allowing unauthorized access"
+      },
+      {
+        "cve_id": "CVE-2020-6961",
+        "cvss_score": 10.0,
+        "description": "Becton Dickinson Alaris Gateway Workstation - critical vulnerabilities enabling unauthorized firmware upload and gateway compromise"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "CISA Advisory: BD Alaris Gateway Workstation Vulnerabilities (2020)",
+        "description": "CISA issued advisories for multiple vulnerabilities in the BD Alaris Gateway Workstation that could allow an attacker to gain access to the gateway and modify infusion pump configurations across all connected Alaris pumps."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "CyberMDX Research: Multiple Vulnerabilities in GE CARESCAPE Gateway",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-20-023-01"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Per-Device Agent Sandboxing on Gateway",
+      "description": "Run each device agent in an isolated sandbox (containers, seccomp profiles, SELinux/AppArmor mandatory access control) with least-privilege permissions. Each agent should only have access to its own device communication channel and the specific data forwarding endpoint. Per IEC 81001-5-1 clause 5.3.4, systems must enforce least privilege and compartmentalization.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Input Validation and Protocol Parsing Hardening",
+      "description": "Implement strict input validation on all data received from connected devices. Use memory-safe languages or hardened parsers for device protocol translation. Apply fuzzing to all protocol parsers during development. Reject malformed packets without attempting error recovery.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Device Authentication at Gateway Ingress",
+      "description": "Authenticate every device connecting to the gateway using device certificates or pre-shared keys provisioned during device commissioning. The gateway must maintain an allowlist of authorized devices and reject connections from unknown or unauthorized devices.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Gateway Egress Filtering and Network Segmentation",
+      "description": "Apply strict egress filtering on the gateway to prevent compromised device agents from reaching the hospital network or the internet. The gateway should have separate network interfaces for the device-facing network and the hospital network, with firewall rules allowing only authorized outbound flows.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 62443-3-3", "IEC 80001-1", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "ICU", "IoMT"]
+  }
+}

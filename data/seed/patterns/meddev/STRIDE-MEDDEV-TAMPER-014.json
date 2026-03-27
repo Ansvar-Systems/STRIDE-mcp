@@ -1,0 +1,94 @@
+{
+  "id": "STRIDE-MEDDEV-TAMPER-014",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.8,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": ["A03:2021"],
+    "mitre_attack": ["T1565.002", "T1059"],
+    "cwe": ["CWE-77", "CWE-345"]
+  },
+  "threat": {
+    "title": "Surgical Robot Command Injection via Network Interface Exploitation",
+    "description": "An attacker injects or modifies motion commands sent to a surgical robotic system by exploiting its network communication interface. Robotic surgical systems such as teleoperated platforms (e.g., da Vinci-style systems) and autonomous surgical robots receive real-time motion commands from surgeon consoles over network links. These systems process high-frequency kinematic commands (position, velocity, force) that control instrument arms during active surgery. If the network interface between the surgeon console and the robot lacks message authentication, integrity verification, or uses unencrypted protocols, an attacker on the same network can inject malicious commands that cause unintended instrument movements. During a live surgical procedure, even small unauthorized movements can cause tissue damage, hemorrhage, or organ perforation.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.4,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 62443-4-2", "IEC 80601-2-77"],
+    "versions_affected": ["Network-connected surgical robotic systems with IP-based control interfaces"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to the operating room network or the network segment connecting the surgeon console to the robotic system. 2. Attacker performs traffic analysis to identify the control protocol between the surgeon console and the robot (proprietary UDP/TCP streams carrying kinematic commands). 3. Attacker reverse-engineers the command structure by observing motion command patterns during calibration or non-surgical movements. 4. During an active surgical procedure, the attacker injects crafted motion commands into the network stream or modifies legitimate commands in transit. 5. The robotic system executes the injected commands, causing unintended instrument movements that may injure the patient. 6. If the system lacks real-time anomaly detection, the injected commands are executed before the surgeon can intervene.",
+    "attack_complexity": "high"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2015-1028",
+        "cvss_score": 7.5,
+        "description": "Raven II surgical robot research platform - unencrypted teleoperation protocol vulnerable to command injection and hijacking"
+      }
+    ],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "Bonaci et al. - To Make a Robot Secure: An Experimental Analysis of Cyber Security Threats Against Teleoperated Surgical Robots (2015)",
+        "url": "https://arxiv.org/abs/1504.04339"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      },
+      {
+        "title": "FDA Guidance: Cybersecurity in Medical Devices - Quality System Considerations and Content of Premarket Submissions",
+        "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/cybersecurity-medical-devices-quality-system-considerations-and-content-premarket-submissions"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Authenticated and Encrypted Control Channel",
+      "description": "Implement mutual authentication and end-to-end encryption (DTLS 1.2+ for UDP, TLS 1.3 for TCP) on all control channels between the surgeon console and the robotic system. Use hardware-backed keys and session-specific key derivation. Per IEC 81001-5-1 clause 5.4.2, safety-critical communications must be integrity-protected.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Real-Time Motion Command Anomaly Detection",
+      "description": "Implement real-time validation of incoming motion commands against physically plausible motion envelopes. Reject commands that exceed safe velocity limits, acceleration bounds, or workspace boundaries. Use independent safety controllers (IEC 62443 SIL-rated) that operate independently of the main control software.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M3",
+      "title": "Physically Isolated Surgical Network",
+      "description": "Deploy the surgeon console and robotic system on a physically isolated network (dedicated cabling, no wireless, no routing to hospital LAN). Use a dedicated point-to-point connection with no intermediate switches or routers that could serve as interception points.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Surgeon Override and Emergency Stop",
+      "description": "Implement a hardware emergency stop (e-stop) mechanism that is independent of the network control channel and immediately halts all robotic motion. The surgeon must have a physical kill switch that operates at the hardware level and cannot be overridden by software commands.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "Surgical Robotics"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 62443-4-2", "IEC 80601-2-77", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Operating Room", "Clinical Environment"]
+  }
+}

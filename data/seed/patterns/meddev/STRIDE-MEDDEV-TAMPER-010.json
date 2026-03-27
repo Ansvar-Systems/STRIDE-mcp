@@ -1,0 +1,104 @@
+{
+  "id": "STRIDE-MEDDEV-TAMPER-010",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 9.4,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": ["A01:2021"],
+    "mitre_attack": ["T1565.002", "T1584.005"],
+    "cwe": ["CWE-345", "CWE-353"]
+  },
+  "threat": {
+    "title": "Wireless Pacemaker Therapy Parameter Modification via RF Protocol Exploitation",
+    "description": "An attacker within wireless range of an implantable cardiac pacemaker exploits the proprietary radio frequency (RF) telemetry protocol to modify pacing parameters, disable therapy delivery, or alter sensing thresholds. Implantable cardiac pacemakers communicate with bedside monitors and programmers via short-range RF (typically 175 kHz inductive or 402-405 MHz MICS band). Many deployed pacemakers use proprietary protocols that rely on proximity as the primary security control, without cryptographic authentication or encryption. An attacker with a software-defined radio (SDR) and knowledge of the protocol can replay or craft commands to alter pacing rate, output voltage, sensitivity, or mode (e.g., switching from demand to fixed-rate pacing), creating life-threatening cardiac arrhythmias.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.4,
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "AAMI TIR57"],
+    "versions_affected": ["Implantable cardiac pacemakers with wireless telemetry (RF/MICS band)"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker acquires a software-defined radio (SDR) capable of transmitting in the 402-405 MHz MICS band or 175 kHz inductive range used by the target pacemaker. 2. Attacker reverse-engineers the proprietary telemetry protocol by monitoring legitimate programmer-to-pacemaker communications (documented in published research). 3. Attacker positions within wireless range of the patient (typically 1-5 meters for MICS, 10 cm for inductive). 4. Attacker transmits crafted commands to alter pacing parameters: increase pacing rate to induce tachycardia, reduce output voltage below capture threshold, or disable demand sensing. 5. Pacemaker accepts and applies the parameter changes without authenticating the source, causing potentially fatal cardiac rhythm disturbances.",
+    "attack_complexity": "high"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2017-12712",
+        "cvss_score": 9.8,
+        "description": "Abbott (St. Jude Medical) implantable cardiac devices - RF protocol vulnerabilities allowing unauthorized parameter modification and battery drain"
+      },
+      {
+        "cve_id": "CVE-2018-8849",
+        "cvss_score": 8.8,
+        "description": "Medtronic implantable cardiac devices - absence of authentication in Conexus wireless telemetry protocol"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "FDA Safety Communication: Abbott Pacemaker Firmware Update (2017)",
+        "description": "FDA approved a firmware update for 465,000 Abbott (St. Jude Medical) pacemakers to address RF protocol vulnerabilities that could allow unauthorized access to modify pacing parameters or drain the battery."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Halperin et al. - Pacemakers and Implantable Cardiac Defibrillators: Software Radio Attacks and Zero-Power Defenses (IEEE S&P 2008)",
+        "url": "https://ieeexplore.ieee.org/document/4531149"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      },
+      {
+        "title": "ICS-CERT Advisory ICSMA-18-219-02: Medtronic Conexus Telemetry Protocol Vulnerabilities",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-19-080-01"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Cryptographic Authentication of Telemetry Commands",
+      "description": "Implement mutual authentication between the programmer/monitor and the implantable device using lightweight symmetric cryptography (AES-128-CCM) suitable for resource-constrained implantable devices. All therapy-modifying commands must be authenticated before execution. Per IEC 81001-5-1 clause 5.3.1, authentication mechanisms must be commensurate with the risk.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Rolling Code and Session-Based Anti-Replay",
+      "description": "Use rolling codes or session-based nonces to prevent replay attacks on telemetry commands. Each telemetry session must establish a fresh session key, and replayed commands from previous sessions must be rejected by the implant.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M3",
+      "title": "Proximity-Gated Access with Physical Activation",
+      "description": "Require a deliberate physical action to enable the telemetry receiver on the implant (e.g., magnet application detected by a reed switch). The telemetry window should be time-limited (auto-close after 60 seconds of inactivity) to minimize the attack surface.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M4",
+      "title": "Safety-Bounds Enforcement in Implant Firmware",
+      "description": "Implement hardware-enforced safety bounds in the implant firmware that reject any parameter change outside clinically safe ranges, regardless of the command source or authentication status. The bounds must be set during implant programming and not modifiable via the telemetry interface.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "AAMI TIR57", "IMDRF N60"],
+    "deployment": ["Home Healthcare", "Clinical Environment", "Ambulatory Care"]
+  }
+}

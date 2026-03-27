@@ -1,0 +1,94 @@
+{
+  "id": "STRIDE-MEDDEV-SPOOF-016",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.4,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Spoofing",
+    "owasp_top10": ["A07:2021"],
+    "mitre_attack": ["T1557", "T1565.002"],
+    "cwe": ["CWE-290", "CWE-346"]
+  },
+  "threat": {
+    "title": "Patient Wearable Device Data Falsification via Spoofed BLE Device",
+    "description": "An attacker deploys a rogue Bluetooth device that impersonates a patient's wearable medical device (continuous glucose monitor, cardiac event recorder, pulse oximeter, or activity tracker) to inject fabricated health data into the clinical monitoring workflow. Clinical-grade wearables transmit physiological data to companion apps or hospital gateways using BLE GATT profiles. If the receiving system authenticates the wearable solely by device name, advertising data, or MAC address (all of which are trivially spoofable), an attacker can substitute a rogue transmitter that sends falsified readings. False data injected into clinical decision workflows can trigger inappropriate treatment: falsely low glucose readings could prompt unnecessary insulin administration, and falsely normal cardiac readings could mask a developing arrhythmia.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.2,
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "NIST SP 800-121"],
+    "versions_affected": ["Clinical-grade wearable medical devices using BLE for data transmission"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies the target patient's wearable device model and BLE advertising parameters (device name, service UUIDs) by passive BLE scanning. 2. Attacker configures a programmable BLE development board (e.g., nRF52840, ESP32) to advertise with the same device name, service UUIDs, and characteristics as the legitimate wearable. 3. Attacker positions the rogue device closer to the companion app or gateway than the legitimate device, causing the receiving system to connect to the rogue device instead. 4. The rogue device transmits fabricated physiological data (e.g., normal glucose levels while the patient is actually hypoglycemic). 5. The companion app or clinical gateway accepts the spoofed data and forwards it to the EHR or clinical monitoring system, where clinicians act on the false readings.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-27252",
+        "cvss_score": 8.9,
+        "description": "Medtronic MyCareLink Smart Model 25000 - BLE authentication bypass enabling device impersonation"
+      }
+    ],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "Classen et al. - Fitness Trackers and Wearable Health Devices: Security and Privacy Risks (2018)",
+        "url": "https://doi.org/10.1145/3243734.3243776"
+      },
+      {
+        "title": "NIST SP 800-121 Rev. 2: Guide to Bluetooth Security - Medical Device Considerations",
+        "url": "https://csrc.nist.gov/publications/detail/sp/800-121/rev-2/final"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Cryptographic Device Identity with Bonding",
+      "description": "Implement BLE bonding with Secure Connections (ECDH P-256 key exchange) during initial device pairing. Store the bonded device's Identity Resolving Key (IRK) and only accept connections from bonded devices. Per IEC 81001-5-1 clause 5.3.1, device authentication must prevent impersonation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Application-Layer Device Attestation",
+      "description": "Implement a challenge-response device attestation protocol at the application layer, independent of BLE pairing. The companion app sends a cryptographic challenge that only the genuine device can answer using its provisioned private key. Reject data from devices that fail attestation.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Physiological Data Plausibility Checking",
+      "description": "Implement automated plausibility checks on received physiological data at the companion app and gateway. Flag data that exhibits sudden impossible transitions (e.g., glucose dropping from 120 to 40 mg/dL in one reading interval), lacks expected signal noise characteristics, or deviates from the patient's historical baseline beyond physiological possibility.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Duplicate Device Detection and Alert",
+      "description": "Implement monitoring at the gateway level to detect multiple devices advertising with the same identity simultaneously. Alert clinical staff when a potential device impersonation is detected. Quarantine data from the suspected rogue device until manual verification.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "Digital Health"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IMDRF N60"],
+    "deployment": ["Home Healthcare", "Hospital Network", "Ambulatory Care", "IoMT"]
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "id": "STRIDE-MEDDEV-DOS-020",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.1,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": ["A06:2021"],
+    "mitre_attack": ["T1498", "T1499"],
+    "cwe": ["CWE-1233", "CWE-693"]
+  },
+  "threat": {
+    "title": "Electromagnetic Interference Disruption of Implantable Cardiac Devices",
+    "description": "An attacker uses a directed electromagnetic interference (EMI) source to disrupt the operation of an implantable cardiac device (pacemaker, ICD, or CRT-D) by inducing electrical noise on the sensing circuits, causing inappropriate therapy delivery or therapy inhibition. Implantable cardiac devices contain sensitive analog sensing circuits that detect cardiac electrical activity (intracardiac electrograms). Strong external electromagnetic fields can be coupled into the lead system and sensing amplifiers, causing the device to misinterpret EMI as cardiac activity. This can result in pacing inhibition (the device believes the heart is beating when it is not), inappropriate ICD shock delivery (the device interprets EMI as a life-threatening arrhythmia), or mode switching that disrupts programmed therapy. While some EMI exposure is unavoidable in clinical environments (MRI, electrocautery), a deliberate attack using a portable high-power EMI source at close range represents a targeted physical threat.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.5,
+      "vector": "CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:C/C:N/I:L/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 60601-1-2", "AAMI TIR69"],
+    "versions_affected": ["All implantable cardiac rhythm management devices (pacemakers, ICDs, CRT-Ds)"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker acquires or builds a portable directed EMI source capable of generating strong electromagnetic fields in the frequency range that affects implantable cardiac device sensing (typically 50 Hz - 100 kHz for conducted interference, or higher frequencies for radiated coupling). 2. Attacker identifies a target patient with an implantable cardiac device (visible surgical scar, medical alert jewelry, or social engineering). 3. Attacker positions within close range (1-2 meters) of the patient and activates the EMI source. 4. The electromagnetic field couples into the implant's leads and sensing circuits, causing oversensing (interpreting EMI as rapid cardiac activity). 5. In a pacemaker, oversensing causes pacing inhibition — the device withholds pacing support, potentially causing syncope or asystole in pacemaker-dependent patients. In an ICD, oversensing triggers inappropriate shock delivery, causing pain and potential proarrhythmia.",
+    "attack_complexity": "high"
+  },
+  "evidence": {
+    "cve_references": [],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "Foo Yun Chee et al. - Electromagnetic Interference in Cardiac Implantable Electronic Devices (Heart Rhythm, 2019)",
+        "url": "https://doi.org/10.1016/j.hrthm.2019.02.013"
+      },
+      {
+        "title": "FDA Guidance: Electromagnetic Compatibility (EMC) of Medical Devices - IEC 60601-1-2 Ed. 4",
+        "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/information-reviewers-electromagnetic-compatibility-medical-devices"
+      },
+      {
+        "title": "AAMI TIR69: Risk Management of Radio-Frequency Wireless Coexistence for Medical Devices and Systems",
+        "url": "https://www.aami.org/standards/aami-tir69"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "EMI-Resilient Sensing Circuit Design",
+      "description": "Design implant sensing circuits with enhanced EMI rejection using differential sensing, bandpass filtering tuned to cardiac signal frequencies (0.5-100 Hz), and hardware-level interference detection that triggers a safe mode rather than misinterpreting noise as cardiac activity. Per IEC 60601-1-2 Edition 4, implantable devices must maintain essential performance under defined EMI immunity levels.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Automatic EMI Detection and Safe Mode Switching",
+      "description": "Implement firmware-level EMI detection that distinguishes between true cardiac signals and electromagnetic interference based on signal characteristics (frequency spectrum, amplitude consistency, lead impedance changes). When EMI is detected, automatically switch to an asynchronous pacing mode (VOO/DOO) that provides pacing support without relying on sensing. Log the EMI event for clinician review.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Improved Electromagnetic Shielding",
+      "description": "Enhance the electromagnetic shielding of the implant housing (titanium can with feedthrough filters) and the lead system to attenuate external EMI before it reaches the sensing amplifiers. Use bipolar sensing configurations (which offer superior common-mode rejection) over unipolar configurations where clinically appropriate.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M4",
+      "title": "Patient Education and Environmental Controls",
+      "description": "Educate patients about EMI risks and provide guidance on avoiding strong electromagnetic fields. In clinical settings, maintain exclusion zones around known EMI sources (MRI, electrosurgery, diathermy) for patients with cardiac implants. Implement pre-procedure protocols to reprogram devices to safe modes before planned EMI exposure.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 60601-1-2", "AAMI TIR69", "IMDRF N60"],
+    "deployment": ["Home Healthcare", "Clinical Environment", "Ambulatory Care", "Public Spaces"]
+  }
+}

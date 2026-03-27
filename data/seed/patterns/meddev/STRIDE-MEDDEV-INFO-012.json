@@ -1,0 +1,95 @@
+{
+  "id": "STRIDE-MEDDEV-INFO-012",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.6,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": ["A02:2021"],
+    "mitre_attack": ["T1040", "T1557.002"],
+    "cwe": ["CWE-319", "CWE-326"]
+  },
+  "threat": {
+    "title": "Bluetooth Medical Device Patient Data Interception via BLE Eavesdropping",
+    "description": "An attacker within Bluetooth range intercepts patient health data transmitted between a medical device and its companion application or gateway by exploiting weak or absent Bluetooth Low Energy (BLE) encryption. Many medical devices including pulse oximeters, continuous glucose monitors (CGMs), blood pressure monitors, and ECG patches use BLE for data transmission to mobile apps or clinical gateways. BLE pairing in Just Works mode provides no man-in-the-middle protection, and many devices use BLE 4.0/4.1 which is vulnerable to passive eavesdropping with commodity hardware. Intercepted data includes real-time vital signs, patient identifiers, glucose readings, and medication delivery logs, constituting PHI under HIPAA and personal health data under GDPR.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.4,
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "HIPAA Security Rule", "GDPR"],
+    "versions_affected": ["BLE-enabled medical devices using BLE 4.0-4.1 or Just Works pairing"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker positions within Bluetooth range (up to 100 meters with directional antenna) of a target medical device in a clinical waiting area, hospital ward, or patient home. 2. Attacker uses a BLE sniffer (e.g., Ubertooth One, Nordic nRF52840 dongle) to capture BLE advertising packets and identify medical devices by their service UUIDs (e.g., Blood Pressure Service 0x1810, Glucose Service 0x1808). 3. Attacker passively captures BLE data packets. For devices using Just Works pairing or BLE 4.0 Legacy pairing, the temporary key (TK) is zero, allowing trivial decryption. 4. Attacker decodes the captured GATT characteristic values to extract patient vital signs, glucose readings, or therapy data. 5. Attacker correlates intercepted medical data with patient identity obtained from device advertising data or nearby context.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2020-12880",
+        "cvss_score": 5.5,
+        "description": "Medtronic MyCareLink Smart patient reader - BLE pairing vulnerability allowing unauthorized data access"
+      },
+      {
+        "cve_id": "CVE-2020-27252",
+        "cvss_score": 8.9,
+        "description": "Medtronic MyCareLink Smart Model 25000 - BLE authentication bypass enabling patient data interception"
+      }
+    ],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "CISA Advisory ICSMA-20-345-01: Medtronic MyCareLink Smart BLE Vulnerabilities",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-20-345-01"
+      },
+      {
+        "title": "NIST SP 800-121 Rev. 2: Guide to Bluetooth Security",
+        "url": "https://csrc.nist.gov/publications/detail/sp/800-121/rev-2/final"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "BLE Secure Connections with Numeric Comparison Pairing",
+      "description": "Require BLE 4.2+ Secure Connections (FIPS-compliant ECDH key exchange) with Numeric Comparison or Out-of-Band pairing. Reject legacy pairing and Just Works mode. Per IEC 81001-5-1 clause 5.4.2, data in transit must be protected with encryption appropriate to the sensitivity of the data.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Application-Layer Encryption for Health Data",
+      "description": "Implement application-layer encryption (AES-128-GCM or AES-256-GCM) for all health data payloads transmitted over BLE, independent of BLE link-layer encryption. This provides defense-in-depth if BLE pairing is compromised. Use device-specific keys provisioned during manufacturing.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Minimize PHI in BLE Transmissions",
+      "description": "Transmit only numeric measurement values over BLE without patient identifiers. Map readings to patient identity only at the application layer on the receiving device using a locally stored patient context. Remove patient name, MRN, and date of birth from BLE GATT characteristics.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M4",
+      "title": "BLE Advertising Data Anonymization",
+      "description": "Use BLE random resolvable private addresses (RPA) that rotate on every advertising interval. Do not include device-specific identifiers, service UUIDs, or patient-identifiable data in advertising packets. Only bonded devices should be able to resolve the device identity.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "HIPAA", "GDPR", "IMDRF N60"],
+    "deployment": ["Home Healthcare", "Clinical Environment", "Ambulatory Care", "IoMT"]
+  }
+}

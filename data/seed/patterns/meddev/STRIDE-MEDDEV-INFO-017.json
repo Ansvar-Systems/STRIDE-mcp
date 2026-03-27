@@ -1,0 +1,100 @@
+{
+  "id": "STRIDE-MEDDEV-INFO-017",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 9.0,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Information Disclosure",
+    "owasp_top10": ["A01:2021", "A05:2021"],
+    "mitre_attack": ["T1530", "T1005"],
+    "cwe": ["CWE-284", "CWE-522"]
+  },
+  "threat": {
+    "title": "Medical Imaging PACS Data Exposure via Unauthenticated DICOM and Web Access",
+    "description": "An attacker accesses patient medical images and associated PHI from a Picture Archiving and Communication System (PACS) that exposes unauthenticated DICOM query/retrieve services or web-based DICOM viewers to the hospital network or the internet. PACS servers store millions of medical images (CT, MRI, X-ray, ultrasound) containing embedded patient demographics (name, date of birth, MRN) in DICOM headers. Many PACS deployments expose DICOM C-FIND/C-MOVE services on port 104 or 11112 with AE Title-only authentication, and modern PACS include web viewers (DICOMweb/WADO-RS) that may lack access controls. Internet-exposed PACS instances have been documented to leak millions of patient images. The exposed data includes both the imaging content (diagnostic value) and embedded DICOM metadata (identity value), creating both clinical privacy and identity theft risks.",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 8.6,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "HIPAA Security Rule", "GDPR", "DICOM PS3.15"],
+    "versions_affected": ["PACS servers exposing DICOM services or DICOMweb interfaces without authentication"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker scans hospital network or internet for DICOM services (port 104, 11112, 4242) and DICOMweb endpoints (port 8042, 8080). 2. Attacker connects to the PACS DICOM service using a DICOM client (e.g., DCMTK, 3D Slicer) with a guessed or common AE Title (e.g., ANY-SCP, PACS, DCM4CHEE). 3. Attacker issues DICOM C-FIND queries at Patient, Study, and Series levels to enumerate all stored examinations. 4. Attacker retrieves full imaging studies via C-MOVE or C-GET, obtaining DICOM files containing images and embedded patient demographics. 5. Alternatively, attacker accesses the DICOMweb/WADO-RS endpoint via a web browser, browsing patient studies through the web viewer without authentication. 6. Attacker extracts DICOM metadata (patient name, DOB, MRN, referring physician) and medical images for sale, extortion, or identity theft.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2022-2119",
+        "cvss_score": 9.8,
+        "description": "Horos/OsiriX DICOM viewer - unauthenticated access to DICOM store and query services"
+      },
+      {
+        "cve_id": "CVE-2023-33466",
+        "cvss_score": 8.8,
+        "description": "Orthanc DICOM server - authorization bypass in REST API enabling unauthorized image access"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "Greenbone Networks PACS Exposure Report (2019)",
+        "description": "Security researchers discovered over 2,300 internet-exposed PACS servers across 67 countries, exposing 24.5 million medical imaging records including full patient demographics. The US had 187 exposed servers with 13.7 million exposed datasets."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "Greenbone Networks: Unprotected Patient Data - Medical Radiology is Still Leaking",
+        "url": "https://www.greenbone.net/en/unprotected-patient-data/"
+      },
+      {
+        "title": "Acronis Research: Exposed PACS Servers and Medical Data Leaks",
+        "url": "https://www.acronis.com/en-us/articles/exposed-pacs-servers/"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Mandatory Authentication on All DICOM and Web Interfaces",
+      "description": "Require user authentication (username/password with LDAP/AD integration, or certificate-based) on all DICOM query/retrieve services and DICOMweb/WADO-RS endpoints. Disable anonymous access and remove default AE Title acceptance. Per IEC 81001-5-1 clause 5.3.1, access to patient data must require authenticated identity.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "DICOM TLS on All Network Interfaces",
+      "description": "Enable DICOM TLS (PS3.15 Supplement 178) on all DICOM ports. Require mutual certificate authentication for DICOM associations. For DICOMweb interfaces, enforce HTTPS with TLS 1.2+ and disable plaintext HTTP entirely.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Network Isolation and Firewall Rules for PACS",
+      "description": "Never expose PACS DICOM services or DICOMweb interfaces to the internet. Place PACS on an isolated radiology VLAN accessible only from authorized clinical workstations and imaging modalities. Use application-layer firewalls that inspect DICOM traffic and enforce AE Title allowlists.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M4",
+      "title": "DICOM Access Audit Logging and Anomaly Detection",
+      "description": "Log all DICOM queries, retrievals, and web viewer access with user identity, timestamp, patient/study identifiers, and source IP. Implement anomaly detection to flag bulk queries (e.g., C-FIND across all patients) or access patterns inconsistent with clinical workflows. Alert security operations on suspicious access patterns.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "Radiology"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "HIPAA", "GDPR", "DICOM PS3.15", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Radiology Department", "Clinical Environment"]
+  }
+}

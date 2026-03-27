@@ -1,0 +1,104 @@
+{
+  "id": "STRIDE-MEDDEV-DOS-013",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 9.3,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Denial of Service",
+    "owasp_top10": ["A05:2021"],
+    "mitre_attack": ["T1486", "T1489"],
+    "cwe": ["CWE-400", "CWE-693"]
+  },
+  "threat": {
+    "title": "Ransomware Targeting Network-Connected Ventilators via Shared Hospital Infrastructure",
+    "description": "Ransomware propagating through a hospital network reaches and disables network-connected mechanical ventilators by encrypting their configuration data, locking their management interfaces, or disrupting the network services they depend on. Modern ICU ventilators rely on network connectivity for central monitoring, alarm forwarding, EHR integration, and remote parameter adjustment. Ransomware that compromises the ventilator's embedded operating system or its network dependencies (DHCP, DNS, central alarm servers) can render the device unable to communicate alarms to the nursing station, unable to receive remote adjustments, or in severe cases unable to operate if the device depends on network-hosted configuration. Disruption of ventilator availability in an ICU directly threatens patient survival.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.8,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "NIST CSF", "IEC 80001-1"],
+    "versions_affected": ["Network-connected ICU ventilators running embedded Windows, Linux, or proprietary OS"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Ransomware enters the hospital network via phishing, exposed RDP, or supply chain compromise on a clinical workstation. 2. Ransomware spreads laterally through the flat hospital network using SMB exploits, credential harvesting, or unpatched vulnerabilities. 3. Ransomware reaches the medical device VLAN (if not segmented) and identifies ventilators running vulnerable embedded operating systems. 4. Ransomware encrypts ventilator configuration files, locks the management interface, or disrupts network services (DNS, DHCP, central monitoring) that ventilators depend on. 5. Ventilator central monitoring and alarm forwarding fail, remote parameter adjustment is unavailable, and clinical staff must revert to manual bedside management of all affected ventilators simultaneously.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2017-0144",
+        "cvss_score": 8.1,
+        "description": "EternalBlue SMB vulnerability (MS17-010) - used by WannaCry ransomware that disrupted NHS hospital networks including medical device connectivity"
+      },
+      {
+        "cve_id": "CVE-2021-34527",
+        "cvss_score": 8.8,
+        "description": "PrintNightmare - Windows Print Spooler RCE used in hospital ransomware campaigns affecting medical device network infrastructure"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "WannaCry NHS Attack (2017)",
+        "description": "WannaCry ransomware disrupted 80+ NHS trusts, forcing hospitals to divert ambulances and cancel surgeries. Medical devices on infected network segments lost connectivity to central monitoring systems."
+      },
+      {
+        "name": "Universal Health Services Ryuk Attack (2020)",
+        "description": "Ryuk ransomware shut down IT systems across 400 UHS hospitals. Staff reverted to paper records and manual monitoring of medical devices for weeks, with reported patient care delays."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices - Network Dependency Threats",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      },
+      {
+        "title": "HC3 Analyst Note: Ransomware Trends in the Healthcare Sector",
+        "url": "https://www.hhs.gov/sites/default/files/ransomware-trends-2021.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Medical Device Network Segmentation and Micro-Segmentation",
+      "description": "Isolate all life-critical medical devices (ventilators, patient monitors, infusion pumps) on dedicated VLANs with strict firewall rules. Implement micro-segmentation so individual device types cannot communicate laterally. Allow only explicitly permitted traffic flows (device to central monitor, device to update server). Per IEC 81001-5-1 clause 5.6, network architecture must limit propagation of threats.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Autonomous Operation Mode for Network Loss",
+      "description": "Design ventilators to maintain full therapeutic function (ventilation modes, alarm generation, parameter control) without any network dependency. Network connectivity should be an enhancement (remote monitoring, EHR sync) not a requirement. The device must generate local audible and visual alarms independent of the central alarm system.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Application Allowlisting on Embedded OS",
+      "description": "Implement application allowlisting on the ventilator's embedded operating system to prevent execution of unauthorized binaries including ransomware payloads. Only signed, manufacturer-approved executables should be permitted to run. This is especially critical for devices running embedded Windows.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M4",
+      "title": "Offline Backup Configuration and Recovery Plan",
+      "description": "Maintain offline backups of all ventilator configuration profiles. Develop and drill a clinical protocol for rapid manual ventilator management when central monitoring is unavailable, including bedside alarm response procedures and manual ventilator parameter documentation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 80001-1", "IMDRF N60"],
+    "deployment": ["Hospital Network", "ICU", "Clinical Environment", "IoMT"]
+  }
+}
