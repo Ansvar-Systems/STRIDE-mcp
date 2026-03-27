@@ -1,0 +1,95 @@
+{
+  "id": "STRIDE-MEDDEV-TAMPER-019",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.7,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Tampering",
+    "owasp_top10": ["A08:2021"],
+    "mitre_attack": ["T1565.001", "T1059"],
+    "cwe": ["CWE-345", "CWE-20"]
+  },
+  "threat": {
+    "title": "Laboratory Analyzer Result Manipulation via LIS Interface Exploitation",
+    "description": "An attacker modifies clinical laboratory test results in transit between a laboratory analyzer (chemistry, hematology, microbiology, or molecular diagnostics instrument) and the Laboratory Information System (LIS) by exploiting the unprotected communication interface. Laboratory analyzers transmit test results using protocols such as ASTM E1381/E1394, HL7v2, or POCT1-A over serial or TCP/IP connections to the LIS, which then forwards validated results to the EHR. Most analyzer-to-LIS interfaces lack message authentication, integrity checks, or encryption. An attacker who intercepts this traffic can modify result values (e.g., changing a critical potassium level from 7.2 mmol/L to 4.5 mmol/L), potentially causing clinicians to miss life-threatening conditions or administer inappropriate treatment based on falsified results.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "CAP Accreditation Standards", "ISO 15189"],
+    "versions_affected": ["Laboratory analyzers using ASTM, HL7v2, or POCT1-A interfaces without integrity protection"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker gains access to the laboratory network segment, either through a compromised workstation or physical access to network infrastructure in the lab. 2. Attacker identifies analyzer-to-LIS communication by monitoring TCP traffic (common ports: 1234, 5000, 9100) or serial-over-IP converters. 3. Attacker captures and reverse-engineers the ASTM or HL7v2 message format, identifying result fields (OBX segments in HL7, result records in ASTM). 4. Attacker performs a man-in-the-middle attack, intercepting result messages and modifying specific analyte values before forwarding to the LIS. 5. Modified results pass through the LIS into the EHR without triggering validation alerts, as the LIS trusts the analyzer as a verified source. 6. Clinicians act on the falsified results, potentially missing critical diagnoses or administering wrong treatments.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2022-22766",
+        "cvss_score": 7.5,
+        "description": "BD Viper LT molecular diagnostics system - hardcoded credentials and unprotected network interfaces"
+      },
+      {
+        "cve_id": "CVE-2023-29060",
+        "cvss_score": 8.6,
+        "description": "BD FACSChorus flow cytometry software - unauthenticated network access to instrument data"
+      }
+    ],
+    "real_world_breaches": [],
+    "security_research": [
+      {
+        "title": "CISA ICS Medical Advisory: BD Viper LT System Vulnerabilities",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-22-062-02"
+      },
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Message Authentication on Analyzer-to-LIS Interface",
+      "description": "Implement message authentication codes (HMAC-SHA256) on all result messages transmitted from the analyzer to the LIS. The LIS must verify the MAC before accepting any result. Use pre-shared keys provisioned during analyzer commissioning, rotated per IEC 81001-5-1 clause 5.4.1 key management requirements.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "TLS-Encrypted LIS Communication",
+      "description": "Migrate analyzer-to-LIS communication from cleartext ASTM/HL7v2 to TLS-encrypted channels. For analyzers that only support serial communication, use serial-to-IP converters with built-in TLS termination. Ensure mutual certificate authentication between the analyzer and the LIS middleware.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Delta Check and Autoverification Rules",
+      "description": "Implement delta check rules in the LIS that flag results deviating significantly from the patient's previous results. Apply autoverification rules that hold results outside physiologically plausible ranges for manual review. While not a direct security control, this provides a clinical safety net against result manipulation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M4",
+      "title": "Laboratory Network Segmentation",
+      "description": "Isolate laboratory analyzers on a dedicated VLAN with strict firewall rules allowing only authorized traffic between analyzers and the LIS middleware server. Block all direct access from the general hospital network to analyzer interfaces. Monitor for unauthorized devices on the laboratory network segment.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "Clinical Laboratory"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "CAP Accreditation", "ISO 15189", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Laboratory", "Point of Care"]
+  }
+}

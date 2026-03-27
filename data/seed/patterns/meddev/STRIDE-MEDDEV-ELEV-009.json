@@ -1,0 +1,100 @@
+{
+  "id": "STRIDE-MEDDEV-ELEV-009",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 9.1,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Elevation of Privilege",
+    "owasp_top10": ["A01:2021"],
+    "mitre_attack": ["T1068", "T1078.001"],
+    "cwe": ["CWE-269", "CWE-285"]
+  },
+  "threat": {
+    "title": "Insulin Pump Administrative Interface Privilege Escalation",
+    "description": "An attacker escalates from a standard user or Bluetooth pairing context to full administrative control over an insulin pump's configuration interface. Insulin pumps expose management interfaces via Bluetooth Low Energy (BLE) or proprietary wireless protocols for use by companion mobile applications and clinical management software. If the privilege model does not enforce separation between patient-facing bolus commands and manufacturer-level configuration (basal rate limits, maximum bolus size, alarm thresholds), an attacker who compromises the companion app or intercepts the wireless pairing process can modify safety-critical pump parameters. Changing maximum delivery rates or disabling safety alarms on an insulin pump can cause fatal hypoglycemia or diabetic ketoacidosis.",
+    "severity": "Critical",
+    "cvss_v3": {
+      "score": 9.1,
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:C/C:L/I:H/A:H"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 62443-4-2"],
+    "versions_affected": ["Wireless-enabled insulin pumps with Bluetooth or proprietary RF interfaces"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. Attacker identifies an insulin pump's Bluetooth Low Energy (BLE) advertisement within wireless range. 2. Attacker exploits a weak or absent BLE pairing authentication mechanism to establish a connection to the pump. 3. Attacker enumerates available BLE GATT services and characteristics, discovering that clinical configuration commands use the same privilege level as patient bolus commands. 4. Attacker sends commands to modify maximum basal rate, disable low-glucose suspend, or change alarm thresholds. 5. Pump accepts the modifications without requiring additional authentication or physical confirmation, placing the patient at risk of insulin overdose or underdose.",
+    "attack_complexity": "medium"
+  },
+  "evidence": {
+    "cve_references": [
+      {
+        "cve_id": "CVE-2019-10964",
+        "cvss_score": 7.1,
+        "description": "Medtronic MiniMed 508 and Paradigm insulin pumps - wireless protocol vulnerability allowing unauthorized insulin delivery"
+      },
+      {
+        "cve_id": "CVE-2018-14781",
+        "cvss_score": 5.3,
+        "description": "Medtronic MyCareLink patient monitor - improper access control on insulin pump data interface"
+      }
+    ],
+    "real_world_breaches": [
+      {
+        "name": "FDA Safety Communication: Medtronic MiniMed Insulin Pumps (2019)",
+        "description": "FDA issued an urgent recall for Medtronic MiniMed 508 and Paradigm series insulin pumps due to cybersecurity vulnerabilities allowing unauthorized wireless access to modify pump settings and insulin delivery."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "MITRE/MDIC Playbook for Threat Modeling Medical Devices",
+        "url": "https://www.mitre.org/sites/default/files/2021-11/Playbook-for-Threat-Modeling-Medical-Devices.pdf"
+      },
+      {
+        "title": "ICS-CERT Advisory ICSMA-19-178-01: Medtronic MiniMed Insulin Pump Vulnerabilities",
+        "url": "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-19-178-01"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Tiered Privilege Model with Hardware-Enforced Boundaries",
+      "description": "Implement a strict privilege separation between patient-level operations (bolus delivery, status queries) and manufacturer/clinician-level configuration (safety limits, alarm thresholds, basal program modification). Configuration changes must require a hardware-enforced authentication step (physical button sequence on pump, clinician smart card). Per IEC 81001-5-1 clause 5.3.4, access control must enforce least privilege.",
+      "effectiveness": "High",
+      "implementation_complexity": "High"
+    },
+    {
+      "control_id": "M2",
+      "title": "Authenticated and Encrypted Wireless Communication",
+      "description": "Use BLE Secure Connections (FIPS-compliant pairing with numeric comparison or OOB) for all wireless communications. Implement application-layer encryption and authentication on top of BLE transport security. Reject legacy pairing modes (Just Works, static passkeys).",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Physical Confirmation for Safety-Critical Parameter Changes",
+      "description": "Require physical interaction at the pump device (button press, confirmation on pump display) for any change to safety-critical parameters including maximum delivery rates, alarm thresholds, and basal programs. Remote-only changes to these parameters must be rejected.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M4",
+      "title": "Companion App Integrity Verification",
+      "description": "The insulin pump must verify the integrity and authenticity of the companion application before accepting commands. Use code signing verification and runtime attestation to detect compromised or modified companion apps. Refuse connections from apps that fail attestation.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Medium"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "IEC 62443-4-2", "IMDRF N60"],
+    "deployment": ["Home Healthcare", "Clinical Environment", "Ambulatory Care", "IoMT"]
+  }
+}

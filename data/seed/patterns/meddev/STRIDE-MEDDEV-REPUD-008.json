@@ -1,0 +1,89 @@
+{
+  "id": "STRIDE-MEDDEV-REPUD-008",
+  "version": "1.0.0",
+  "metadata": {
+    "created_date": "2026-03-27",
+    "last_updated": "2026-03-27",
+    "confidence_score": 8.3,
+    "validation_status": "expert-validated"
+  },
+  "classification": {
+    "stride_category": "Repudiation",
+    "owasp_top10": ["A09:2021"],
+    "mitre_attack": ["T1036", "T1070"],
+    "cwe": ["CWE-778", "CWE-223"]
+  },
+  "threat": {
+    "title": "Clinical Decision Support System AI Recommendations Without Audit Trail",
+    "description": "A clinical decision support (CDS) system powered by machine learning or rule-based AI provides diagnostic or treatment recommendations to clinicians without maintaining an immutable audit trail of the model version, input data, recommendation output, and clinician action taken. When adverse patient outcomes occur, the absence of traceable records makes it impossible to determine what recommendation was given, which model version generated it, what patient data was used as input, and whether the clinician followed or overrode the recommendation. This creates a repudiation risk where neither the system nor the clinician can be held accountable, violating EU MDR Annex I requirements for traceability of software as a medical device (SaMD).",
+    "severity": "High",
+    "cvss_v3": {
+      "score": 7.1,
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:L"
+    }
+  },
+  "technology": {
+    "primary": "Medical Devices",
+    "related_frameworks": ["IEC 81001-5-1", "FDA Premarket Cybersecurity", "IEC 62304", "EU AI Act", "EU MDR Annex I"],
+    "versions_affected": ["AI/ML-based clinical decision support systems classified as SaMD"],
+    "ecosystem": "Healthcare/MedTech"
+  },
+  "attack": {
+    "scenario": "1. CDS system generates a treatment recommendation based on patient data and an ML model. 2. The system does not log the model version, input feature values, confidence score, or the specific recommendation text. 3. Clinician acts on the recommendation, but the outcome is adverse. 4. During post-incident review, investigators cannot reconstruct what recommendation was given because no immutable record exists. 5. The CDS vendor denies the system produced the recommendation in question, and the clinician cannot prove what the system displayed. 6. Regulatory investigation stalls due to lack of traceable evidence.",
+    "attack_complexity": "low"
+  },
+  "evidence": {
+    "cve_references": [],
+    "real_world_breaches": [
+      {
+        "name": "IBM Watson for Oncology Controversy (2018)",
+        "description": "IBM Watson for Oncology was found to make unsafe treatment recommendations in some cases. The difficulty of auditing which specific recommendations were given to which patients highlighted the need for comprehensive CDS audit trails."
+      }
+    ],
+    "security_research": [
+      {
+        "title": "FDA Guidance: Clinical Decision Support Software - Draft Guidance for Industry and FDA Staff",
+        "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/clinical-decision-support-software"
+      },
+      {
+        "title": "IMDRF SaMD: Software as a Medical Device - Possible Framework for Risk Categorization (N12)",
+        "url": "https://www.imdrf.org/documents/software-medical-device-samd-key-definitions"
+      }
+    ]
+  },
+  "mitigations": [
+    {
+      "control_id": "M1",
+      "title": "Immutable Recommendation Audit Log",
+      "description": "Log every CDS recommendation with a cryptographically signed, append-only record containing: timestamp, model version hash, input data snapshot, recommendation output, confidence score, and clinician identity. Per IEC 81001-5-1 clause 5.7.2, all safety-relevant events must be logged with integrity protection.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M2",
+      "title": "Model Version Registry with Provenance Tracking",
+      "description": "Maintain a registry of all deployed ML model versions with training data provenance, validation results, and deployment timestamps. Each recommendation log entry must reference the exact model version hash. This enables retrospective analysis per IEC 62304 software lifecycle requirements.",
+      "effectiveness": "High",
+      "implementation_complexity": "Medium"
+    },
+    {
+      "control_id": "M3",
+      "title": "Clinician Action Recording (Accept/Override/Dismiss)",
+      "description": "Record the clinician's response to each recommendation (accepted, overridden with rationale, or dismissed) as part of the audit trail. Bind the action to the clinician's authenticated identity. This creates accountability for both the system and the clinician.",
+      "effectiveness": "High",
+      "implementation_complexity": "Low"
+    },
+    {
+      "control_id": "M4",
+      "title": "Regulatory Reporting Data Retention",
+      "description": "Retain all CDS audit data for the lifetime of the device plus the regulatory retention period (minimum 10 years under EU MDR, 2 years under FDA 21 CFR 820). Store data in a format that supports regulatory export and post-market surveillance analysis.",
+      "effectiveness": "Medium",
+      "implementation_complexity": "Low"
+    }
+  ],
+  "metadata_tags": {
+    "industry": ["Healthcare", "Medical Devices", "MedTech", "Digital Health"],
+    "compliance": ["FDA Premarket Cybersecurity", "IEC 81001-5-1", "EU MDR", "EU AI Act", "IEC 62304", "IMDRF N60"],
+    "deployment": ["Hospital Network", "Clinical Environment", "SaMD"]
+  }
+}
