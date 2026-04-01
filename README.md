@@ -85,6 +85,33 @@ npm start          # stdio transport
 npm run start:http # HTTP transport (port 3000)
 ```
 
+
+### Public Endpoint (Streamable HTTP)
+
+Connect from any MCP client (Claude Desktop, ChatGPT, Cursor, VS Code, GitHub Copilot):
+
+```
+https://mcp.ansvar.eu/stride-patterns/mcp
+```
+
+**Claude Code:**
+```bash
+claude mcp add stride-patterns --transport http https://mcp.ansvar.eu/stride-patterns/mcp
+```
+
+**Claude Desktop / Cursor** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "stride-patterns": {
+      "type": "url",
+      "url": "https://mcp.ansvar.eu/stride-patterns/mcp"
+    }
+  }
+}
+```
+
+No authentication required. See [all Ansvar MCP endpoints](https://github.com/Ansvar-Systems/Ansvar-Architecture-Documentation/blob/main/docs/mcp-remote-access.md).
 ## MCP Tools
 
 ### `search_patterns`
