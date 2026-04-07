@@ -11,6 +11,7 @@ import { getDatabaseStats, getDatabaseMetadata } from '../database/db.js';
 import { searchPatterns, getStrideCategories, getTechnologies, getFrameworks, getSeverityLevels } from './search.js';
 import { getPattern } from './get-pattern.js';
 import { listPatterns, countPatterns } from './list-patterns.js';
+import { buildCitation } from '../citation.js';
 import { classifyTechnology, getDfdTaxonomy, suggestTrustBoundaries } from './dfd-tools.js';
 import { findPatternsByReference } from './reference-lookup.js';
 import { filterByTags } from './tag-filter.js';
@@ -529,7 +530,15 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
         content: [
           {
             type: 'text',
-            text: JSON.stringify(pattern, null, 2),
+            text: JSON.stringify({
+              ...pattern,
+              _citation: buildCitation(
+                pattern.id,
+                pattern.classification.stride_category + ': ' + pattern.threat.title,
+                'get_pattern',
+                { pattern_id: patternId },
+              ),
+            }, null, 2),
           },
         ],
       };
