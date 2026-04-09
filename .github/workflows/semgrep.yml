@@ -13,6 +13,7 @@ concurrency:
 permissions:
   contents: read
   security-events: write
+  actions: read
 
 jobs:
   semgrep:
