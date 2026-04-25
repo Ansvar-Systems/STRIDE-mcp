@@ -67,7 +67,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@ansvar/mcp-sqlite": "^1.0.3",
+    "@ansvar/mcp-sqlite": "^1.0.5",
     "@modelcontextprotocol/sdk": "^1.0.4"
   },
   "devDependencies": {
