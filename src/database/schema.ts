@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS cwe_mappings (
 CREATE INDEX IF NOT EXISTS idx_cwe_id ON cwe_mappings(cwe_id);
 
 -- Metadata table (for tracking database version, stats, etc.)
-CREATE TABLE IF NOT EXISTS metadata (
+CREATE TABLE IF NOT EXISTS db_metadata (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -420,9 +420,9 @@ CREATE INDEX IF NOT EXISTS idx_linddun_citation_reviews_citation ON linddun_cita
 CREATE INDEX IF NOT EXISTS idx_linddun_citation_reviews_decision ON linddun_citation_reviews(decision);
 
 -- Insert initial metadata
-INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '1.4.0');
-INSERT OR IGNORE INTO metadata (key, value) VALUES ('last_build', datetime('now'));
-INSERT OR IGNORE INTO metadata (key, value) VALUES ('linddun_categories', '7');
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('schema_version', '1.4.0');
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('last_build', datetime('now'));
+INSERT OR IGNORE INTO db_metadata (key, value) VALUES ('linddun_categories', '7');
 `;
 
 export const INITIAL_STATS_QUERY = `
