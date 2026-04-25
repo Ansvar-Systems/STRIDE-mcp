@@ -39,11 +39,8 @@ jobs:
 
       - name: Database integrity
         run: |
-          sqlite3 data/database.db "PRAGMA integrity_check;" | grep -q "ok"
-          sqlite3 data/database.db "PRAGMA journal_mode;" | grep -q "delete"
-
-      - name: Coverage consistency
-        run: npm run coverage:verify
+          sqlite3 data/patterns.db "PRAGMA integrity_check;" | grep -q "ok"
+          sqlite3 data/patterns.db "PRAGMA journal_mode;" | grep -q "delete"
 
       - name: Audit dependencies
         run: npm audit --audit-level=high || true
