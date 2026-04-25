@@ -37,13 +37,7 @@
     "test:contract": "vitest run src/__tests__/contract/",
     "format": "prettier --write \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm run build && npm run build:db && npm test",
-    "ingest:fetch": "tsx scripts/ingest-fetch.ts",
-    "ingest:diff": "tsx scripts/ingest-diff.ts",
-    "coverage:update": "tsx scripts/update-coverage.ts",
-    "freshness:check": "tsx scripts/check-freshness.ts",
-    "coverage:verify": "tsx scripts/verify-coverage.ts",
-    "ingest:full": "npm run ingest:fetch && npm run build:db && npm run coverage:update"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run build && npm run build:db && npm test"
   },
   "keywords": [
     "mcp",
