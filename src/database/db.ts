@@ -100,7 +100,7 @@ export interface DatabaseMetadata {
 
 export function getDatabaseMetadata(): DatabaseMetadata {
   const db = getDatabase();
-  const rows = db.prepare('SELECT key, value FROM metadata').all() as Array<{ key: string; value: string }>;
+  const rows = db.prepare('SELECT key, value FROM db_metadata').all() as Array<{ key: string; value: string }>;
 
   const metadata: Partial<DatabaseMetadata> = {};
   for (const row of rows) {

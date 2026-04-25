@@ -15,7 +15,7 @@ describe('handleToolCall', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.results).toBeDefined();
       expect(parsed.total).toBeDefined();
-      expect(parsed.query).toBe('JWT');
+      expect(parsed._query).toBe('JWT');
     });
 
     it('should dispatch get_pattern with valid pattern_id', async () => {
@@ -172,7 +172,7 @@ describe('handleToolCall', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.results).toBeDefined();
       expect(Array.isArray(parsed.results)).toBe(true);
-      expect(parsed.category).toBe('Linking');
+      expect(parsed._category).toBe('Linking');
       if (parsed.results.length > 0) {
         expect(Array.isArray(parsed.results[0].sources)).toBe(true);
         expect(Array.isArray(parsed.results[0].citations)).toBe(true);
@@ -213,7 +213,7 @@ describe('handleToolCall', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.results).toBeDefined();
       expect(Array.isArray(parsed.results)).toBe(true);
-      expect(parsed.query).toBe('consent');
+      expect(parsed._query).toBe('consent');
       if (parsed.results.length > 0) {
         expect(Array.isArray(parsed.results[0].citations)).toBe(true);
       }
@@ -340,7 +340,7 @@ describe('handleToolCall', () => {
       expect(result.content).toBeDefined();
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.results).toBeDefined();
-      expect(parsed.query).toBe('authentication');
+      expect(parsed._query).toBe('authentication');
     });
 
     it('should support sorting and pagination in list_patterns', async () => {

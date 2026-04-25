@@ -494,7 +494,7 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
               {
                 results,
                 total: results.length,
-                query: args.query,
+                _query: args.query,
               },
               null,
               2
@@ -780,8 +780,8 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
                 {
                   results,
                   total: results.length,
-                  query: args.query ?? null,
-                  category: args.category ?? null,
+                  _query: args.query ?? null,
+                  _category: args.category ?? null,
                 },
                 null,
                 2
@@ -878,8 +878,8 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
                 {
                   results,
                   total: results.length,
-                  query: args.query ?? null,
-                  category: args.category ?? null,
+                  _query: args.query ?? null,
+                  _category: args.category ?? null,
                 },
                 null,
                 2

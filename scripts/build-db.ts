@@ -1123,7 +1123,7 @@ async function buildDatabase() {
 
   // Update metadata
   db.prepare(`
-    UPDATE metadata SET value = datetime('now'), updated_at = datetime('now')
+    UPDATE db_metadata SET value = datetime('now'), updated_at = datetime('now')
     WHERE key = 'last_build'
   `).run();
 
@@ -1180,31 +1180,31 @@ async function buildDatabase() {
     FROM linddun_citation_reviews
   `).get() as any;
 
-  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES ('tier', 'free')").run();
-  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES ('jurisdiction', 'International')").run();
+  db.prepare("INSERT OR REPLACE INTO db_metadata (key, value) VALUES ('tier', 'free')").run();
+  db.prepare("INSERT OR REPLACE INTO db_metadata (key, value) VALUES ('jurisdiction', 'International')").run();
 
   db.prepare(`
-    INSERT INTO metadata (key, value, updated_at)
+    INSERT INTO db_metadata (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
   `).run('linddun_categories', String(linddunThreatStats.categories));
   db.prepare(`
-    INSERT INTO metadata (key, value, updated_at)
+    INSERT INTO db_metadata (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
   `).run('linddun_total_threats', String(linddunThreatStats.total_threats));
   db.prepare(`
-    INSERT INTO metadata (key, value, updated_at)
+    INSERT INTO db_metadata (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
   `).run('linddun_total_patterns', String(linddunPatternStats.total_patterns));
   db.prepare(`
-    INSERT INTO metadata (key, value, updated_at)
+    INSERT INTO db_metadata (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
   `).run('linddun_total_citations', String(linddunCitationStats.total_citations));
   db.prepare(`
-    INSERT INTO metadata (key, value, updated_at)
+    INSERT INTO db_metadata (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
   `).run('linddun_total_reviews', String(linddunReviewStats.total_reviews));
