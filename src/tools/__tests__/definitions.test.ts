@@ -161,62 +161,58 @@ describe('handleToolCall', () => {
       expect(parsed.total).toBeDefined();
     });
 
-    it('should dispatch search_threats with category filter', async () => {
+    it('should dispatch search_threats with deprecation message', async () => {
       const result = await handleToolCall('search_threats', {
         category: 'Linking',
         limit: 5,
       });
 
+      expect(result.isError).toBe(true);
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe('text');
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.results).toBeDefined();
-      expect(Array.isArray(parsed.results)).toBe(true);
-      expect(parsed._category).toBe('Linking');
-      if (parsed.results.length > 0) {
-        expect(Array.isArray(parsed.results[0].sources)).toBe(true);
-        expect(Array.isArray(parsed.results[0].citations)).toBe(true);
-      }
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
+      expect(parsed.status).toBe(410);
+      expect(parsed.moved_to).toBe('privacy-patterns-mcp');
     });
 
-    it('should dispatch get_threat_tree with category', async () => {
+    it('should dispatch get_threat_tree with deprecation message', async () => {
       const result = await handleToolCall('get_threat_tree', {
         category: 'Detecting',
       });
 
+      expect(result.isError).toBe(true);
       expect(result.content).toBeDefined();
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.category).toBe('Detecting');
-      expect(parsed.tree).toBeDefined();
-      expect(parsed.total_threats).toBeGreaterThan(0);
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
+      expect(parsed.status).toBe(410);
+      expect(parsed.moved_to).toBe('privacy-patterns-mcp');
     });
 
-    it('should dispatch get_mitigations with threat_id', async () => {
+    it('should dispatch get_mitigations with deprecation message', async () => {
       const result = await handleToolCall('get_mitigations', {
         threat_id: 'LINDDUN-LINKING-001',
       });
 
+      expect(result.isError).toBe(true);
       expect(result.content).toBeDefined();
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.threat).toBeDefined();
-      expect(parsed.mitigations).toBeDefined();
-      expect(Array.isArray(parsed.mitigations)).toBe(true);
-      expect(Array.isArray(parsed.threat.citations)).toBe(true);
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
+      expect(parsed.status).toBe(410);
+      expect(parsed.moved_to).toBe('privacy-patterns-mcp');
     });
 
-    it('should dispatch search_privacy_patterns with query', async () => {
+    it('should dispatch search_privacy_patterns with deprecation message', async () => {
       const result = await handleToolCall('search_privacy_patterns', {
         query: 'consent',
       });
 
+      expect(result.isError).toBe(true);
       expect(result.content).toBeDefined();
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.results).toBeDefined();
-      expect(Array.isArray(parsed.results)).toBe(true);
-      expect(parsed._query).toBe('consent');
-      if (parsed.results.length > 0) {
-        expect(Array.isArray(parsed.results[0].citations)).toBe(true);
-      }
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
+      expect(parsed.status).toBe(410);
+      expect(parsed.moved_to).toBe('privacy-patterns-mcp');
     });
   });
 
@@ -269,22 +265,22 @@ describe('handleToolCall', () => {
       expect(parsed.error).toBeDefined();
     });
 
-    it('should handle get_mitigations with non-existent threat_id', async () => {
+    it('should handle get_mitigations with deprecation message', async () => {
       const result = await handleToolCall('get_mitigations', {
         threat_id: 'LINDDUN-DOES-NOT-EXIST-999',
       });
 
       expect(result.isError).toBe(true);
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toContain('Threat not found');
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
     });
 
-    it('should handle get_threat_tree with missing category', async () => {
+    it('should handle get_threat_tree with deprecation message', async () => {
       const result = await handleToolCall('get_threat_tree', {});
 
       expect(result.isError).toBe(true);
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toContain('category is required');
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
     });
   });
 
@@ -300,10 +296,6 @@ describe('handleToolCall', () => {
         { name: 'suggest_trust_boundaries', args: { technologies: ['Redis'] } },
         { name: 'filter_by_tags', args: { tag_type: 'compliance' } },
         { name: 'search_mitigations', args: {} },
-        { name: 'search_threats', args: { category: 'Linking' } },
-        { name: 'get_threat_tree', args: { category: 'Linking' } },
-        { name: 'get_mitigations', args: { threat_id: 'LINDDUN-LINKING-001' } },
-        { name: 'search_privacy_patterns', args: { query: 'privacy' } },
       ];
 
       for (const tool of tools) {
@@ -317,6 +309,32 @@ describe('handleToolCall', () => {
 
         // Verify it's valid JSON
         expect(() => JSON.parse(result.content[0].text)).not.toThrow();
+      }
+    });
+
+    it('should return deprecation responses for LINDDUN tools', async () => {
+      const linddunTools = [
+        { name: 'search_threats', args: { category: 'Linking' } },
+        { name: 'get_threat_tree', args: { category: 'Linking' } },
+        { name: 'get_mitigations', args: { threat_id: 'LINDDUN-LINKING-001' } },
+        { name: 'search_privacy_patterns', args: { query: 'privacy' } },
+      ];
+
+      for (const tool of linddunTools) {
+        const result = await handleToolCall(tool.name, tool.args);
+
+        expect(result.content).toBeDefined();
+        expect(Array.isArray(result.content)).toBe(true);
+        expect(result.content.length).toBeGreaterThan(0);
+        expect(result.content[0].type).toBe('text');
+        expect(typeof result.content[0].text).toBe('string');
+        expect(result.isError).toBe(true);
+
+        // Verify it's valid JSON with deprecation message
+        const parsed = JSON.parse(result.content[0].text);
+        expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
+        expect(parsed.status).toBe(410);
+        expect(parsed.moved_to).toBe('privacy-patterns-mcp');
       }
     });
 
@@ -386,30 +404,26 @@ describe('handleToolCall', () => {
       expect(mitreParsed.reference_type).toBe('mitre');
     });
 
-    it('should support category filtering in search_threats', async () => {
+    it('should return deprecation for search_threats category filtering', async () => {
       const result = await handleToolCall('search_threats', {
         query: 'identifier',
         category: 'Identifying',
       });
 
+      expect(result.isError).toBe(true);
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.results).toBeDefined();
-      if (parsed.results.length > 0) {
-        expect(parsed.results.every((item: { category: string }) => item.category === 'Identifying')).toBe(true);
-      }
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
     });
 
-    it('should support category filtering in search_privacy_patterns', async () => {
+    it('should return deprecation for search_privacy_patterns category filtering', async () => {
       const result = await handleToolCall('search_privacy_patterns', {
         category: 'Unawareness',
         limit: 10,
       });
 
+      expect(result.isError).toBe(true);
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.results).toBeDefined();
-      if (parsed.results.length > 0) {
-        expect(parsed.results.every((item: { categories: string[] }) => item.categories.includes('Unawareness'))).toBe(true);
-      }
+      expect(parsed.error).toContain('LINDDUN tools moved to privacy-patterns-mcp');
     });
 
     it('should list available tag values when tag_value is omitted in filter_by_tags', async () => {

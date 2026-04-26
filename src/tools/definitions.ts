@@ -16,10 +16,13 @@ import { classifyTechnology, getDfdTaxonomy, suggestTrustBoundaries } from './df
 import { findPatternsByReference } from './reference-lookup.js';
 import { filterByTags } from './tag-filter.js';
 import { searchMitigations } from './mitigation-search.js';
-import { searchThreats, getLinddunCategories } from './linddun-search-threats.js';
-import { getThreatTree } from './linddun-threat-tree.js';
-import { getMitigations } from './linddun-mitigations.js';
-import { searchPrivacyPatterns } from './linddun-pattern-search.js';
+// LINDDUN tools deprecated in favor of privacy-patterns-mcp (2026-04-26)
+// TODO: Remove these imports and tool handlers in next release
+import { getLinddunCategories } from './linddun-search-threats.js';
+// import { searchThreats } from './linddun-search-threats.js';
+// import { getThreatTree } from './linddun-threat-tree.js';
+// import { getMitigations } from './linddun-mitigations.js';
+// import { searchPrivacyPatterns } from './linddun-pattern-search.js';
 import { listSources } from './list-sources.js';
 
 /**
@@ -766,138 +769,67 @@ export async function handleToolCall(name: string, args: Record<string, unknown>
     }
 
     case 'search_threats': {
-      try {
-        const results = searchThreats({
-          query: args.query as string | undefined,
-          category: args.category as import('../types/linddun.js').LinddunCategory | undefined,
-          limit: args.limit as number | undefined,
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  results,
-                  total: results.length,
-                  _query: args.query ?? null,
-                  _category: args.category ?? null,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ error: (error as Error).message }),
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-
-    case 'get_threat_tree': {
-      const category = args.category;
-      if (typeof category !== 'string' || !category.trim()) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'category is required and must be a non-empty string' }) }],
-          isError: true,
-        };
-      }
-      try {
-        const tree = getThreatTree(category);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(tree, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ error: (error as Error).message }),
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-
-    case 'get_mitigations': {
-      const threatId = args.threat_id;
-      if (typeof threatId !== 'string' || !threatId.trim()) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'threat_id is required and must be a non-empty string' }) }],
-          isError: true,
-        };
-      }
-      const result = getMitigations(threatId);
-      if (!result) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ error: `Threat not found: ${threatId}` }),
-            },
-          ],
-          isError: true,
-        };
-      }
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(result, null, 2),
+            text: JSON.stringify({
+              error: 'LINDDUN tools moved to privacy-patterns-mcp; reach via gateway (gateway.ansvar.eu). This deprecation will be removed entirely in the next release cycle.',
+              status: 410,
+              moved_to: 'privacy-patterns-mcp',
+            }),
           },
         ],
+        isError: true,
+      };
+    }
+
+    case 'get_threat_tree': {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              error: 'LINDDUN tools moved to privacy-patterns-mcp; reach via gateway (gateway.ansvar.eu). This deprecation will be removed entirely in the next release cycle.',
+              status: 410,
+              moved_to: 'privacy-patterns-mcp',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    case 'get_mitigations': {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              error: 'LINDDUN tools moved to privacy-patterns-mcp; reach via gateway (gateway.ansvar.eu). This deprecation will be removed entirely in the next release cycle.',
+              status: 410,
+              moved_to: 'privacy-patterns-mcp',
+            }),
+          },
+        ],
+        isError: true,
       };
     }
 
     case 'search_privacy_patterns': {
-      try {
-        const results = searchPrivacyPatterns({
-          query: args.query as string | undefined,
-          category: args.category as import('../types/linddun.js').LinddunCategory | undefined,
-          limit: args.limit as number | undefined,
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  results,
-                  total: results.length,
-                  _query: args.query ?? null,
-                  _category: args.category ?? null,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ error: (error as Error).message }),
-            },
-          ],
-          isError: true,
-        };
-      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              error: 'LINDDUN tools moved to privacy-patterns-mcp; reach via gateway (gateway.ansvar.eu). This deprecation will be removed entirely in the next release cycle.',
+              status: 410,
+              moved_to: 'privacy-patterns-mcp',
+            }),
+          },
+        ],
+        isError: true,
+      };
     }
 
     case 'list_sources': {

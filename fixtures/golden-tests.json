@@ -175,42 +175,40 @@
     {
       "id": "stride-014",
       "category": "linddun_search",
-      "description": "Search LINDDUN threats for tracking-related privacy threats",
+      "description": "Search LINDDUN threats — deprecated, moved to privacy-patterns-mcp",
       "tool": "search_threats",
       "input": {
         "query": "tracking"
       },
       "assertions": {
-        "result_not_empty": true,
-        "min_results": 1,
-        "any_result_contains": ["tracking", "Tracking"]
+        "handles_gracefully": true,
+        "text_contains": ["LINDDUN tools moved to privacy-patterns-mcp"]
       }
     },
     {
       "id": "stride-015",
       "category": "linddun_tree",
-      "description": "Get threat tree for Linking category returns leaf threats",
+      "description": "Get threat tree for Linking — deprecated, moved to privacy-patterns-mcp",
       "tool": "get_threat_tree",
       "input": {
         "category": "Linking"
       },
       "assertions": {
-        "result_not_empty": true,
-        "text_contains": ["Linking"],
-        "fields_present": ["category", "tree", "total_threats"]
+        "handles_gracefully": true,
+        "text_contains": ["LINDDUN tools moved to privacy-patterns-mcp"]
       }
     },
     {
       "id": "stride-016",
       "category": "linddun_mitigations",
-      "description": "Get mitigations for a known LINDDUN threat ID",
+      "description": "Get mitigations — deprecated, moved to privacy-patterns-mcp",
       "tool": "get_mitigations",
       "input": {
         "threat_id": "LINDDUN-LINKING-001"
       },
       "assertions": {
-        "result_not_empty": true,
-        "text_contains": ["LINDDUN-LINKING-001", "mitigations"]
+        "handles_gracefully": true,
+        "text_contains": ["LINDDUN tools moved to privacy-patterns-mcp"]
       }
     },
     {
@@ -224,6 +222,19 @@
       "assertions": {
         "result_not_empty": true,
         "text_not_empty": true
+      }
+    },
+    {
+      "id": "stride-018",
+      "category": "linddun_patterns",
+      "description": "Search privacy patterns — deprecated, moved to privacy-patterns-mcp",
+      "tool": "search_privacy_patterns",
+      "input": {
+        "query": "consent"
+      },
+      "assertions": {
+        "handles_gracefully": true,
+        "text_contains": ["LINDDUN tools moved to privacy-patterns-mcp"]
       }
     }
   ]
