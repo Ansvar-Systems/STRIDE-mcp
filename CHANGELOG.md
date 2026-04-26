@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+- 4 LINDDUN tools are now returning 410-style deprecation messages: `search_threats`, `get_threat_tree`, `get_mitigations`, `search_privacy_patterns`. These tools have moved to `privacy-patterns-mcp` and should be accessed via `gateway.ansvar.eu`. LINDDUN tables remain in the database for one release cycle; tools and tables will be removed entirely in the next release.
+
 ### Added
 - LINDDUN privacy threat modeling: 4 new tools (`search_threats`, `get_threat_tree`, `get_mitigations`, `search_privacy_patterns`)
 - 35 LINDDUN privacy threats across 7 categories with threat trees and mitigations
