@@ -46,7 +46,6 @@ repo — typically `scripts/ingest.sh`, `npm run ingest`, or `make ingest`;
 check the repo root).
 <!-- ANSVAR-CTA-END -->
 
-
 > **Expert-curated STRIDE and LINDDUN threat knowledge with actionable mitigations**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
