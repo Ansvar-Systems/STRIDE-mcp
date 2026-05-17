@@ -1,5 +1,52 @@
 # STRIDE + LINDDUN Patterns MCP
 
+<!-- ANSVAR-CTA-BEGIN -->
+> ### ▶ Try this MCP instantly via Ansvar Gateway
+> **50 free queries/day · no card required · OAuth signup at [ansvar.eu/gateway](https://ansvar.eu/gateway)**
+>
+> One endpoint, one OAuth signup, access from any MCP-compatible client.
+
+### Connect
+
+**Claude Code** (one line):
+
+```bash
+claude mcp add ansvar --transport http https://gateway.ansvar.eu/mcp
+```
+
+**Claude Desktop / Cursor** — add to `claude_desktop_config.json` (or `mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "ansvar": {
+      "type": "url",
+      "url": "https://gateway.ansvar.eu/mcp"
+    }
+  }
+}
+```
+
+**Claude.ai** — Settings → Connectors → Add custom connector → paste `https://gateway.ansvar.eu/mcp`
+
+First request opens an OAuth flow at [ansvar.eu/gateway](https://ansvar.eu/gateway). After signup, your client is bound to your account; tier (free / premium / team / company) determines fan-out, quota, and which downstream MCPs are reachable.
+
+---
+
+## Self-host this MCP
+
+You can also clone this repo and build the corpus yourself. The schema,
+fetcher, and tool implementations all live here. What is not in the repo is
+the pre-built database — TDM and standards-licensing constraints on the
+upstream sources mean we host the corpus on Ansvar infrastructure rather
+than redistribute it as a public artifact.
+
+Build your own: run this repo's ingestion script (entry-point varies per
+repo — typically `scripts/ingest.sh`, `npm run ingest`, or `make ingest`;
+check the repo root).
+<!-- ANSVAR-CTA-END -->
+
+
 > **Expert-curated STRIDE and LINDDUN threat knowledge with actionable mitigations**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -30,36 +77,13 @@ STRIDE + LINDDUN Patterns MCP provides AI assistants with instant access to **ex
 
 ```bash
 # Add globally — works in every project
-claude mcp add stride-patterns -- npx -y @ansvar/stride-patterns-mcp
 ```
 
 Or add to `.mcp.json` in your project root (project-scoped):
 
-```json
-{
-  "mcpServers": {
-    "stride-patterns": {
-      "command": "npx",
-      "args": ["-y", "@ansvar/stride-patterns-mcp"]
-    }
-  }
-}
-```
-
 ### Use with Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
-
-```json
-{
-  "mcpServers": {
-    "stride-patterns": {
-      "command": "npx",
-      "args": ["-y", "@ansvar/stride-patterns-mcp"]
-    }
-  }
-}
-```
 
 ### Docker (HTTP transport)
 
@@ -85,31 +109,13 @@ npm start          # stdio transport
 npm run start:http # HTTP transport (port 3000)
 ```
 
-
 ### Public Endpoint (Streamable HTTP)
 
 Connect from any MCP client (Claude Desktop, ChatGPT, Cursor, VS Code, GitHub Copilot):
 
-```
-https://mcp.ansvar.eu/stride-patterns/mcp
-```
-
 **Claude Code:**
-```bash
-claude mcp add stride-patterns --transport http https://mcp.ansvar.eu/stride-patterns/mcp
-```
 
 **Claude Desktop / Cursor** (`claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "stride-patterns": {
-      "type": "url",
-      "url": "https://mcp.ansvar.eu/stride-patterns/mcp"
-    }
-  }
-}
-```
 
 No authentication required. See [all Ansvar MCP endpoints](https://github.com/Ansvar-Systems/Ansvar-Architecture-Documentation/blob/main/docs/mcp-remote-access.md).
 ## MCP Tools
@@ -311,15 +317,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for submission guidelines.
 
 Apache 2.0 - See [LICENSE](LICENSE)
 
-## Related Projects
+## More Ansvar MCPs
 
-Part of the [Ansvar MCP Suite](https://github.com/Ansvar-Systems):
-
-- [EU Compliance MCP](https://github.com/Ansvar-Systems/EU_compliance_MCP) - 47 EU regulations (GDPR, NIS2, DORA)
-- [US Compliance MCP](https://github.com/Ansvar-Systems/US_Compliance_MCP) - US federal regulations
-- [OT Security MCP](https://github.com/Ansvar-Systems/ot-security-mcp) - ICS-CERT advisories
-- [Security Controls MCP](https://github.com/Ansvar-Systems/security-controls-mcp) - SCF Framework
-
----
-
-**Built by [Ansvar Systems](https://ansvar.eu) | Supporting world-class threat modeling**
+Full fleet at [ansvar.eu/gateway](https://ansvar.eu/gateway).
